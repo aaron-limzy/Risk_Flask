@@ -36,9 +36,9 @@
 
       var UTC_Timing_Fixed = -480;        // Used for UTC Time offset to SGT
       var UTC_Offset_Change = 0;
+      var Increment_counter = 1;
 
-      var Refresh_Page_seconds = 60;  // When to refresh the page.
-      var Refresh_Page_Counter = 60;  // When to refresh the page.
+      var Refresh_Page_Counter = 0;  // When to refresh the page.
 
       //var SetInterval_MT4_LP;
       //var SetInterval_LP_Details;
@@ -47,8 +47,24 @@
       //LP_Details();
       Table1_Update();
       {% if setinterval %}
-      setInterval(Table1_Update, {{ setinterval }}*1000);        //     Refresh the time.
+      var Refresh_Page_seconds = {{ setinterval }};  // When to refresh the page.
+      setInterval(Refresh_Page_seconds_call, 1000);        //     Refresh the time.
+
+      // Call in every second, will check and update button.
+      function Refresh_Page_seconds_call(){
+          Refresh_Page_Counter = Refresh_Page_Counter + Increment_counter;
+          // If the call is to be made.
+          if (Refresh_Page_Counter >=  {{ setinterval }}){
+              Table1_Update();
+              Refresh_Page_Counter = 0;
+          }
+          // For the count down on the button.
+          $('#Refresh_count_down').html(Refresh_Page_seconds - Refresh_Page_Counter);
+      }
+
       {% endif %}
+
+
       function refresh_page_time(){           // To constantly refresh clock on page.
           $('#page_time').html(return_Time_String());
       }
@@ -139,16 +155,18 @@
       // Table_Alert_Word - Words that would cause the cell in the table to be red.
 
       function Custom_Ajax_Call(Post_Data, ajax_url, table_id, raw_return_id, error_card_id, table_caption, Table_Alert_Word ) {
+          Increment_counter = 0;  // To stop the count.
           $.ajax({
               url:ajax_url,
               data    : Post_Data,
               type: 'POST',
+              async: false,
               dataType: "JSON",
-              timeout: 45*1000
-              ,success: function(data){
+              timeout: 45*1000,
+              success: function(data){
               data;
               table_id;
-              $('#' + table_id ).html(Draw_Table(data, table_caption, "table table-hover table-sm table-responsive-sm basic_table bg-light",Table_Alert_Word, {{ replace_words }} ) + '<span class="right-text small-text">' + return_Time_String() + "</span>");
+              $('#' + table_id ).html(Draw_Table(data, table_caption, "table table-hover table-sm table-responsive-sm basic_table bg-light",Table_Alert_Word, {{ replace_words }} ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>");
               $('#' + raw_return_id).html(JSON.stringify(data));
             }, error: function(xhr,status,error){
                   //console.log( "Into the Error Function. " );
@@ -171,6 +189,7 @@
                   //console.log(status);
             }
         });
+        Increment_counter = 1;  // To restart the count
       }
 
 
@@ -358,6 +377,8 @@
           //alert("d_day = " + d_day + "  e_day = " + e_day);
       }
 
+    $('#btn_refresh_page').click(Table1_Update);
+
   });
 
 
@@ -386,7 +407,7 @@
 
   {% if description %}
   <br><br>
-  <span class="border border-secondary rounded bg-light p-1">{{ description }}</span>
+  <span class="border border-secondary rounded bg-light p-4">{{ description }}</span>
   <br>
   {% endif %}
 
@@ -409,5 +430,13 @@
     <span id="Table1_Error"></span>
   </div>
 </div>
+
+{% endblock %}
+
+
+{% block navbar_button %}
+{% if setinterval %}
+<button class="btn btn-warning navbar-btn nav-button" id="btn_refresh_page">Refresh<br>Page: <span id="Refresh_count_down"></span> </button>
+{% endif %}
 
 {% endblock %}

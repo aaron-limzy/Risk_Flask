@@ -619,7 +619,7 @@ def NoOpenTrades_ChangeGroup():
 def NoOpenTrades_ChangeGroup_ajax():
     # TODO: Check if user exist first.
 
-    live_to_run = [1, 3]  # Only want to run this on Live 1 and 3.
+    live_to_run = [1,2, 3, 5]  # Only want to run this on Live 1 and 3.
 
     # Raw SQL Statment. Will have to use .format(live=1) for example.
     raw_sql_statement = """SELECT mt4_users.LOGIN, X.LIVE, X.CURRENT_GROUP as `CURRENT_GROUP[CHECK]`, X.NEW_GROUP, mt4_users.`GROUP` as USER_CURRENT_GROUP,
@@ -703,8 +703,9 @@ def NoOpenTrades_ChangeGroup_ajax():
         # Construct the SQL Statement
         sql_update_statement = """UPDATE test.changed_group_opencheck set `CHANGED` = 1, TIME_CHANGED = now() where (	"""
         sql_update_statement += sql_where_statement
-        sql_update_statement += """ ) and `CHANGED` = 0 and TIME_CHANGED = '1970-01-01 00:00:00'"""
+        sql_update_statement += """ ) and `CHANGED` = 0 """
         sql_update_statement = text(sql_update_statement)   # To SQL Friendly Text.
+        print(sql_update_statement)
         raw_insert_result = db.engine.execute(sql_update_statement) # TO SQL
 
 
