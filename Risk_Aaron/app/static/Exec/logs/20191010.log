@@ -114,3 +114,69 @@
 0	2019.10.10 16:05:45.764	live101.blackwellglobal.com	'256': disconnect
 0	2019.10.10 16:05:45.764		Remove: manager 7CF810
 0	2019.10.10 16:05:45.764		Remove: manager 7C68D8
+0	2019.10.10 16:17:22.882		MetaTrader 4 Manager API build 1010 initialized
+0	2019.10.10 16:17:22.983	live101.blackwellglobal.com	Connect
+0	2019.10.10 16:17:23.707	live101.blackwellglobal.com	'256': login (server build 1220)
+0	2019.10.10 16:17:24.395	live101.blackwellglobal.com	'256': request 1 total users by logins
+0	2019.10.10 16:17:24.739	live101.blackwellglobal.com	'256': request margin level for '2040'
+0	2019.10.10 16:17:25.082	live101.blackwellglobal.com	'256': update user record '2040'
+0	2019.10.10 16:17:25.427	live101.blackwellglobal.com	'256': request trades database (10 orders)
+0	2019.10.10 16:17:25.769	live101.blackwellglobal.com	'256': delete 1 trade(s)
+0	2019.10.10 16:17:26.113	live101.blackwellglobal.com	'256': delete 1 trade(s)
+0	2019.10.10 16:17:26.457	live101.blackwellglobal.com	'256': delete 1 trade(s)
+0	2019.10.10 16:17:26.801	live101.blackwellglobal.com	'256': trade transaction
+0	2019.10.10 16:17:27.144	live101.blackwellglobal.com	'256': delete 1 trade(s)
+0	2019.10.10 16:17:27.504	live101.blackwellglobal.com	'256': delete 1 trade(s)
+0	2019.10.10 16:17:27.847	live101.blackwellglobal.com	'256': delete 1 trade(s)
+0	2019.10.10 16:17:28.192	live101.blackwellglobal.com	'256': trade transaction
+0	2019.10.10 16:17:28.536	live101.blackwellglobal.com	'256': trade transaction
+0	2019.10.10 16:17:28.537		Remove: manager 957B28
+0	2019.10.10 16:17:28.537		Remove: manager 94EBF0
+0	2019.10.10 16:17:28.537		Remove: manager 945CB8
+0	2019.10.10 16:17:28.537		Remove: manager 93CD80
+0	2019.10.10 16:17:28.537		Remove: manager 933E48
+0	2019.10.10 16:17:28.537		Remove: manager 92B018
+0	2019.10.10 16:17:28.639	live101.blackwellglobal.com	'256': disconnect
+0	2019.10.10 16:17:28.639		Remove: manager 9221E8
+0	2019.10.10 16:17:28.639		Remove: manager 9193B8
+0	2019.10.10 16:34:24.007		MetaTrader 4 Manager API build 1010 initialized
+0	2019.10.10 16:34:24.083	live101.blackwellglobal.com	Connect
+0	2019.10.10 16:34:24.760	live101.blackwellglobal.com	'256': login (server build 1220)
+0	2019.10.10 16:34:25.448	live101.blackwellglobal.com	'256': request 1 total users by logins
+0	2019.10.10 16:34:25.794	live101.blackwellglobal.com	'256': request margin level for '2040'
+0	2019.10.10 16:34:26.136	live101.blackwellglobal.com	'256': update user record '2040'
+0	2019.10.10 16:34:26.480	live101.blackwellglobal.com	'256': request trades database (6 orders)
+0	2019.10.10 16:34:26.822	live101.blackwellglobal.com	'256': delete 1 trade(s)
+0	2019.10.10 16:34:27.167	live101.blackwellglobal.com	'256': delete 1 trade(s)
+0	2019.10.10 16:34:27.511	live101.blackwellglobal.com	'256': trade transaction
+0	2019.10.10 16:34:27.854	live101.blackwellglobal.com	'256': delete 1 trade(s)
+0	2019.10.10 16:34:28.198	live101.blackwellglobal.com	'256': delete 1 trade(s)
+0	2019.10.10 16:34:28.200		Remove: manager 6F55A8
+0	2019.10.10 16:34:28.200		Remove: manager 6EC670
+0	2019.10.10 16:34:28.200		Remove: manager 6E3738
+0	2019.10.10 16:34:28.200		Remove: manager 6DA800
+0	2019.10.10 16:34:28.200		Remove: manager 6D18C8
+0	2019.10.10 16:34:28.200		Remove: manager 6C8990
+0	2019.10.10 16:34:28.301	live101.blackwellglobal.com	'256': disconnect
+0	2019.10.10 16:34:28.301		Remove: manager 6BFA58
+0	2019.10.10 16:34:28.301		Remove: manager 6B6C28
+0	2019.10.10 16:34:28.542		MetaTrader 4 Manager API build 1010 initialized
+0	2019.10.10 16:34:28.615	live202.blackwellglobal.com	Connect
+0	2019.10.10 16:34:29.375	live202.blackwellglobal.com	'256': login (server build 1220)
+0	2019.10.10 16:34:29.967	live202.blackwellglobal.com	'256': request 1 total users by logins
+0	2019.10.10 16:34:30.390	live202.blackwellglobal.com	'256': request margin level for '1126'
+0	2019.10.10 16:34:30.669	live202.blackwellglobal.com	'256': update user record '1126'
+0	2019.10.10 16:34:30.967	live202.blackwellglobal.com	'256': request trades database (13 orders)
+0	2019.10.10 16:34:31.246	live202.blackwellglobal.com	'256': delete 1 trade(s)
+0	2019.10.10 16:34:31.543	live202.blackwellglobal.com	'256': delete 1 trade(s)
+0	2019.10.10 16:34:31.839	live202.blackwellglobal.com	'256': trade transaction
+0	2019.10.10 16:34:32.136	live202.blackwellglobal.com	'256': delete 1 trade(s)
+0	2019.10.10 16:34:32.138		Remove: manager 885458
+0	2019.10.10 16:34:32.138		Remove: manager 87C520
+0	2019.10.10 16:34:32.138		Remove: manager 8735E8
+0	2019.10.10 16:34:32.138		Remove: manager 86A6B0
+0	2019.10.10 16:34:32.138		Remove: manager 861778
+0	2019.10.10 16:34:32.238	live202.blackwellglobal.com	'256': disconnect
+0	2019.10.10 16:34:32.238		Remove: manager 858840
+0	2019.10.10 16:34:32.238		Remove: manager 84F908
+0	2019.10.10 16:34:32.238		Remove: manager 8469D0

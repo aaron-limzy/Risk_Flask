@@ -33,6 +33,8 @@ TELE_CLIENT_ID = ["486797751"]        #Aaron's Telegram ID.
 LP_MARGIN_ALERT_LEVEL = 20            # How much away from MC do we start making noise.
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display the warnings.
 
+EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "cs@bgifx.com"]
+
 
 @app.route('/')
 @app.route('/index')        # Indexpage. To show the generic page.
@@ -728,7 +730,7 @@ def Risk_auto_cut():
     description = Markup("Running only on Live 1 and Live 3.<br>Will close all client's position and change client to read-only.")
 
     return render_template("Standard_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
-                           title=title, ajax_url=url_for("Risk_auto_cut_ajax"), header=header, setinterval=20,
+                           title=title, ajax_url=url_for("Risk_auto_cut_ajax"), header=header, setinterval=10,
                            description=description, replace_words=Markup(["Today"]))
 
 @app.route('/Risk_auto_cut_ajax', methods=['GET', 'POST'])
@@ -814,20 +816,20 @@ def Risk_auto_cut_ajax():
             total_result[k]["EQUITY_LIMIT"] = "-"
         if not None in [live, login]:   # If both are not None.
 
-            print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
+            ##print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
 
 
             c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Auto_Cut.exe') + " {live} {login} {equity_limit}".format( \
             live=live, login=login,equity_limit=equity_limit))
-            print("c_run_return = {}".format(c_run_return))
+            #print("c_run_return = {}".format(c_run_return))
             #c_run_return = 0
 
             if c_run_return[0] == 0:  # Need to save things into SQL as well.
                 To_SQL.append(d)
 
-            total_result[k]["Result"] = C_Return[c_run_return[0]] if c_run_return[0] in C_Return else "Unknown Error"
+            total_result[k]["RESULT"] = C_Return[c_run_return[0]] if c_run_return[0] in C_Return else "Unknown Error"
 
-
+    return_val = {}  # Return value to be used
     if len(total_result) > 0:   # Want to send out an email should any changes have been made.
         raw_insert_sql = " ({live}, {login}, {equity}, {credit}, '{group}', now()) "    # Raw template for insert.
         sql_insert_w_values = ",".join([raw_insert_sql.format(live=d["LIVE"], login=d["LOGIN"], equity=d["EQUITY"], credit=d["CREDIT"], group=d["GROUP"]) for d in To_SQL]) # SQL insert with the values.
@@ -838,7 +840,7 @@ def Risk_auto_cut_ajax():
         #print(total_result_value)
         table_data_html =  Array_To_HTML_Table(list(total_result_value[0].keys()),[list(d.values()) for d in total_result_value])
 
-        async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
+        async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
                      Subject="AutoCut: Equity Below Credit.",
                      HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below credit. \
                                 <br><br> {table_data_html} This is done to prevent client from trading on credit. \
@@ -846,14 +848,18 @@ def Risk_auto_cut_ajax():
                          Email_Header = Email_Header, table_data_html = table_data_html, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                          Email_Footer=Email_Footer), Attachment_Name=[])
 
-    #raw_insert_result = db.engine.execute(sql_insert)
+        raw_insert_result = db.engine.execute(sql_insert)
 
+        return_val = list(total_result.values())
+
+    else:   # If there are nothing to change. We want to show the time
+        return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
 
     # # Need to update Run time on SQL Update table.
     async_Update_Runtime("Risk_Auto_Cut")
 
 
-    return json.dumps(list(total_result.values()))
+    return json.dumps(return_val)
 
 
 
