@@ -46,6 +46,9 @@
       //MT4_LP_Position();
       //LP_Details();
       Table1_Update();
+      {% if setinterval %}
+      setInterval(Table1_Update, {{ setinterval }}*1000);        //     Refresh the time.
+      {% endif %}
       function refresh_page_time(){           // To constantly refresh clock on page.
           $('#page_time').html(return_Time_String());
       }

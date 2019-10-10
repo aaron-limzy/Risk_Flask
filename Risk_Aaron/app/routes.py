@@ -38,7 +38,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display
 @app.route('/index')        # Indexpage. To show the generic page.
 @login_required
 def index():
-    #return render_template("index.html", header="index page", description="Hello")
+    # return render_template("index.html", header="index page", description="Hello")
     return render_template("index.html", header="Risk Tool.", description="Welcome {}".format(current_user.id))
 
 @app.route('/login', methods=['GET', 'POST'])       # Login Page. If user is login-ed, will re-direct to index.
@@ -718,141 +718,142 @@ def NoOpenTrades_ChangeGroup_ajax():
     return json.dumps(return_val)
 
 
-# Want to change user group should they have no trades.
-# ie: From B to A or A to B.
-@app.route('/Risk_autocut', methods=['GET', 'POST'])
+# Want to check and close off account/trades.
+@app.route('/Risk_auto_cut', methods=['GET', 'POST'])
 @login_required
-def Risk_autocut():
-    #TODO: Need to check insert return.
+def Risk_auto_cut():
 
+    title = "Risk Auto Cut"
+    header = "Risk Auto Cut"
+    description = Markup("Running only on Live 1 and Live 3.<br>Will close all client's position and change client to read-only.")
 
-    form = noTrade_ChangeGroup_Form()
+    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
+                           title=title, ajax_url=url_for("Risk_auto_cut_ajax"), header=header, setinterval=20,
+                           description=description, replace_words=Markup(["Today"]))
 
-    title = "Change Group[No Open Trades]."
-    header = "Change Group[No Open Trades]."
-    description = "Running only on Live 1 and Live 3.<br>Will change the client's group based on data from SQL table: test.changed_group_opencheck<br>When CHANGED = 0."
-
-    if request.method == 'POST' and form.validate_on_submit():
-        Live = form.Live.data       #Get the Data.
-        Login = form.Login.data
-        Current_Group = form.Current_Group.data
-        New_Group = form.New_Group.data
-        sql_insert = "INSERT INTO  test.`changed_group_opencheck` (`Live`, `login`, `current_group`, `New_Group`, `Changed`, `Time_Changed`) VALUES" \
-             " ({live},{login},'{current_group}','{new_group}',{changed},now() )".format(live=Live,login=Login, current_group=Current_Group,new_group=New_Group,changed=0)
-        print(sql_insert)
-        raw_insert_result = db.engine.execute(sql_insert)
-
-    # elif request.method == 'POST' and form.validate_on_submit() == False:
-    #     flash('Invalid Form Entry')
-
-
-    return render_template("Change_USer_Group.html", form=form,title=title, header=header, description=Markup(description))
-
-
-@app.route('/Risk_autocut_ajax', methods=['GET', 'POST'])
+@app.route('/Risk_auto_cut_ajax', methods=['GET', 'POST'])
 @login_required
-def Risk_autocut_ajax():
+def Risk_auto_cut_ajax():
     # TODO: Check if user exist first.
 
-    live_to_run = [1, 3]  # Only want to run this on Live 1 and 3.
 
-    # Raw SQL Statment. Will have to use .format(live=1) for example.
-    raw_sql_statement = """SELECT mt4_users.LOGIN, X.LIVE, X.CURRENT_GROUP as `CURRENT_GROUP[CHECK]`, X.NEW_GROUP, mt4_users.`GROUP` as USER_CURRENT_GROUP,
-    					CASE WHEN mt4_users.`GROUP` = X.CURRENT_GROUP THEN 'Yes' ELSE 'No' END as CURRENT_GROUP_TALLY, 
-    					CASE WHEN X.NEW_GROUP IN (SELECT `GROUP` FROM Live{live}.mt4_groups WHERE `GROUP` LIKE X.NEW_GROUP) THEN 'Yes' ELSE 'No' END as NEW_GROUP_FOUND, 
-    					COALESCE((SELECT count(*) FROM live{live}.mt4_trades WHERE mt4_trades.LOGIN = X.LOGIN AND CLOSE_TIME = "1970-01-01 00:00:00" GROUP BY mt4_trades.LOGIN),0) as OPEN_TRADE_COUNT
-    			FROM Live{live}.mt4_users,(SELECT LIVE,LOGIN,CURRENT_GROUP,NEW_GROUP FROM test.changed_group_opencheck WHERE LIVE = '{live}' and `CHANGED` = 0 ) X
-    			WHERE mt4_users.`ENABLE` = 1 and mt4_users.LOGIN = X.LOGIN """
+    # Using External Table
+    # aaron.risk_autocut_exclude
+    # aaron.risk_autocut_group
+
+    Live_server = [1,2,3,5]
+
+    # To check the Lucky Draw Logins. All TW clients for login not in aaron.risk_autocut_exclude
+    raw_sql_statement = """SELECT LOGIN, '3' as LIVE, mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT
+            FROM live3.mt4_users WHERE `GROUP` LIKE '%TW%' AND EQUITY < CREDIT AND 
+        ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0 and
+        LOGIN not in (select login from aaron.risk_autocut_exclude where LIVE = 3)"""
 
     raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
-    # construct the SQL Statment
-    sql_query_statement = " UNION ".join([raw_sql_statement.format(live=l) for l in live_to_run])
-    sql_result = Query_SQL_db_engine(sql_query_statement)  # Query SQL
+    sql_result1 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
 
-    return_val = {}     #Initialise.
+
+    # For the client's whose groups are in aaron.risk_autocut_group, and login not in aaron.risk_autocut_exclude
+    raw_sql_statement = """SELECT DISTINCT mt4_trades.LOGIN,'{Live}' AS LIVE,  mt4_users. `GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT
+    FROM live{Live}.mt4_trades, live{Live}.mt4_users WHERE
+    mt4_trades.LOGIN = mt4_users.LOGIN AND mt4_users. `GROUP` IN 
+        (SELECT `GROUP` FROM aaron.risk_autocut_group WHERE LIVE = '{Live}') 
+    AND 
+    CLOSE_TIME = '1970-01-01 00:00:00' AND 
+    CMD < 6 AND 
+    EQUITY < CREDIT AND 
+    mt4_trades.LOGIN NOT IN(SELECT LOGIN FROM aaron.risk_autocut_exclude WHERE `LIVE` = '{Live}')  """
+
+    raw_sql_statement = " UNION ".join([raw_sql_statement.format(Live=n) for n in Live_server])  # construct the SQL Statment
+    raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
+    sql_result2 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
+
+
+
+    # For the client's who are in aaron.Risk_autocut_exclude and Credit_limit != 0
+    raw_sql_statement = """SELECT DISTINCT T.LOGIN, {Live} AS LIVE,  U.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT, R.EQUITY_LIMIT as EQUITY_LIMIT
+    FROM live{Live}.mt4_users as U, aaron.risk_autocut_exclude as R, live{Live}.mt4_trades as T
+    WHERE R.LIVE = {Live} and R.EQUITY_LIMIT != 0 and
+    R.LOGIN = U.LOGIN and U.EQUITY < R.EQUITY_LIMIT and  
+    U.LOGIN = T.LOGIN and T.CLOSE_TIME = '1970-01-01 00:00:00' """
+
+    raw_sql_statement = " UNION ".join([raw_sql_statement.format(Live=n) for n in Live_server])  # construct the SQL Statment
+    raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
+    sql_result3 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
+
+
+    total_result = {}
+    sql_results = [sql_result1, sql_result2, sql_result3]
+    for s in sql_results:   # We want only unique values.
+        for ss in s:
+            live = ss["LIVE"] if "LIVE" in ss else None
+            login = ss["LOGIN"] if "LOGIN" in ss else None
+            if live != None and login != None and (live,login) not in total_result:
+                total_result[(live,login)] = ss
+
+
 
     C_Return = {}   # The returns from C++
-    C_Return[0] = "User Changed"
-    C_Return[-1] = "C++ ERROR: No Connection"
-    C_Return[-2] = "C++ ERROR: New Group Not Found"
-    C_Return[-3] = "C++ ERROR: User Current Group mismatched"
-    C_Return[-4] = "C++ ERROR: Unknown Error"
-    C_Return[-5] = "C++ ERROR: Open Trades"
-    C_Return[-6] = "C++ ERROR: User Not Found!"
-    C_Return[-10] = "C++ ERROR: Param Error"
+    C_Return[0] = "User Changed to Read-Only, position forced closed";
+    C_Return[-1] = "C++ ERROR: Params Wrong";
+    C_Return[1] = "C++ ERROR: Login Param Error";
+    C_Return[2] = "C++ ERROR: Server Param Error";
+    C_Return[3] = "C++ ERROR: Login Number Error on MT4";
+    C_Return[4] = "C++ ERROR: Equity Above Credit";
+    C_Return[6] = "C++ ERROR: MT4 Update Error!";
+    C_Return[7] = "C++ ERROR: MT4 Connection Error";
+    C_Return[-100] = "User changed to Read-only, but SQL ERROR. ";
+
+    To_SQL = []     # To save onto SQL
+
+    for k,d in total_result.items():
+        live = d['LIVE'] if "LIVE" in d else None
+        login = d['LOGIN'] if "LOGIN" in d else None
+        equity_limit = d['EQUITY_LIMIT'] if "EQUITY_LIMIT" in d else 0
+        if equity_limit == 0:   # Adding this in to beautify the Table.
+            total_result[k]["EQUITY_LIMIT"] = "-"
+        if not None in [live, login]:   # If both are not None.
+
+            print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
 
 
-    # Need to update Run time on SQL Update table.
-    async_Update_Runtime("ChangeGroup_NoOpenTrades")
+            c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Auto_Cut.exe') + " {live} {login} {equity_limit}".format( \
+            live=live, login=login,equity_limit=equity_limit))
+            print("c_run_return = {}".format(c_run_return))
+            #c_run_return = 0
 
-    if len(sql_result) == 0:    # If there are nothing to be changed.
-        return_val = {"All": [{"Comment":"Login awaiting change: 0", "Last Query time": "{}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))}]}
-        return json.dumps(return_val)
+            if c_run_return[0] == 0:  # Need to save things into SQL as well.
+                To_SQL.append(d)
 
-    success_result = []
-    success_listdict = []
-    for i,d in enumerate(sql_result):
-        comment =""
-        error_flag = 0
-
-        if not ("CURRENT_GROUP_TALLY" in d and d["CURRENT_GROUP_TALLY"].find("Yes") >=0):
-            comment += "Current group doesn't match. "
-            error_flag += 1
-        if not ("NEW_GROUP_FOUND" in d and d["NEW_GROUP_FOUND"].find("Yes") >=0):
-            comment += "New group not found. "
-            error_flag += 1
-        if ("OPEN_TRADE_COUNT" in d and d["OPEN_TRADE_COUNT"] == 0):
-            if error_flag == 0: # No obvious error from the SQL Return Code.
-
-                server = d["LIVE"] if "LIVE" in d else False
-                login = d["LOGIN"] if "LOGIN" in d else False
-                previous_group = d["USER_CURRENT_GROUP"] if "USER_CURRENT_GROUP" in d else False
-                new_group = d["NEW_GROUP"] if "NEW_GROUP" in d else False
-                if all([server,login,previous_group, new_group]):     # Need to run C++ Should there be anything to change.
-                    # #(C_Return_Val, output, err)
-                    #c_run_return= [0,0,0]   # Artificial Results.
-                    c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Change_User.exe') + " {server} {login} {previous_group} {new_group}".format(
-                        server=server,login=login,previous_group=previous_group,new_group=new_group))
+            total_result[k]["Result"] = C_Return[c_run_return[0]] if c_run_return[0] in C_Return else "Unknown Error"
 
 
-                    comment += C_Return[c_run_return[0]]
-                    if c_run_return[0] == 0:    # If C++ Returns okay.
-                        success_result.append((server, login, previous_group, new_group))
-                        # Want to add into a list of dict. Want to change the _ of Keys to " " Spaces.
-                        changed_user_buffer = dict(zip([k.replace("_", " ") for k in list(d.keys())], d.values()))
-                        changed_user_buffer["UPDATED TIME"] = time_now()    # Want to add in the SGT that it was changed.
-                        success_listdict.append(changed_user_buffer)
-                else:
-                    comment += "SQL Return Error. [LIVE, LOGIN, USER_CURRENT_GROUP, NEW_GROUP]"
-
-        else:   # There are open trades. Cannot Change.
-            comment += "Open trades found."
-        sql_result[i]["Comment"] = comment if error_flag == 0 else "ERROR: {}".format(comment)
-
-    if len(success_result) > 0:  # For those that are changed, We want to save it in SQL.
-        # Want to get the WHERE statements for each.
-        sql_where_statement = " OR ".join(["(LOGIN = {login} and LIVE = {server} and CURRENT_GROUP = '{previous_group}' and NEW_GROUP = '{new_group}') ".format(
-            server=server, login=login,previous_group=previous_group,new_group=new_group) for (server, login, previous_group, new_group) in success_result])
-        #print(sql_where_statement)
-
-        # Construct the SQL Statement
-        sql_update_statement = """UPDATE test.changed_group_opencheck set `CHANGED` = 1, TIME_CHANGED = now() where (	"""
-        sql_update_statement += sql_where_statement
-        sql_update_statement += """ ) and `CHANGED` = 0 and TIME_CHANGED = '1970-01-01 00:00:00'"""
-        sql_update_statement = text(sql_update_statement)   # To SQL Friendly Text.
-        raw_insert_result = db.engine.execute(sql_update_statement) # TO SQL
+    if len(total_result) > 0:   # Want to send out an email should any changes have been made.
+        raw_insert_sql = " ({live}, {login}, {equity}, {credit}, '{group}', now()) "    # Raw template for insert.
+        sql_insert_w_values = ",".join([raw_insert_sql.format(live=d["LIVE"], login=d["LOGIN"], equity=d["EQUITY"], credit=d["CREDIT"], group=d["GROUP"]) for d in To_SQL]) # SQL insert with the values.
+        sql_insert = "INSERT INTO  aaron.`risk_autocut_results` (LIVE, LOGIN, EQUITY, CREDIT, `GROUP`, DATE_TIME) VALUES {}".format(sql_insert_w_values)   # Add it to the header.
 
 
-    val = [list(a.values()) for a in sql_result]
-    key = list(sql_result[0].keys())
-    key = [k.replace("_"," ") for k in key]     # Want to space things out instead of _
-    return_val = {"All": [dict(zip(key,v)) for v in val], "Changed": success_listdict}
+        total_result_value = list(total_result.values())
+        #print(total_result_value)
+        table_data_html =  Array_To_HTML_Table(list(total_result_value[0].keys()),[list(d.values()) for d in total_result_value])
+
+        async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
+                     Subject="AutoCut: Equity Below Credit.",
+                     HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below credit. \
+                                <br><br> {table_data_html} This is done to prevent client from trading on credit. \
+                               <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
+                         Email_Header = Email_Header, table_data_html = table_data_html, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                         Email_Footer=Email_Footer), Attachment_Name=[])
+
+    #raw_insert_result = db.engine.execute(sql_insert)
 
 
+    # # Need to update Run time on SQL Update table.
+    async_Update_Runtime("Risk_Auto_Cut")
 
 
-    #table = create_table_fun(sql_result)
-    return json.dumps(return_val)
+    return json.dumps(list(total_result.values()))
 
 
 
@@ -981,7 +982,7 @@ def is_prime_query_AccDetails_json():
 
             #print(sql_insert)
             raw_insert_result = db.engine.execute(sql_insert)
-            raw_insert_result
+            #raw_insert_result
 
     for s in account_dict:
         if isinstance(account_dict[s], float) or isinstance(account_dict[s], int):
@@ -1555,7 +1556,7 @@ def MT4_Commission():
 @login_required
 def Mt4_Commission_ajax():     # Return the Bloomberg dividend table in Json.
 
-    start_date = get_working_day_date(datetime.date.today(), -1, 5)
+    #start_date = get_working_day_date(datetime.date.today(), -1, 5)
     sql_query = text("""select mt4_groups.`GROUP`, mt4_securities.`NAME`, mt4_groups.CURRENCY, mt4_groups.DEFAULT_LEVERAGE, mt4_groups.MARGIN_CALL, mt4_groups.MARGIN_STOPOUT, mt4_secgroups.`SHOW`, mt4_secgroups.TRADE, mt4_secgroups.SPREAD_DIFF, 
         mt4_secgroups.COMM_BASE, mt4_secgroups.COMM_TYPE, mt4_secgroups.COMM_LOTS, mt4_secgroups.COMM_AGENT, mt4_secgroups.COMM_AGENT_TYPE, mt4_secgroups.COMM_AGENT_LOTS  from 
         live5.mt4_groups, live5.mt4_secgroups, live5.mt4_securities
