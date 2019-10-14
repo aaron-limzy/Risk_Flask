@@ -20,6 +20,23 @@ from app.models import User, load_user, flask_users
 from sqlalchemy import text
 from Aaron_Lib import *
 
+
+
+from requests.auth import HTTPBasicAuth  # or HTTPDigestAuth, or OAuth1, etc.
+from requests import Session
+from zeep.transports import Transport
+
+from zeep import Client
+
+import logging
+logging.basicConfig(level=logging.INFO)
+logging.getLogger('suds.client').setLevel(logging.DEBUG)
+logging.getLogger('suds.transport').setLevel(logging.DEBUG)
+logging.getLogger('suds.xsd.schema').setLevel(logging.DEBUG)
+logging.getLogger('suds.wsdl').setLevel(logging.DEBUG)
+
+
+
 from .decorators import async
 from io import StringIO
 
@@ -827,6 +844,8 @@ def Risk_auto_cut_ajax():
 
             if c_run_return[0] == 0:  # Need to save things into SQL as well.
                 To_SQL.append(d)
+            elif c_run_return[0] not in C_Return:
+                print(c_run_return)
 
             total_result[k]["RESULT"] = C_Return[c_run_return[0]] if c_run_return[0] in C_Return else "Unknown Error"
 
@@ -849,6 +868,7 @@ def Risk_auto_cut_ajax():
                          Email_Header = Email_Header, table_data_html = table_data_html, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                          Email_Footer=Email_Footer), Attachment_Name=[])
 
+        print("SQL Statement: {}".format(sql_insert))
         raw_insert_result = db.engine.execute(sql_insert)
 
         return_val = list(total_result.values())
@@ -861,6 +881,93 @@ def Risk_auto_cut_ajax():
 
 
     return json.dumps(return_val)
+
+
+
+
+# Want to check and close off account/trades.
+@app.route('/CFH_Live_Position', methods=['GET', 'POST'])
+@login_required
+def CFH_Live_Position():
+
+    title = "CFH_Live_Position"
+    header = "CFH_Live_Position"
+    description = Markup("Getting CFH Live Position from CFH BO via SOAP API.")
+
+    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="CFH Live Position", \
+                           title=title, ajax_url=url_for("CFH_Live_Position_ajax1"), header=header, setinterval=60,
+                           description=description, replace_words=Markup(["Today"]))
+
+@app.route('/CFH_Live_Position_ajax', methods=['GET', 'POST'])
+@login_required
+def CFH_Live_Position_ajax1():
+    # TODO: Update Minotor Tools Table.
+
+    wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
+    session = Session()
+    session.auth = HTTPBasicAuth("BG_Michael", "Bgil8888")
+    client = Client(wsdl_url, transport=Transport(session=session))
+
+    database_name = "aaron"
+    table_name = "CFH_Live_Trades_1"
+
+    total_trades = []
+    total_pages = 1
+    page_counter = 0
+
+    # To get trades.
+    while total_pages != 0 or total_pages == (
+            page_counter + 1):  # 27840 is the account number. #TODO: Get the account number dynamically.
+        loop_trades = client.service.GetTrades(27840, "2019-10-14", "2019-10-14", 100,
+                                               page_counter)  # TODO: Get the trades by Date.
+        total_pages = loop_trades.TotalPages if "TotalPages" in loop_trades else 0
+        page_counter = page_counter + 1
+        if loop_trades.TradesList != None:  # Would be None if there are no more trades.
+            for t in loop_trades.TradesList.TradeInfo:
+                total_trades.append(t)
+
+    live_trades_sql_header = """INSERT INTO {database_name}.{table_name} (`Amount`,	`BoTradeId`,	`Cancelled`,	`ClientOrderId`,	`Closed`,	
+    `Commission`,	`CommissionCurrency`,	`ExecutionDate`,	`InstrumentId`,	`OrderId`,	`Price`,	`Side`,	`Track`,	`TradeDate`,	
+        `TradeSystemId`,	`TradeType`,	`TsTradeId`,	`ValueDate`,	`ExternalClientId`) VALUES """.format(
+        database_name=database_name, table_name=table_name)
+
+    live_trade_values = " , ".join([""" ('{Amount}',	'{BoTradeId}',	'{Cancelled}',	'{ClientOrderId}',	'{Closed}',	'{Commission}',	
+    '{CommissionCurrency}',	'{ExecutionDate}',	'{InstrumentId}',	'{OrderId}',	'{Price}',	'{Side}',	'{Track}',	'{TradeDate}',	'{TradeSystemId}',	
+    '{TradeType}',	'{TsTradeId}',	'{ValueDate}',	'{ExternalClientId}') """.format(Amount=t.Amount,
+                                                                                           BoTradeId=t.BoTradeId,
+                                                                                           Cancelled=t.Cancelled,
+                                                                                           ClientOrderId=t.ClientOrderId,
+                                                                                           Closed=t.Closed,
+                                                                                           Commission=t.Commission,
+                                                                                           CommissionCurrency=t.CommissionCurrency,
+                                                                                           ExecutionDate=t.ExecutionDate,
+                                                                                           InstrumentId=t.InstrumentId,
+                                                                                           OrderId=t.OrderId,
+                                                                                           Price=t.Price, Side=t.Side,
+                                                                                           Track=t.Track,
+                                                                                           TradeDate=t.TradeDate,
+                                                                                           TradeSystemId=t.TradeSystemId,
+                                                                                           TradeType=t.TradeType,
+                                                                                           TsTradeId=t.TsTradeId,
+                                                                                           ValueDate=t.ValueDate,
+                                                                                           ExternalClientId=t.ExternalClientId)
+                                    for t in total_trades])
+
+    live_trades_sql_footer = """ ON DUPLICATE KEY UPDATE `Amount`=`Amount`,	`Cancelled`=`Cancelled`,	`ClientOrderId`=`ClientOrderId`,	`Closed`=`Closed`,	
+    `Commission`=`Commission`,	`CommissionCurrency`=`CommissionCurrency`,	`ExecutionDate`=`ExecutionDate`,	`InstrumentId`=`InstrumentId`,	
+    `OrderId`=`OrderId`,	`Price`=`Price`,	`Side`=`Side`,	`Track`=`Track`,	`TradeDate`=`TradeDate`,	`TradeSystemId`=`TradeSystemId`,	
+    `TradeType`=`TradeType`,	`TsTradeId`=`TsTradeId`,	`ValueDate`=`ValueDate`,	`ExternalClientId`=`ExternalClientId`"""
+
+    sql_trades_insert = live_trades_sql_header + live_trade_values + live_trades_sql_footer
+    sql_trades_insert = text(sql_trades_insert) # To make it to SQL friendly text.
+
+    raw_insert_result = db.engine.execute(sql_trades_insert)
+
+    #raw_insert_result = db.engine.execute(sql_insert)
+    return_val = [{k: "{}".format(t[k]) for k in t} for t in total_trades]
+
+    return json.dumps(return_val)
+
 
 
 
@@ -1060,12 +1167,71 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 
     mismatch_count_1 = 10   # Notify when mismatch has lasted 1st time.
     mismatch_count_2 = 15   # Second notify when mismatched has lasted a second time
+    #
+    # sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(squared_LOT,0) AS Squared_lot,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+COALESCE(squared_LOT,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
+	# 	,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol ,COALESCE(vantage_LOT,0)+COALESCE(squared_LOT,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy FROM test.core_symbol
+	# 	LEFT JOIN
+	# 	(SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM (SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades`
+	# 	LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY mt4_symbol) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
+	# 	LEFT JOIN
+	# 	(SELECT Symbol AS squared_SYMBOL,ROUND(SUM(LOT),2) AS squared_LOT FROM (SELECT COALESCE(live_trade_squaredpromt4_live_covertsymbol.SYMBOL,live_trade_5830001_squaredpromt4_live.Symbol) AS Symbol,CASE WHEN Cmd = 0 THEN lots WHEN Cmd = 1 THEN lots * (-1) END AS LOT,Cmd FROM test.`live_trade_5830001_squaredpromt4_live`
+	# 	LEFT JOIN test.live_trade_squaredpromt4_live_covertsymbol ON live_trade_5830001_squaredpromt4_live.Symbol = live_trade_squaredpromt4_live_covertsymbol.SQUARED_SYMBOL WHERE close_time = '1970-01-01 00:00:00') AS A GROUP BY Symbol) AS Z ON core_symbol.SYMBOL = Z.squared_SYMBOL
+	# 	LEFT JOIN
+	# 	(SELECT coresymbol AS api_SYMBOL,ROUND(SUM(api_LOT),2) AS api_LOT FROM (SELECT bgimargin_live_trades.margin_id,bgimargin_live_trades.coresymbol,position/core_symbol.CONTRACT_SIZE AS api_LOT FROM test.`bgimargin_live_trades`
+	# 	LEFT JOIN test.core_symbol ON bgimargin_live_trades.coresymbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY coresymbol) AS K ON core_symbol.SYMBOL = K.api_SYMBOL
+	# 	LEFT JOIN
+	# 	(SELECT SYMBOL AS offset_SYMBOL,ROUND(SUM(LOTS),2) AS offset_LOT FROM test.offset_live_trades GROUP BY SYMBOL) AS P ON core_symbol.SYMBOL = P.offset_SYMBOL
+	# 	LEFT JOIN
+	# 	(SELECT SYMBOL AS mt4_SYMBOL,ROUND(SUM(VOL),2) AS mt4_NET_VOL FROM
+	# 	(SELECT 'live1' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
+	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
+	# 	FROM live1.mt4_trades WHERE ((mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live1.a_group)) OR (LOGIN IN (SELECT LOGIN FROM live1.a_login )))
+	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2
+	# 	GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
+	# 	UNION
+	# 	SELECT 'live2' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
+	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
+	# 	FROM live2.mt4_trades WHERE ((mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live2.a_group)) OR (LOGIN IN (SELECT LOGIN FROM live2.a_login )) OR LOGIN = '9583' OR LOGIN = '9615' OR LOGIN = '9618' OR (mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501))
+	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
+	# 	UNION
+	# 	SELECT 'live3' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
+	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
+	# 	FROM live3.mt4_trades WHERE (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live3.a_group))
+	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
+	# 	UNION
+	# 	SELECT 'live5' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
+	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
+	# 	FROM live5.mt4_trades WHERE (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.a_group))
+	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
+	# 	) AS X GROUP BY SYMBOL) S ON core_symbol.SYMBOL = S.mt4_SYMBOL ORDER BY ABS(Discrepancy) DESC, ABS(MT4_Net_Vol) DESC, SYMBOL""")
 
-    sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(squared_LOT,0) AS Squared_lot,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+COALESCE(squared_LOT,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
-		,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol ,COALESCE(vantage_LOT,0)+COALESCE(squared_LOT,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy FROM test.core_symbol
+    sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(squared_LOT,0) AS Squared_lot,COALESCE(CFH_Position,0) AS CFH_Position ,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+COALESCE(squared_LOT,0) + COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
+		,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(squared_LOT,0)+COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy 
+		FROM test.core_symbol
 		LEFT JOIN
 		(SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM (SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades` 
 		LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY mt4_symbol) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
+		LEFT JOIN
+		(SELECT s.InstrumentSymbol as CFH_Symbol,
+		SUM(CASE
+			WHEN t.Side = 0 THEN (t.Amount/c.CONTRACT_SIZE)
+			WHEN t.Side = 1 THEN (t.amount/c.CONTRACT_SIZE) * -1 
+			ELSE 0
+		END) as CFH_Position
+		From aaron.cfh_live_trades_1 as t, aaron.cfh_symbol as s, test.core_symbol as c
+		where s.InstrumentId=t.InstrumentId and Closed="False" and c.SYMBOL = S.InstrumentSymbol
+		GROUP BY CFH_Symbol
+		) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
+
+
 		LEFT JOIN
 		(SELECT Symbol AS squared_SYMBOL,ROUND(SUM(LOT),2) AS squared_LOT FROM (SELECT COALESCE(live_trade_squaredpromt4_live_covertsymbol.SYMBOL,live_trade_5830001_squaredpromt4_live.Symbol) AS Symbol,CASE WHEN Cmd = 0 THEN lots WHEN Cmd = 1 THEN lots * (-1) END AS LOT,Cmd FROM test.`live_trade_5830001_squaredpromt4_live` 
 		LEFT JOIN test.live_trade_squaredpromt4_live_covertsymbol ON live_trade_5830001_squaredpromt4_live.Symbol = live_trade_squaredpromt4_live_covertsymbol.SQUARED_SYMBOL WHERE close_time = '1970-01-01 00:00:00') AS A GROUP BY Symbol) AS Z ON core_symbol.SYMBOL = Z.squared_SYMBOL
@@ -1105,7 +1271,6 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 		AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
 		WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
 		) AS X GROUP BY SYMBOL) S ON core_symbol.SYMBOL = S.mt4_SYMBOL ORDER BY ABS(Discrepancy) DESC, ABS(MT4_Net_Vol) DESC, SYMBOL""")
-
 
     curent_result = Query_SQL_db_engine(sql_query)  # Function to do the Query and return zip dict.
 
@@ -1609,6 +1774,30 @@ def Changed_readonly_ajax():
     return json.dumps(result_dict)
 
 
+
+
+
+# Async Call to send email.
+@async
+def async_send_email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name):
+    Send_Email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name)
+
+
+# Async Call to send telegram message.
+@async
+def async_Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs):
+    Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs)
+
+# Async update the runtime table for update.
+@async
+def async_Update_Runtime(Tool):
+    # Want to update the runtime table to ensure that tool is running.
+    sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`) VALUES" + \
+                 " ('{Tool}', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()".format(Tool=Tool)
+    raw_insert_result = db.engine.execute(sql_insert)
+    #print("Updating Runtime for Tool: {}".format(Tool))
+
+
 # [{'Core_Symbol': '.A50', 'bgi_long': '0.000000000000', 'bgi_short': '0.000000000000', 'Date': datetime.date(2019, 8, 13)},....]
 def find_swaps(data, symbol, date, Long_Short):
     for d in data:
@@ -1652,8 +1841,6 @@ def get_working_day_date(start_date, increment_decrement_val, weekdays_count):
 
     return return_date
 
-
-
 # Helper function to check if string is json
 def is_json(myjson):
   try:
@@ -1661,7 +1848,6 @@ def is_json(myjson):
   except (ValueError):
     return False
   return True
-
 
 # Input: sql_query.
 # Return a Dict, using Zip for the results and the col names.
@@ -1672,27 +1858,6 @@ def Query_SQL_db_engine(sql_query):
     result_col = raw_result.keys()
     zip_results = [dict(zip(result_col,d)) for d in result_data_decimal]
     return zip_results
-
-
-# Async Call to send email.
-@async
-def async_send_email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name):
-    Send_Email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name)
-
-
-# Async Call to send telegram message.
-@async
-def async_Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs):
-    Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs)
-
-# Async update the runtime table for update.
-@async
-def async_Update_Runtime(Tool):
-    # Want to update the runtime table to ensure that tool is running.
-    sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`) VALUES" + \
-                 " ('{Tool}', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()".format(Tool=Tool)
-    raw_insert_result = db.engine.execute(sql_insert)
-    #print("Updating Runtime for Tool: {}".format(Tool))
 
 
 # Helper function to do a time check.
