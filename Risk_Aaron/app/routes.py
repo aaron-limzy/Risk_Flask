@@ -918,7 +918,7 @@ def CFH_Live_Position_ajax1():
     # To get trades.
     while total_pages != 0 or total_pages == (
             page_counter + 1):  # 27840 is the account number. #TODO: Get the account number dynamically.
-        loop_trades = client.service.GetTrades(27840, "2019-10-14", "2019-10-14", 100,
+        loop_trades = client.service.GetTrades(27840, "2019-10-15", "2019-10-15", 200,
                                                page_counter)  # TODO: Get the trades by Date.
         total_pages = loop_trades.TotalPages if "TotalPages" in loop_trades else 0
         page_counter = page_counter + 1
@@ -934,29 +934,19 @@ def CFH_Live_Position_ajax1():
     live_trade_values = " , ".join([""" ('{Amount}',	'{BoTradeId}',	'{Cancelled}',	'{ClientOrderId}',	'{Closed}',	'{Commission}',	
     '{CommissionCurrency}',	'{ExecutionDate}',	'{InstrumentId}',	'{OrderId}',	'{Price}',	'{Side}',	'{Track}',	'{TradeDate}',	'{TradeSystemId}',	
     '{TradeType}',	'{TsTradeId}',	'{ValueDate}',	'{ExternalClientId}') """.format(Amount=t.Amount,
-                                                                                           BoTradeId=t.BoTradeId,
-                                                                                           Cancelled=t.Cancelled,
-                                                                                           ClientOrderId=t.ClientOrderId,
-                                                                                           Closed=t.Closed,
-                                                                                           Commission=t.Commission,
-                                                                                           CommissionCurrency=t.CommissionCurrency,
-                                                                                           ExecutionDate=t.ExecutionDate,
-                                                                                           InstrumentId=t.InstrumentId,
-                                                                                           OrderId=t.OrderId,
-                                                                                           Price=t.Price, Side=t.Side,
-                                                                                           Track=t.Track,
-                                                                                           TradeDate=t.TradeDate,
-                                                                                           TradeSystemId=t.TradeSystemId,
-                                                                                           TradeType=t.TradeType,
-                                                                                           TsTradeId=t.TsTradeId,
-                                                                                           ValueDate=t.ValueDate,
-                                                                                           ExternalClientId=t.ExternalClientId)
-                                    for t in total_trades])
+                                     BoTradeId=t.BoTradeId, Cancelled=t.Cancelled, ClientOrderId=t.ClientOrderId,
+                                     Closed=t.Closed, Commission=t.Commission, CommissionCurrency=t.CommissionCurrency,
+                                     ExecutionDate=t.ExecutionDate, InstrumentId=t.InstrumentId, OrderId=t.OrderId,
+                                     Price=t.Price, Side=t.Side, Track=t.Track, TradeDate=t.TradeDate,
+                                     TradeSystemId=t.TradeSystemId, TradeType=t.TradeType, TsTradeId=t.TsTradeId,
+                                     ValueDate=t.ValueDate, ExternalClientId=t.ExternalClientId) for t in total_trades])
 
-    live_trades_sql_footer = """ ON DUPLICATE KEY UPDATE `Amount`=`Amount`,	`Cancelled`=`Cancelled`,	`ClientOrderId`=`ClientOrderId`,	`Closed`=`Closed`,	
-    `Commission`=`Commission`,	`CommissionCurrency`=`CommissionCurrency`,	`ExecutionDate`=`ExecutionDate`,	`InstrumentId`=`InstrumentId`,	
-    `OrderId`=`OrderId`,	`Price`=`Price`,	`Side`=`Side`,	`Track`=`Track`,	`TradeDate`=`TradeDate`,	`TradeSystemId`=`TradeSystemId`,	
-    `TradeType`=`TradeType`,	`TsTradeId`=`TsTradeId`,	`ValueDate`=`ValueDate`,	`ExternalClientId`=`ExternalClientId`"""
+    live_trades_sql_footer = """ ON DUPLICATE KEY UPDATE `Amount`=VALUES(`Amount`) ,`Cancelled`=VALUES(`Cancelled`) , 	
+        `ClientOrderId`=VALUES(`ClientOrderId`) , 	`Closed`=VALUES(`Closed`) , 	`Commission`=VALUES(`Commission`) , 	
+        `CommissionCurrency`=VALUES(`CommissionCurrency`) , 	`ExecutionDate`=VALUES(`ExecutionDate`) , 	`InstrumentId`=VALUES(`InstrumentId`) , 	
+        `OrderId`=VALUES(`OrderId`) , 	`Price`=VALUES(`Price`) , 	`Side`=VALUES(`Side`) , 	`Track`=VALUES(`Track`) , 	`TradeDate`=VALUES(`TradeDate`) , 	
+        `TradeSystemId`=VALUES(`TradeSystemId`) , 	`TradeType`=VALUES(`TradeType`) , 	`TsTradeId`=VALUES(`TsTradeId`) , 	`ValueDate`=VALUES(`ValueDate`) , 	
+        `ExternalClientId`=VALUES(`ExternalClientId`) """
 
     sql_trades_insert = live_trades_sql_header + live_trade_values + live_trades_sql_footer
     sql_trades_insert = text(sql_trades_insert) # To make it to SQL friendly text.
@@ -1227,7 +1217,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 			ELSE 0
 		END) as CFH_Position
 		From aaron.cfh_live_trades_1 as t, aaron.cfh_symbol as s, test.core_symbol as c
-		where s.InstrumentId=t.InstrumentId and Closed="False" and c.SYMBOL = S.InstrumentSymbol
+		where s.InstrumentId=t.InstrumentId and Closed="False" and c.SYMBOL = S.InstrumentSymbol and t.TradeType like "Online trade"
 		GROUP BY CFH_Symbol
 		) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
 
