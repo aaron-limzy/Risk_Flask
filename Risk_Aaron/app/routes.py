@@ -915,10 +915,18 @@ def CFH_Live_Position_ajax1():
     total_pages = 1
     page_counter = 0
 
+    # Want to get the Client number that BGI has with CFH.
+    Client_details = client.service.GetAccounts()
+    Client_num = Client_details[0].AccountId if len(Client_details) > 0 else -1
+
+
+    query_start_date = datetime.date.today()
+    query_end_date = datetime.date.today()
+
     # To get trades.
     while total_pages != 0 or total_pages == (
             page_counter + 1):  # 27840 is the account number. #TODO: Get the account number dynamically.
-        loop_trades = client.service.GetTrades(27840, "2019-10-15", "2019-10-15", 200,
+        loop_trades = client.service.GetTrades(Client_num, query_start_date, query_end_date, 200,
                                                page_counter)  # TODO: Get the trades by Date.
         total_pages = loop_trades.TotalPages if "TotalPages" in loop_trades else 0
         page_counter = page_counter + 1
