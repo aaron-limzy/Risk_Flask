@@ -911,17 +911,20 @@ def CFH_Live_Position_ajax1():
     database_name = "aaron"
     table_name = "CFH_Live_Trades_1"
 
-    total_trades = []
-    total_pages = 1
-    page_counter = 0
+
 
     # Want to get the Client number that BGI has with CFH.
     Client_details = client.service.GetAccounts()
     Client_num = Client_details[0].AccountId if len(Client_details) > 0 else -1
 
-
-    query_start_date = datetime.date.today()
+    # When the start dates are.
+    query_start_date = datetime.datetime.now() - datetime.timedelta(hours=2)    # Want to backtrace 2 hours.
     query_end_date = datetime.date.today()
+
+    # Flags and lists to store the data.
+    total_trades = []
+    total_pages = 1
+    page_counter = 0
 
     # To get trades.
     while total_pages != 0 or total_pages == (
@@ -934,6 +937,8 @@ def CFH_Live_Position_ajax1():
             for t in loop_trades.TradesList.TradeInfo:
                 total_trades.append(t)
 
+    # To write the SQL statement for insert
+    # .
     live_trades_sql_header = """INSERT INTO {database_name}.{table_name} (`Amount`,	`BoTradeId`,	`Cancelled`,	`ClientOrderId`,	`Closed`,	
     `Commission`,	`CommissionCurrency`,	`ExecutionDate`,	`InstrumentId`,	`OrderId`,	`Price`,	`Side`,	`Track`,	`TradeDate`,	
         `TradeSystemId`,	`TradeType`,	`TsTradeId`,	`ValueDate`,	`ExternalClientId`) VALUES """.format(
@@ -957,6 +962,7 @@ def CFH_Live_Position_ajax1():
         `ExternalClientId`=VALUES(`ExternalClientId`) """
 
     sql_trades_insert = live_trades_sql_header + live_trade_values + live_trades_sql_footer
+    sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
     sql_trades_insert = text(sql_trades_insert) # To make it to SQL friendly text.
 
     raw_insert_result = db.engine.execute(sql_trades_insert)
@@ -1225,7 +1231,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 			ELSE 0
 		END) as CFH_Position
 		From aaron.cfh_live_trades_1 as t, aaron.cfh_symbol as s, test.core_symbol as c
-		where s.InstrumentId=t.InstrumentId and Closed="False" and c.SYMBOL = S.InstrumentSymbol and t.TradeType like "Online trade"
+		where s.InstrumentId=t.InstrumentId and Closed="False" and c.SYMBOL = S.InstrumentSymbol
 		GROUP BY CFH_Symbol
 		) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
 
