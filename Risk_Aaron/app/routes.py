@@ -104,7 +104,7 @@ def Create_User():
         else:
             sql_insert = "INSERT INTO  aaron.`flask_login` (`username`, `email`, `password_hash`, `admin_rights`) VALUES" \
                 " ('{}','{}','{}','{}')".format(username, email, User.hash_password(password=password), admin_rights)
-            #print(sql_insert)
+            print(sql_insert)
             raw_insert_result = db.engine.execute(sql_insert)
 
     return render_template('General_Form.html', title='Create User',header="Create User", form=form)
