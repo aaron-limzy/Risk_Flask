@@ -390,7 +390,7 @@ $(document).ready(function(){
         for (var x in Table_Data) {
             if (!("Vantage_lot" in Table_Data[x] &&  Table_Data[x]['Vantage_lot'] == 0 &&
                 "MT4_Net_Vol" in Table_Data[x] &&  Table_Data[x]['MT4_Net_Vol'] == 0 &&
-                "Squared_lot" in Table_Data[x] &&  Table_Data[x]['Squared_lot'] == 0 &&
+                "CFH_Lots" in Table_Data[x] &&  Table_Data[x]['CFH_Lots'] == 0 &&
                 "Discrepancy" in Table_Data[x] &&  Table_Data[x]['Discrepancy'] == 0 )) {
                 Table_Data_Updated.push(Table_Data[x]);	// Push it in if its non-empty.
             }

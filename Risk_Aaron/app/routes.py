@@ -1217,8 +1217,67 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
 	# 	) AS X GROUP BY SYMBOL) S ON core_symbol.SYMBOL = S.mt4_SYMBOL ORDER BY ABS(Discrepancy) DESC, ABS(MT4_Net_Vol) DESC, SYMBOL""")
 
-    sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(squared_LOT,0) AS Squared_lot,COALESCE(CFH_Position,0) AS CFH_Position ,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+COALESCE(squared_LOT,0) + COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
-		,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(squared_LOT,0)+COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy 
+    # sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(squared_LOT,0) AS Squared_lot,COALESCE(CFH_Position,0) AS CFH_Position ,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+COALESCE(squared_LOT,0) + COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
+	# 	,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(squared_LOT,0)+COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy
+	# 	FROM test.core_symbol
+	# 	LEFT JOIN
+	# 	(SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM (SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades`
+	# 	LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY mt4_symbol) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
+	# 	LEFT JOIN
+	# 	(SELECT s.InstrumentSymbol as CFH_Symbol,
+	# 	SUM(CASE
+	# 		WHEN t.Side = 0 THEN (t.Amount/c.CONTRACT_SIZE)
+	# 		WHEN t.Side = 1 THEN (t.amount/c.CONTRACT_SIZE) * -1
+	# 		ELSE 0
+	# 	END) as CFH_Position
+	# 	From aaron.cfh_live_trades_1 as t, aaron.cfh_symbol as s, test.core_symbol as c
+	# 	where s.InstrumentId=t.InstrumentId and Closed="False" and c.SYMBOL = S.InstrumentSymbol
+	# 	GROUP BY CFH_Symbol
+	# 	) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
+    #
+    #
+	# 	LEFT JOIN
+	# 	(SELECT Symbol AS squared_SYMBOL,ROUND(SUM(LOT),2) AS squared_LOT FROM (SELECT COALESCE(live_trade_squaredpromt4_live_covertsymbol.SYMBOL,live_trade_5830001_squaredpromt4_live.Symbol) AS Symbol,CASE WHEN Cmd = 0 THEN lots WHEN Cmd = 1 THEN lots * (-1) END AS LOT,Cmd FROM test.`live_trade_5830001_squaredpromt4_live`
+	# 	LEFT JOIN test.live_trade_squaredpromt4_live_covertsymbol ON live_trade_5830001_squaredpromt4_live.Symbol = live_trade_squaredpromt4_live_covertsymbol.SQUARED_SYMBOL WHERE close_time = '1970-01-01 00:00:00') AS A GROUP BY Symbol) AS Z ON core_symbol.SYMBOL = Z.squared_SYMBOL
+	# 	LEFT JOIN
+	# 	(SELECT coresymbol AS api_SYMBOL,ROUND(SUM(api_LOT),2) AS api_LOT FROM (SELECT bgimargin_live_trades.margin_id,bgimargin_live_trades.coresymbol,position/core_symbol.CONTRACT_SIZE AS api_LOT FROM test.`bgimargin_live_trades`
+	# 	LEFT JOIN test.core_symbol ON bgimargin_live_trades.coresymbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY coresymbol) AS K ON core_symbol.SYMBOL = K.api_SYMBOL
+	# 	LEFT JOIN
+	# 	(SELECT SYMBOL AS offset_SYMBOL,ROUND(SUM(LOTS),2) AS offset_LOT FROM test.offset_live_trades GROUP BY SYMBOL) AS P ON core_symbol.SYMBOL = P.offset_SYMBOL
+	# 	LEFT JOIN
+	# 	(SELECT SYMBOL AS mt4_SYMBOL,ROUND(SUM(VOL),2) AS mt4_NET_VOL FROM
+	# 	(SELECT 'live1' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
+	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
+	# 	FROM live1.mt4_trades WHERE ((mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live1.a_group)) OR (LOGIN IN (SELECT LOGIN FROM live1.a_login )))
+	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2
+	# 	GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
+	# 	UNION
+	# 	SELECT 'live2' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
+	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
+	# 	FROM live2.mt4_trades WHERE ((mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live2.a_group)) OR (LOGIN IN (SELECT LOGIN FROM live2.a_login )) OR LOGIN = '9583' OR LOGIN = '9615' OR LOGIN = '9618' OR (mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501))
+	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
+	# 	UNION
+	# 	SELECT 'live3' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
+	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
+	# 	FROM live3.mt4_trades WHERE (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live3.a_group))
+	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
+	# 	UNION
+	# 	SELECT 'live5' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
+	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
+	# 	FROM live5.mt4_trades WHERE (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.a_group))
+	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
+	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
+	# 	) AS X GROUP BY SYMBOL) S ON core_symbol.SYMBOL = S.mt4_SYMBOL ORDER BY ABS(Discrepancy) DESC, ABS(MT4_Net_Vol) DESC, SYMBOL""")
+
+    sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(CFH_Position,0) AS CFH_Lots ,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+ COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
+		,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy 
 		FROM test.core_symbol
 		LEFT JOIN
 		(SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM (SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades` 
@@ -1235,10 +1294,6 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 		GROUP BY CFH_Symbol
 		) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
 
-
-		LEFT JOIN
-		(SELECT Symbol AS squared_SYMBOL,ROUND(SUM(LOT),2) AS squared_LOT FROM (SELECT COALESCE(live_trade_squaredpromt4_live_covertsymbol.SYMBOL,live_trade_5830001_squaredpromt4_live.Symbol) AS Symbol,CASE WHEN Cmd = 0 THEN lots WHEN Cmd = 1 THEN lots * (-1) END AS LOT,Cmd FROM test.`live_trade_5830001_squaredpromt4_live` 
-		LEFT JOIN test.live_trade_squaredpromt4_live_covertsymbol ON live_trade_5830001_squaredpromt4_live.Symbol = live_trade_squaredpromt4_live_covertsymbol.SQUARED_SYMBOL WHERE close_time = '1970-01-01 00:00:00') AS A GROUP BY Symbol) AS Z ON core_symbol.SYMBOL = Z.squared_SYMBOL
 		LEFT JOIN
 		(SELECT coresymbol AS api_SYMBOL,ROUND(SUM(api_LOT),2) AS api_LOT FROM (SELECT bgimargin_live_trades.margin_id,bgimargin_live_trades.coresymbol,position/core_symbol.CONTRACT_SIZE AS api_LOT FROM test.`bgimargin_live_trades` 
 		LEFT JOIN test.core_symbol ON bgimargin_live_trades.coresymbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY coresymbol) AS K ON core_symbol.SYMBOL = K.api_SYMBOL
