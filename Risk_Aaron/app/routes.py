@@ -884,7 +884,6 @@ def Risk_auto_cut_ajax():
 
 
 
-
 # Want to check and close off account/trades.
 @app.route('/CFH_Live_Position', methods=['GET', 'POST'])
 @login_required
@@ -892,15 +891,15 @@ def CFH_Live_Position():
 
     title = "CFH_Live_Position"
     header = "CFH_Live_Position"
-    description = Markup("Getting CFH Live Position from CFH BO via SOAP API.")
+    description = Markup("Getting CFH Live Position from CFH BO via CFH's SOAP API.<br>Results will be inserted/updated to aaron.cfh_live_trades.<br>Update time in table is GMT.")
 
-    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="CFH Live Position", \
-                           title=title, ajax_url=url_for("CFH_Live_Position_ajax1"), header=header, setinterval=60,
+    return render_template("Standard_Single_Table.html", backgroud_Filename='css/notebook_pen.jpg', Table_name="CFH Live Position", \
+                           title=title, ajax_url=url_for("CFH_Live_Position_ajax"), header=header, setinterval=60,
                            description=description, replace_words=Markup(["Today"]))
 
 @app.route('/CFH_Live_Position_ajax', methods=['GET', 'POST'])
 @login_required
-def CFH_Live_Position_ajax1():
+def CFH_Live_Position_ajax(update_all=0):  #Optional Parameter, to update from the start should there be a need to.
     # TODO: Update Minotor Tools Table.
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
@@ -909,7 +908,7 @@ def CFH_Live_Position_ajax1():
     client = Client(wsdl_url, transport=Transport(session=session))
 
     database_name = "aaron"
-    table_name = "CFH_Live_Trades_1"
+    table_name = "CFH_Live_Trades"
 
 
 
@@ -917,9 +916,10 @@ def CFH_Live_Position_ajax1():
     Client_details = client.service.GetAccounts()
     Client_num = Client_details[0].AccountId if len(Client_details) > 0 else -1
 
-    # When the start dates are.
-    query_start_date = datetime.datetime.now() - datetime.timedelta(hours=2)    # Want to backtrace 2 hours.
-    query_end_date = datetime.date.today()
+    # When the start dates are.  Want to backtrace 2 hours at all normal times. Want to backtrace till start (sept 1st) if needed.
+    query_start_date = (datetime.datetime.now() - datetime.timedelta(hours=2)) if update_all==0 else datetime.date(2019, 9, 1)
+
+    query_end_date = datetime.date.today()  # Always will end at today, now.
 
     # Flags and lists to store the data.
     total_trades = []
@@ -941,12 +941,12 @@ def CFH_Live_Position_ajax1():
     # .
     live_trades_sql_header = """INSERT INTO {database_name}.{table_name} (`Amount`,	`BoTradeId`,	`Cancelled`,	`ClientOrderId`,	`Closed`,	
     `Commission`,	`CommissionCurrency`,	`ExecutionDate`,	`InstrumentId`,	`OrderId`,	`Price`,	`Side`,	`Track`,	`TradeDate`,	
-        `TradeSystemId`,	`TradeType`,	`TsTradeId`,	`ValueDate`,	`ExternalClientId`) VALUES """.format(
+        `TradeSystemId`,	`TradeType`,	`TsTradeId`,	`ValueDate`,	`ExternalClientId`, `Updated_time`) VALUES """.format(
         database_name=database_name, table_name=table_name)
 
     live_trade_values = " , ".join([""" ('{Amount}',	'{BoTradeId}',	'{Cancelled}',	'{ClientOrderId}',	'{Closed}',	'{Commission}',	
     '{CommissionCurrency}',	'{ExecutionDate}',	'{InstrumentId}',	'{OrderId}',	'{Price}',	'{Side}',	'{Track}',	'{TradeDate}',	'{TradeSystemId}',	
-    '{TradeType}',	'{TsTradeId}',	'{ValueDate}',	'{ExternalClientId}') """.format(Amount=t.Amount,
+    '{TradeType}',	'{TsTradeId}',	'{ValueDate}',	'{ExternalClientId}', DATE_SUB(now(),INTERVAL 8 HOUR)) """.format(Amount=t.Amount,
                                      BoTradeId=t.BoTradeId, Cancelled=t.Cancelled, ClientOrderId=t.ClientOrderId,
                                      Closed=t.Closed, Commission=t.Commission, CommissionCurrency=t.CommissionCurrency,
                                      ExecutionDate=t.ExecutionDate, InstrumentId=t.InstrumentId, OrderId=t.OrderId,
@@ -959,7 +959,7 @@ def CFH_Live_Position_ajax1():
         `CommissionCurrency`=VALUES(`CommissionCurrency`) , 	`ExecutionDate`=VALUES(`ExecutionDate`) , 	`InstrumentId`=VALUES(`InstrumentId`) , 	
         `OrderId`=VALUES(`OrderId`) , 	`Price`=VALUES(`Price`) , 	`Side`=VALUES(`Side`) , 	`Track`=VALUES(`Track`) , 	`TradeDate`=VALUES(`TradeDate`) , 	
         `TradeSystemId`=VALUES(`TradeSystemId`) , 	`TradeType`=VALUES(`TradeType`) , 	`TsTradeId`=VALUES(`TsTradeId`) , 	`ValueDate`=VALUES(`ValueDate`) , 	
-        `ExternalClientId`=VALUES(`ExternalClientId`) """
+        `ExternalClientId`=VALUES(`ExternalClientId`), `Updated_time`=DATE_SUB(now(),INTERVAL 8 HOUR) """
 
     sql_trades_insert = live_trades_sql_header + live_trade_values + live_trades_sql_footer
     sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
@@ -970,11 +970,87 @@ def CFH_Live_Position_ajax1():
     #raw_insert_result = db.engine.execute(sql_insert)
     return_val = [{k: "{}".format(t[k]) for k in t} for t in total_trades]
 
+    # # Need to update Run time on SQL Update table.
+    async_Update_Runtime("CFH_Live_Trades")
+
     return json.dumps(return_val)
 
 
 
+# Want to check and close off account/trades.
+@app.route('/CFH_Symbol_Update', methods=['GET', 'POST'])
+@login_required
+def CFH_Symbol_Update():
 
+    title = "CFH Symbol Update"
+    header = "CFH Symbol Update"
+    description = Markup("Getting CFH Symbol Details from CFH BO via CFH's SOAP API.<br>Results will be inserted/updated to aaron.cfh_symbol.<br>Update time in table is GMT.")
+
+    return render_template("Standard_Single_Table.html", backgroud_Filename='css/notebook_pen.jpg', Table_name="CFH Symbols", \
+                           title=title, ajax_url=url_for("CFH_Symbol_Update_ajax"), header=header, setinterval=60,
+                           description=description, replace_words=Markup(["Today"]))
+
+@app.route('/CFH_Symbol_Update_ajax', methods=['GET', 'POST'])
+@login_required
+def CFH_Symbol_Update_ajax(update_all=0):  #Optional Parameter, to update from the start should there be a need to.
+    # TODO: CFH_Symbol_Update_ajax Minotor Tools Table.
+
+    wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
+    session = Session()
+    session.auth = HTTPBasicAuth("BG_Michael", "Bgil8888")
+    client = Client(wsdl_url, transport=Transport(session=session))
+
+    database_name = "aaron"
+    table_name = "CFH_Symbol"
+
+    total_symbols = client.service.GetInstruments()
+
+    symbol_sql_header = """INSERT INTO {database_name}.{table_name} (`InstrumentId`,	`InstrumentName`,	`InstrumentSymbol`,	`InstrumentType`,	`InstrumentTypeId`,	`IsActive`,	`InstrumentSubType`,
+    `InstrumentSubTypeId`,	`Decimals`,	`DecimalsFullPip`,	`SwapDecimals`,	`MinOrderSize`,	`IsWholeLots`,	`ContractFactor`,
+    `CurrencyCode`,	`ValueDateConvention`,	`InMiFIRscope`,	`UnderlyingISINs`, Updated_time) VALUES """.format(database_name=database_name, table_name=table_name)
+
+    symbol_values = ",".join([""" ('{InstrumentId}',	'{InstrumentName}',	'{InstrumentSymbol}',	'{InstrumentType}',	'{InstrumentTypeId}',	'{IsActive}',
+     '{InstrumentSubType}',	'{InstrumentSubTypeId}',	'{Decimals}',	'{DecimalsFullPip}',	'{SwapDecimals}',	'{MinOrderSize}',	'{IsWholeLots}',
+     '{ContractFactor}',	'{CurrencyCode}',	'{ValueDateConvention}',	'{InMiFIRscope}',
+     '{UnderlyingISINs}', DATE_SUB(now(),INTERVAL 8 HOUR))""".format(InstrumentId=s.InstrumentId,
+                                                                 InstrumentName=s.InstrumentName.replace("'", "''"),
+                                                                 InstrumentSymbol=s.InstrumentSymbol,
+                                                                 InstrumentType=s.InstrumentType,
+                                                                 InstrumentTypeId=s.InstrumentTypeId,
+                                                                 IsActive=s.IsActive,
+                                                                 InstrumentSubType=s.InstrumentSubType,
+                                                                 InstrumentSubTypeId=s.InstrumentSubTypeId,
+                                                                 Decimals=s.Decimals,
+                                                                 DecimalsFullPip=s.DecimalsFullPip,
+                                                                 SwapDecimals=s.SwapDecimals,
+                                                                 IsWholeLots=s.IsWholeLots,
+                                                                 MinOrderSize=s.MinOrderSize,
+                                                                 ContractFactor=s.ContractFactor,
+                                                                 CurrencyCode=s.CurrencyCode,
+                                                                 ValueDateConvention=s.ValueDateConvention,
+                                                                 InMiFIRscope=s.InMiFIRscope,
+                                                                 UnderlyingISINs=s.UnderlyingISINs) for s in total_symbols])
+
+
+    symbol_sql_footer = """ ON DUPLICATE KEY UPDATE `InstrumentName`=VALUES(`InstrumentName`),	`InstrumentType`=VALUES(`InstrumentType`),	`InstrumentTypeId`=VALUES(`InstrumentTypeId`),
+    `IsActive`=VALUES(`IsActive`),	`InstrumentSubType`=VALUES(`InstrumentSubType`),	`InstrumentSubTypeId`=VALUES(`InstrumentSubTypeId`),	`Decimals`=VALUES(`Decimals`),
+    `DecimalsFullPip`=VALUES(`DecimalsFullPip`),	`SwapDecimals`=VALUES(`SwapDecimals`),	`MinOrderSize`=VALUES(`MinOrderSize`),	`IsWholeLots`=VALUES(`IsWholeLots`),
+    `ContractFactor`=VALUES(`ContractFactor`),	`CurrencyCode`=VALUES(`CurrencyCode`),	`ValueDateConvention`=VALUES(`ValueDateConvention`),	`InMiFIRscope`=VALUES(`InMiFIRscope`),
+    `UnderlyingISINs`=VALUES(`UnderlyingISINs`), `Updated_time`=DATE_SUB(now(),INTERVAL 8 HOUR)"""
+
+
+    sql_insert = symbol_sql_header + symbol_values + symbol_sql_footer
+    sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+    sql_insert = text(sql_insert) # To make it to SQL friendly text.
+
+    raw_insert_result = db.engine.execute(sql_insert)
+
+    #raw_insert_result = db.engine.execute(sql_insert)
+    return_val = [{k: "{}".format(t[k]) for k in t} for t in total_symbols]
+
+
+
+    return json.dumps(return_val)
 
 
 @app.route('/g', methods=['GET', 'POST'])
@@ -1230,7 +1306,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 	# 		WHEN t.Side = 1 THEN (t.amount/c.CONTRACT_SIZE) * -1
 	# 		ELSE 0
 	# 	END) as CFH_Position
-	# 	From aaron.cfh_live_trades_1 as t, aaron.cfh_symbol as s, test.core_symbol as c
+	# 	From aaron.cfh_live_trades as t, aaron.cfh_symbol as s, test.core_symbol as c
 	# 	where s.InstrumentId=t.InstrumentId and Closed="False" and c.SYMBOL = S.InstrumentSymbol
 	# 	GROUP BY CFH_Symbol
 	# 	) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
@@ -1289,7 +1365,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 			WHEN t.Side = 1 THEN (t.amount/c.CONTRACT_SIZE) * -1 
 			ELSE 0
 		END) as CFH_Position
-		From aaron.cfh_live_trades_1 as t, aaron.cfh_symbol as s, test.core_symbol as c
+		From aaron.cfh_live_trades as t, aaron.cfh_symbol as s, test.core_symbol as c
 		where s.InstrumentId=t.InstrumentId and Closed="False" and c.SYMBOL = S.InstrumentSymbol
 		GROUP BY CFH_Symbol
 		) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
