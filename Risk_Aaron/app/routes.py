@@ -918,7 +918,7 @@ def CFH_Live_Position_ajax(update_all=0):  #Optional Parameter, to update from t
 
     # When the start dates are.  Want to backtrace 2 hours at all normal times. Want to backtrace till start (sept 1st) if needed.
     query_start_date = (datetime.datetime.now() - datetime.timedelta(hours=2)) if update_all==0 else datetime.date(2019, 9, 1)
-
+    #query_end_date =  datetime.date(2019, 9, 1)
     query_end_date = datetime.date.today()  # Always will end at today, now.
 
     # Flags and lists to store the data.
@@ -928,47 +928,49 @@ def CFH_Live_Position_ajax(update_all=0):  #Optional Parameter, to update from t
 
     # To get trades.
     while total_pages != 0 or total_pages == (
-            page_counter + 1):  # 27840 is the account number. #TODO: Get the account number dynamically.
-        loop_trades = client.service.GetTrades(Client_num, query_start_date, query_end_date, 200,
-                                               page_counter)  # TODO: Get the trades by Date.
+            page_counter + 1):  # 27840 is the account number.
+        loop_trades = client.service.GetTrades(Client_num, query_start_date, query_end_date, 200, page_counter)
         total_pages = loop_trades.TotalPages if "TotalPages" in loop_trades else 0
         page_counter = page_counter + 1
         if loop_trades.TradesList != None:  # Would be None if there are no more trades.
             for t in loop_trades.TradesList.TradeInfo:
                 total_trades.append(t)
 
-    # To write the SQL statement for insert
-    # .
-    live_trades_sql_header = """INSERT INTO {database_name}.{table_name} (`Amount`,	`BoTradeId`,	`Cancelled`,	`ClientOrderId`,	`Closed`,	
-    `Commission`,	`CommissionCurrency`,	`ExecutionDate`,	`InstrumentId`,	`OrderId`,	`Price`,	`Side`,	`Track`,	`TradeDate`,	
-        `TradeSystemId`,	`TradeType`,	`TsTradeId`,	`ValueDate`,	`ExternalClientId`, `Updated_time`) VALUES """.format(
-        database_name=database_name, table_name=table_name)
+    return_val = [{"Results": "No Trades return "}]
 
-    live_trade_values = " , ".join([""" ('{Amount}',	'{BoTradeId}',	'{Cancelled}',	'{ClientOrderId}',	'{Closed}',	'{Commission}',	
-    '{CommissionCurrency}',	'{ExecutionDate}',	'{InstrumentId}',	'{OrderId}',	'{Price}',	'{Side}',	'{Track}',	'{TradeDate}',	'{TradeSystemId}',	
-    '{TradeType}',	'{TsTradeId}',	'{ValueDate}',	'{ExternalClientId}', DATE_SUB(now(),INTERVAL 8 HOUR)) """.format(Amount=t.Amount,
-                                     BoTradeId=t.BoTradeId, Cancelled=t.Cancelled, ClientOrderId=t.ClientOrderId,
-                                     Closed=t.Closed, Commission=t.Commission, CommissionCurrency=t.CommissionCurrency,
-                                     ExecutionDate=t.ExecutionDate, InstrumentId=t.InstrumentId, OrderId=t.OrderId,
-                                     Price=t.Price, Side=t.Side, Track=t.Track, TradeDate=t.TradeDate,
-                                     TradeSystemId=t.TradeSystemId, TradeType=t.TradeType, TsTradeId=t.TsTradeId,
-                                     ValueDate=t.ValueDate, ExternalClientId=t.ExternalClientId) for t in total_trades])
+    if len(total_trades) > 0:   # If there are no Trades.
+        # To write the SQL statement for insert
+        # .
+        live_trades_sql_header = """INSERT INTO {database_name}.{table_name} (`Amount`,	`BoTradeId`,	`Cancelled`,	`ClientOrderId`,	`Closed`,
+        `Commission`,	`CommissionCurrency`,	`ExecutionDate`,	`InstrumentId`,	`OrderId`,	`Price`,	`Side`,	`Track`,	`TradeDate`,
+            `TradeSystemId`,	`TradeType`,	`TsTradeId`,	`ValueDate`,	`ExternalClientId`, `Updated_time`) VALUES """.format(
+            database_name=database_name, table_name=table_name)
 
-    live_trades_sql_footer = """ ON DUPLICATE KEY UPDATE `Amount`=VALUES(`Amount`) ,`Cancelled`=VALUES(`Cancelled`) , 	
-        `ClientOrderId`=VALUES(`ClientOrderId`) , 	`Closed`=VALUES(`Closed`) , 	`Commission`=VALUES(`Commission`) , 	
-        `CommissionCurrency`=VALUES(`CommissionCurrency`) , 	`ExecutionDate`=VALUES(`ExecutionDate`) , 	`InstrumentId`=VALUES(`InstrumentId`) , 	
-        `OrderId`=VALUES(`OrderId`) , 	`Price`=VALUES(`Price`) , 	`Side`=VALUES(`Side`) , 	`Track`=VALUES(`Track`) , 	`TradeDate`=VALUES(`TradeDate`) , 	
-        `TradeSystemId`=VALUES(`TradeSystemId`) , 	`TradeType`=VALUES(`TradeType`) , 	`TsTradeId`=VALUES(`TsTradeId`) , 	`ValueDate`=VALUES(`ValueDate`) , 	
-        `ExternalClientId`=VALUES(`ExternalClientId`), `Updated_time`=DATE_SUB(now(),INTERVAL 8 HOUR) """
+        live_trade_values = " , ".join([""" ('{Amount}',	'{BoTradeId}',	'{Cancelled}',	'{ClientOrderId}',	'{Closed}',	'{Commission}',
+        '{CommissionCurrency}',	'{ExecutionDate}',	'{InstrumentId}',	'{OrderId}',	'{Price}',	'{Side}',	'{Track}',	'{TradeDate}',	'{TradeSystemId}',
+        '{TradeType}',	'{TsTradeId}',	'{ValueDate}',	'{ExternalClientId}', DATE_SUB(now(),INTERVAL 8 HOUR)) """.format(Amount=t.Amount,
+                                         BoTradeId=t.BoTradeId, Cancelled=t.Cancelled, ClientOrderId=t.ClientOrderId,
+                                         Closed=t.Closed, Commission=t.Commission, CommissionCurrency=t.CommissionCurrency,
+                                         ExecutionDate=t.ExecutionDate, InstrumentId=t.InstrumentId, OrderId=t.OrderId,
+                                         Price=t.Price, Side=t.Side, Track=t.Track, TradeDate=t.TradeDate,
+                                         TradeSystemId=t.TradeSystemId, TradeType=t.TradeType, TsTradeId=t.TsTradeId,
+                                         ValueDate=t.ValueDate, ExternalClientId=t.ExternalClientId) for t in total_trades])
 
-    sql_trades_insert = live_trades_sql_header + live_trade_values + live_trades_sql_footer
-    sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
-    sql_trades_insert = text(sql_trades_insert) # To make it to SQL friendly text.
+        live_trades_sql_footer = """ ON DUPLICATE KEY UPDATE `Amount`=VALUES(`Amount`) ,`Cancelled`=VALUES(`Cancelled`) ,
+            `ClientOrderId`=VALUES(`ClientOrderId`) , 	`Closed`=VALUES(`Closed`) , 	`Commission`=VALUES(`Commission`) ,
+            `CommissionCurrency`=VALUES(`CommissionCurrency`) , 	`ExecutionDate`=VALUES(`ExecutionDate`) , 	`InstrumentId`=VALUES(`InstrumentId`) ,
+            `OrderId`=VALUES(`OrderId`) , 	`Price`=VALUES(`Price`) , 	`Side`=VALUES(`Side`) , 	`Track`=VALUES(`Track`) , 	`TradeDate`=VALUES(`TradeDate`) ,
+            `TradeSystemId`=VALUES(`TradeSystemId`) , 	`TradeType`=VALUES(`TradeType`) , 	`TsTradeId`=VALUES(`TsTradeId`) , 	`ValueDate`=VALUES(`ValueDate`) ,
+            `ExternalClientId`=VALUES(`ExternalClientId`), `Updated_time`=DATE_SUB(now(),INTERVAL 8 HOUR) """
 
-    raw_insert_result = db.engine.execute(sql_trades_insert)
+        sql_trades_insert = live_trades_sql_header + live_trade_values + live_trades_sql_footer
+        sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
+        sql_trades_insert = text(sql_trades_insert) # To make it to SQL friendly text.
 
-    #raw_insert_result = db.engine.execute(sql_insert)
-    return_val = [{k: "{}".format(t[k]) for k in t} for t in total_trades]
+        raw_insert_result = db.engine.execute(sql_trades_insert)
+
+
+        return_val = [{k: "{}".format(t[k]) for k in t} for t in total_trades]
 
     # # Need to update Run time on SQL Update table.
     async_Update_Runtime("CFH_Live_Trades")
@@ -987,7 +989,7 @@ def CFH_Symbol_Update():
     description = Markup("Getting CFH Symbol Details from CFH BO via CFH's SOAP API.<br>Results will be inserted/updated to aaron.cfh_symbol.<br>Update time in table is GMT.")
 
     return render_template("Standard_Single_Table.html", backgroud_Filename='css/notebook_pen.jpg', Table_name="CFH Symbols", \
-                           title=title, ajax_url=url_for("CFH_Symbol_Update_ajax"), header=header, setinterval=60,
+                           title=title, ajax_url=url_for("CFH_Symbol_Update_ajax"), header=header,
                            description=description, replace_words=Markup(["Today"]))
 
 @app.route('/CFH_Symbol_Update_ajax', methods=['GET', 'POST'])
