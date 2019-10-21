@@ -2,11 +2,19 @@
 <project version="4">
   <component name="BookmarkManager">
     <bookmark url="file://$PROJECT_DIR$/app/static/js/A_Book_Matching.js" line="158" />
-    <bookmark url="file://$PROJECT_DIR$/app/routes.py" line="1162" />
-    <bookmark url="file://$PROJECT_DIR$/app/routes.py" line="1465" />
+    <bookmark url="file://$PROJECT_DIR$/app/routes.py" line="1462" />
+    <bookmark url="file://$PROJECT_DIR$/app/routes.py" line="1765" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="fb254749-7b1b-4fde-8616-ca5c9714cfac" name="Default Changelist" comment="commit 2" />
+    <list default="true" id="fb254749-7b1b-4fde-8616-ca5c9714cfac" name="Default Changelist" comment="commit 2">
+      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/Risk.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/static/js/Change_Read_Only_NoOpenTrades.js" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/js/Change_Read_Only_NoOpenTrades.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/Change_User_Group.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/Change_User_Group.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/base.html" afterDir="false" />
+    </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -90,13 +98,40 @@
         </counts>
       </usages-collector>
     </session>
+    <session id="2019748385">
+      <usages-collector id="statistics.lifecycle.project">
+        <counts>
+          <entry key="project.closed" value="3" />
+          <entry key="project.open.time.15" value="1" />
+          <entry key="project.open.time.2" value="2" />
+          <entry key="project.open.time.22" value="1" />
+          <entry key="project.open.time.4" value="1" />
+          <entry key="project.open.time.5" value="1" />
+          <entry key="project.open.time.6" value="1" />
+          <entry key="project.open.time.7" value="1" />
+          <entry key="project.open.time.9" value="1" />
+          <entry key="project.opened" value="9" />
+        </counts>
+      </usages-collector>
+      <usages-collector id="statistics.file.extensions.edit">
+        <counts>
+          <entry key="Python Console" value="635" />
+          <entry key="py" value="4969" />
+        </counts>
+      </usages-collector>
+      <usages-collector id="statistics.file.types.edit">
+        <counts>
+          <entry key="Python" value="5604" />
+        </counts>
+      </usages-collector>
+    </session>
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/forms.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1139">
+            <state relative-caret-position="279">
               <caret line="73" column="113" selection-start-line="73" selection-start-column="113" selection-end-line="73" selection-end-column="113" />
               <folding>
                 <element signature="e#0#31#0" expanded="true" />
@@ -108,14 +143,10 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app/routes.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="12733">
-              <caret line="749" lean-forward="true" selection-start-line="749" selection-end-line="749" />
+            <state relative-caret-position="255">
+              <caret line="651" column="97" lean-forward="true" selection-start-line="651" selection-start-column="97" selection-end-line="651" selection-end-column="97" />
               <folding>
                 <element signature="e#0#30#0" expanded="true" />
-                <marker date="1570523672743" expanded="true" signature="1571:1576" ph="..." />
-                <marker date="1570523672743" expanded="true" signature="45022:45028" ph="..." />
-                <marker date="1570523672743" expanded="true" signature="81713:81839" ph="..." />
-                <marker date="1570523672743" expanded="true" signature="89521:89916" ph="..." />
               </folding>
             </state>
           </provider>
@@ -125,7 +156,7 @@
         <entry file="file://$PROJECT_DIR$/app/static/js/Change_Read_Only_NoOpenTrades.js">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="7208">
-              <caret line="424" column="50" selection-start-line="424" selection-start-column="50" selection-end-line="424" selection-end-column="50" />
+              <caret line="425" column="50" selection-start-line="425" selection-start-column="50" selection-end-line="425" selection-end-column="50" />
             </state>
           </provider>
         </entry>
@@ -133,11 +164,10 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/models.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1411">
-              <caret line="87" selection-start-line="87" selection-end-line="87" />
+            <state relative-caret-position="255">
+              <caret line="30" lean-forward="true" selection-start-line="30" selection-end-line="30" />
               <folding>
                 <element signature="e#1#19#0" expanded="true" />
-                <marker date="1569988077592" expanded="true" signature="1266:1319" ph="..." />
               </folding>
             </state>
           </provider>
@@ -146,8 +176,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/config.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="204">
-              <caret line="12" column="67" selection-start-line="12" selection-start-column="67" selection-end-line="12" selection-end-column="67" />
+            <state relative-caret-position="238">
+              <caret line="14" lean-forward="true" selection-start-line="14" selection-end-line="14" />
             </state>
           </provider>
         </entry>
@@ -155,8 +185,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app/__init__.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="731">
-              <caret line="54" selection-start-line="16" selection-end-line="54" />
+            <state relative-caret-position="452">
+              <caret line="53" lean-forward="true" selection-start-line="15" selection-start-column="1" selection-end-line="53" />
               <folding>
                 <element signature="e#0#23#0" expanded="true" />
               </folding>
@@ -206,37 +236,43 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>lp_so_email_count</find>
-      <find>change_re</find>
-      <find>read_on</find>
-      <find>change_group</find>
-      <find>inser</find>
-      <find>success_result</find>
-      <find>Table_Zero_Out</find>
-      <find>time_header</find>
-      <find>strftime</find>
-      <find>Refresh_H1</find>
-      <find>NumberRange</find>
-      <find>noTrade_ChangeGroup_Form</find>
-      <find>changegroup</find>
-      <find>increment_counter</find>
+      <find>array_to</find>
+      <find>exe</find>
+      <find>auto_cut</find>
+      <find>risk_auto</find>
+      <find>sql_insert</find>
+      <find>INSERT INTO</find>
+      <find>auto_</find>
+      <find>change_User_group.html</find>
+      <find>Risk_Auto</find>
+      <find>client</find>
+      <find>client(</find>
+      <find>CFH</find>
+      <find>values(</find>
+      <find>cfh_live_trades_1</find>
+      <find>cfh_live_posi</find>
+      <find>IsWholeLots</find>
+      <find>SQLALCHEMY_DATABASE_URI</find>
+      <find>SQLALCHEMY_ENGINE_OPTIONS</find>
+      <find>db</find>
+      <find>cfh_symbol</find>
+      <find>cfh_sym</find>
+      <find>A_Book</find>
+      <find>/login</find>
       <find>flask_login</find>
-      <find>flash</find>
-      <find>add off</find>
-      <find>/h</find>
-      <find>result_dict</find>
-      <find>async_Update_Runtime</find>
-      <find>noOpen</find>
-      <find>Post_To_Telegram</find>
-      <find>if isinstance</find>
-      <find>%y</find>
-      <find>Array_To_HTML_Table</find>
-      <find>LP_Margin_UpdateTime</find>
+      <find>#</find>
       <find>Time_difference_Check</find>
-      <find>Update Slow</find>
-      <find>create_user</find>
-      <find>divide</find>
+      <find>AVALIABLE</find>
+      <find>Margin_Attention_Flag</find>
+      <find>= {}</find>
+      <find>NoOpenTrades_ChangeGroup</find>
     </findStrings>
+    <replaceStrings>
+      <replace>time_difference_check</replace>
+      <replace>AVAILABLE</replace>
+      <replace>margin_attention_flag</replace>
+      <replace>noopentrades_changegroup</replace>
+    </replaceStrings>
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
@@ -274,22 +310,39 @@
         <option value="$PROJECT_DIR$/app/static/js/test_binance.py" />
         <option value="$PROJECT_DIR$/app/decorators.py" />
         <option value="$PROJECT_DIR$/app/static/js/send_file_test.js" />
-        <option value="$PROJECT_DIR$/config.py" />
-        <option value="$PROJECT_DIR$/app/__init__.py" />
         <option value="$PROJECT_DIR$/app/forms.py" />
         <option value="$PROJECT_DIR$/app/static/js/A_Book_Matching.js" />
         <option value="$PROJECT_DIR$/app/static/js/Change_Read_Only_NoOpenTrades.js" />
         <option value="$PROJECT_DIR$/Aaron_Lib.py" />
+        <option value="$PROJECT_DIR$/app/__init__.py" />
+        <option value="$PROJECT_DIR$/config.py" />
         <option value="$PROJECT_DIR$/app/models.py" />
         <option value="$PROJECT_DIR$/app/routes.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="-515" />
-    <option name="y" value="179" />
+    <option name="x" value="-8" />
+    <option name="y" value="-8" />
     <option name="width" value="1936" />
     <option name="height" value="1056" />
+  </component>
+  <component name="ProjectInspectionProfilesVisibleTreeState">
+    <entry key="Project Default">
+      <profile-state>
+        <expanded-state>
+          <State />
+          <State>
+            <id>Python</id>
+          </State>
+        </expanded-state>
+        <selected-state>
+          <State>
+            <id>PyPep8Inspection</id>
+          </State>
+        </selected-state>
+      </profile-state>
+    </entry>
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -315,13 +368,6 @@
               <item name="app" type="462c0819:PsiDirectoryNode" />
               <item name="static" type="462c0819:PsiDirectoryNode" />
             </path>
-            <path>
-              <item name="Risk_Aaron" type="b2602c69:ProjectViewProjectNode" />
-              <item name="Risk_Aaron" type="462c0819:PsiDirectoryNode" />
-              <item name="app" type="462c0819:PsiDirectoryNode" />
-              <item name="static" type="462c0819:PsiDirectoryNode" />
-              <item name="js" type="462c0819:PsiDirectoryNode" />
-            </path>
           </expand>
           <select />
         </subPane>
@@ -331,8 +377,8 @@
   </component>
   <component name="PropertiesComponent">
     <property name="DefaultHtmlFileTemplate" value="HTML File" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../Aaron Python/Risk_Aaron" />
-    <property name="settings.editor.selected.configurable" value="project.propVCSSupport.Mappings" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="Errors" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -421,9 +467,9 @@
       <window_info id="Favorites" order="0" side_tool="true" />
       <window_info content_ui="combo" id="Project" order="1" visible="true" weight="0.14699684" />
       <window_info id="Structure" order="2" side_tool="true" weight="0.25" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="0" sideWeight="0.49789253" visible="true" weight="0.2559653" />
-      <window_info anchor="bottom" id="Event Log" order="1" sideWeight="0.5021075" side_tool="true" visible="true" weight="0.2559653" />
-      <window_info anchor="bottom" x="11" y="368" width="1898" height="304" id="Python Console" order="2" sideWeight="0.49947312" weight="0.31344903" />
+      <window_info anchor="bottom" id="Terminal" order="0" sideWeight="0.49736565" weight="0.2559653" />
+      <window_info anchor="bottom" id="Event Log" order="1" sideWeight="0.50263435" side_tool="true" weight="0.2559653" />
+      <window_info active="true" anchor="bottom" x="11" y="368" width="1898" height="304" id="Python Console" order="2" sideWeight="0.49947312" visible="true" weight="0.31344903" />
       <window_info anchor="bottom" id="Message" order="3" />
       <window_info anchor="bottom" id="Find" order="4" sideWeight="0.49947312" weight="0.329718" />
       <window_info anchor="bottom" id="Version Control" order="5" weight="0.329718" />
@@ -545,9 +591,7 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/FXdd_Swaps_8_Jan_2019.csv">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
+    <entry file="file://$PROJECT_DIR$/FXdd_Swaps_8_Jan_2019.csv" />
     <entry file="file://$PROJECT_DIR$/A.py">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
@@ -618,48 +662,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/app/forms.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1139">
-          <caret line="73" column="113" selection-start-line="73" selection-start-column="113" selection-end-line="73" selection-end-column="113" />
-          <folding>
-            <element signature="e#0#31#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/app/static/js/Change_Read_Only_NoOpenTrades.js">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="7208">
-          <caret line="424" column="50" selection-start-line="424" selection-start-column="50" selection-end-line="424" selection-end-column="50" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/models.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1411">
-          <caret line="87" selection-start-line="87" selection-end-line="87" />
-          <folding>
-            <element signature="e#1#19#0" expanded="true" />
-            <marker date="1569988077592" expanded="true" signature="1266:1319" ph="..." />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/config.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="204">
-          <caret line="12" column="67" selection-start-line="12" selection-start-column="67" selection-end-line="12" selection-end-column="67" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="731">
-          <caret line="54" selection-start-line="16" selection-end-line="54" />
-          <folding>
-            <element signature="e#0#23#0" expanded="true" />
-          </folding>
+          <caret line="425" column="50" selection-start-line="425" selection-start-column="50" selection-end-line="425" selection-end-column="50" />
         </state>
       </provider>
     </entry>
@@ -687,16 +693,49 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/config.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="238">
+          <caret line="14" lean-forward="true" selection-start-line="14" selection-end-line="14" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="452">
+          <caret line="53" lean-forward="true" selection-start-line="15" selection-start-column="1" selection-end-line="53" />
+          <folding>
+            <element signature="e#0#23#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/models.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="255">
+          <caret line="30" lean-forward="true" selection-start-line="30" selection-end-line="30" />
+          <folding>
+            <element signature="e#1#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/forms.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="279">
+          <caret line="73" column="113" selection-start-line="73" selection-start-column="113" selection-end-line="73" selection-end-column="113" />
+          <folding>
+            <element signature="e#0#31#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/app/routes.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="12733">
-          <caret line="749" lean-forward="true" selection-start-line="749" selection-end-line="749" />
+        <state relative-caret-position="255">
+          <caret line="651" column="97" lean-forward="true" selection-start-line="651" selection-start-column="97" selection-end-line="651" selection-end-column="97" />
           <folding>
             <element signature="e#0#30#0" expanded="true" />
-            <marker date="1570523672743" expanded="true" signature="1571:1576" ph="..." />
-            <marker date="1570523672743" expanded="true" signature="45022:45028" ph="..." />
-            <marker date="1570523672743" expanded="true" signature="81713:81839" ph="..." />
-            <marker date="1570523672743" expanded="true" signature="89521:89916" ph="..." />
           </folding>
         </state>
       </provider>

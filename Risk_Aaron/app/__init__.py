@@ -34,7 +34,6 @@ if app.config['VANTAGE_UPLOAD_FOLDER']:
 from app import routes, errors
 
 
-
 if not app.debug:
     if app.config['MAIL_SERVER']:
         auth = None
@@ -50,6 +49,7 @@ if not app.debug:
             credentials=auth, secure=secure)
         mail_handler.setLevel(logging.ERROR)
         app.logger.addHandler(mail_handler)
+
 
 
 

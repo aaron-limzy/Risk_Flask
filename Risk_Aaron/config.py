@@ -16,6 +16,13 @@ class Config(object):
     # Don't need to signal the app whenever there is a change.
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_POOL_RECYCLE = 300
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "max_overflow": 100,
+        "pool_pre_ping": True,
+        "pool_recycle": 60 * 60,
+        "pool_size": 30,
+    }
+
 
     UPLOAD_FOLDER = '/path/to/the/uploads'
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
