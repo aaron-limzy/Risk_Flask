@@ -45,7 +45,7 @@ TIME_UPDATE_SLOW_MIN = 10
 EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
 TELE_ID_MTLP_MISMATCH = "736426328:AAH90fQZfcovGB8iP617yOslnql5dFyu-M0"		# For Mismatch and LP Margin
 TELE_ID_USDTWF_MISMATCH = "776609726:AAHVrhEffiJ4yWTn1nw0ZBcYttkyY0tuN0s"        # For USDTWF
-TELE_CLIENT_ID = ["486797751"]        #Aaron's Telegram ID.
+TELE_CLIENT_ID = ["486797751"]        # Aaron's Telegram ID.
 
 LP_MARGIN_ALERT_LEVEL = 20            # How much away from MC do we start making noise.
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display the warnings.
@@ -65,8 +65,8 @@ def login():
 
     if current_user.is_authenticated:
         return redirect(url_for('index'))
-    #else:
-        #print("User is not authenticated. ")
+    # else:
+        # print("User is not authenticated. ")
 
     form = LoginForm()
     if form.validate_on_submit():
@@ -125,31 +125,31 @@ def Dividend():
 
 # @app.route('/upload')
 # def upload_file2():
-#     return '''
+#  return '''
 # <html>
-#    <body>
-#       <form action = "http://localhost:5000/uploader" method = "POST"
-#          enctype = "multipart/form-data">
-#          <input type = "file" name = "file" />
-#          <input type = "submit"/>
-#       </form>
-#    </body>
+# <body>
+#    <form action = "http://localhost:5000/uploader" method = "POST"
+#       enctype = "multipart/form-data">
+#       <input type = "file" name = "file" />
+#       <input type = "submit"/>
+#    </form>
+# </body>
 # </html>
-#     '''
+#  '''
 
-#
+# 
 # @app.route('/uploader', methods=['GET', 'POST'])
 # def upload_file():
-#     if request.method == 'POST':
-#         f = request.files['file']
-#         f.save(secure_filename(f.filename))
-#         return 'file uploaded successfully'
-#
-#
+#  if request.method == 'POST':
+#      f = request.files['file']
+#      f.save(secure_filename(f.filename))
+#      return 'file uploaded successfully'
+# 
+# 
 # @app.route('/uploads/<filename>')
 # def uploaded_file(filename):
-#     return send_from_directory(app.config['UPLOAD_FOLDER'],
-#                                filename)
+#  return send_from_directory(app.config['UPLOAD_FOLDER'],
+#                             filename)
 
 
 @app.route('/upload_LP_Swaps', methods=['GET', 'POST'])
@@ -166,7 +166,7 @@ def upload_excel():
         filename = secure_filename(request.files['upload'].filename)
 
         filename_postfix_xlsx = Check_File_Exist(month_year_folder, ".".join(
-            filename.split(".")[:-1]) + ".xlsx")  # Checks, Creates folders and return avaliable filename
+            filename.split(".")[:-1]) + ".xlsx")  # Checks, Creates folders and return AVAILABLE filename
 
         # Want to Let the users download the File..
         # return excel.make_response_from_records(record_dict, "xls", status=200, file_name=filename_without_postfix)
@@ -178,7 +178,7 @@ def upload_excel():
         for cc, record in enumerate(record_dict):
             if cc == 0:
                 column_name = list(record_dict[cc].keys())
-            buffer = {}
+            buffer = dict()
             print(record)
             for i, j in record.items():
                 if i == "":
@@ -192,401 +192,401 @@ def upload_excel():
         if (len(file_data) > 0) and isinstance(file_data[0], dict):
             for c in file_data[0]:
                 if c != "\n":
-                    table.add_column(c, Col(c, th_html_attrs={"style": "background-color:#afcdff"}))
-        #
+                    table.add_column(c, Col(c, th_html_attrs={"style": "background-color:# afcdff"}))
+        # 
         return render_template("upload_form.html", form=form, table=table)
 
     return render_template("upload_form.html", form=form)
 
-
-@app.route('/test1', methods=['GET', 'POST'])
-def retrieve_db_swaps():
-    raw_result = db.engine.execute("select * from aaron.swap_bgi_vantage_coresymbol")
-    result_data = raw_result.fetchall()
-    result_col = raw_result.keys()
-    result_colate = [dict(zip(result_col, a)) for a in result_data]
-
-    T = create_table()
-    table = T(result_colate, classes=["table", "table-striped", "table-bordered", "table-hover"])
-    if (len(result_colate) > 0) and isinstance(result_colate[0], dict):
-        for c in result_colate[0]:
-            if c != "\n":
-                table.add_column(c, Col(c, th_html_attrs={"style": "background-color:#afcdff"}))
-    return render_template("Swap_Sql.html", table=table)
-
-
-@app.route('/upload_swap', methods=['GET', 'POST'])
-def retrieve_db_swaps2():
-    form = UploadForm()
-
-    if request.method == 'POST' and form.validate_on_submit():
-
-        record_dict = request.get_records(field_name='upload', name_columns_by_row=0)
-        #record_dict = request.get_records(field_name='upload')
-        month_year = datetime.now().strftime('%b-%Y')
-        month_year_folder = app.config["VANTAGE_UPLOAD_FOLDER"] + "/" + month_year
-
-        filename = secure_filename(request.files['upload'].filename)
-
-        filename_postfix_xlsx = Check_File_Exist(month_year_folder, ".".join(
-            filename.split(".")[:-1]) + ".xlsx")  # Checks, Creates folders and return avaliable filename
-
-        # Want to Let the users download the File..
-        # return excel.make_response_from_records(record_dict, "xls", status=200, file_name=filename_without_postfix)
-
-        # pyexcel.save_as(records=record_dict, dest_file_name=filename_postfix_xlsx)
-
-        column_name = []
-        file_data = []
-        for cc, record in enumerate(record_dict):
-            if cc == 0:
-                column_name = list(record_dict[cc].keys())
-            buffer = {}
-            #print(record)
-            for i, j in record.items():
-                if i == "":
-                    i = "Empty"
-                buffer[str(i).strip()] = str(j).strip()
-                print(i, j)
-            file_data.append(buffer)
-
-        raw_result = db.engine.execute("\
-            select `BGI_CORE`.`BGI_CORE_SYMBOL`,`BGI_VANTAGE`.`VANTAGE_CORE_SYMBOL`,`BGI_CORE`.`BGI_TYPE` , \
-            `BGI_CORE`.`BGI_CONTRACT_SIZE` , `BGI_CORE`.`BGI_DIGITS` , `VANTAGE_CORE`.`VANTAGE_DIGITS`,`VANTAGE_CORE`.`VANTAGE_CONTRACT_SIZE`, \
-            `BGI_CORE`.`BGI_POSITIVE_MARKUP`, `BGI_CORE`.`BGI_NEGATIVE_MARKUP`, `BGI_CORE`.currency, \
-            `BGI_FORCED`.`FORCED_BGI_LONG`, `BGI_FORCED`.`FORCED_BGI_SHORT`,  \
-            `BGI_FORCED_INSTI`.`BGI_INSTI_FORCED_LONG`,`BGI_FORCED_INSTI`.`BGI_INSTI_FORCED_SHORT` \
-            from \
-            (Select core_symbol as `BGI_CORE_SYMBOL`, contract_size as `BGI_CONTRACT_SIZE`, digits as `BGI_DIGITS`,  \
-            type as `BGI_TYPE`, positive_markup as `BGI_POSITIVE_MARKUP`, negative_markup as `BGI_NEGATIVE_MARKUP` ,currency \
-            from swap_bgicoresymbol) as `BGI_CORE` \
-            LEFT JOIN \
-            (Select bgi_coresymbol as `BGI_CORESYMBOL`, vantage_coresymbol as `VANTAGE_CORE_SYMBOL`  \
-            from aaron.swap_bgi_vantage_coresymbol) as `BGI_VANTAGE` on BGI_CORE.BGI_CORE_SYMBOL = BGI_VANTAGE.BGI_CORESYMBOL \
-            LEFT JOIN \
-            (Select core_symbol as `VANTAGE_CORESYMBOL`,contract_size as `VANTAGE_CONTRACT_SIZE`, digits as `VANTAGE_DIGITS`  \
-            from aaron.swap_vantagecoresymbol) as `VANTAGE_CORE` on `VANTAGE_CORE`.`VANTAGE_CORESYMBOL` = `BGI_VANTAGE`.`VANTAGE_CORE_SYMBOL` \
-            LEFT JOIN \
-            (Select core_symbol as `FORCED_BGI_CORESYMBOL`,`long` as `FORCED_BGI_LONG`, short as `FORCED_BGI_SHORT`  \
-            from aaron.swap_bgiforcedswap) as `BGI_FORCED` on BGI_CORE.BGI_CORE_SYMBOL = BGI_FORCED.FORCED_BGI_CORESYMBOL \
-            LEFT JOIN \
-            (Select core_symbol as `BGI_INSTI_FORCED_CORESYMBOL`, `long` as `BGI_INSTI_FORCED_LONG`, short as `BGI_INSTI_FORCED_SHORT`  \
-            from aaron.swap_bgiforcedswap_insti) as `BGI_FORCED_INSTI` on `BGI_CORE`.BGI_CORE_SYMBOL = `BGI_FORCED_INSTI`.BGI_INSTI_FORCED_CORESYMBOL \
-            order by FIELD(`BGI_CORE`.BGI_TYPE, 'FX','Exotic Pairs', 'PM', 'CFD'), BGI_CORE.BGI_CORE_SYMBOL \
-        ")
-
-        result_data = raw_result.fetchall()
-        result_col = raw_result.keys()
-        result_col_no_duplicate = []
-        for a in result_col:
-            if not a in result_col_no_duplicate:
-                result_col_no_duplicate.append(a)
-            else:
-                result_col_no_duplicate.append(str(a)+"_1")
-
-        collate = [dict(zip(result_col_no_duplicate, a)) for a in result_data]
-
-        # Calculate the Markup, as well as acount for the difference in Digits.
-        for i, c in enumerate(collate):     # By Per Row
-            collate[i]["SWAP_UPLOAD_LONG"] = ""         # We want to add the following..
-            collate[i]["SWAP_UPLOAD_LONG_MARKUP"] = ""
-            collate[i]["SWAP_UPLOAD_SHORT"] = ""
-            collate[i]["SWAP_UPLOAD_SHORT_MARKUP"] = ""
-
-            bgi_digit_difference = 0        # Sets as 0 for default.
-            if ("BGI_DIGITS"  in collate[i]) and ("VANTAGE_DIGITS" in collate[i]) and (collate[i]["BGI_DIGITS"] != None) and (collate[i]["VANTAGE_DIGITS"] != None):      # Need to calculate the Digit Difference.
-                bgi_digit_difference = int(collate[i]["BGI_DIGITS"]) - int(collate[i]["VANTAGE_DIGITS"])
-
-
-
-            #print(str(collate[i]['VANTAGE_CORE_SYMBOL']))
-
-            # Retail_Sheet.Cells(i, 2).Value = Find_Retail(Core_Symbol_BGI, 2, Cell_Color) * (10 ^ (Symbol_BGI_Digits - Symbol_Vantage_Digits))
-
-
-
-            for j, d in enumerate(file_data):
-                if 'VANTAGE_CORE_SYMBOL' in collate[i] and \
-                        len(list(d.keys())) >= 1 and \
-                        str(collate[i]['VANTAGE_CORE_SYMBOL']).strip() == d[list(d.keys())[0]]:
-
-                    d_key = [str(a).strip() for a in list(d.keys())]        # Get the keys for the Uploaded data.
-
-
-
-                    for ij, coll in enumerate(d_key):
-                        if "buy" in str(coll).lower() or "long" in str(coll).lower():   # Search for buy or long
-                            # Need to check if can be float.
-                            collate_keys = list(collate[i].keys())
-                            if "BGI_POSITIVE_MARKUP" in collate_keys and "BGI_NEGATIVE_MARKUP" in collate_keys and Check_Float(d[coll]):         # If posive, markup with positive markup. if negative, use negative markup.
-                                val = str(round(markup_swaps(float(str(d[coll])), collate[i]["BGI_POSITIVE_MARKUP"], collate[i]["BGI_NEGATIVE_MARKUP"])  * (10 ** bgi_digit_difference),4))  # Does the Digit Conversion here.
-                            else:
-                                val = ""
-                                flash("Unable to calculate markup prices for {}".format(collate[i]["BGI_CORE_SYMBOL"]))     # Put a message out that there is some error.
-
-                            collate[i]["SWAP_UPLOAD_LONG"] = str(d[coll])
-                            collate[i]["SWAP_UPLOAD_LONG_MARKUP"] = val
-
-
-                        if "sell" in str(coll).lower() or "short" in str(coll).lower(): # Search for sell or short in the colum names.
-
-                            # Need to check if can be float.
-                            collate_keys = list(collate[i].keys())
-                            if "BGI_POSITIVE_MARKUP" in collate_keys and "BGI_NEGATIVE_MARKUP" in collate_keys and Check_Float(d[coll]):    # If posive, markup with positive markup. if negative, use negative markup.
-                                val = str( round(markup_swaps(float(str(d[coll])), collate[i]["BGI_POSITIVE_MARKUP"], collate[i]["BGI_NEGATIVE_MARKUP"]) * (10 ** bgi_digit_difference)  ,4) ) # Does the Digit Conversion here.
-                            else:
-                                val = ""
-
-                            collate[i]["SWAP_UPLOAD_SHORT"] = str(d[coll])
-                            collate[i]["SWAP_UPLOAD_SHORT_MARKUP"] = val
-                    # print(d_key[0])
-                    break
-
-
-        # To Create the BGI Swaps.
-        bgi_long_swap_column = ["FORCED_BGI_LONG", "SWAP_UPLOAD_LONG_MARKUP"]       # To get the swap values in that order.
-        bgi_short_swap_column = ["FORCED_BGI_SHORT", "SWAP_UPLOAD_SHORT_MARKUP"]    # If there are forced swaps, get forced first.
-
-        bgi_insti_long_swap_column = ["FORCED_BGI_LONG", "BGI_INSTI_FORCED_LONG", "SWAP_UPLOAD_LONG_MARKUP"]    # If there are forced, if there are any Insti Forced, then the markup values.
-        bgi_insti_short_swap_column = ["FORCED_BGI_SHORT", "BGI_INSTI_FORCED_SHORT", "SWAP_UPLOAD_SHORT_MARKUP"]
-
-
-        bgi_swaps_retail = []
-        bgi_swaps_insti = []
-        for c in collate:
-            buffer_retail = {"SYMBOL": c["BGI_CORE_SYMBOL"], "LONG" : "", "SHORT" : ""}
-            buffer_insti ={"SYMBOL": c["BGI_CORE_SYMBOL"], "LONG" : "", "SHORT" : ""}
-
-            for l in bgi_long_swap_column:      # Going by Precedence.
-                if l in c and c[l] != None:
-                    buffer_retail["LONG"] = c[l]
-                    break
-            for s in bgi_short_swap_column:      # Going by Precedence.
-                if s in c and c[s] != None:
-                    buffer_retail["SHORT"] = c[s]
-                    break
-            for li in bgi_insti_long_swap_column:      # Going by Precedence.
-                if li in c and c[li] != None:
-                    buffer_insti["LONG"] = c[li]
-                    break
-            for si in bgi_insti_short_swap_column:      # Going by Precedence.
-                if si in c and c[si] != None:
-                    buffer_insti["SHORT"] = c[si]
-                    break
-
-            if buffer_retail["LONG"] == "" or buffer_retail["SHORT"] == "" or buffer_insti["LONG"] == "" or buffer_insti["SHORT"] == "" :
-                flash("{} has no Swaps.".format(c["BGI_CORE_SYMBOL"]))  # Flash out if there are no swaps found.
-
-            bgi_swaps_retail.append(buffer_retail)
-            bgi_swaps_insti.append(buffer_insti)
-
-
-        collate_table = [dict(zip([str(a).replace("_", " ") for a in c.keys()], c.values())) \
-                         for c in collate]
-
-
-        table = create_table_fun(collate_table)
-
-        table_bgi_swaps_retail = create_table_fun(bgi_swaps_retail)
-        table_bgi_swaps_insti = create_table_fun(bgi_swaps_insti)
-
-
-
-        return render_template("upload_form.html", table=table, form=form, table_bgi_swaps_retail=table_bgi_swaps_retail, table_bgi_swaps_insti=table_bgi_swaps_insti)
-
-    return render_template("upload_form.html", form=form)
-
-
-@app.route('/upload_swap3', methods=['GET', 'POST'])
-def retrieve_db_swaps3():
-    form = UploadForm()
-
-    if request.method == 'POST' and form.validate_on_submit():
-
-        # Get the file details as Records.
-        record_dict = request.get_records(field_name='upload', name_columns_by_row=0)
-
-        # ------------------ Dataframe of the data from CSV File. -----------------
-        df_csv = pd.DataFrame(record_dict)
-
-        uploaded_excel_data = df_csv.fillna("-").rename(columns=dict(zip(df_csv.columns,[a.replace("_","\n") for a in df_csv.columns]))).to_html(classes="table table-striped table-bordered table-hover table-condensed", index=False)
-
-
-        for i in df_csv.columns:  # Want to see which is Long and which is Short.
-            if "core symbol" in i.lower():
-                df_csv.rename(columns={i: "VANTAGE_CORE_SYMBOL"}, inplace=True) # Need to rename "Core symbol" to note that its from vantage.
-            if "long" in i.lower():
-                df_csv.rename(columns={i: "CSV_LONG"}, inplace=True)
-            if "short" in i.lower():
-                df_csv.rename(columns={i: "CSV_SHORT"}, inplace=True)
-
-
-        raw_result = db.engine.execute("\
-            select `BGI_CORE`.`BGI_CORE_SYMBOL`,`BGI_VANTAGE`.`VANTAGE_CORE_SYMBOL`,`BGI_CORE`.`BGI_TYPE` , \
-            `BGI_CORE`.`BGI_CONTRACT_SIZE` , `BGI_CORE`.`BGI_DIGITS` , `VANTAGE_CORE`.`VANTAGE_DIGITS`,`VANTAGE_CORE`.`VANTAGE_CONTRACT_SIZE`, \
-            `BGI_CORE`.`BGI_POSITIVE_MARKUP`, `BGI_CORE`.`BGI_NEGATIVE_MARKUP`, `BGI_CORE`.currency, \
-            `BGI_FORCED`.`FORCED_BGI_LONG`, `BGI_FORCED`.`FORCED_BGI_SHORT`,  \
-            `BGI_FORCED_INSTI`.`BGI_INSTI_FORCED_LONG`,`BGI_FORCED_INSTI`.`BGI_INSTI_FORCED_SHORT` \
-            from \
-            (Select core_symbol as `BGI_CORE_SYMBOL`, contract_size as `BGI_CONTRACT_SIZE`, digits as `BGI_DIGITS`,  \
-            type as `BGI_TYPE`, positive_markup as `BGI_POSITIVE_MARKUP`, negative_markup as `BGI_NEGATIVE_MARKUP` ,currency \
-            from swap_bgicoresymbol) as `BGI_CORE` \
-            LEFT JOIN \
-            (Select bgi_coresymbol as `BGI_CORESYMBOL`, vantage_coresymbol as `VANTAGE_CORE_SYMBOL`  \
-            from aaron.swap_bgi_vantage_coresymbol) as `BGI_VANTAGE` on BGI_CORE.BGI_CORE_SYMBOL = BGI_VANTAGE.BGI_CORESYMBOL \
-            LEFT JOIN \
-            (Select core_symbol as `VANTAGE_CORESYMBOL`,contract_size as `VANTAGE_CONTRACT_SIZE`, digits as `VANTAGE_DIGITS`  \
-            from aaron.swap_vantagecoresymbol) as `VANTAGE_CORE` on `VANTAGE_CORE`.`VANTAGE_CORESYMBOL` = `BGI_VANTAGE`.`VANTAGE_CORE_SYMBOL` \
-            LEFT JOIN \
-            (Select core_symbol as `FORCED_BGI_CORESYMBOL`,`long` as `FORCED_BGI_LONG`, short as `FORCED_BGI_SHORT`  \
-            from aaron.swap_bgiforcedswap) as `BGI_FORCED` on BGI_CORE.BGI_CORE_SYMBOL = BGI_FORCED.FORCED_BGI_CORESYMBOL \
-            LEFT JOIN \
-            (Select core_symbol as `BGI_INSTI_FORCED_CORESYMBOL`, `long` as `BGI_INSTI_FORCED_LONG`, short as `BGI_INSTI_FORCED_SHORT`  \
-            from aaron.swap_bgiforcedswap_insti) as `BGI_FORCED_INSTI` on `BGI_CORE`.BGI_CORE_SYMBOL = `BGI_FORCED_INSTI`.BGI_INSTI_FORCED_CORESYMBOL \
-            order by FIELD(`BGI_CORE`.BGI_TYPE, 'FX','Exotic Pairs', 'PM', 'CFD'), BGI_CORE.BGI_CORE_SYMBOL \
-        ")
-
-        result_data = raw_result.fetchall()
-        result_col = raw_result.keys()
-        result_col_no_duplicate = []
-        for a in result_col:
-            if not a in result_col_no_duplicate:
-                result_col_no_duplicate.append(a)
-            else:
-                result_col_no_duplicate.append(str(a)+"_1")
-
-        # Pandas data frame for the SQL return for the Symbol details.
-        df_sym_details = pd.DataFrame(data=result_data, columns=result_col_no_duplicate)
-        df_sym_details["DIGIT_DIFFERENCE"] = df_sym_details['BGI_DIGITS'] - df_sym_details['VANTAGE_DIGITS']    # Want to calculate the Digit Difference.
-
-
-        # ---------------------------- Time to merge the 2 Data Frames. ---------------------------------------------
-        combine_df = df_sym_details.merge(df_csv, on=["VANTAGE_CORE_SYMBOL"], how="outer")
-        combine_df = combine_df[pd.notnull(combine_df["BGI_CORE_SYMBOL"])]
-
-        # Need to Flip LONG
-        combine_df["CSV_LONG"] = combine_df[ "CSV_LONG"] * -1  # Vantage sending us Positive = Charged. We need to flip  LONG
-        # Need to correct the number of digits.
-        if "CSV_LONG" in combine_df.columns:
-            combine_df["CSV_LONG_CORRECT_DIGITS"] = combine_df["CSV_LONG"] * (10 ** combine_df["DIGIT_DIFFERENCE"])
-        if "CSV_SHORT" in combine_df.columns:
-            combine_df["CSV_SHORT_CORRECT_DIGITS"] = combine_df["CSV_SHORT"] * (10 ** combine_df["DIGIT_DIFFERENCE"])
-
-        # Want to multiply by the correct markup for each. Want to give less, take more.
-        # Long
-        combine_df["CSV_LONG_CORRECT_DIGITS_MARKUP"] = np.where(combine_df["CSV_LONG_CORRECT_DIGITS"] > 0, round(
-            combine_df["CSV_LONG_CORRECT_DIGITS"] * (1 - (combine_df["BGI_POSITIVE_MARKUP"] / 100)), 3), round(
-            combine_df["CSV_LONG_CORRECT_DIGITS"] * (1 + (combine_df["BGI_NEGATIVE_MARKUP"] / 100)), 3))
-        # Short
-        combine_df["CSV_SHORT_CORRECT_DIGITS_MARKUP"] = np.where(combine_df["CSV_SHORT_CORRECT_DIGITS"] > 0, round(
-            combine_df["CSV_SHORT_CORRECT_DIGITS"] * (1 - (combine_df["BGI_POSITIVE_MARKUP"] / 100)), 3), round(
-            combine_df["CSV_SHORT_CORRECT_DIGITS"] * (1 + (combine_df["BGI_NEGATIVE_MARKUP"] / 100)), 3))
-
-        # The Data Frame used for the Building of the CSV File.
-        build_bgi_swap_df = combine_df[
-            ["BGI_CORE_SYMBOL", "VANTAGE_CORE_SYMBOL", "BGI_POSITIVE_MARKUP", "BGI_NEGATIVE_MARKUP", "FORCED_BGI_LONG",
-             "FORCED_BGI_SHORT", "BGI_INSTI_FORCED_LONG", "BGI_INSTI_FORCED_SHORT", "CSV_LONG_CORRECT_DIGITS_MARKUP",
-             "CSV_SHORT_CORRECT_DIGITS_MARKUP", "BGI_TYPE"]]
-
-        # Want to get either the Forced Swaps, if not, Get the "Vantage corrected digit markup" swaps
-        build_bgi_swap_df.loc[:, "LONG"] = np.where(pd.notnull(build_bgi_swap_df["FORCED_BGI_LONG"]),
-                                                    round(build_bgi_swap_df["FORCED_BGI_LONG"], 3), np.where(
-                pd.notnull(build_bgi_swap_df["CSV_LONG_CORRECT_DIGITS_MARKUP"]),
-                round(build_bgi_swap_df["CSV_LONG_CORRECT_DIGITS_MARKUP"], 3),
-                build_bgi_swap_df["CSV_LONG_CORRECT_DIGITS_MARKUP"]))
-        build_bgi_swap_df.loc[:, "SHORT"] = np.where(pd.notnull(build_bgi_swap_df["FORCED_BGI_SHORT"]),
-                                                     round(build_bgi_swap_df["FORCED_BGI_SHORT"], 3), np.where(
-                pd.notnull(build_bgi_swap_df["CSV_SHORT_CORRECT_DIGITS_MARKUP"]),
-                round(build_bgi_swap_df["CSV_SHORT_CORRECT_DIGITS_MARKUP"], 3),
-                build_bgi_swap_df["CSV_SHORT_CORRECT_DIGITS_MARKUP"]))
-
-        # For Insti, we want to check BGI_FORCED first, if null, check BGI_INSTI_FORCED. If not, use vantage digit change markup swap.
-        build_bgi_swap_df.loc[:, "INSTI_LONG"] = np.where(pd.notnull(build_bgi_swap_df["FORCED_BGI_LONG"]), round(build_bgi_swap_df["FORCED_BGI_LONG"], 3), \
-                                                          np.where( pd.notnull(build_bgi_swap_df["BGI_INSTI_FORCED_LONG"]), round(build_bgi_swap_df["BGI_INSTI_FORCED_LONG"], 3), \
-                                                              np.where(pd.notnull( build_bgi_swap_df["CSV_LONG_CORRECT_DIGITS_MARKUP"]), round(build_bgi_swap_df[ "CSV_LONG_CORRECT_DIGITS_MARKUP"], 3), \
-                                                                       build_bgi_swap_df["CSV_LONG_CORRECT_DIGITS_MARKUP"])))
-
-
-        build_bgi_swap_df.loc[:, "INSTI_SHORT"] = np.where(pd.notnull(build_bgi_swap_df["FORCED_BGI_SHORT"]), round(build_bgi_swap_df["FORCED_BGI_SHORT"], 3), \
-                                                           np.where( pd.notnull(build_bgi_swap_df["BGI_INSTI_FORCED_SHORT"]), round(build_bgi_swap_df["BGI_INSTI_FORCED_SHORT"], 3), \
-                                                               np.where(pd.notnull(build_bgi_swap_df["CSV_SHORT_CORRECT_DIGITS_MARKUP"]), round(build_bgi_swap_df["CSV_SHORT_CORRECT_DIGITS_MARKUP"], 3), \
-                                                                        build_bgi_swap_df["CSV_SHORT_CORRECT_DIGITS_MARKUP"])))
-
-        #Want to find out which of the symbols still have NULL.
-
-        Swap_Error = build_bgi_swap_df[pd.isnull(build_bgi_swap_df["LONG"]) | pd.isnull(build_bgi_swap_df["SHORT"])]
-        if len(Swap_Error) != 0:
-            for a in Swap_Error["BGI_CORE_SYMBOL"]:
-                flash("{} has swap errors. Swap is null.".format(a))
-
-        # Minimising the data frame. Want to compare with median of last 15 days.
-        build_bgi_swap_df_show = build_bgi_swap_df[["BGI_CORE_SYMBOL", "LONG", "SHORT", "INSTI_LONG", "INSTI_SHORT"]]   #Data Frame
-
-        raw_result2 = db.engine.execute("SELECT * FROM test.bgi_swaps where date > CURDATE()-15")
-
-        result_data2 = raw_result2.fetchall()
-        result_col2 = raw_result2.keys()
-
-
-        cfd_swaps = pd.DataFrame(data=result_data2, columns=result_col2)
-        cfd_swaps.loc[:, "bgi_long"] = pd.to_numeric(cfd_swaps["bgi_long"])
-        cfd_swaps.loc[:, "bgi_short"] = pd.to_numeric(cfd_swaps["bgi_short"])
-        cfd_swaps.rename(columns={"Core_Symbol": "BGI_CORE_SYMBOL", "bgi_long":"BGI_LONG_AVERAGE", "bgi_short":"BGI_SHORT_AVERAGE"}, inplace=True)  #Rename for easy join.
-        cfd_swaps_median = cfd_swaps.groupby("BGI_CORE_SYMBOL").median()
-        combine_average_df = build_bgi_swap_df_show.join(cfd_swaps_median, on=["BGI_CORE_SYMBOL"])
-
-        #combine_average_df[]
-
-        # Data that we want to show.
-
-        #table_bgi_swaps_retail = combine_average_df.fillna("-").rename(columns=dict(zip(combine_average_df.columns,[a.replace("_","\n") for a in combine_average_df.columns]))).to_html(classes="table table-striped table-bordered table-hover table-condensed", index=False)
-        table_bgi_swaps_retail = combine_average_df.fillna("-").rename(columns=dict(zip(combine_average_df.columns,[a.replace("_","\n") for a in combine_average_df.columns]))).style.hide_index().applymap(color_negative_red, subset=["LONG","SHORT"]).set_table_attributes('class="table table-striped table-bordered table-hover table-condensed"').render()
-
-        table_bgi_swaps_insti = ""
-
-
-        table = combine_df.fillna("-").rename(columns=dict(zip(combine_df.columns,[a.replace("_","\n") for a in combine_df.columns]))).to_html(classes="table table-striped table-bordered table-hover table-condensed", index=False)
-
-        return render_template("upload_form2.html", table=table, form=form, table_bgi_swaps_retail=table_bgi_swaps_retail, table_bgi_swaps_insti=table_bgi_swaps_insti, uploaded_excel_data = uploaded_excel_data)
-
-    return render_template("upload_form.html", form=form)
-
+# 
+# @app.route('/test1', methods=['GET', 'POST'])
+# def retrieve_db_swaps():
+#  raw_result = db.engine.execute("select * from aaron.swap_bgi_vantage_coresymbol")
+#  result_data = raw_result.fetchall()
+#  result_col = raw_result.keys()
+#  result_colate = [dict(zip(result_col, a)) for a in result_data]
+# 
+#  T = create_table()
+#  table = T(result_colate, classes=["table", "table-striped", "table-bordered", "table-hover"])
+#  if (len(result_colate) > 0) and isinstance(result_colate[0], dict):
+#      for c in result_colate[0]:
+#          if c != "\n":
+#              table.add_column(c, Col(c, th_html_attrs={"style": "background-color:# afcdff"}))
+#  return render_template("Swap_Sql.html", table=table)
+
+# 
+# @app.route('/upload_swap', methods=['GET', 'POST'])
+# def retrieve_db_swaps2():
+#  form = UploadForm()
+# 
+#  if request.method == 'POST' and form.validate_on_submit():
+# 
+#      record_dict = request.get_records(field_name='upload', name_columns_by_row=0)
+#      # record_dict = request.get_records(field_name='upload')
+#      month_year = datetime.now().strftime('%b-%Y')
+#      month_year_folder = app.config["VANTAGE_UPLOAD_FOLDER"] + "/" + month_year
+# 
+#      filename = secure_filename(request.files['upload'].filename)
+# 
+#      filename_postfix_xlsx = Check_File_Exist(month_year_folder, ".".join(
+#          filename.split(".")[:-1]) + ".xlsx")  # Checks, Creates folders and return AVAILABLE filename
+# 
+#      # Want to Let the users download the File..
+#      # return excel.make_response_from_records(record_dict, "xls", status=200, file_name=filename_without_postfix)
+# 
+#      # pyexcel.save_as(records=record_dict, dest_file_name=filename_postfix_xlsx)
+# 
+#      column_name = []
+#      file_data = []
+#      for cc, record in enumerate(record_dict):
+#          if cc == 0:
+#              column_name = list(record_dict[cc].keys())
+#          buffer = dict()
+#          # print(record)
+#          for i, j in record.items():
+#              if i == "":
+#                  i = "Empty"
+#              buffer[str(i).strip()] = str(j).strip()
+#              print(i, j)
+#          file_data.append(buffer)
+# 
+#      raw_result = db.engine.execute("\
+#          select `BGI_CORE`.`BGI_CORE_SYMBOL`,`BGI_VANTAGE`.`VANTAGE_CORE_SYMBOL`,`BGI_CORE`.`BGI_TYPE` , \
+#          `BGI_CORE`.`BGI_CONTRACT_SIZE` , `BGI_CORE`.`BGI_DIGITS` , `VANTAGE_CORE`.`VANTAGE_DIGITS`,`VANTAGE_CORE`.`VANTAGE_CONTRACT_SIZE`, \
+#          `BGI_CORE`.`BGI_POSITIVE_MARKUP`, `BGI_CORE`.`BGI_NEGATIVE_MARKUP`, `BGI_CORE`.currency, \
+#          `BGI_FORCED`.`FORCED_BGI_LONG`, `BGI_FORCED`.`FORCED_BGI_SHORT`,  \
+#          `BGI_FORCED_INSTI`.`BGI_INSTI_FORCED_LONG`,`BGI_FORCED_INSTI`.`BGI_INSTI_FORCED_SHORT` \
+#          from \
+#          (Select core_symbol as `BGI_CORE_SYMBOL`, contract_size as `BGI_CONTRACT_SIZE`, digits as `BGI_DIGITS`,  \
+#          type as `BGI_TYPE`, positive_markup as `BGI_POSITIVE_MARKUP`, negative_markup as `BGI_NEGATIVE_MARKUP` ,currency \
+#          from swap_bgicoresymbol) as `BGI_CORE` \
+#          LEFT JOIN \
+#          (Select bgi_coresymbol as `BGI_CORESYMBOL`, vantage_coresymbol as `VANTAGE_CORE_SYMBOL`  \
+#          from aaron.swap_bgi_vantage_coresymbol) as `BGI_VANTAGE` on BGI_CORE.BGI_CORE_SYMBOL = BGI_VANTAGE.BGI_CORESYMBOL \
+#          LEFT JOIN \
+#          (Select core_symbol as `VANTAGE_CORESYMBOL`,contract_size as `VANTAGE_CONTRACT_SIZE`, digits as `VANTAGE_DIGITS`  \
+#          from aaron.swap_vantagecoresymbol) as `VANTAGE_CORE` on `VANTAGE_CORE`.`VANTAGE_CORESYMBOL` = `BGI_VANTAGE`.`VANTAGE_CORE_SYMBOL` \
+#          LEFT JOIN \
+#          (Select core_symbol as `FORCED_BGI_CORESYMBOL`,`long` as `FORCED_BGI_LONG`, short as `FORCED_BGI_SHORT`  \
+#          from aaron.swap_bgiforcedswap) as `BGI_FORCED` on BGI_CORE.BGI_CORE_SYMBOL = BGI_FORCED.FORCED_BGI_CORESYMBOL \
+#          LEFT JOIN \
+#          (Select core_symbol as `BGI_INSTI_FORCED_CORESYMBOL`, `long` as `BGI_INSTI_FORCED_LONG`, short as `BGI_INSTI_FORCED_SHORT`  \
+#          from aaron.swap_bgiforcedswap_insti) as `BGI_FORCED_INSTI` on `BGI_CORE`.BGI_CORE_SYMBOL = `BGI_FORCED_INSTI`.BGI_INSTI_FORCED_CORESYMBOL \
+#          order by FIELD(`BGI_CORE`.BGI_TYPE, 'FX','Exotic Pairs', 'PM', 'CFD'), BGI_CORE.BGI_CORE_SYMBOL \
+#      ")
+# 
+#      result_data = raw_result.fetchall()
+#      result_col = raw_result.keys()
+#      result_col_no_duplicate = []
+#      for a in result_col:
+#          if not a in result_col_no_duplicate:
+#              result_col_no_duplicate.append(a)
+#          else:
+#              result_col_no_duplicate.append(str(a)+"_1")
+# 
+#      collate = [dict(zip(result_col_no_duplicate, a)) for a in result_data]
+# 
+#      # Calculate the Markup, as well as acount for the difference in Digits.
+#      for i, c in enumerate(collate):     # By Per Row
+#          collate[i]["SWAP_UPLOAD_LONG"] = ""         # We want to add the following..
+#          collate[i]["SWAP_UPLOAD_LONG_MARKUP"] = ""
+#          collate[i]["SWAP_UPLOAD_SHORT"] = ""
+#          collate[i]["SWAP_UPLOAD_SHORT_MARKUP"] = ""
+# 
+#          bgi_digit_difference = 0        # Sets as 0 for default.
+#          if ("BGI_DIGITS"  in collate[i]) and ("VANTAGE_DIGITS" in collate[i]) and (collate[i]["BGI_DIGITS"] != None) and (collate[i]["VANTAGE_DIGITS"] != None):      # Need to calculate the Digit Difference.
+#              bgi_digit_difference = int(collate[i]["BGI_DIGITS"]) - int(collate[i]["VANTAGE_DIGITS"])
+# 
+# 
+# 
+#          # print(str(collate[i]['VANTAGE_CORE_SYMBOL']))
+# 
+#          # Retail_Sheet.Cells(i, 2).Value = Find_Retail(Core_Symbol_BGI, 2, Cell_Color) * (10 ^ (Symbol_BGI_Digits - Symbol_Vantage_Digits))
+# 
+# 
+# 
+#          for j, d in enumerate(file_data):
+#              if 'VANTAGE_CORE_SYMBOL' in collate[i] and \
+#                      len(list(d.keys())) >= 1 and \
+#                      str(collate[i]['VANTAGE_CORE_SYMBOL']).strip() == d[list(d.keys())[0]]:
+# 
+#                  d_key = [str(a).strip() for a in list(d.keys())]        # Get the keys for the Uploaded data.
+# 
+# 
+# 
+#                  for ij, coll in enumerate(d_key):
+#                      if "buy" in str(coll).lower() or "long" in str(coll).lower():   # Search for buy or long
+#                          # Need to check if can be float.
+#                          collate_keys = list(collate[i].keys())
+#                          if "BGI_POSITIVE_MARKUP" in collate_keys and "BGI_NEGATIVE_MARKUP" in collate_keys and Check_Float(d[coll]):         # If posive, markup with positive markup. if negative, use negative markup.
+#                              val = str(round(markup_swaps(float(str(d[coll])), collate[i]["BGI_POSITIVE_MARKUP"], collate[i]["BGI_NEGATIVE_MARKUP"])  * (10 ** bgi_digit_difference),4))  # Does the Digit Conversion here.
+#                          else:
+#                              val = ""
+#                              flash("Unable to calculate markup prices for {}".format(collate[i]["BGI_CORE_SYMBOL"]))     # Put a message out that there is some error.
+# 
+#                          collate[i]["SWAP_UPLOAD_LONG"] = str(d[coll])
+#                          collate[i]["SWAP_UPLOAD_LONG_MARKUP"] = val
+# 
+# 
+#                      if "sell" in str(coll).lower() or "short" in str(coll).lower(): # Search for sell or short in the colum names.
+# 
+#                          # Need to check if can be float.
+#                          collate_keys = list(collate[i].keys())
+#                          if "BGI_POSITIVE_MARKUP" in collate_keys and "BGI_NEGATIVE_MARKUP" in collate_keys and Check_Float(d[coll]):    # If posive, markup with positive markup. if negative, use negative markup.
+#                              val = str( round(markup_swaps(float(str(d[coll])), collate[i]["BGI_POSITIVE_MARKUP"], collate[i]["BGI_NEGATIVE_MARKUP"]) * (10 ** bgi_digit_difference)  ,4) ) # Does the Digit Conversion here.
+#                          else:
+#                              val = ""
+# 
+#                          collate[i]["SWAP_UPLOAD_SHORT"] = str(d[coll])
+#                          collate[i]["SWAP_UPLOAD_SHORT_MARKUP"] = val
+#                  # print(d_key[0])
+#                  break
+# 
+# 
+#      # To Create the BGI Swaps.
+#      bgi_long_swap_column = ["FORCED_BGI_LONG", "SWAP_UPLOAD_LONG_MARKUP"]       # To get the swap values in that order.
+#      bgi_short_swap_column = ["FORCED_BGI_SHORT", "SWAP_UPLOAD_SHORT_MARKUP"]    # If there are forced swaps, get forced first.
+# 
+#      bgi_insti_long_swap_column = ["FORCED_BGI_LONG", "BGI_INSTI_FORCED_LONG", "SWAP_UPLOAD_LONG_MARKUP"]    # If there are forced, if there are any Insti Forced, then the markup values.
+#      bgi_insti_short_swap_column = ["FORCED_BGI_SHORT", "BGI_INSTI_FORCED_SHORT", "SWAP_UPLOAD_SHORT_MARKUP"]
+# 
+# 
+#      bgi_swaps_retail = []
+#      bgi_swaps_insti = []
+#      for c in collate:
+#          buffer_retail = {"SYMBOL": c["BGI_CORE_SYMBOL"], "LONG" : "", "SHORT" : ""}
+#          buffer_insti ={"SYMBOL": c["BGI_CORE_SYMBOL"], "LONG" : "", "SHORT" : ""}
+# 
+#          for l in bgi_long_swap_column:      # Going by Precedence.
+#              if l in c and c[l] != None:
+#                  buffer_retail["LONG"] = c[l]
+#                  break
+#          for s in bgi_short_swap_column:      # Going by Precedence.
+#              if s in c and c[s] != None:
+#                  buffer_retail["SHORT"] = c[s]
+#                  break
+#          for li in bgi_insti_long_swap_column:      # Going by Precedence.
+#              if li in c and c[li] != None:
+#                  buffer_insti["LONG"] = c[li]
+#                  break
+#          for si in bgi_insti_short_swap_column:      # Going by Precedence.
+#              if si in c and c[si] != None:
+#                  buffer_insti["SHORT"] = c[si]
+#                  break
+# 
+#          if buffer_retail["LONG"] == "" or buffer_retail["SHORT"] == "" or buffer_insti["LONG"] == "" or buffer_insti["SHORT"] == "" :
+#              flash("{} has no Swaps.".format(c["BGI_CORE_SYMBOL"]))  # Flash out if there are no swaps found.
+# 
+#          bgi_swaps_retail.append(buffer_retail)
+#          bgi_swaps_insti.append(buffer_insti)
+# 
+# 
+#      collate_table = [dict(zip([str(a).replace("_", " ") for a in c.keys()], c.values())) \
+#                       for c in collate]
+# 
+# 
+#      table = create_table_fun(collate_table)
+# 
+#      table_bgi_swaps_retail = create_table_fun(bgi_swaps_retail)
+#      table_bgi_swaps_insti = create_table_fun(bgi_swaps_insti)
+# 
+# 
+# 
+#      return render_template("upload_form.html", table=table, form=form, table_bgi_swaps_retail=table_bgi_swaps_retail, table_bgi_swaps_insti=table_bgi_swaps_insti)
+# 
+#  return render_template("upload_form.html", form=form)
+
+
+# @app.route('/upload_swap3', methods=['GET', 'POST'])
+# def retrieve_db_swaps3():
+#  form = UploadForm()
+# 
+#  if request.method == 'POST' and form.validate_on_submit():
+# 
+#      # Get the file details as Records.
+#      record_dict = request.get_records(field_name='upload', name_columns_by_row=0)
+# 
+#      # ------------------ Dataframe of the data from CSV File. -----------------
+#      df_csv = pd.DataFrame(record_dict)
+# 
+#      uploaded_excel_data = df_csv.fillna("-").rename(columns=dict(zip(df_csv.columns,[a.replace("_","\n") for a in df_csv.columns]))).to_html(classes="table table-striped table-bordered table-hover table-condensed", index=False)
+# 
+# 
+#      for i in df_csv.columns:  # Want to see which is Long and which is Short.
+#          if "core symbol" in i.lower():
+#              df_csv.rename(columns={i: "VANTAGE_CORE_SYMBOL"}, inplace=True) # Need to rename "Core symbol" to note that its from vantage.
+#          if "long" in i.lower():
+#              df_csv.rename(columns={i: "CSV_LONG"}, inplace=True)
+#          if "short" in i.lower():
+#              df_csv.rename(columns={i: "CSV_SHORT"}, inplace=True)
+# 
+# 
+#      raw_result = db.engine.execute("\
+#          select `BGI_CORE`.`BGI_CORE_SYMBOL`,`BGI_VANTAGE`.`VANTAGE_CORE_SYMBOL`,`BGI_CORE`.`BGI_TYPE` , \
+#          `BGI_CORE`.`BGI_CONTRACT_SIZE` , `BGI_CORE`.`BGI_DIGITS` , `VANTAGE_CORE`.`VANTAGE_DIGITS`,`VANTAGE_CORE`.`VANTAGE_CONTRACT_SIZE`, \
+#          `BGI_CORE`.`BGI_POSITIVE_MARKUP`, `BGI_CORE`.`BGI_NEGATIVE_MARKUP`, `BGI_CORE`.currency, \
+#          `BGI_FORCED`.`FORCED_BGI_LONG`, `BGI_FORCED`.`FORCED_BGI_SHORT`,  \
+#          `BGI_FORCED_INSTI`.`BGI_INSTI_FORCED_LONG`,`BGI_FORCED_INSTI`.`BGI_INSTI_FORCED_SHORT` \
+#          from \
+#          (Select core_symbol as `BGI_CORE_SYMBOL`, contract_size as `BGI_CONTRACT_SIZE`, digits as `BGI_DIGITS`,  \
+#          type as `BGI_TYPE`, positive_markup as `BGI_POSITIVE_MARKUP`, negative_markup as `BGI_NEGATIVE_MARKUP` ,currency \
+#          from swap_bgicoresymbol) as `BGI_CORE` \
+#          LEFT JOIN \
+#          (Select bgi_coresymbol as `BGI_CORESYMBOL`, vantage_coresymbol as `VANTAGE_CORE_SYMBOL`  \
+#          from aaron.swap_bgi_vantage_coresymbol) as `BGI_VANTAGE` on BGI_CORE.BGI_CORE_SYMBOL = BGI_VANTAGE.BGI_CORESYMBOL \
+#          LEFT JOIN \
+#          (Select core_symbol as `VANTAGE_CORESYMBOL`,contract_size as `VANTAGE_CONTRACT_SIZE`, digits as `VANTAGE_DIGITS`  \
+#          from aaron.swap_vantagecoresymbol) as `VANTAGE_CORE` on `VANTAGE_CORE`.`VANTAGE_CORESYMBOL` = `BGI_VANTAGE`.`VANTAGE_CORE_SYMBOL` \
+#          LEFT JOIN \
+#          (Select core_symbol as `FORCED_BGI_CORESYMBOL`,`long` as `FORCED_BGI_LONG`, short as `FORCED_BGI_SHORT`  \
+#          from aaron.swap_bgiforcedswap) as `BGI_FORCED` on BGI_CORE.BGI_CORE_SYMBOL = BGI_FORCED.FORCED_BGI_CORESYMBOL \
+#          LEFT JOIN \
+#          (Select core_symbol as `BGI_INSTI_FORCED_CORESYMBOL`, `long` as `BGI_INSTI_FORCED_LONG`, short as `BGI_INSTI_FORCED_SHORT`  \
+#          from aaron.swap_bgiforcedswap_insti) as `BGI_FORCED_INSTI` on `BGI_CORE`.BGI_CORE_SYMBOL = `BGI_FORCED_INSTI`.BGI_INSTI_FORCED_CORESYMBOL \
+#          order by FIELD(`BGI_CORE`.BGI_TYPE, 'FX','Exotic Pairs', 'PM', 'CFD'), BGI_CORE.BGI_CORE_SYMBOL \
+#      ")
+# 
+#      result_data = raw_result.fetchall()
+#      result_col = raw_result.keys()
+#      result_col_no_duplicate = []
+#      for a in result_col:
+#          if not a in result_col_no_duplicate:
+#              result_col_no_duplicate.append(a)
+#          else:
+#              result_col_no_duplicate.append(str(a)+"_1")
+# 
+#      # Pandas data frame for the SQL return for the Symbol details.
+#      df_sym_details = pd.DataFrame(data=result_data, columns=result_col_no_duplicate)
+#      df_sym_details["DIGIT_DIFFERENCE"] = df_sym_details['BGI_DIGITS'] - df_sym_details['VANTAGE_DIGITS']    # Want to calculate the Digit Difference.
+# 
+# 
+#      # ---------------------------- Time to merge the 2 Data Frames. ---------------------------------------------
+#      combine_df = df_sym_details.merge(df_csv, on=["VANTAGE_CORE_SYMBOL"], how="outer")
+#      combine_df = combine_df[pd.notnull(combine_df["BGI_CORE_SYMBOL"])]
+# 
+#      # Need to Flip LONG
+#      combine_df["CSV_LONG"] = combine_df[ "CSV_LONG"] * -1  # Vantage sending us Positive = Charged. We need to flip  LONG
+#      # Need to correct the number of digits.
+#      if "CSV_LONG" in combine_df.columns:
+#          combine_df["CSV_LONG_CORRECT_DIGITS"] = combine_df["CSV_LONG"] * (10 ** combine_df["DIGIT_DIFFERENCE"])
+#      if "CSV_SHORT" in combine_df.columns:
+#          combine_df["CSV_SHORT_CORRECT_DIGITS"] = combine_df["CSV_SHORT"] * (10 ** combine_df["DIGIT_DIFFERENCE"])
+# 
+#      # Want to multiply by the correct markup for each. Want to give less, take more.
+#      # Long
+#      combine_df["CSV_LONG_CORRECT_DIGITS_MARKUP"] = np.where(combine_df["CSV_LONG_CORRECT_DIGITS"] > 0, round(
+#          combine_df["CSV_LONG_CORRECT_DIGITS"] * (1 - (combine_df["BGI_POSITIVE_MARKUP"] / 100)), 3), round(
+#          combine_df["CSV_LONG_CORRECT_DIGITS"] * (1 + (combine_df["BGI_NEGATIVE_MARKUP"] / 100)), 3))
+#      # Short
+#      combine_df["CSV_SHORT_CORRECT_DIGITS_MARKUP"] = np.where(combine_df["CSV_SHORT_CORRECT_DIGITS"] > 0, round(
+#          combine_df["CSV_SHORT_CORRECT_DIGITS"] * (1 - (combine_df["BGI_POSITIVE_MARKUP"] / 100)), 3), round(
+#          combine_df["CSV_SHORT_CORRECT_DIGITS"] * (1 + (combine_df["BGI_NEGATIVE_MARKUP"] / 100)), 3))
+# 
+#      # The Data Frame used for the Building of the CSV File.
+#      build_bgi_swap_df = combine_df[
+#          ["BGI_CORE_SYMBOL", "VANTAGE_CORE_SYMBOL", "BGI_POSITIVE_MARKUP", "BGI_NEGATIVE_MARKUP", "FORCED_BGI_LONG",
+#           "FORCED_BGI_SHORT", "BGI_INSTI_FORCED_LONG", "BGI_INSTI_FORCED_SHORT", "CSV_LONG_CORRECT_DIGITS_MARKUP",
+#           "CSV_SHORT_CORRECT_DIGITS_MARKUP", "BGI_TYPE"]]
+# 
+#      # Want to get either the Forced Swaps, if not, Get the "Vantage corrected digit markup" swaps
+#      build_bgi_swap_df.loc[:, "LONG"] = np.where(pd.notnull(build_bgi_swap_df["FORCED_BGI_LONG"]),
+#                                                  round(build_bgi_swap_df["FORCED_BGI_LONG"], 3), np.where(
+#              pd.notnull(build_bgi_swap_df["CSV_LONG_CORRECT_DIGITS_MARKUP"]),
+#              round(build_bgi_swap_df["CSV_LONG_CORRECT_DIGITS_MARKUP"], 3),
+#              build_bgi_swap_df["CSV_LONG_CORRECT_DIGITS_MARKUP"]))
+#      build_bgi_swap_df.loc[:, "SHORT"] = np.where(pd.notnull(build_bgi_swap_df["FORCED_BGI_SHORT"]),
+#                                                   round(build_bgi_swap_df["FORCED_BGI_SHORT"], 3), np.where(
+#              pd.notnull(build_bgi_swap_df["CSV_SHORT_CORRECT_DIGITS_MARKUP"]),
+#              round(build_bgi_swap_df["CSV_SHORT_CORRECT_DIGITS_MARKUP"], 3),
+#              build_bgi_swap_df["CSV_SHORT_CORRECT_DIGITS_MARKUP"]))
+# 
+#      # For Insti, we want to check BGI_FORCED first, if null, check BGI_INSTI_FORCED. If not, use vantage digit change markup swap.
+#      build_bgi_swap_df.loc[:, "INSTI_LONG"] = np.where(pd.notnull(build_bgi_swap_df["FORCED_BGI_LONG"]), round(build_bgi_swap_df["FORCED_BGI_LONG"], 3), \
+#                                                        np.where( pd.notnull(build_bgi_swap_df["BGI_INSTI_FORCED_LONG"]), round(build_bgi_swap_df["BGI_INSTI_FORCED_LONG"], 3), \
+#                                                            np.where(pd.notnull( build_bgi_swap_df["CSV_LONG_CORRECT_DIGITS_MARKUP"]), round(build_bgi_swap_df[ "CSV_LONG_CORRECT_DIGITS_MARKUP"], 3), \
+#                                                                     build_bgi_swap_df["CSV_LONG_CORRECT_DIGITS_MARKUP"])))
+# 
+# 
+#      build_bgi_swap_df.loc[:, "INSTI_SHORT"] = np.where(pd.notnull(build_bgi_swap_df["FORCED_BGI_SHORT"]), round(build_bgi_swap_df["FORCED_BGI_SHORT"], 3), \
+#                                                         np.where( pd.notnull(build_bgi_swap_df["BGI_INSTI_FORCED_SHORT"]), round(build_bgi_swap_df["BGI_INSTI_FORCED_SHORT"], 3), \
+#                                                             np.where(pd.notnull(build_bgi_swap_df["CSV_SHORT_CORRECT_DIGITS_MARKUP"]), round(build_bgi_swap_df["CSV_SHORT_CORRECT_DIGITS_MARKUP"], 3), \
+#                                                                      build_bgi_swap_df["CSV_SHORT_CORRECT_DIGITS_MARKUP"])))
+# 
+#      # Want to find out which of the symbols still have NULL.
+# 
+#      Swap_Error = build_bgi_swap_df[pd.isnull(build_bgi_swap_df["LONG"]) | pd.isnull(build_bgi_swap_df["SHORT"])]
+#      if len(Swap_Error) != 0:
+#          for a in Swap_Error["BGI_CORE_SYMBOL"]:
+#              flash("{} has swap errors. Swap is null.".format(a))
+# 
+#      # Minimising the data frame. Want to compare with median of last 15 days.
+#      build_bgi_swap_df_show = build_bgi_swap_df[["BGI_CORE_SYMBOL", "LONG", "SHORT", "INSTI_LONG", "INSTI_SHORT"]]   # Data Frame
+# 
+#      raw_result2 = db.engine.execute("SELECT * FROM test.bgi_swaps where date > CURDATE()-15")
+# 
+#      result_data2 = raw_result2.fetchall()
+#      result_col2 = raw_result2.keys()
+# 
+# 
+#      cfd_swaps = pd.DataFrame(data=result_data2, columns=result_col2)
+#      cfd_swaps.loc[:, "bgi_long"] = pd.to_numeric(cfd_swaps["bgi_long"])
+#      cfd_swaps.loc[:, "bgi_short"] = pd.to_numeric(cfd_swaps["bgi_short"])
+#      cfd_swaps.rename(columns={"Core_Symbol": "BGI_CORE_SYMBOL", "bgi_long":"BGI_LONG_AVERAGE", "bgi_short":"BGI_SHORT_AVERAGE"}, inplace=True)  # Rename for easy join.
+#      cfd_swaps_median = cfd_swaps.groupby("BGI_CORE_SYMBOL").median()
+#      combine_average_df = build_bgi_swap_df_show.join(cfd_swaps_median, on=["BGI_CORE_SYMBOL"])
+# 
+#      # combine_average_df[]
+# 
+#      # Data that we want to show.
+# 
+#      # table_bgi_swaps_retail = combine_average_df.fillna("-").rename(columns=dict(zip(combine_average_df.columns,[a.replace("_","\n") for a in combine_average_df.columns]))).to_html(classes="table table-striped table-bordered table-hover table-condensed", index=False)
+#      table_bgi_swaps_retail = combine_average_df.fillna("-").rename(columns=dict(zip(combine_average_df.columns,[a.replace("_","\n") for a in combine_average_df.columns]))).style.hide_index().applymap(color_negative_red, subset=["LONG","SHORT"]).set_table_attributes('class="table table-striped table-bordered table-hover table-condensed"').render()
+# 
+#      table_bgi_swaps_insti = ""
+# 
+# 
+#      table = combine_df.fillna("-").rename(columns=dict(zip(combine_df.columns,[a.replace("_","\n") for a in combine_df.columns]))).to_html(classes="table table-striped table-bordered table-hover table-condensed", index=False)
+# 
+#      return render_template("upload_form2.html", table=table, form=form, table_bgi_swaps_retail=table_bgi_swaps_retail, table_bgi_swaps_insti=table_bgi_swaps_insti, uploaded_excel_data = uploaded_excel_data)
+# 
+#  return render_template("upload_form.html", form=form)
+# 
 
 
 def color_negative_red(value):
-  """
-  Colors elements in a dateframe
-  green if positive and red if
-  negative. Does not color NaN
-  values.
-  """
+      # """
+      # Colors elements in a dateframe
+      # green if positive and red if
+      # negative. Does not color NaN
+      # values.
+      # """
 
-  if value < 0:
-    color = 'red'
-  elif value > 0:
-    color = 'green'
-  else:
-    color = 'black'
+    if value < 0:
+        color = 'red'
+    elif value > 0:
+        color = 'green'
+    else:
+        color = 'black'
 
-  return 'color: %s' % color
-
-
+    return 'color: %s' % color
 
 
-@app.route('/add_offset', methods=['GET', 'POST'])      #Want to add an offset to the ABook page.
+
+
+@app.route('/add_offset', methods=['GET', 'POST'])      # Want to add an offset to the ABook page.
 @login_required
 def add_off_set():
     form = AddOffSet()
     if request.method == 'POST' and form.validate_on_submit():
-        symbol = form.Symbol.data       #Get the Data.
+        symbol = form.Symbol.data       # Get the Data.
         offset = form.Offset.data
         ticket = form.Ticket.data
         lp = form.LP.data
         comment = form.Comment.data
         sql_insert = "INSERT INTO  test.`offset_live_trades` (`symbol`, `ticket`, `lots`, `Comment`, `datetime`, `lp`) VALUES" \
             " ('{}','{}','{}','{}',NOW(),'{}' )".format(symbol, ticket, offset, comment, lp)
-        #print(sql_insert)
-        raw_insert_result = db.engine.execute(sql_insert)
+        # print(sql_insert)
+        db.engine.execute(sql_insert)   # Insert into DB
 
     raw_result = db.engine.execute("SELECT SYMBOL, SUM(LOTS) as 'BGI Lots' FROM test.`offset_live_trades` GROUP BY SYMBOL ORDER BY `BGI Lots` DESC")
     result_data = raw_result.fetchall()
@@ -603,10 +603,10 @@ def add_off_set():
 
 # Want to change user group should they have no trades.
 # ie: From B to A or A to B.
-@app.route('/NoOpenTrades_ChangeGroup', methods=['GET', 'POST'])
+@app.route('/noopentrades_changegroup', methods=['GET', 'POST'])
 @login_required
-def NoOpenTrades_ChangeGroup():
-    #TODO: Need to check insert return.
+def noopentrades_changegroup():
+    # TODO: Need to check insert return.
 
 
     form = noTrade_ChangeGroup_Form()
@@ -616,45 +616,45 @@ def NoOpenTrades_ChangeGroup():
     description = "Running only on Live 1 and Live 3.<br>Will change the client's group based on data from SQL table: test.changed_group_opencheck<br>When CHANGED = 0."
 
     if request.method == 'POST' and form.validate_on_submit():
-        Live = form.Live.data       #Get the Data.
-        Login = form.Login.data
-        Current_Group = form.Current_Group.data
-        New_Group = form.New_Group.data
+        live = form.Live.data       # Get the Data.
+        login = form.Login.data
+        current_group = form.Current_Group.data
+        new_group = form.New_Group.data
         sql_insert = "INSERT INTO  test.`changed_group_opencheck` (`Live`, `login`, `current_group`, `New_Group`, `Changed`, `Time_Changed`) VALUES" \
-             " ({live},{login},'{current_group}','{new_group}',{changed},now() )".format(live=Live,login=Login, current_group=Current_Group,new_group=New_Group,changed=0)
+            " ({live},{login},'{current_group}','{new_group}',{changed},now() )".format(live=live,login=login, current_group=current_group,new_group=new_group,changed=0)
         print(sql_insert)
-        raw_insert_result = db.engine.execute(sql_insert)
+        db.engine.execute(sql_insert)
 
     # elif request.method == 'POST' and form.validate_on_submit() == False:
-    #     flash('Invalid Form Entry')
+    #  flash('Invalid Form Entry')
 
 
     return render_template("Change_USer_Group.html", form=form,title=title, header=header, description=Markup(description))
 
 
-@app.route('/NoOpenTrades_ChangeGroup_ajax', methods=['GET', 'POST'])
+@app.route('/noopentrades_changegroup_ajax', methods=['GET', 'POST'])
 @login_required
-def NoOpenTrades_ChangeGroup_ajax():
+def noopentrades_changegroup_ajax():
     # TODO: Check if user exist first.
 
     live_to_run = [1,2, 3, 5]  # Only want to run this on Live 1 and 3.
 
-    # Raw SQL Statment. Will have to use .format(live=1) for example.
+    # Raw SQL Statement. Will have to use .format(live=1) for example.
     raw_sql_statement = """SELECT mt4_users.LOGIN, X.LIVE, X.CURRENT_GROUP as `CURRENT_GROUP[CHECK]`, X.NEW_GROUP, mt4_users.`GROUP` as USER_CURRENT_GROUP,
-    					CASE WHEN mt4_users.`GROUP` = X.CURRENT_GROUP THEN 'Yes' ELSE 'No' END as CURRENT_GROUP_TALLY, 
-    					CASE WHEN X.NEW_GROUP IN (SELECT `GROUP` FROM Live{live}.mt4_groups WHERE `GROUP` LIKE X.NEW_GROUP) THEN 'Yes' ELSE 'No' END as NEW_GROUP_FOUND, 
-    					COALESCE((SELECT count(*) FROM live{live}.mt4_trades WHERE mt4_trades.LOGIN = X.LOGIN AND CLOSE_TIME = "1970-01-01 00:00:00" GROUP BY mt4_trades.LOGIN),0) as OPEN_TRADE_COUNT
-    			FROM Live{live}.mt4_users,(SELECT LIVE,LOGIN,CURRENT_GROUP,NEW_GROUP FROM test.changed_group_opencheck WHERE LIVE = '{live}' and `CHANGED` = 0 ) X
-    			WHERE mt4_users.`ENABLE` = 1 and mt4_users.LOGIN = X.LOGIN """
+            CASE WHEN mt4_users.`GROUP` = X.CURRENT_GROUP THEN 'Yes' ELSE 'No' END as CURRENT_GROUP_TALLY, 
+            CASE WHEN X.NEW_GROUP IN (SELECT `GROUP` FROM Live{live}.mt4_groups WHERE `GROUP` LIKE X.NEW_GROUP) THEN 'Yes' ELSE 'No' END as NEW_GROUP_FOUND, 
+            COALESCE((SELECT count(*) FROM live{live}.mt4_trades WHERE mt4_trades.LOGIN = X.LOGIN AND CLOSE_TIME = "1970-01-01 00:00:00" GROUP BY mt4_trades.LOGIN),0) as OPEN_TRADE_COUNT
+            FROM Live{live}.mt4_users,(SELECT LIVE,LOGIN,CURRENT_GROUP,NEW_GROUP FROM test.changed_group_opencheck WHERE LIVE = '{live}' and `CHANGED` = 0 ) X
+            WHERE mt4_users.`ENABLE` = 1 and mt4_users.LOGIN = X.LOGIN """
 
     raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
-    # construct the SQL Statment
+    # construct the SQL Statement
     sql_query_statement = " UNION ".join([raw_sql_statement.format(live=l) for l in live_to_run])
     sql_result = Query_SQL_db_engine(sql_query_statement)  # Query SQL
 
-    return_val = {}     #Initialise.
+    return_val = {"All": [{"Comment":"Login awaiting change: 0", "Last Query time": "{}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))}]}     # Initialise.
 
-    C_Return = {}   # The returns from C++
+    C_Return = dict()   # The returns from C++
     C_Return[0] = "User Changed"
     C_Return[-1] = "C++ ERROR: No Connection"
     C_Return[-2] = "C++ ERROR: New Group Not Found"
@@ -674,7 +674,7 @@ def NoOpenTrades_ChangeGroup_ajax():
 
     success_result = []
     success_listdict = []
-    for i,d in enumerate(sql_result):
+    for i, d in enumerate(sql_result):
         comment =""
         error_flag = 0
 
@@ -684,7 +684,7 @@ def NoOpenTrades_ChangeGroup_ajax():
         if not ("NEW_GROUP_FOUND" in d and d["NEW_GROUP_FOUND"].find("Yes") >=0):
             comment += "New group not found. "
             error_flag += 1
-        if ("OPEN_TRADE_COUNT" in d and d["OPEN_TRADE_COUNT"] == 0):
+        if "OPEN_TRADE_COUNT" in d and d["OPEN_TRADE_COUNT"] == 0:
             if error_flag == 0: # No obvious error from the SQL Return Code.
 
                 server = d["LIVE"] if "LIVE" in d else False
@@ -692,8 +692,8 @@ def NoOpenTrades_ChangeGroup_ajax():
                 previous_group = d["USER_CURRENT_GROUP"] if "USER_CURRENT_GROUP" in d else False
                 new_group = d["NEW_GROUP"] if "NEW_GROUP" in d else False
                 if all([server,login,previous_group, new_group]):     # Need to run C++ Should there be anything to change.
-                    # #(C_Return_Val, output, err)
-                    #c_run_return= [0,0,0]   # Artificial Results.
+                    # # (C_Return_Val, output, err)
+                    # c_run_return= [0,0,0]   # Artificial Results.
                     c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Change_User.exe') + " {server} {login} {previous_group} {new_group}".format(
                         server=server,login=login,previous_group=previous_group,new_group=new_group))
 
@@ -716,7 +716,7 @@ def NoOpenTrades_ChangeGroup_ajax():
         # Want to get the WHERE statements for each.
         sql_where_statement = " OR ".join(["(LOGIN = {login} and LIVE = {server} and CURRENT_GROUP = '{previous_group}' and NEW_GROUP = '{new_group}') ".format(
             server=server, login=login,previous_group=previous_group,new_group=new_group) for (server, login, previous_group, new_group) in success_result])
-        #print(sql_where_statement)
+        # print(sql_where_statement)
 
         # Construct the SQL Statement
         sql_update_statement = """UPDATE test.changed_group_opencheck set `CHANGED` = 1, TIME_CHANGED = now() where (	"""
@@ -724,7 +724,7 @@ def NoOpenTrades_ChangeGroup_ajax():
         sql_update_statement += """ ) and `CHANGED` = 0 """
         sql_update_statement = text(sql_update_statement)   # To SQL Friendly Text.
         print(sql_update_statement)
-        raw_insert_result = db.engine.execute(sql_update_statement) # TO SQL
+        #raw_insert_result = db.engine.execute(sql_update_statement) # TO SQL
 
 
     val = [list(a.values()) for a in sql_result]
@@ -735,7 +735,7 @@ def NoOpenTrades_ChangeGroup_ajax():
 
 
 
-    #table = create_table_fun(sql_result)
+    # table = create_table_fun(sql_result)
     return json.dumps(return_val)
 
 
@@ -749,12 +749,12 @@ def Risk_auto_cut():
     description = Markup("Running only on Live 1 and Live 3.<br>Will close all client's position and change client to read-only.")
 
     return render_template("Standard_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
-                           title=title, ajax_url=url_for("Risk_auto_cut_ajax"), header=header, setinterval=10,
+                           title=title, ajax_url=url_for("risk_auto_cut_ajax"), header=header, setinterval=10,
                            description=description, replace_words=Markup(["Today"]))
 
-@app.route('/Risk_auto_cut_ajax', methods=['GET', 'POST'])
+@app.route('/risk_auto_cut_ajax', methods=['GET', 'POST'])
 @login_required
-def Risk_auto_cut_ajax():
+def risk_auto_cut_ajax():
     # TODO: Check if user exist first.
 
 
@@ -764,7 +764,7 @@ def Risk_auto_cut_ajax():
 
     Live_server = [1,2,3,5]
 
-    # To check the Lucky Draw Logins. All TW clients for login not in aaron.risk_autocut_exclude
+    # To check the Lucky Draw Login. All TW clients for login not in aaron.risk_autocut_exclude
     raw_sql_statement = """SELECT LOGIN, '3' as LIVE, mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT
             FROM live3.mt4_users WHERE `GROUP` LIKE '%TW%' AND EQUITY < CREDIT AND 
         ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0 and
@@ -803,7 +803,7 @@ def Risk_auto_cut_ajax():
     sql_result3 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
 
 
-    total_result = {}
+    total_result = dict()
     sql_results = [sql_result1, sql_result2, sql_result3]
     for s in sql_results:   # We want only unique values.
         for ss in s:
@@ -814,7 +814,7 @@ def Risk_auto_cut_ajax():
 
 
 
-    C_Return = {}   # The returns from C++
+    C_Return = dict()  # The returns from C++
     C_Return[0] = "User Changed to Read-Only, position forced closed";
     C_Return[-1] = "C++ ERROR: Params Wrong";
     C_Return[1] = "C++ ERROR: Login Param Error";
@@ -835,13 +835,13 @@ def Risk_auto_cut_ajax():
             total_result[k]["EQUITY_LIMIT"] = "-"
         if not None in [live, login]:   # If both are not None.
 
-            ##print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
+            # # print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
 
 
             c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Auto_Cut.exe') + " {live} {login} {equity_limit}".format( \
             live=live, login=login,equity_limit=equity_limit))
-            #print("c_run_return = {}".format(c_run_return))
-            #c_run_return = 0
+            # print("c_run_return = {}".format(c_run_return))
+            # c_run_return = 0
 
             if c_run_return[0] == 0:  # Need to save things into SQL as well.
                 To_SQL.append(d)
@@ -850,7 +850,7 @@ def Risk_auto_cut_ajax():
 
             total_result[k]["RESULT"] = C_Return[c_run_return[0]] if c_run_return[0] in C_Return else "Unknown Error"
 
-    return_val = {}  # Return value to be used
+    return_val = dict()  # Return value to be used
     if len(total_result) > 0:   # Want to send out an email should any changes have been made.
         raw_insert_sql = " ({live}, {login}, {equity}, {credit}, '{group}', now()) "    # Raw template for insert.
         sql_insert_w_values = ",".join([raw_insert_sql.format(live=d["LIVE"], login=d["LOGIN"], equity=d["EQUITY"], credit=d["CREDIT"], group=d["GROUP"]) for d in To_SQL]) # SQL insert with the values.
@@ -858,7 +858,7 @@ def Risk_auto_cut_ajax():
 
 
         total_result_value = list(total_result.values())
-        #print(total_result_value)
+        # print(total_result_value)
         table_data_html =  Array_To_HTML_Table(list(total_result_value[0].keys()),[list(d.values()) for d in total_result_value])
 
         async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
@@ -900,7 +900,7 @@ def CFH_Live_Position():
 
 @app.route('/CFH_Live_Position_ajax', methods=['GET', 'POST'])
 @login_required
-def CFH_Live_Position_ajax(update_all=0):  #Optional Parameter, to update from the start should there be a need to.
+def CFH_Live_Position_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
     # TODO: Update Minotor Tools Table.
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
@@ -914,12 +914,12 @@ def CFH_Live_Position_ajax(update_all=0):  #Optional Parameter, to update from t
 
 
     # Want to get the Client number that BGI has with CFH.
-    Client_details = client.service.GetAccounts()
-    Client_num = Client_details[0].AccountId if len(Client_details) > 0 else -1
+    client_details = client.service.GetAccounts()
+    client_num = client_details[0].AccountId if len(client_details) > 0 else -1
 
     # When the start dates are.  Want to backtrace 2 hours at all normal times. Want to backtrace till start (sept 1st) if needed.
     query_start_date = (datetime.datetime.now() - datetime.timedelta(hours=2)) if update_all==0 else datetime.date(2019, 9, 1)
-    #query_end_date =  datetime.date(2019, 9, 1)
+    # query_end_date =  datetime.date(2019, 9, 1)
     query_end_date = datetime.date.today()  # Always will end at today, now.
 
     # Flags and lists to store the data.
@@ -930,7 +930,7 @@ def CFH_Live_Position_ajax(update_all=0):  #Optional Parameter, to update from t
     # To get trades.
     while total_pages != 0 or total_pages == (
             page_counter + 1):  # 27840 is the account number.
-        loop_trades = client.service.GetTrades(Client_num, query_start_date, query_end_date, 200, page_counter)
+        loop_trades = client.service.GetTrades(client_num, query_start_date, query_end_date, 200, page_counter)
         total_pages = loop_trades.TotalPages if "TotalPages" in loop_trades else 0
         page_counter = page_counter + 1
         if loop_trades.TradesList != None:  # Would be None if there are no more trades.
@@ -974,7 +974,7 @@ def CFH_Live_Position_ajax(update_all=0):  #Optional Parameter, to update from t
         return_val = [{k: "{}".format(t[k]) for k in t} for t in total_trades]
 
     # # Need to update Run time on SQL Update table.
-    #async_Update_Runtime("CFH_Live_Trades")
+    # async_Update_Runtime("CFH_Live_Trades")
 
     return json.dumps(return_val)
 
@@ -995,7 +995,7 @@ def CFH_Symbol_Update():
 
 @app.route('/CFH_Symbol_Update_ajax', methods=['GET', 'POST'])
 @login_required
-def CFH_Symbol_Update_ajax(update_all=0):  #Optional Parameter, to update from the start should there be a need to.
+def CFH_Symbol_Update_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
     # TODO: CFH_Symbol_Update_ajax Minotor Tools Table.
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
@@ -1048,7 +1048,7 @@ def CFH_Symbol_Update_ajax(update_all=0):  #Optional Parameter, to update from t
 
     raw_insert_result = db.engine.execute(sql_insert)
 
-    #raw_insert_result = db.engine.execute(sql_insert)
+    # raw_insert_result = db.engine.execute(sql_insert)
     return_val = [{k: "{}".format(t[k]) for k in t} for t in total_symbols]
 
 
@@ -1067,9 +1067,9 @@ def read_from_app_g():
     # print(app.config["MAIL_PASSWORD"])
 
     # if "Swap_data" in g:
-    #     print("Swap_data in g")
+    #  print("Swap_data in g")
     # else:
-    #     print("Swap_data Data? ")
+    #  print("Swap_data Data? ")
     return render_template("upload_form.html")
 
 
@@ -1079,9 +1079,9 @@ def read_from_app_h():
 
     # Time = datetime.now().strftime("%H:%M:%S")
     # for t in range(10):
-    #     SymbolTotalTest.append_field(str(t) + " " + str(Time), FormField(SymbolSwap))
+    #  SymbolTotalTest.append_field(str(t) + " " + str(Time), FormField(SymbolSwap))
     # form = SymbolTotalTest()
-    #return render_template("standard_form.html", form=form)
+    # return render_template("standard_form.html", form=form)
     return render_template("Standard_Single_Table.html", backgroud_Filename='css/test7.jpg', Table_name="Table1", title="Table", ajax_url=url_for("LP_Margin_UpdateTime"))
 
 # To check if the file exists. If it does, generate a new name.
@@ -1131,13 +1131,13 @@ def Check_Float(element):
 
 @app.route('/is_prime')
 @login_required
-def is_prime_query_AccDetails():    #Query Is Prime
+def is_prime_query_AccDetails():    # Query Is Prime
 
-    #is_prime_query_AccDetails_json()
+    # is_prime_query_AccDetails_json()
     return render_template("Is_prime_html.html",header="IS Prime Account Details")
 
 
-@app.route('/is_prime_return_json', methods=['GET', 'POST'])    #Query Is Prime, Returns a Json.
+@app.route('/is_prime_return_json', methods=['GET', 'POST'])    # Query Is Prime, Returns a Json.
 @login_required
 def is_prime_query_AccDetails_json():
     API_URL_BASE = 'https://api.isprimefx.com/api/'
@@ -1153,7 +1153,7 @@ def is_prime_query_AccDetails_json():
     response = requests.get(API_URL_BASE + '/risk/positions', headers=headers, verify=False)
     dict_response = json.loads(json.dumps((response.json())))
 
-    account_dict = {}
+    account_dict = dict()
 
     for s in dict_response:
         if "groupName" in s and s["groupName"] ==  "Blackwell Global BVI Risk 2":   # Making sure its the right account.
@@ -1177,9 +1177,9 @@ def is_prime_query_AccDetails_json():
 
             sql_insert += SQL_LP_Footer
 
-            #print(sql_insert)
+            # print(sql_insert)
             raw_insert_result = db.engine.execute(sql_insert)
-            #raw_insert_result
+            # raw_insert_result
 
     for s in account_dict:
         if isinstance(account_dict[s], float) or isinstance(account_dict[s], int):
@@ -1187,7 +1187,7 @@ def is_prime_query_AccDetails_json():
 
     account_dict["Updated_Time(SGT)"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    table = create_table_fun([account_dict])
+    #table = create_table_fun([account_dict])
 
     return json.dumps(account_dict)
 
@@ -1209,12 +1209,12 @@ def Modify_MT5_Trades():    # To upload the Files, or post which trades to delet
         else:
             print("Not Validated. ")
 
-        #
+        # 
         # if file_form.validate_on_submit():
-        #     record_dict = request.get_records(field_name='upload', name_columns_by_row=0)
-        #     print(record_dict)
-            #df_uploaded_data = pd.DataFrame(record_dict)
-            #print(df_uploaded_data)
+        #  record_dict = request.get_records(field_name='upload', name_columns_by_row=0)
+        #  print(record_dict)
+            # df_uploaded_data = pd.DataFrame(record_dict)
+            # print(df_uploaded_data)
     return render_template("MT5_Modify_Trades.html", form=form, header="MT5 Modify Trades", description="MT5 Modify Trades")
 
 
@@ -1223,7 +1223,7 @@ def Modify_MT5_Trades():    # To upload the Files, or post which trades to delet
 @login_required
 def Live3_MT4_Users():    # To upload the Files, or post which trades to delete on MT5
     raw_result = db.engine.execute('select login, `GROUP`, `NAME`, CURRENCY, REGDATE from live3.mt4_users ')
-    #raw_result = db.engine.execute("select login, `NAME`, REGDATE, `GROUP`, CURRENCY from live3.mt4_users where login = 102")
+    # raw_result = db.engine.execute("select login, `NAME`, REGDATE, `GROUP`, CURRENCY from live3.mt4_users where login = 102")
     result_data = raw_result.fetchall()
     result_col = raw_result.keys()
     df_users = pd.DataFrame(data=result_data, columns=result_col)
@@ -1250,175 +1250,71 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 
     mismatch_count_1 = 10   # Notify when mismatch has lasted 1st time.
     mismatch_count_2 = 15   # Second notify when mismatched has lasted a second time
-    #
-    # sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(squared_LOT,0) AS Squared_lot,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+COALESCE(squared_LOT,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
-	# 	,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol ,COALESCE(vantage_LOT,0)+COALESCE(squared_LOT,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy FROM test.core_symbol
-	# 	LEFT JOIN
-	# 	(SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM (SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades`
-	# 	LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY mt4_symbol) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
-	# 	LEFT JOIN
-	# 	(SELECT Symbol AS squared_SYMBOL,ROUND(SUM(LOT),2) AS squared_LOT FROM (SELECT COALESCE(live_trade_squaredpromt4_live_covertsymbol.SYMBOL,live_trade_5830001_squaredpromt4_live.Symbol) AS Symbol,CASE WHEN Cmd = 0 THEN lots WHEN Cmd = 1 THEN lots * (-1) END AS LOT,Cmd FROM test.`live_trade_5830001_squaredpromt4_live`
-	# 	LEFT JOIN test.live_trade_squaredpromt4_live_covertsymbol ON live_trade_5830001_squaredpromt4_live.Symbol = live_trade_squaredpromt4_live_covertsymbol.SQUARED_SYMBOL WHERE close_time = '1970-01-01 00:00:00') AS A GROUP BY Symbol) AS Z ON core_symbol.SYMBOL = Z.squared_SYMBOL
-	# 	LEFT JOIN
-	# 	(SELECT coresymbol AS api_SYMBOL,ROUND(SUM(api_LOT),2) AS api_LOT FROM (SELECT bgimargin_live_trades.margin_id,bgimargin_live_trades.coresymbol,position/core_symbol.CONTRACT_SIZE AS api_LOT FROM test.`bgimargin_live_trades`
-	# 	LEFT JOIN test.core_symbol ON bgimargin_live_trades.coresymbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY coresymbol) AS K ON core_symbol.SYMBOL = K.api_SYMBOL
-	# 	LEFT JOIN
-	# 	(SELECT SYMBOL AS offset_SYMBOL,ROUND(SUM(LOTS),2) AS offset_LOT FROM test.offset_live_trades GROUP BY SYMBOL) AS P ON core_symbol.SYMBOL = P.offset_SYMBOL
-	# 	LEFT JOIN
-	# 	(SELECT SYMBOL AS mt4_SYMBOL,ROUND(SUM(VOL),2) AS mt4_NET_VOL FROM
-	# 	(SELECT 'live1' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
-	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
-	# 	FROM live1.mt4_trades WHERE ((mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live1.a_group)) OR (LOGIN IN (SELECT LOGIN FROM live1.a_login )))
-	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2
-	# 	GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-	# 	UNION
-	# 	SELECT 'live2' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
-	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
-	# 	FROM live2.mt4_trades WHERE ((mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live2.a_group)) OR (LOGIN IN (SELECT LOGIN FROM live2.a_login )) OR LOGIN = '9583' OR LOGIN = '9615' OR LOGIN = '9618' OR (mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501))
-	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-	# 	UNION
-	# 	SELECT 'live3' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
-	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
-	# 	FROM live3.mt4_trades WHERE (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live3.a_group))
-	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-	# 	UNION
-	# 	SELECT 'live5' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
-	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
-	# 	FROM live5.mt4_trades WHERE (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.a_group))
-	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-	# 	) AS X GROUP BY SYMBOL) S ON core_symbol.SYMBOL = S.mt4_SYMBOL ORDER BY ABS(Discrepancy) DESC, ABS(MT4_Net_Vol) DESC, SYMBOL""")
-
-    # sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(squared_LOT,0) AS Squared_lot,COALESCE(CFH_Position,0) AS CFH_Position ,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+COALESCE(squared_LOT,0) + COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
-	# 	,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(squared_LOT,0)+COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy
-	# 	FROM test.core_symbol
-	# 	LEFT JOIN
-	# 	(SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM (SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades`
-	# 	LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY mt4_symbol) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
-	# 	LEFT JOIN
-	# 	(SELECT s.InstrumentSymbol as CFH_Symbol,
-	# 	SUM(CASE
-	# 		WHEN t.Side = 0 THEN (t.Amount/c.CONTRACT_SIZE)
-	# 		WHEN t.Side = 1 THEN (t.amount/c.CONTRACT_SIZE) * -1
-	# 		ELSE 0
-	# 	END) as CFH_Position
-	# 	From aaron.cfh_live_trades as t, aaron.cfh_symbol as s, test.core_symbol as c
-	# 	where s.InstrumentId=t.InstrumentId and Closed="False" and c.SYMBOL = S.InstrumentSymbol
-	# 	GROUP BY CFH_Symbol
-	# 	) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
-    #
-    #
-	# 	LEFT JOIN
-	# 	(SELECT Symbol AS squared_SYMBOL,ROUND(SUM(LOT),2) AS squared_LOT FROM (SELECT COALESCE(live_trade_squaredpromt4_live_covertsymbol.SYMBOL,live_trade_5830001_squaredpromt4_live.Symbol) AS Symbol,CASE WHEN Cmd = 0 THEN lots WHEN Cmd = 1 THEN lots * (-1) END AS LOT,Cmd FROM test.`live_trade_5830001_squaredpromt4_live`
-	# 	LEFT JOIN test.live_trade_squaredpromt4_live_covertsymbol ON live_trade_5830001_squaredpromt4_live.Symbol = live_trade_squaredpromt4_live_covertsymbol.SQUARED_SYMBOL WHERE close_time = '1970-01-01 00:00:00') AS A GROUP BY Symbol) AS Z ON core_symbol.SYMBOL = Z.squared_SYMBOL
-	# 	LEFT JOIN
-	# 	(SELECT coresymbol AS api_SYMBOL,ROUND(SUM(api_LOT),2) AS api_LOT FROM (SELECT bgimargin_live_trades.margin_id,bgimargin_live_trades.coresymbol,position/core_symbol.CONTRACT_SIZE AS api_LOT FROM test.`bgimargin_live_trades`
-	# 	LEFT JOIN test.core_symbol ON bgimargin_live_trades.coresymbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY coresymbol) AS K ON core_symbol.SYMBOL = K.api_SYMBOL
-	# 	LEFT JOIN
-	# 	(SELECT SYMBOL AS offset_SYMBOL,ROUND(SUM(LOTS),2) AS offset_LOT FROM test.offset_live_trades GROUP BY SYMBOL) AS P ON core_symbol.SYMBOL = P.offset_SYMBOL
-	# 	LEFT JOIN
-	# 	(SELECT SYMBOL AS mt4_SYMBOL,ROUND(SUM(VOL),2) AS mt4_NET_VOL FROM
-	# 	(SELECT 'live1' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
-	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
-	# 	FROM live1.mt4_trades WHERE ((mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live1.a_group)) OR (LOGIN IN (SELECT LOGIN FROM live1.a_login )))
-	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2
-	# 	GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-	# 	UNION
-	# 	SELECT 'live2' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
-	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
-	# 	FROM live2.mt4_trades WHERE ((mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live2.a_group)) OR (LOGIN IN (SELECT LOGIN FROM live2.a_login )) OR LOGIN = '9583' OR LOGIN = '9615' OR LOGIN = '9618' OR (mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501))
-	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-	# 	UNION
-	# 	SELECT 'live3' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
-	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
-	# 	FROM live3.mt4_trades WHERE (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live3.a_group))
-	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-	# 	UNION
-	# 	SELECT 'live5' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL,
-	# 	(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL`
-	# 	FROM live5.mt4_trades WHERE (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.a_group))
-	# 	AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1)
-	# 	WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-	# 	) AS X GROUP BY SYMBOL) S ON core_symbol.SYMBOL = S.mt4_SYMBOL ORDER BY ABS(Discrepancy) DESC, ABS(MT4_Net_Vol) DESC, SYMBOL""")
 
     sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(CFH_Position,0) AS CFH_Lots ,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+ COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
-		,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy 
-		FROM test.core_symbol
-		LEFT JOIN
-		(SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM (SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades` 
-		LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY mt4_symbol) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
-		LEFT JOIN
-		(SELECT s.InstrumentSymbol as CFH_Symbol,
-		SUM(CASE
-			WHEN t.Side = 0 THEN (t.Amount/c.CONTRACT_SIZE)
-			WHEN t.Side = 1 THEN (t.amount/c.CONTRACT_SIZE) * -1 
-			ELSE 0
-		END) as CFH_Position
-		From aaron.cfh_live_trades as t, aaron.cfh_symbol as s, test.core_symbol as c
-		where s.InstrumentId=t.InstrumentId and Closed="False" and c.SYMBOL = S.InstrumentSymbol
-		GROUP BY CFH_Symbol
-		) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
-
-		LEFT JOIN
-		(SELECT coresymbol AS api_SYMBOL,ROUND(SUM(api_LOT),2) AS api_LOT FROM (SELECT bgimargin_live_trades.margin_id,bgimargin_live_trades.coresymbol,position/core_symbol.CONTRACT_SIZE AS api_LOT FROM test.`bgimargin_live_trades` 
-		LEFT JOIN test.core_symbol ON bgimargin_live_trades.coresymbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY coresymbol) AS K ON core_symbol.SYMBOL = K.api_SYMBOL
-		LEFT JOIN
-		(SELECT SYMBOL AS offset_SYMBOL,ROUND(SUM(LOTS),2) AS offset_LOT FROM test.offset_live_trades GROUP BY SYMBOL) AS P ON core_symbol.SYMBOL = P.offset_SYMBOL
-		LEFT JOIN
-		(SELECT SYMBOL AS mt4_SYMBOL,ROUND(SUM(VOL),2) AS mt4_NET_VOL FROM
-		(SELECT 'live1' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL, 
-		(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-		WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL` 
-		FROM live1.mt4_trades WHERE ((mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live1.a_group)) OR (LOGIN IN (SELECT LOGIN FROM live1.a_login )))
-		AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2
-		GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-		WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-		UNION
-		SELECT 'live2' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL, 
-		(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-		WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL` 
-		FROM live2.mt4_trades WHERE ((mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live2.a_group)) OR (LOGIN IN (SELECT LOGIN FROM live2.a_login )) OR LOGIN = '9583' OR LOGIN = '9615' OR LOGIN = '9618' OR (mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501))
-		AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-		WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-		UNION
-		SELECT 'live3' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL, 
-		(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-		WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL` 
-		FROM live3.mt4_trades WHERE (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live3.a_group)) 
-		AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-		WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-		UNION
-		SELECT 'live5' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL, 
-		(CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-		WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL` 
-		FROM live5.mt4_trades WHERE (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.a_group))
-		AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-		WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-		) AS X GROUP BY SYMBOL) S ON core_symbol.SYMBOL = S.mt4_SYMBOL ORDER BY ABS(Discrepancy) DESC, ABS(MT4_Net_Vol) DESC, SYMBOL""")
+        ,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy 
+        FROM test.core_symbol
+        LEFT JOIN
+        (SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM (SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades` 
+        LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY mt4_symbol) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
+        LEFT JOIN
+        (SELECT s.InstrumentSymbol as CFH_Symbol,
+        SUM(CASE
+            WHEN t.Side = 0 THEN (t.Amount/c.CONTRACT_SIZE)
+            WHEN t.Side = 1 THEN (t.amount/c.CONTRACT_SIZE) * -1 
+            ELSE 0
+        END) as CFH_Position
+        From aaron.cfh_live_trades as t, aaron.cfh_symbol as s, test.core_symbol as c
+        where s.InstrumentId=t.InstrumentId and Closed="False" and c.SYMBOL = S.InstrumentSymbol
+        GROUP BY CFH_Symbol
+        ) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
+        
+        LEFT JOIN
+        (SELECT coresymbol AS api_SYMBOL,ROUND(SUM(api_LOT),2) AS api_LOT FROM (SELECT bgimargin_live_trades.margin_id,bgimargin_live_trades.coresymbol,position/core_symbol.CONTRACT_SIZE AS api_LOT FROM test.`bgimargin_live_trades` 
+        LEFT JOIN test.core_symbol ON bgimargin_live_trades.coresymbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY coresymbol) AS K ON core_symbol.SYMBOL = K.api_SYMBOL
+        LEFT JOIN
+        (SELECT SYMBOL AS offset_SYMBOL,ROUND(SUM(LOTS),2) AS offset_LOT FROM test.offset_live_trades GROUP BY SYMBOL) AS P ON core_symbol.SYMBOL = P.offset_SYMBOL
+        LEFT JOIN
+        (SELECT SYMBOL AS mt4_SYMBOL,ROUND(SUM(VOL),2) AS mt4_NET_VOL FROM
+        (SELECT 'live1' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL, 
+        (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
+        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL` 
+        FROM live1.mt4_trades WHERE ((mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live1.a_group)) OR (LOGIN IN (SELECT LOGIN FROM live1.a_login )))
+        AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2
+        GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
+        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
+        UNION
+        SELECT 'live2' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL, 
+        (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
+        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL` 
+        FROM live2.mt4_trades WHERE ((mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live2.a_group)) OR (LOGIN IN (SELECT LOGIN FROM live2.a_login )) OR LOGIN = '9583' OR LOGIN = '9615' OR LOGIN = '9618' OR (mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501))
+        AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
+        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
+        UNION
+        SELECT 'live3' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL, 
+        (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
+        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL` 
+        FROM live3.mt4_trades WHERE (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live3.a_group)) 
+        AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
+        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
+        UNION
+        SELECT 'live5' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL, 
+        (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
+        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL` 
+        FROM live5.mt4_trades WHERE (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.a_group))
+        AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
+        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
+        ) AS X GROUP BY SYMBOL) S ON core_symbol.SYMBOL = S.mt4_SYMBOL ORDER BY ABS(Discrepancy) DESC, ABS(MT4_Net_Vol) DESC, SYMBOL""")
 
     curent_result = Query_SQL_db_engine(sql_query)  # Function to do the Query and return zip dict.
 
 
-    #curent_result[10]["Discrepancy"] = 0.1  # Artificially induce a mismatch
+    # curent_result[10]["Discrepancy"] = 0.1  # Artificially induce a mismatch
 
     if request.method == 'POST':    # If the request came in thru a POST. We will get the data first.
 
         post_data = dict(request.form)
-        #print(post_data)
+        # print(post_data)
         # Check if we need to send Email
         Send_Email_Flag =  int(post_data["send_email_flag"][0]) if ("send_email_flag" in post_data) \
                                                                    and (isinstance(post_data['send_email_flag'], list)) else 0
@@ -1435,14 +1331,14 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
         # Variables to return.
         Play_Sound = 0                                  # To play sound if needed
 
-        #print(Past_Details)
+        # print(Past_Details)
         # To Calculate the past (Previous result) Mismatches
-        Past_discrepancy = {}
+        Past_discrepancy = dict()
         for pd in Past_Details:
-            if "SYMBOL" in pd and "Discrepancy" in pd.keys() and pd["Discrepancy"] != 0:    #If the keys are there.
+            if "SYMBOL" in pd and "Discrepancy" in pd.keys() and pd["Discrepancy"] != 0:    # If the keys are there.
                     Past_discrepancy[pd["SYMBOL"]] = pd["Mismatch_count"] if "Mismatch_count" in pd else 1  # Want to get the count. Or raise as 1.
 
-        #curent_result[0]["Discrepancy"] = 0.01
+        # curent_result[0]["Discrepancy"] = 0.01
 
         # To tally off with current mismatches. If there are, add 1 to count. Else, Zero it.
         for d in curent_result:
@@ -1475,7 +1371,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
                 # Want to update the runtime table to ensure that tool is running.
                 sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`) VALUES" + \
                              " ('MT4/LP A Book Check', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()"
-                #print(sql_insert)
+                # print(sql_insert)
                 raw_insert_result = db.engine.execute(sql_insert)
 
             Tele_Message = "*MT4/LP Position* \n"  # To compose Telegram outgoing message
@@ -1488,7 +1384,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
                 Notify_mismatch_table_html = Array_To_HTML_Table(list(Notify_Mismatch[0].keys()), [list(d.values()) for d in Notify_Mismatch])
                 Email_Title_Array.append("Mismatch")
                 email_html_body +=  "There is a mismatch for A-Book LP/MT4 trades.<br>{}".format(Notify_mismatch_table_html)
-                #print(Notify_Mismatch)
+                # print(Notify_Mismatch)
                 Tele_Message += "{} mismatch: {}\n".format(len(Current_discrepancy), ", ".join(["{} ({})".format(c["SYMBOL"], c["Discrepancy"]) for c in Notify_Mismatch]))
 
             Cleared_Symbol = [sym for sym,count in Past_discrepancy.items() if (sym not in Current_discrepancy) and (count >= mismatch_count_1) ]    # Symbol that had mismatches and now it's been cleared.
@@ -1519,14 +1415,14 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
                 async_send_email(EMAIL_LIST_ALERT, [], "A Book Position ({}) ".format("/ ".join(Email_Title_Array)),
                        Email_Header + email_html_body + Email_Footer, [])
 
-                #Send the Telegram message.
+                # Send the Telegram message.
                 async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Message, TELE_CLIENT_ID)
 
 
 
 
 
-        #'[{"Vantage_Update_Time": "2019-09-17 16:54:20", "BGI_Margin_Update_Time": "2019-09-17 16:54:23"}]'
+        # '[{"Vantage_Update_Time": "2019-09-17 16:54:20", "BGI_Margin_Update_Time": "2019-09-17 16:54:23"}]'
 
 
     return_result = {"current_result":curent_result, "Play_Sound": Play_Sound}   # End of if/else. going to return.
@@ -1549,8 +1445,8 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
 		FROM aaron.lp_summary""")  # Need to convert to Python Friendly Text.
     raw_result = db.engine.execute(sql_query)
     result_data = raw_result.fetchall()
-    #result_data_json_parse = [[float(a) if isinstance(a, decimal.Decimal) else a for a in d ] for d in result_data]    # correct The decimal.Decimal class to float.
-    result_data_json_parse = [[Time_difference_Check(a) if isinstance(a, datetime.datetime) else a for a in d] for d in
+    # result_data_json_parse = [[float(a) if isinstance(a, decimal.Decimal) else a for a in d ] for d in result_data]    # correct The decimal.Decimal class to float.
+    result_data_json_parse = [[time_difference_check(a) if isinstance(a, datetime.datetime) else a for a in d] for d in
                            result_data]  # correct The decimal.Decimal class to float.
 
     result_col = raw_result.keys()
@@ -1560,27 +1456,27 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
     LP_Position_Show_Table = [] # to store the LP details in a more read-able sense
 
     Tele_Margin_Text = "*LP Margin Issues.*\n"    # To Compose Telegram text for Margin issues.
-    Margin_Attention_Flag = 0
+    margin_attention_flag = 0
     Margin_MC_Flag = 0
     Margin_SO_Flag = 0
     Play_Sound = 0  # For return to AJAX
 
 
     for i,lp in enumerate(return_result):    # Want to re-arrange.
-        loop_buffer = {}
+        loop_buffer = dict()
         loop_buffer["LP"] = lp["lp"] if "lp" in lp else None
 
         Lp_MC_Level = lp["margin_call (M/E)"] if "margin_call (M/E)" in lp else None
         Lp_SO_Level = lp["stop_out (M/E)"] if "stop_out (M/E)" in lp else None
         Lp_Margin_Level = lp["Margin/Equity (%)"]  if "Margin/Equity (%)" in lp else None
 
-        loop_buffer["BALANCE"] = {}
+        loop_buffer["BALANCE"] = dict()
         loop_buffer["BALANCE"]["DEPOSIT"] = "$ {:,.2f}".format(float(lp["deposit"])) if "deposit" in lp else None
         loop_buffer["BALANCE"]["CREDIT"] = "$ {:,.2f}".format(float(lp["credit"])) if "credit" in lp else None
         loop_buffer["BALANCE"]["PNL"] = "$ {:,.2f}".format(float(lp["pnl"])) if "pnl" in lp else None
         loop_buffer["BALANCE"]["EQUITY"] = "$ {:,.2f}".format(float(lp["equity"])) if "equity" in lp else None
 
-        loop_buffer["MARGIN"] = {}
+        loop_buffer["MARGIN"] = dict()
         loop_buffer["MARGIN"]["TOTAL_MARGIN"] = "${:,.2f}".format(float(lp["total_margin"])) if "total_margin" in lp else None
         loop_buffer["MARGIN"]["FREE_MARGIN"] = "${:,.2f}".format(float(lp["free_margin"])) if "free_margin" in lp else None
 
@@ -1594,26 +1490,26 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
             loop_buffer["MARGIN/EQUITY (%)"] = "Margin Call: {:.2f}%".format(Lp_Margin_Level)
             Tele_Margin_Text += "_MC Alert_: {} margin is at {}. MC/SO: {:.2f}/{:.2f}\n".format(loop_buffer["LP"], Lp_Margin_Level,Lp_MC_Level,Lp_SO_Level)
         elif Lp_Margin_Level >= (Lp_MC_Level - LP_MARGIN_ALERT_LEVEL):  # Want to start an alert when reaching MC.
-            Margin_Attention_Flag += 1
+            margin_attention_flag += 1
             loop_buffer["MARGIN/EQUITY (%)"] = "Alert: {:.2f}%".format(Lp_Margin_Level)
             Tele_Margin_Text += "_Margin Alert_: {} margin is at {}. MC is at {:.2f}\n".format(loop_buffer["LP"], Lp_Margin_Level, Lp_MC_Level)
         else:
             loop_buffer["MARGIN/EQUITY (%)"] = "{}%".format(Lp_Margin_Level)
 
-        loop_buffer["MC/SO/AVALIABLE"] = {}
-        loop_buffer["MC/SO/AVALIABLE"]["MARGIN_CALL (M/E)"] = "{:.2f}".format(Lp_MC_Level)
-        loop_buffer["MC/SO/AVALIABLE"]["STOP_OUT (M/E)"] = "{:.2f}".format(Lp_SO_Level)
-        loop_buffer["MC/SO/AVALIABLE"]["STOPOUT AMOUNT"] = "$ {:,.2f}".format(float(lp["STOPOUT AMOUNT"])) if "STOPOUT AMOUNT" in lp else None
-        loop_buffer["MC/SO/AVALIABLE"]["AVALIABLE"] = "$ {:,.2f}".format(float(lp["available"])) if "available" in lp else None
+        loop_buffer["MC/SO/AVAILABLE"] = dict()
+        loop_buffer["MC/SO/AVAILABLE"]["MARGIN_CALL (M/E)"] = "{:.2f}".format(Lp_MC_Level)
+        loop_buffer["MC/SO/AVAILABLE"]["STOP_OUT (M/E)"] = "{:.2f}".format(Lp_SO_Level)
+        loop_buffer["MC/SO/AVAILABLE"]["STOPOUT AMOUNT"] = "$ {:,.2f}".format(float(lp["STOPOUT AMOUNT"])) if "STOPOUT AMOUNT" in lp else None
+        loop_buffer["MC/SO/AVAILABLE"]["AVAILABLE"] = "$ {:,.2f}".format(float(lp["available"])) if "available" in lp else None
 
         loop_buffer["UPDATED_TIME"] = lp["updated_time"] if "updated_time" in lp else None
 
         LP_Position_Show_Table.append(loop_buffer)
-        #print(loop_buffer)
+        # print(loop_buffer)
 
     if request.method == 'POST':
         post_data = dict(request.form)
-        #print(post_data)
+        # print(post_data)
 
         # Get variables from POST.
         Send_Email_Flag = int(post_data["send_email_flag"][0]) if ("send_email_flag" in post_data) \
@@ -1664,7 +1560,7 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
             lp_time_issue_count = 0
 
 
-        #-------------------- To Check the Margin Levels, and to send email when needed. --------------------------
+        # -------------------- To Check the Margin Levels, and to send email when needed. --------------------------
         if Margin_SO_Flag > 0:   # If there are margin issues. Want to send Alert Out.
             if lp_so_email_count == 0:
                 if Send_Email_Flag == 1:
@@ -1676,10 +1572,10 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
                                      format(Email_Header, LP_position_Table, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),Email_Footer),
                                      Attachment_Name=[])
             Play_Sound += 1  # No matter sending emails or not, we will need to play sound.
-            #print("Play Sound: {}".format(Play_Sound))
+            # print("Play Sound: {}".format(Play_Sound))
             lp_so_email_count += 1
             lp_mc_email_count = lp_mc_email_count + 1 if lp_mc_email_count <1 else lp_mc_email_count    # Want to raise all to at least 1
-            Margin_Attention_Flag = Margin_Attention_Flag + 1 if Margin_Attention_Flag < 1 else Margin_Attention_Flag
+            margin_attention_flag = margin_attention_flag + 1 if margin_attention_flag < 1 else margin_attention_flag
         elif Margin_MC_Flag > 0:   # If there are margin issues. Want to send Alert Out.
             if lp_mc_email_count == 0:
                 if Send_Email_Flag == 1:
@@ -1693,7 +1589,7 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
                 Play_Sound += 1             # Play sound when MC. Once
             lp_mc_email_count += 1
             lp_so_email_count = 0
-        elif Margin_Attention_Flag > 0:  # If there are margin issues. Want to send Alert Out
+        elif margin_attention_flag > 0:  # If there are margin issues. Want to send Alert Out
             if lp_attention_email_count == 0:
                 if Send_Email_Flag == 1:
                     async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
@@ -1714,7 +1610,7 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
             lp_attention_email_count = 0
        # , "Alert", "Margin Call", "SO Attention"
 
-            #return "Error:lalalala"
+            # return "Error:lalalala"
     return json.dumps({"lp_attention_email_count": lp_attention_email_count, "Play_Sound": Play_Sound, "current_result": LP_Position_Show_Table, "lp_time_issue_count": lp_time_issue_count,
                        "lp_so_email_count": lp_so_email_count, "lp_mc_email_count": lp_mc_email_count})
 
@@ -1723,7 +1619,7 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
 @app.route('/LP_Margin_UpdateTime', methods=['GET', 'POST'])
 @login_required
 def LP_Margin_UpdateTime():     # To query for LP/Margin Update time to check that it's being updated.
-    #TODO: To add in sutible alert should this stop updating and such.
+    # TODO: To add in sutible alert should this stop updating and such.
     # TODO: Date return as String instead of datetime. Cannot compare the date to notify when it's slow.
     sql_query = text("""select
     COALESCE(Vantage_Update_Time, 'No Open Trades') as Vantage_Update_Time,
@@ -1736,13 +1632,13 @@ def LP_Margin_UpdateTime():     # To query for LP/Margin Update time to check th
     result_data = raw_result.fetchall()
 
     result_data_json_parse = [[try_string_to_datetime(a)  for a in d] for d in result_data]
-    #result_data_json_parse = [[float(a) if isinstance(a, decimal.Decimal) else a for a in d ] for d in result_data]    # correct The decimal.Decimal class to float.
-    result_data_json_parse = [[Time_difference_Check(a) if isinstance(a, datetime.datetime) else a for a in d] for d in
+    # result_data_json_parse = [[float(a) if isinstance(a, decimal.Decimal) else a for a in d ] for d in result_data]    # correct The decimal.Decimal class to float.
+    result_data_json_parse = [[time_difference_check(a) if isinstance(a, datetime.datetime) else a for a in d] for d in
                               result_data_json_parse]  # correct The decimal.Decimal class to float.
 
     result_col = raw_result.keys()
     # Want to do a time check.
-    result_data_json_parse = [Time_difference_Check(d) if isinstance(d, datetime.datetime) else d for d in result_data_json_parse]
+    result_data_json_parse = [time_difference_check(d) if isinstance(d, datetime.datetime) else d for d in result_data_json_parse]
     return_result = [dict(zip(result_col,d)) for d in result_data_json_parse]
 
     return json.dumps(return_result)
@@ -1792,7 +1688,7 @@ def Bloomberg_Dividend_ajax():     # Return the Bloomberg dividend table in Json
     return_data = []   # The data to be returned.
 
     for s in symbols:
-        symbol_dividend_date = {}
+        symbol_dividend_date = dict()
         symbol_dividend_date["Symbol"] = s
         for d in all_dates:
             symbol_dividend_date[get_working_day_date(start_date=d, increment_decrement_val=-1, weekdays_count=1).strftime( \
@@ -1837,8 +1733,8 @@ def BGI_Swaps_ajax():     # Return the Bloomberg dividend table in Json.
 
     swap_total = [] # To store all the symbol
     for s in unique_symbol:
-        swap_long_buffer = {}
-        swap_short_buffer = {}
+        swap_long_buffer = dict()
+        swap_short_buffer = dict()
         swap_long_buffer['Symbol'] = s  # Save symbol name
         swap_long_buffer['Direction'] = "Long"
         swap_short_buffer['Symbol'] = s
@@ -1866,7 +1762,7 @@ def MT4_Commission():
 @login_required
 def Mt4_Commission_ajax():     # Return the Bloomberg dividend table in Json.
 
-    #start_date = get_working_day_date(datetime.date.today(), -1, 5)
+    # start_date = get_working_day_date(datetime.date.today(), -1, 5)
     sql_query = text("""select mt4_groups.`GROUP`, mt4_securities.`NAME`, mt4_groups.CURRENCY, mt4_groups.DEFAULT_LEVERAGE, mt4_groups.MARGIN_CALL, mt4_groups.MARGIN_STOPOUT, mt4_secgroups.`SHOW`, mt4_secgroups.TRADE, mt4_secgroups.SPREAD_DIFF, 
         mt4_secgroups.COMM_BASE, mt4_secgroups.COMM_TYPE, mt4_secgroups.COMM_LOTS, mt4_secgroups.COMM_AGENT, mt4_secgroups.COMM_AGENT_TYPE, mt4_secgroups.COMM_AGENT_LOTS  from 
         live5.mt4_groups, live5.mt4_secgroups, live5.mt4_securities
@@ -1933,7 +1829,7 @@ def async_Update_Runtime(Tool):
     sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`) VALUES" + \
                  " ('{Tool}', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()".format(Tool=Tool)
     raw_insert_result = db.engine.execute(sql_insert)
-    #print("Updating Runtime for Tool: {}".format(Tool))
+    # print("Updating Runtime for Tool: {}".format(Tool))
 
 
 # [{'Core_Symbol': '.A50', 'bgi_long': '0.000000000000', 'bgi_short': '0.000000000000', 'Date': datetime.date(2019, 8, 13)},....]
@@ -2000,7 +1896,7 @@ def Query_SQL_db_engine(sql_query):
 
 # Helper function to do a time check.
 # Return "Update Slow<br> time" if it is more then 10 mins difference.
-def Time_difference_Check(time_to_check):
+def time_difference_check(time_to_check):
     time_now = datetime.datetime.now()  # Get the time now.
     if not isinstance(time_to_check, datetime.datetime):
         return "Error: Not datetime.datetime object"
@@ -2012,13 +1908,12 @@ def Time_difference_Check(time_to_check):
 
 
 # Query SQL and return the Zip of the results to get a record.
-def Query_SQL_Return_Record(SQL_Query):
+def query_SQL_return_record(SQL_Query):
     raw_result = db.engine.execute(SQL_Query)
     result_data = raw_result.fetchall()
     result_col = raw_result.keys()
     collate = [dict(zip(result_col, a)) for a in result_data]
     return collate
-
 
 
 
@@ -2029,7 +1924,7 @@ def create_table_fun(table_data):
     if (len(table_data) > 0) and isinstance(table_data[0], dict):
         for c in table_data[0]:
             if c != "\n":
-                table.add_column(c, Col(c, th_html_attrs={"style": "background-color:#afcdff; word-wrap:break-word"}))
+                table.add_column(c, Col(c, th_html_attrs={"style": "background-color:# afcdff; word-wrap:break-word"}))
     return table
 
 # Simple way of returning time string.

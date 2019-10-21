@@ -113,7 +113,7 @@ $(document).ready(function(){
     // Ajax call to Change Group.
     function NoTrade_Change_Group() {
 
-        ajax_url =   "/NoOpenTrades_ChangeGroup_ajax";
+        ajax_url =   "/noopentrades_changegroup_ajax";
         table_id = "Change_Group_Table";
         consolidated_table_id = "Change_Group_Consolidate";
         raw_return_id = "Change_Group_Raw";
@@ -405,7 +405,8 @@ $(document).ready(function(){
         Refresh_Page_Counter = 0;
         Page_Run_Count += 1;
         //Refresh_Page_Seconds
-        NoTrade_Change_Group({}, "/NoOpenTrades_ChangeGroup_ajax", "Change_Group_Table", "Change_Group_Consolidate","Change_Group_Raw", "Change_Group_Error", "MT4 Change Group");
+        //NoTrade_Change_Group({}, "/noopentrades_changegroup_ajax", "Change_Group_Table", "Change_Group_Consolidate","Change_Group_Raw", "Change_Group_Error", "MT4 Change Group");
+        NoTrade_Change_Group();
     }
 
 
