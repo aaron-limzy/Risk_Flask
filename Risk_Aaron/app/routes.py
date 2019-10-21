@@ -70,7 +70,7 @@ def login():
 
     form = LoginForm()
     if form.validate_on_submit():
-        user = load_user(username=form.username.data)
+        user = load_user(username=form.username.data.lower())
         if user is None or not user.check_password(form.password.data): # If Login error
             flash('Invalid username or password')
             return redirect(url_for('login'))
@@ -93,7 +93,7 @@ def Create_User():
     form = CreateUserForm()
     if form.validate_on_submit():
 
-        username = form.username.data
+        username = form.username.data.lower()
         email = form.email.data
         password = form.password.data
         admin_rights = 0
@@ -106,6 +106,7 @@ def Create_User():
                 " ('{}','{}','{}','{}')".format(username, email, User.hash_password(password=password), admin_rights)
             print(sql_insert)
             raw_insert_result = db.engine.execute(sql_insert)
+            flash("User {} has been created.".format(username))  # Put a message out that there is some error.
 
     return render_template('General_Form.html', title='Create User',header="Create User", form=form)
 
@@ -973,7 +974,7 @@ def CFH_Live_Position_ajax(update_all=0):  #Optional Parameter, to update from t
         return_val = [{k: "{}".format(t[k]) for k in t} for t in total_trades]
 
     # # Need to update Run time on SQL Update table.
-    async_Update_Runtime("CFH_Live_Trades")
+    #async_Update_Runtime("CFH_Live_Trades")
 
     return json.dumps(return_val)
 

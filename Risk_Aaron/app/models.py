@@ -23,7 +23,7 @@ class User(UserMixin):
         return '<User {}>'.format(self.id)
 
     def __init__(self, username, email, password_hash, admin_rights):
-        self.id = username
+        self.id = username.lower()  # Want to make sure username is in lower case.
         self.email = email
         self.admin_rights = admin_rights
         self.password_hash = password_hash
