@@ -587,6 +587,7 @@ def add_off_set():
             " ('{}','{}','{}','{}',NOW(),'{}' )".format(symbol, ticket, offset, comment, lp)
         # print(sql_insert)
         db.engine.execute(sql_insert)   # Insert into DB
+        flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
 
     raw_result = db.engine.execute("SELECT SYMBOL, SUM(LOTS) as 'BGI Lots' FROM test.`offset_live_trades` GROUP BY SYMBOL ORDER BY `BGI Lots` DESC")
     result_data = raw_result.fetchall()
@@ -1251,6 +1252,9 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
     mismatch_count_1 = 10   # Notify when mismatch has lasted 1st time.
     mismatch_count_2 = 15   # Second notify when mismatched has lasted a second time
 
+    cfh_soap_query_count = 5   # Want to fully quiery and update from CFH when mismatches reaches this.
+
+
     sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(CFH_Position,0) AS CFH_Lots ,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+ COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
         ,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy 
         FROM test.core_symbol
@@ -1323,8 +1327,8 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
                                                                            and (isinstance(post_data['MT4_LP_Position_save'], list)) \
                                                                            and is_json(post_data["MT4_LP_Position_save"][0]) \
                                                                             else None
-        Send_Email_Total = int(post_data["Send_Email_Total"][0]) if ("Send_Email_Total" in post_data) \
-                                                                   and (isinstance(post_data['Send_Email_Total'], list)) else 0
+        send_email_total = int(post_data["send_email_total"][0]) if ("send_email_total" in post_data) \
+                                                                   and (isinstance(post_data['send_email_total'], list)) else 0
 
 
 
@@ -1353,7 +1357,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 
         Current_discrepancy = [d["SYMBOL"] for d in Notify_Mismatch]        # Get all the Mimatch Symbols only
 
-        if (Send_Email_Total == 1): # for sending the total position.
+        if (send_email_total == 1): # for sending the total position.
 
             email_table_html = Array_To_HTML_Table(list(curent_result[0].keys()),
                                                             [list(d.values()) for d in curent_result])
@@ -1367,12 +1371,20 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
                              + email_table_html + "<br>Thanks,<br>Aaron" + Email_Footer, [])
         else:
             if Send_Email_Flag == 1:  # Only when Send Email Alert is set, we will
-
+                async_Update_Runtime('MT4/LP A Book Check')
                 # Want to update the runtime table to ensure that tool is running.
-                sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`) VALUES" + \
-                             " ('MT4/LP A Book Check', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()"
-                # print(sql_insert)
-                raw_insert_result = db.engine.execute(sql_insert)
+                # sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`) VALUES" + \
+                #              " ('MT4/LP A Book Check', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()"
+                # # print(sql_insert)
+                # raw_insert_result = db.engine.execute(sql_insert)
+
+
+                # If there are mismatches, first thing to do is to update CFH. All trades.
+                # Some older trades might have been closed.
+                if any([d["Mismatch_count"] == cfh_soap_query_count for d in Notify_Mismatch]):
+                    CFH_Live_Position_ajax(update_all=1)    # Want to update all trades from CFH
+                    print("Mismatch. Will Send SOAP to refresh all trades.")
+
 
             Tele_Message = "*MT4/LP Position* \n"  # To compose Telegram outgoing message
             email_html_body = "Hi, <br><br>";
@@ -1417,10 +1429,6 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 
                 # Send the Telegram message.
                 async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Message, TELE_CLIENT_ID)
-
-
-
-
 
         # '[{"Vantage_Update_Time": "2019-09-17 16:54:20", "BGI_Margin_Update_Time": "2019-09-17 16:54:23"}]'
 

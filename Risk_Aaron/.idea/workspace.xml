@@ -2,18 +2,12 @@
 <project version="4">
   <component name="BookmarkManager">
     <bookmark url="file://$PROJECT_DIR$/app/static/js/A_Book_Matching.js" line="158" />
-    <bookmark url="file://$PROJECT_DIR$/app/routes.py" line="1462" />
-    <bookmark url="file://$PROJECT_DIR$/app/routes.py" line="1765" />
+    <bookmark url="file://$PROJECT_DIR$/app/routes.py" line="1474" />
+    <bookmark url="file://$PROJECT_DIR$/app/routes.py" line="1777" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fb254749-7b1b-4fde-8616-ca5c9714cfac" name="Default Changelist" comment="commit 2">
-      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/Risk.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/static/js/Change_Read_Only_NoOpenTrades.js" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/js/Change_Read_Only_NoOpenTrades.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/Change_User_Group.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/Change_User_Group.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/base.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/base.html" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -116,12 +110,12 @@
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="Python Console" value="635" />
-          <entry key="py" value="4969" />
+          <entry key="py" value="5494" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Python" value="5604" />
+          <entry key="Python" value="6129" />
         </counts>
       </usages-collector>
     </session>
@@ -143,8 +137,8 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app/routes.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="255">
-              <caret line="651" column="97" lean-forward="true" selection-start-line="651" selection-start-column="97" selection-end-line="651" selection-end-column="97" />
+            <state relative-caret-position="252">
+              <caret line="1444" column="56" lean-forward="true" selection-start-line="1444" selection-start-column="56" selection-end-line="1444" selection-end-column="56" />
               <folding>
                 <element signature="e#0#30#0" expanded="true" />
               </folding>
@@ -236,13 +230,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>array_to</find>
-      <find>exe</find>
-      <find>auto_cut</find>
-      <find>risk_auto</find>
-      <find>sql_insert</find>
-      <find>INSERT INTO</find>
-      <find>auto_</find>
       <find>change_User_group.html</find>
       <find>Risk_Auto</find>
       <find>client</find>
@@ -266,12 +253,20 @@
       <find>Margin_Attention_Flag</find>
       <find>= {}</find>
       <find>NoOpenTrades_ChangeGroup</find>
+      <find>Abook</find>
+      <find>async_upda</find>
+      <find>CFH_Live_Position_ajax(update_all=0)</find>
+      <find>mt4/LP</find>
+      <find>adding a</find>
+      <find>soap</find>
+      <find>Send_Email_Total</find>
     </findStrings>
     <replaceStrings>
       <replace>time_difference_check</replace>
       <replace>AVAILABLE</replace>
       <replace>margin_attention_flag</replace>
       <replace>noopentrades_changegroup</replace>
+      <replace>send_email_total</replace>
     </replaceStrings>
   </component>
   <component name="Git.Settings">
@@ -732,8 +727,8 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/app/routes.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="651" column="97" lean-forward="true" selection-start-line="651" selection-start-column="97" selection-end-line="651" selection-end-column="97" />
+        <state relative-caret-position="252">
+          <caret line="1444" column="56" lean-forward="true" selection-start-line="1444" selection-start-column="56" selection-end-line="1444" selection-end-column="56" />
           <folding>
             <element signature="e#0#30#0" expanded="true" />
           </folding>
