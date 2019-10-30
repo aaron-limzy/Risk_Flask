@@ -20,7 +20,7 @@ from app.models import User, load_user, flask_users
 from sqlalchemy import text
 from Aaron_Lib import *
 
-
+#from aiopyfix.client_example import CFH_Position_n_Info
 
 from requests.auth import HTTPBasicAuth  # or HTTPDigestAuth, or OAuth1, etc.
 from requests import Session
