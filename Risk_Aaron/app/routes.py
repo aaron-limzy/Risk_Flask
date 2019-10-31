@@ -20,7 +20,9 @@ from app.models import User, load_user, flask_users
 from sqlalchemy import text
 from Aaron_Lib import *
 
-#from aiopyfix.client_example import CFH_Position_n_Info
+from aiopyfix.client_example import CFH_Position_n_Info
+import asyncio
+
 
 from requests.auth import HTTPBasicAuth  # or HTTPDigestAuth, or OAuth1, etc.
 from requests import Session
@@ -29,7 +31,7 @@ from zeep.transports import Transport
 from zeep import Client
 
 import logging
-logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(level=logging.INFO)
 logging.getLogger('suds.client').setLevel(logging.DEBUG)
 logging.getLogger('suds.transport').setLevel(logging.DEBUG)
 logging.getLogger('suds.xsd.schema').setLevel(logging.DEBUG)
@@ -1448,9 +1450,9 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
 		ROUND(100 * total_margin / (credit + deposit + pnl),2) as `Margin/Equity (%)` ,
 		margin_call as `margin_call (M/E)` , stop_out as `stop_out (M/E)`,
 			  COALESCE(`stop_out_amount`, ROUND(  100* (`total_margin`/`stop_out`) ,2)) as `STOPOUT AMOUNT`,
-		ROUND(`equity` -  COALESCE(`stop_out_amount`,         100* (`total_margin`/`stop_out`) ),2) as `available`,
+		ROUND(`equity` -  COALESCE(`stop_out_amount`, 100* (`total_margin`/`stop_out`) ),2) as `available`,
 		updated_time 
-		FROM aaron.lp_summary""")  # Need to convert to Python Friendly Text.
+		FROM aaron.lp_summary ORDER BY LP DESC""")  # Need to convert to Python Friendly Text.
     raw_result = db.engine.execute(sql_query)
     result_data = raw_result.fetchall()
     # result_data_json_parse = [[float(a) if isinstance(a, decimal.Decimal) else a for a in d ] for d in result_data]    # correct The decimal.Decimal class to float.
@@ -1705,6 +1707,61 @@ def Bloomberg_Dividend_ajax():     # Return the Bloomberg dividend table in Json
     return json.dumps(return_data)
 
 
+@app.route('/CFH/Details')
+@login_required
+def cfh_details():
+
+    #loop = asyncio.new_event_loop()
+
+    description = Markup("Pull CFH Details.")
+    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="CFH Data", \
+                           title="CFH Details", ajax_url=url_for("chf_details_ajax"),setinterval=30,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+
+@app.route('/CFH/Details_ajax', methods=['GET', 'POST'])
+@login_required
+def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
+    [account_info, account_position] = CFH_Position_n_Info()
+    print(account_info)
+    # account_info['equity'] = float(account_info["Balance"]) if "Balance" in account_info else 0
+    # account_info['equity'] += float(account_info["OpenPL"])
+
+    lp = "CFH"
+    deposit = float(account_info["Balance"]) if "Balance" in account_info else 0
+    pnl = float(account_info["OpenPL"]) if "OpenPL" in account_info else 0
+    equity = (float(account_info["Balance"]) if "Balance" in account_info else 0) +\
+             (float(account_info["OpenPL"]) if "OpenPL" in account_info else 0) + \
+             (float(account_info["CreditLimit"]) if "CreditLimit" in account_info else 0)
+
+    account_info['equity'] = equity
+    total_margin = account_info['MarginRequirement'] if 'MarginRequirement' in account_info else 0
+    free_margin = account_info['AvailableForMarginTrading'] if 'AvailableForMarginTrading' in account_info else 0
+    credit =  account_info['CreditLimit']  if 'CreditLimit' in account_info else 0
+
+    database = "aaron"
+    db_table = "lp_summary"
+    #db_table = "lp_summary_copy"
+    sql_insert = """INSERT INTO {database}.{db_table} (lp, deposit, pnl, equity, total_margin, free_margin, credit, updated_time) VALUES 
+    ('{lp}', '{deposit}', '{pnl}', '{equity}', '{total_margin}', '{free_margin}', '{credit}', now()) 
+    ON DUPLICATE KEY UPDATE deposit=VALUES(deposit), pnl=VALUES(pnl), total_margin=VALUES(total_margin), equity=VALUES(equity),
+    free_margin=VALUES(free_margin), Updated_Time=VALUES(Updated_Time) """.format(database=database,
+                                            db_table=db_table, lp=lp, deposit=deposit, pnl=pnl, equity=equity,
+                                            total_margin="{:.2f}".format(float(total_margin)),
+                                            free_margin="{:.2f}".format(float(free_margin)), credit=credit)
+
+    sql_insert= sql_insert.replace('\n', ' ').replace('  '," ") # Tidy up the SQL statement.
+    #print(account_position)
+    # print(sql_insert)
+
+    raw_insert_result = db.engine.execute(sql_insert)
+    return_data = [account_info]
+
+    return json.dumps(return_data)
+
+
+
 @app.route('/BGI_Swaps')
 @login_required
 def BGI_Swaps():
@@ -1814,9 +1871,6 @@ def Changed_readonly_ajax():
     result_dict = [dict(zip(result_col,d)) for d in result_data_clean]
 
     return json.dumps(result_dict)
-
-
-
 
 
 # Async Call to send email.

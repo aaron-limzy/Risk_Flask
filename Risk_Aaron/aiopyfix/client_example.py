@@ -7,6 +7,7 @@ from aiopyfix.client_connection import FIXClient
 from aiopyfix.engine import FIXEngine
 from aiopyfix.message import FIXMessage
 from datetime import datetime
+from time import sleep
 
 class Side(Enum):
     buy = 1
@@ -21,11 +22,11 @@ class Client(FIXEngine):
     def __init__(self):
         #FIXEngine.__init__(self, "TS2LiveFix8.cfixtech.com")
 
-        addr= "3018.DemoFixGW.com"
-        targetCompId = "CfhDemoOrders"
-        senderCompId = "BGI_NZ_DataDemo"
-        userName = "BGI_NZ_DataDemo"
-        password = "6SPwaVqJ"
+        # addr= "3018.DemoFixGW.com"
+        # targetCompId = "CfhDemoOrders"
+        # senderCompId = "BGI_NZ_DataDemo"
+        # userName = "BGI_NZ_DataDemo"
+        # password = "6SPwaVqJ"
 
         self.client_account_info = dict()
         self.client_open_position = dict()
@@ -34,11 +35,11 @@ class Client(FIXEngine):
 
         #self.loop= asyncio.get_event_loop()
         # # Live environment.
-        # addr= "TS2LiveFix8.cfixtech.com"
-        # targetCompId = "CfhLiveOrders"
-        # senderCompId = "BGI_NZ_Data"
-        # userName = "BGI_NZ_Data"
-        # password = "NghaK4jZ"
+        addr= "TS2LiveFix8.cfixtech.com"
+        targetCompId = "CfhLiveOrders"
+        senderCompId = "BGI_NZ_Data"
+        userName = "BGI_NZ_Data"
+        password = "NghaK4jZ"
 
         FIXEngine.__init__(self, addr)
         self.clOrdID = 0
@@ -158,8 +159,8 @@ class Client(FIXEngine):
         msg.setField(codec.protocol.fixtags.PosReqID, "ABC1234")
         msg.setField(codec.protocol.fixtags.PosReqType, 0)
         msg.setField(codec.protocol.fixtags.NoPartyIDs, 0)
-        #msg.setField(codec.protocol.fixtags.Account, "27840")
-        msg.setField(codec.protocol.fixtags.Account, "197201")
+        msg.setField(codec.protocol.fixtags.Account, "27840")
+        #msg.setField(codec.protocol.fixtags.Account, "197201")
         msg.setField(codec.protocol.fixtags.AccountType, 1)
         msg.setField(codec.protocol.fixtags.ClearingBusinessDate, datetime.utcnow().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
         msg.setField(codec.protocol.fixtags.TransactTime, datetime.utcnow().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
@@ -180,8 +181,8 @@ class Client(FIXEngine):
         #197201  - UAT
         # 27840 - Live
         msg = FIXMessage("AAA")
-        msg.setField(codec.protocol.fixtags.Account, "197201")
-        #msg.setField(codec.protocol.fixtags.Account, "27840")
+        #msg.setField(codec.protocol.fixtags.Account, "197201")
+        msg.setField(codec.protocol.fixtags.Account, "27840")
         await connectionHandler.sendMsg(msg)
 
 
@@ -194,19 +195,27 @@ class Client(FIXEngine):
 
     async def onLogout(self, connectionHandler, msg):
         logging.info("Logged out")
+
+        #self.loop.run_until_complete(self.loop.stop())
         self.loop.stop()
+        # while self.loop.is_running():
+        #     sleep(0.05)
+        #     print("Loop Running... ")
+        #self.loop.close()
 
 # Get the position and account info from CFH FIX
 def CFH_Position_n_Info():
     #logging.basicConfig(level=logging.DEBUG)
-    loop = asyncio.get_event_loop()
+    #loop = asyncio.get_event_loop()    # only able to run in the main loop.
+    loop = asyncio.new_event_loop()
     client = Client()
     #client.start(host='TS2LiveFix8.cfixtech.com', port=5308, loop=loop)
-    loop.run_until_complete(client.start(host='3018.DemoFixGW.com', port=5200, loop=loop))
-    #loop.run_until_complete(client.start(host='TS2LiveFix8.cfixtech.com', port=5308, loop=loop))
+    #loop.run_until_complete(client.start(host='3018.DemoFixGW.com', port=5200, loop=loop))
+    loop.run_until_complete(client.start(host='TS2LiveFix8.cfixtech.com', port=5308, loop=loop))
     loop.run_forever()
-    print(client.client_account_info)
-    print(client.client_open_position)
+    loop.close()
+    #print(client.client_account_info)
+    #print(client.client_open_position)
     return [client.client_account_info, client.client_open_position]
 
 
