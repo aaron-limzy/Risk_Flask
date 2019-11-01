@@ -131,7 +131,12 @@ class FIXConnectionHandler(object):
     async def handle_read(self):
         while True:
             try:
+                logging.debug("Going into reader.read")
                 msg = await self.reader.read(8192)
+                logging.debug("Done with reader.read. msg: {}".format(msg))
+                logging.debug("connectionState: {}".format(self.connectionState))
+                # if b"|35=5|" in msg:
+                #     logging.debug("Got the logout message.")
                 if not msg:
                     raise ConnectionError
                 self.msgBuffer = self.msgBuffer + msg
@@ -143,11 +148,26 @@ class FIXConnectionHandler(object):
                     if decodedMsg is None:
                         break
                     await self.processMessage(decodedMsg)
+
                     self.msgBuffer = self.msgBuffer[parsedLength:]
+                    logging.debug("decodedMsg in handle_read: {}".format(decodedMsg))
+                    logging.debug("type(decodedMsg) in handle_read: {}".format(type(decodedMsg)))
+
+                    if self.codec.protocol.fixtags.MsgType  in decodedMsg:  # If we were to get the logout message. We need to stop and return.
+                        msg_type = decodedMsg.getField(self.codec.protocol.fixtags.MsgType)
+                        #print(self.codec.protocol)
+                        if msg_type == self.codec.protocol.msgtype.LOGOUT:
+                            logging.debug("msg_type: {}".format(msg_type))
+                            return
+
             except ConnectionError as why:
                 logging.debug("Connection has been closed %s" % (why,))
                 await self.disconnect()
                 return
+            # except asyncio.CancelledError:
+            #     logging.debug("hand_read cancelledError")
+            # except:
+            #     logging.debug("handle_read General Except: {}".format(sys.exc_info()[0]))
 
     async def handleSessionMessage(self, msg):
         return -1

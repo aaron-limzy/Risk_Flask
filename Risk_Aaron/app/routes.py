@@ -1724,7 +1724,7 @@ def cfh_details():
 @login_required
 def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
     [account_info, account_position] = CFH_Position_n_Info()
-    print(account_info)
+    #print(account_info)
     # account_info['equity'] = float(account_info["Balance"]) if "Balance" in account_info else 0
     # account_info['equity'] += float(account_info["OpenPL"])
 
@@ -1745,8 +1745,8 @@ def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
     credit =  account_info['CreditLimit']  if 'CreditLimit' in account_info else 0
 
     database = "aaron"
-    db_table = "lp_summary"
-    #db_table = "lp_summary_copy"
+    #db_table = "lp_summary"
+    db_table = "lp_summary_copy"
     sql_insert = """INSERT INTO {database}.{db_table} (lp, deposit, pnl, equity, total_margin, free_margin, credit, updated_time) VALUES 
     ('{lp}', '{deposit}', '{pnl}', '{equity}', '{total_margin}', '{free_margin}', '{credit}', now()) 
     ON DUPLICATE KEY UPDATE deposit=VALUES(deposit), pnl=VALUES(pnl), total_margin=VALUES(total_margin), equity=VALUES(equity),

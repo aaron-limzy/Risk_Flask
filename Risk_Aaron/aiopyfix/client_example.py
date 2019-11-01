@@ -22,11 +22,11 @@ class Client(FIXEngine):
     def __init__(self):
         #FIXEngine.__init__(self, "TS2LiveFix8.cfixtech.com")
 
-        # addr= "3018.DemoFixGW.com"
-        # targetCompId = "CfhDemoOrders"
-        # senderCompId = "BGI_NZ_DataDemo"
-        # userName = "BGI_NZ_DataDemo"
-        # password = "6SPwaVqJ"
+        addr= "3018.DemoFixGW.com"
+        targetCompId = "CfhDemoOrders"
+        senderCompId = "BGI_NZ_DataDemo"
+        userName = "BGI_NZ_DataDemo"
+        password = "6SPwaVqJ"
 
         self.client_account_info = dict()
         self.client_open_position = dict()
@@ -35,11 +35,11 @@ class Client(FIXEngine):
 
         #self.loop= asyncio.get_event_loop()
         # # Live environment.
-        addr= "TS2LiveFix8.cfixtech.com"
-        targetCompId = "CfhLiveOrders"
-        senderCompId = "BGI_NZ_Data"
-        userName = "BGI_NZ_Data"
-        password = "NghaK4jZ"
+        # addr= "TS2LiveFix8.cfixtech.com"
+        # targetCompId = "CfhLiveOrders"
+        # senderCompId = "BGI_NZ_Data"
+        # userName = "BGI_NZ_Data"
+        # password = "NghaK4jZ"
 
         FIXEngine.__init__(self, addr)
         self.clOrdID = 0
@@ -69,7 +69,7 @@ class Client(FIXEngine):
 
 
         #session.addMessageHandler(self.onExecutionReport, MessageDirection.INBOUND, self.client.protocol.msgtype.EXECUTIONREPORT)
-        session.addMessageHandler(self.hearbeat, MessageDirection.INBOUND, self.client.protocol.msgtype.HEARTBEAT)
+        session.addMessageHandler(self.heartbeat, MessageDirection.INBOUND, self.client.protocol.msgtype.HEARTBEAT)
         session.addMessageHandler(self.account_info, MessageDirection.INBOUND, "AAB")   # For incoming Account Info.
         session.addMessageHandler(self.position_info, MessageDirection.INBOUND, self.client.protocol.msgtype.POSITIONREPORT)  # For incoming Account Info.
     #
@@ -148,7 +148,7 @@ class Client(FIXEngine):
         # for m in msg.tags:
         #     print(m)
 
-    async def hearbeat(self, connectionHandler, msg):
+    async def heartbeat(self, connectionHandler, msg):
         pass
 
     # Want to get all open positions.
@@ -159,8 +159,8 @@ class Client(FIXEngine):
         msg.setField(codec.protocol.fixtags.PosReqID, "ABC1234")
         msg.setField(codec.protocol.fixtags.PosReqType, 0)
         msg.setField(codec.protocol.fixtags.NoPartyIDs, 0)
-        msg.setField(codec.protocol.fixtags.Account, "27840")
-        #msg.setField(codec.protocol.fixtags.Account, "197201")
+        #msg.setField(codec.protocol.fixtags.Account, "27840")
+        msg.setField(codec.protocol.fixtags.Account, "197201")
         msg.setField(codec.protocol.fixtags.AccountType, 1)
         msg.setField(codec.protocol.fixtags.ClearingBusinessDate, datetime.utcnow().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
         msg.setField(codec.protocol.fixtags.TransactTime, datetime.utcnow().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
@@ -181,8 +181,8 @@ class Client(FIXEngine):
         #197201  - UAT
         # 27840 - Live
         msg = FIXMessage("AAA")
-        #msg.setField(codec.protocol.fixtags.Account, "197201")
-        msg.setField(codec.protocol.fixtags.Account, "27840")
+        msg.setField(codec.protocol.fixtags.Account, "197201")
+        #msg.setField(codec.protocol.fixtags.Account, "27840")
         await connectionHandler.sendMsg(msg)
 
 
@@ -193,10 +193,23 @@ class Client(FIXEngine):
         await self.getAccount_details(connectionHandler)
         #
 
+
     async def onLogout(self, connectionHandler, msg):
         logging.info("Logged out")
 
         #self.loop.run_until_complete(self.loop.stop())
+        #print("Before loop stop")
+        pending = asyncio.Task.all_tasks(loop=self.loop)
+
+
+
+        # for p in pending:  # Want to cancel all the pending task.
+        #     try:
+        #         p.cancel()
+        #     except asyncio.CancelledError:
+        #         print("{} : cancel_me is cancelled now".format(p))
+        # #self.loop.run_until_complete(asyncio.gather(*pending))
+        # asyncio.sleep(0.00001)
         self.loop.stop()
         # while self.loop.is_running():
         #     sleep(0.05)
@@ -210,9 +223,18 @@ def CFH_Position_n_Info():
     loop = asyncio.new_event_loop()
     client = Client()
     #client.start(host='TS2LiveFix8.cfixtech.com', port=5308, loop=loop)
-    #loop.run_until_complete(client.start(host='3018.DemoFixGW.com', port=5200, loop=loop))
-    loop.run_until_complete(client.start(host='TS2LiveFix8.cfixtech.com', port=5308, loop=loop))
+    loop.run_until_complete(client.start(host='3018.DemoFixGW.com', port=5200, loop=loop))
+    #loop.run_until_complete(client.start(host='TS2LiveFix8.cfixtech.com', port=5308, loop=loop))
     loop.run_forever()
+    # pending = asyncio.Task.all_tasks
+    pending = asyncio.Task.all_tasks(loop=loop)
+    for p in pending:   # Want to cancel all the pending task.
+        try:
+            p.cancel()
+        except asyncio.CancelledError:
+            print("{} : cancel_me is cancelled now".format(p))
+
+    #print(pending)
     loop.close()
     #print(client.client_account_info)
     #print(client.client_open_position)
