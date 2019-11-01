@@ -63,10 +63,8 @@
               Aaron[Flask]
             </a>
             <div class="dropdown-menu">
-
-              <a class="dropdown-item" href="{{ url_for('add_off_set') }}">A Book Offset</a>
-              <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="{{ url_for('ABook_Matching') + "?send_email_flag=0" }}">MT4/LP Python</a>
+              <a class="dropdown-item" href="{{ url_for('add_off_set') }}">A Book Offset</a>
               <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="{{ url_for('Live3_MT4_Users_web') }}">Risk Download Page</a>
               <div class="dropdown-divider"></div>
@@ -84,18 +82,17 @@
               <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="https://www.dailyfx.com/economic-calendar">Daily FX Calandar</a>
               <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="http://www.cfhclearing.com/products/">CHF Product List</a>
-              <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/1wBifOwaghe3lRsxRTRUMkTBEvLN8pmUWlHuGTuoXfFY/edit#gid=1332723419">Risk/Marketting Holiday Timing</a>
               <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="https://support.metaquotes.net/en/users/login?returnUrl=%2Fen">Meta Support</a>
               <div class="dropdown-divider"></div>
+
+              <a class="dropdown-item" href="http://www.cfhclearing.com/products/">CHF Product List</a>
               <a class="dropdown-item" href="https://trade.cfhclearing.com/Pages/Login.aspx?ReturnUrl=%2f">CFH Clear Pro Web</a>
               <a class="dropdown-item" href="https://backoffice.cfhclearing.com">CFH Back Office</a>
-              <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="{{ url_for('CFH_Live_Position') }}">CFH Live Position</a>
-              <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="{{ url_for('CFH_Symbol_Update') }}">CFH Symbol Update</a>
+              <a class="dropdown-item" href="{{ url_for('cfh_details') }}">CFH FIX Details</a>
               <div class="dropdown-divider"></div>
             </div>
           </li>
@@ -163,8 +160,8 @@
             <div class="dropdown-menu">
               <a class="dropdown-item" href="http://192.168.20.117:81/www/main.html">Main</a>
               <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index.php">Total PnL</a>
-              <a class="dropdown-item" href="http://192.168.64.73/www/PNL_FLOATshow/by_country/tableFLOATshowing2.html">Country Float</a>
-              <a class="dropdown-item" href="http://192.168.64.73/www/PNL_FLOATshow/by_symbol/tableFLOATsymbol0.html">Symbol Float</a>
+              <a class="dropdown-item" href="http://192.168.64.73/www/PNL_FLOATshow_1/by_country/tableFLOATshowing2.html">Country Float</a>
+              <a class="dropdown-item" href="http://192.168.64.73/www/PNL_FLOATshow_1/by_symbol/tableFLOATsymbol0.html">Symbol Float</a>
               <div class="dropdown-divider"></div>
               <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index_signal_CN.php">Signal:CN
                 Daily</a>

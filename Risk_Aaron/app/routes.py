@@ -1710,7 +1710,7 @@ def Bloomberg_Dividend_ajax():     # Return the Bloomberg dividend table in Json
 @app.route('/CFH/Details')
 @login_required
 def cfh_details():
-
+    #TODO: Add this into a blue print.
     #loop = asyncio.new_event_loop()
 
     description = Markup("Pull CFH Details.")
@@ -1729,9 +1729,13 @@ def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
     # account_info['equity'] += float(account_info["OpenPL"])
 
     lp = "CFH"
-    deposit = float(account_info["Balance"]) if "Balance" in account_info else 0
+    deposit = (float(account_info["Balance"]) if "Balance" in account_info else 0) + \
+                (float(account_info["ClosedPL"]) if "ClosedPL" in account_info else 0)
+
     pnl = float(account_info["OpenPL"]) if "OpenPL" in account_info else 0
+
     equity = (float(account_info["Balance"]) if "Balance" in account_info else 0) +\
+             (float(account_info["ClosedPL"]) if "ClosedPL" in account_info else 0) + \
              (float(account_info["OpenPL"]) if "OpenPL" in account_info else 0) + \
              (float(account_info["CreditLimit"]) if "CreditLimit" in account_info else 0)
 
