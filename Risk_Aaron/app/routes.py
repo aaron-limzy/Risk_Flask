@@ -1735,6 +1735,11 @@ def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
     # account_info['equity'] = float(account_info["Balance"]) if "Balance" in account_info else 0
     # account_info['equity'] += float(account_info["OpenPL"])
 
+    if len(account_info) == 0 : # If there are no return. 
+        return_data = [{"Error": "No Return Value"]
+        return json.dumps(return_data)
+
+
     lp = "CFH"
     deposit = (float(account_info["Balance"]) if "Balance" in account_info else 0) + \
                 (float(account_info["ClosedPL"]) if "ClosedPL" in account_info else 0)
@@ -1745,6 +1750,7 @@ def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
              (float(account_info["ClosedPL"]) if "ClosedPL" in account_info else 0) + \
              (float(account_info["OpenPL"]) if "OpenPL" in account_info else 0) + \
              (float(account_info["CreditLimit"]) if "CreditLimit" in account_info else 0)
+
 
     account_info['equity'] = equity
     total_margin = account_info['MarginRequirement'] if 'MarginRequirement' in account_info else 0
