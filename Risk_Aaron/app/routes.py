@@ -10,6 +10,8 @@ import urllib3
 import decimal
 import datetime
 import os
+import os
+import os
 import pandas as pd
 import numpy as np
 import requests
@@ -1723,6 +1725,11 @@ def cfh_details():
 @app.route('/CFH/Details_ajax', methods=['GET', 'POST'])
 @login_required
 def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
+
+    datetime_now = datetime.datetime.utcnow()
+    datetime_now.weekday() # 0 - monday
+    # TODO: To compare time. Close at UTC Friday 21:15
+
     [account_info, account_position] = CFH_Position_n_Info()
     #print(account_info)
     # account_info['equity'] = float(account_info["Balance"]) if "Balance" in account_info else 0

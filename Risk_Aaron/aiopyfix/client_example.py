@@ -27,9 +27,17 @@ class Client(FIXEngine):
         senderCompId = "BGI_NZ_DataDemo"
         userName = "BGI_NZ_DataDemo"
         password = "6SPwaVqJ"
+        self.client_num = "197201"
+
+
+
 
         self.client_account_info = dict()
         self.client_open_position = dict()
+
+
+
+
 
         #self.loop = loop # Place holder
 
@@ -40,6 +48,9 @@ class Client(FIXEngine):
         # senderCompId = "BGI_NZ_Data"
         # userName = "BGI_NZ_Data"
         # password = "NghaK4jZ"
+        # self.client_num = "27840"
+
+
 
         FIXEngine.__init__(self, addr)
         self.clOrdID = 0
@@ -159,8 +170,7 @@ class Client(FIXEngine):
         msg.setField(codec.protocol.fixtags.PosReqID, "ABC1234")
         msg.setField(codec.protocol.fixtags.PosReqType, 0)
         msg.setField(codec.protocol.fixtags.NoPartyIDs, 0)
-        #msg.setField(codec.protocol.fixtags.Account, "27840")
-        msg.setField(codec.protocol.fixtags.Account, "197201")
+        msg.setField(codec.protocol.fixtags.Account, self.client_num)
         msg.setField(codec.protocol.fixtags.AccountType, 1)
         msg.setField(codec.protocol.fixtags.ClearingBusinessDate, datetime.utcnow().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
         msg.setField(codec.protocol.fixtags.TransactTime, datetime.utcnow().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
@@ -181,8 +191,7 @@ class Client(FIXEngine):
         #197201  - UAT
         # 27840 - Live
         msg = FIXMessage("AAA")
-        msg.setField(codec.protocol.fixtags.Account, "197201")
-        #msg.setField(codec.protocol.fixtags.Account, "27840")
+        msg.setField(codec.protocol.fixtags.Account, self.client_num)
         await connectionHandler.sendMsg(msg)
 
 
