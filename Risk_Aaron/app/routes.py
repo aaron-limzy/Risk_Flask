@@ -900,13 +900,13 @@ def CFH_Live_Position():
     description = Markup("Getting CFH Live Position from CFH BO via CFH's SOAP API.<br>Results will be inserted/updated to aaron.cfh_live_trades.<br>Update time in table is GMT.")
 
     return render_template("Standard_Single_Table.html", backgroud_Filename='css/notebook_pen.jpg', Table_name="CFH Live Position", \
-                           title=title, ajax_url=url_for("CFH_Live_Position_ajax"), header=header, setinterval=60,
+                           title=title, ajax_url=url_for("CFH_Live_Position_ajax"), header=header, setinterval=60*60*12,
                            description=description, replace_words=Markup(["Today"]))
 
 @app.route('/CFH_Live_Position_ajax', methods=['GET', 'POST'])
 @login_required
 def CFH_Live_Position_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
-    # TODO: Update Minotor Tools Table.
+    # TODO: Update Minitor Tools Table.
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
     session = Session()
@@ -1255,22 +1255,25 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 
     mismatch_count_1 = 10   # Notify when mismatch has lasted 1st time.
     mismatch_count_2 = 15   # Second notify when mismatched has lasted a second time
-
     cfh_soap_query_count = 5   # Want to fully quiery and update from CFH when mismatches reaches this.
-
 
     sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(CFH_Position,0) AS CFH_Lots ,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+ COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
         ,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy 
         FROM test.core_symbol
         LEFT JOIN
-        (SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM (SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades` 
-        LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY mt4_symbol) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
-        LEFT JOIN
-        (SELECT Symbol as CFH_Symbol, position/100000 as CFH_Position
-        From aaron.cfh_live_position_fix
-        GROUP BY CFH_Symbol
+        (SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM 
+					(SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades` 
+					LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol 
+					LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL 
+					WHERE CONTRACT_SIZE>0) 
+				AS B GROUP BY mt4_symbol) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
+       
+				LEFT JOIN
+        (SELECT cfh_live_position_fix.symbol as `CFH_Symbol`, position * (1/core_symbol.CONTRACT_SIZE) AS CFH_Position
+					FROM aaron.`cfh_live_position_fix` 
+					LEFT JOIN test.core_symbol ON cfh_live_position_fix.Symbol = core_symbol.SYMBOL 
+					WHERE CONTRACT_SIZE>0
         ) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
-        
         LEFT JOIN
         (SELECT coresymbol AS api_SYMBOL,ROUND(SUM(api_LOT),2) AS api_LOT FROM (SELECT bgimargin_live_trades.margin_id,bgimargin_live_trades.coresymbol,position/core_symbol.CONTRACT_SIZE AS api_LOT FROM test.`bgimargin_live_trades` 
         LEFT JOIN test.core_symbol ON bgimargin_live_trades.coresymbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY coresymbol) AS K ON core_symbol.SYMBOL = K.api_SYMBOL
@@ -1380,7 +1383,10 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
                 # If there are mismatches, first thing to do is to update CFH. All trades.
                 # Some older trades might have been closed.
                 if any([d["Mismatch_count"] == cfh_soap_query_count for d in Notify_Mismatch]):
-                    CFH_Live_Position_ajax(update_all=1)    # Want to update all trades from CFH
+                    chf_details_ajax()  # Want to update CFH Live Trades.
+                    #TODO: Update Vantage Live trades too, if possible.
+
+                    #CFH_Live_Position_ajax(update_all=1)    # Want to update all trades from CFH
                     print("Mismatch. Will Send SOAP to refresh all trades.")
 
 
@@ -1722,18 +1728,23 @@ def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
 
     datetime_now = datetime.datetime.utcnow()
     datetime_now.weekday() # 0 - monday
-    # TODO: To compare time. Close at UTC Friday 21:15
+
+
+    if cfh_fix_timing() == False:  # Want to check if CFH Fix still running.
+        return_data = [[{"Comment": "Out of CFH Fix timing. From UTC Sunday 2215 to Friday 2215"}],
+                       [{"Comment": "Out of CFH Fix timing. From UTC Sunday 2215 to Friday 2215"}]]
+        return json.dumps(return_data)
+
 
     # Get the Position and Info from CFH FIX.
     [account_info, account_position] = CFH_Position_n_Info()
 
     if len(account_info) == 0 : # If there are no return.
-        return_data = [{"Error": "No Return Value"}]
+        return_data = [[{"Error": "No Return Value"}], [{"Error": "No Return Value"}]]
         return json.dumps(return_data)
 
     fix_position_sql_update(account_position)   # Will append the position to SQL. Will Zero out any others.
     cfh_account_position = [{"Symbol": k, "Position" : d} for k, d in account_position.items()]
-
 
 
     # Now, to calculate the Balance and such. Will put into SQL as well.
@@ -2014,6 +2025,26 @@ def query_SQL_return_record(SQL_Query):
     result_col = raw_result.keys()
     collate = [dict(zip(result_col, a)) for a in result_data]
     return collate
+
+# CFH Fix works from UTC Sunday 1730 - Friday 2215
+# We want to allow for Sunday 1735 - Friday 2210 Connection.
+# Giving 5 mins buffer.
+def cfh_fix_timing():
+    datetime_now = datetime.datetime.utcnow()
+    weekd = datetime_now.weekday()  # Monday = 0
+
+    # # For Testing
+    # if weekd == 3 and datetime_now.time() > datetime.time(8, 7, 0):
+    #     return False
+
+    if weekd >= 4:
+        if weekd == 4 and datetime_now.time() > datetime.time(22,10,0):  # Friday
+            return False
+        if weekd == 5:  # Sat
+            return False
+        if weekd == 6 and datetime_now.time() < datetime.time(17,35,0):   # Sunday
+            return False
+    return True
 
 
 
