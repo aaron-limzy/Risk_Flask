@@ -1266,14 +1266,8 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
         (SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM (SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades` 
         LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY mt4_symbol) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
         LEFT JOIN
-        (SELECT s.InstrumentSymbol as CFH_Symbol,
-        SUM(CASE
-            WHEN t.Side = 0 THEN (t.Amount/c.CONTRACT_SIZE)
-            WHEN t.Side = 1 THEN (t.amount/c.CONTRACT_SIZE) * -1 
-            ELSE 0
-        END) as CFH_Position
-        From aaron.cfh_live_trades as t, aaron.cfh_symbol as s, test.core_symbol as c
-        where s.InstrumentId=t.InstrumentId and Closed="False" and c.SYMBOL = S.InstrumentSymbol
+        (SELECT Symbol as CFH_Symbol, position/100000 as CFH_Position
+        From aaron.cfh_live_position_fix
         GROUP BY CFH_Symbol
         ) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
         
@@ -1716,7 +1710,7 @@ def cfh_details():
     #loop = asyncio.new_event_loop()
 
     description = Markup("Pull CFH Details.")
-    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="CFH Data", \
+    return render_template("Standard_Multi_Table.html", backgroud_Filename='css/Mac_table_user.jpeg', Table_name=["CFH Account Details", "CFH Live Position"], \
                            title="CFH Details", ajax_url=url_for("chf_details_ajax"),setinterval=30,
                            description=description, replace_words=Markup(["Today"]))
 
@@ -1730,16 +1724,19 @@ def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
     datetime_now.weekday() # 0 - monday
     # TODO: To compare time. Close at UTC Friday 21:15
 
+    # Get the Position and Info from CFH FIX.
     [account_info, account_position] = CFH_Position_n_Info()
-    #print(account_info)
-    # account_info['equity'] = float(account_info["Balance"]) if "Balance" in account_info else 0
-    # account_info['equity'] += float(account_info["OpenPL"])
 
-    if len(account_info) == 0 : # If there are no return. 
-        return_data = [{"Error": "No Return Value"]
+    if len(account_info) == 0 : # If there are no return.
+        return_data = [{"Error": "No Return Value"}]
         return json.dumps(return_data)
 
+    fix_position_sql_update(account_position)   # Will append the position to SQL. Will Zero out any others.
+    cfh_account_position = [{"Symbol": k, "Position" : d} for k, d in account_position.items()]
 
+
+
+    # Now, to calculate the Balance and such. Will put into SQL as well.
     lp = "CFH"
     deposit = (float(account_info["Balance"]) if "Balance" in account_info else 0) + \
                 (float(account_info["ClosedPL"]) if "ClosedPL" in account_info else 0)
@@ -1760,23 +1757,23 @@ def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
     database = "aaron"
     #db_table = "lp_summary"
     db_table = "lp_summary_copy"
-    sql_insert = """INSERT INTO {database}.{db_table} (lp, deposit, pnl, equity, total_margin, free_margin, credit, updated_time) VALUES 
-    ('{lp}', '{deposit}', '{pnl}', '{equity}', '{total_margin}', '{free_margin}', '{credit}', now()) 
-    ON DUPLICATE KEY UPDATE deposit=VALUES(deposit), pnl=VALUES(pnl), total_margin=VALUES(total_margin), equity=VALUES(equity),
-    free_margin=VALUES(free_margin), Updated_Time=VALUES(Updated_Time) """.format(database=database,
-                                            db_table=db_table, lp=lp, deposit=deposit, pnl=pnl, equity=equity,
-                                            total_margin="{:.2f}".format(float(total_margin)),
-                                            free_margin="{:.2f}".format(float(free_margin)), credit=credit)
+    sql_insert = """INSERT INTO {database}.{db_table} (lp, deposit, pnl, equity, total_margin, free_margin, 
+            credit, updated_time) VALUES ('{lp}', '{deposit}', '{pnl}', '{equity}', '{total_margin}', 
+            '{free_margin}', '{credit}', now()) ON DUPLICATE KEY UPDATE deposit=VALUES(deposit), pnl=VALUES(pnl), 
+            total_margin=VALUES(total_margin), equity=VALUES(equity),
+            free_margin=VALUES(free_margin), Updated_Time=VALUES(Updated_Time) """.format(database=database,
+                                    db_table=db_table, lp=lp, deposit=deposit, pnl=pnl, equity=equity,
+                                    total_margin="{:.2f}".format(float(total_margin)),
+                                    free_margin="{:.2f}".format(float(free_margin)), credit=credit)
 
     sql_insert= sql_insert.replace('\n', ' ').replace('  '," ") # Tidy up the SQL statement.
     #print(account_position)
     # print(sql_insert)
 
-    raw_insert_result = db.engine.execute(sql_insert)
-    return_data = [account_info]
+    raw_insert_result = db.engine.execute(text(sql_insert))
+    return_data = [[account_info], cfh_account_position]
 
     return json.dumps(return_data)
-
 
 
 @app.route('/BGI_Swaps')
@@ -1909,6 +1906,30 @@ def async_Update_Runtime(Tool):
                  " ('{Tool}', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()".format(Tool=Tool)
     raw_insert_result = db.engine.execute(sql_insert)
     # print("Updating Runtime for Tool: {}".format(Tool))
+
+
+
+# Function to update the SQL position from the CFH FIX.
+# CFH_Position = {"EURUSD": 100000, "GBPUSD": 2300, ...}
+def fix_position_sql_update(CFH_Position):
+
+    # First, we want to update the position, as well as the updated time.
+    fix_position_database = "aaron"
+    fix_position_table = "cfh_live_position_fix"
+    fix_position_insert = """INSERT INTO {fix_position_database}.{fix_position_table} (`Symbol`, `position`, `Updated_time`) VALUES """.format(
+        fix_position_database=fix_position_database, fix_position_table=fix_position_table)
+    fix_position_insert += " , ".join(["('{}', '{}', now()) ".format(k,d) for k,d in CFH_Position.items()])
+    fix_position_insert += """ ON DUPLICATE KEY UPDATE position=VALUES(position), Updated_time=VALUES(Updated_time)"""
+    fix_position_insert= fix_position_insert.replace('\n', ' ').replace('  '," ") # Tidy up the SQL statement.
+    db.engine.execute(text(fix_position_insert))    # TODO: Check SQL Insert
+
+    # Want to Update to Zero, for those position that are not opened now.
+    Update_to_zero = """UPDATE {fix_position_database}.{fix_position_table} set position = 0, Updated_time = now() where Symbol not in ({open_symbol})""".format(
+        fix_position_database=fix_position_database, fix_position_table= fix_position_table,
+        open_symbol = " , ".join(['"{}"'.format(k) for k in CFH_Position]))
+    db.engine.execute(text(Update_to_zero))  # TODO: Check SQL Insert
+    return
+
 
 
 # [{'Core_Symbol': '.A50', 'bgi_long': '0.000000000000', 'bgi_short': '0.000000000000', 'Date': datetime.date(2019, 8, 13)},....]

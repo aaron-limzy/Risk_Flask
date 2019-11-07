@@ -22,12 +22,12 @@ class Client(FIXEngine):
     def __init__(self):
         #FIXEngine.__init__(self, "TS2LiveFix8.cfixtech.com")
 
-        addr= "3018.DemoFixGW.com"
-        targetCompId = "CfhDemoOrders"
-        senderCompId = "BGI_NZ_DataDemo"
-        userName = "BGI_NZ_DataDemo"
-        password = "6SPwaVqJ"
-        self.client_num = "197201"
+        # addr= "3018.DemoFixGW.com"
+        # targetCompId = "CfhDemoOrders"
+        # senderCompId = "BGI_NZ_DataDemo"
+        # userName = "BGI_NZ_DataDemo"
+        # password = "6SPwaVqJ"
+        # self.client_num = "197201"
 
 
 
@@ -42,13 +42,13 @@ class Client(FIXEngine):
         #self.loop = loop # Place holder
 
         #self.loop= asyncio.get_event_loop()
-        # # Live environment.
-        # addr= "TS2LiveFix8.cfixtech.com"
-        # targetCompId = "CfhLiveOrders"
-        # senderCompId = "BGI_NZ_Data"
-        # userName = "BGI_NZ_Data"
-        # password = "NghaK4jZ"
-        # self.client_num = "27840"
+        # Live environment.
+        addr= "TS2LiveFix8.cfixtech.com"
+        targetCompId = "CfhLiveOrders"
+        senderCompId = "BGI_NZ_Data"
+        userName = "BGI_NZ_Data"
+        password = "NghaK4jZ"
+        self.client_num = "27840"
 
 
 
@@ -232,8 +232,8 @@ def CFH_Position_n_Info():
     loop = asyncio.new_event_loop()
     client = Client()
     #client.start(host='TS2LiveFix8.cfixtech.com', port=5308, loop=loop)
-    loop.run_until_complete(client.start(host='3018.DemoFixGW.com', port=5200, loop=loop))
-    #loop.run_until_complete(client.start(host='TS2LiveFix8.cfixtech.com', port=5308, loop=loop))
+    #loop.run_until_complete(client.start(host='3018.DemoFixGW.com', port=5200, loop=loop))
+    loop.run_until_complete(client.start(host='TS2LiveFix8.cfixtech.com', port=5308, loop=loop))
     loop.run_forever()
     # pending = asyncio.Task.all_tasks
     pending = asyncio.Task.all_tasks(loop=loop)
