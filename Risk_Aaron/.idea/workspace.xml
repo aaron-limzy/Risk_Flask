@@ -2,12 +2,16 @@
 <project version="4">
   <component name="BookmarkManager">
     <bookmark url="file://$PROJECT_DIR$/app/static/js/A_Book_Matching.js" line="158" />
-    <bookmark url="file://$PROJECT_DIR$/app/routes.py" line="1474" />
-    <bookmark url="file://$PROJECT_DIR$/app/routes.py" line="1855" />
+    <bookmark url="file://$PROJECT_DIR$/app/routes.py" line="1479" />
+    <bookmark url="file://$PROJECT_DIR$/app/routes.py" line="1860" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fb254749-7b1b-4fde-8616-ca5c9714cfac" name="Default Changelist" comment="commit 2">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Aaron_Lib.py" beforeDir="false" afterPath="$PROJECT_DIR$/Aaron_Lib.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/static/Exec/Risk_Auto_Cut.exe" beforeDir="false" afterPath="$PROJECT_DIR$/app/static/Exec/Risk_Auto_Cut.exe" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/Standard_Single_Table.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/Standard_Single_Table.html" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -95,9 +99,11 @@
     <session id="2019748385">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="6" />
+          <entry key="project.closed" value="7" />
+          <entry key="project.open.time.12" value="1" />
           <entry key="project.open.time.14" value="2" />
           <entry key="project.open.time.15" value="1" />
+          <entry key="project.open.time.16" value="1" />
           <entry key="project.open.time.17" value="1" />
           <entry key="project.open.time.18" value="1" />
           <entry key="project.open.time.2" value="4" />
@@ -108,24 +114,24 @@
           <entry key="project.open.time.6" value="1" />
           <entry key="project.open.time.7" value="1" />
           <entry key="project.open.time.9" value="1" />
-          <entry key="project.opened" value="16" />
+          <entry key="project.opened" value="18" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="Python Console" value="1017" />
-          <entry key="py" value="9976" />
+          <entry key="py" value="10269" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Python" value="10993" />
+          <entry key="Python" value="11286" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
           <entry key="json" value="1" />
-          <entry key="py" value="15" />
+          <entry key="py" value="16" />
           <entry key="py___jb_tmp___" value="1" />
         </counts>
       </usages-collector>
@@ -133,7 +139,7 @@
         <counts>
           <entry key="JSON" value="1" />
           <entry key="PLAIN_TEXT" value="1" />
-          <entry key="Python" value="15" />
+          <entry key="Python" value="16" />
         </counts>
       </usages-collector>
     </session>
@@ -146,101 +152,22 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app/routes.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="286">
-              <caret line="914" lean-forward="true" selection-start-line="914" selection-end-line="914" />
+            <state relative-caret-position="300">
+              <caret line="850" column="77" selection-start-line="850" selection-start-column="77" selection-end-line="850" selection-end-column="77" />
               <folding>
                 <element signature="e#0#30#0" expanded="true" />
-                <marker date="1573118746743" expanded="true" signature="106983:108285" ph="..." />
-                <marker date="1573118746743" expanded="true" signature="111887:112406" ph="..." />
+                <marker date="1573198923147" expanded="true" signature="107345:108647" ph="..." />
+                <marker date="1573198923147" expanded="true" signature="112249:112768" ph="..." />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/aiopyfix/client_example.py">
+        <entry file="file://$PROJECT_DIR$/Aaron_Lib.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="4029">
-              <caret line="246" column="16" selection-start-line="246" selection-start-column="16" selection-end-line="246" selection-end-column="16" />
-              <folding>
-                <element signature="e#0#14#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/aiopyfix/engine.py">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/aiopyfix/client_connection.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1785">
-              <caret line="113" column="24" selection-start-line="113" selection-start-column="24" selection-end-line="113" selection-end-column="24" />
-              <folding>
-                <element signature="e#0#14#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$USER_HOME$/AppData/Local/Programs/Python/Python36/Lib/importlib/__init__.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="187">
-              <caret line="12" column="10" selection-start-line="12" selection-start-column="10" selection-end-line="12" selection-end-column="10" />
-              <folding>
-                <element signature="e#604#673#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/aiopyfix/connection.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2074">
-              <caret line="130" column="25" selection-start-line="130" selection-start-column="14" selection-end-line="130" selection-end-column="25" />
-              <folding>
-                <element signature="e#0#14#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/aiopyfix/__init__.py">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/aiopyfix/FIX44.json">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="612">
-              <caret line="36" column="12" selection-start-line="36" selection-start-column="5" selection-end-line="36" selection-end-column="12" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/app/__init__.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="442">
-              <caret line="37" column="13" selection-start-line="37" selection-start-column="13" selection-end-line="37" selection-end-column="13" />
-              <folding>
-                <element signature="e#0#23#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/app/static/js/Change_Read_Only_NoOpenTrades.js">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="7225">
-              <caret line="425" column="50" selection-start-line="425" selection-start-column="50" selection-end-line="425" selection-end-column="50" />
+            <state relative-caret-position="231">
+              <caret line="227" column="54" selection-start-line="227" selection-start-column="54" selection-end-line="227" selection-end-column="54" />
             </state>
           </provider>
         </entry>
@@ -257,14 +184,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>CFH</find>
-      <find>ON DUPLICATE</find>
-      <find>cfh</find>
-      <find>cfh/det</find>
-      <find>LP_Detail</find>
-      <find>cfh/detail</find>
-      <find>sleep</find>
-      <find>asyncio</find>
       <find>handle_read</find>
       <find>read(</find>
       <find>color</find>
@@ -285,8 +204,16 @@
       <find>fix_position_sql_update</find>
       <find>CFH_Live_Position_ajax</find>
       <find>utc</find>
-      <find>fix</find>
       <find>cfh fix timi</find>
+      <find>fix</find>
+      <find>.exe</find>
+      <find>EMAIL_LIST_BGI</find>
+      <find>Risk_Auto_Cut</find>
+      <find>c_run_returnc_run_return</find>
+      <find>c_run_return</find>
+      <find>execute</find>
+      <find>Run_C_Prog</find>
+      <find>c_prog</find>
     </findStrings>
     <replaceStrings>
       <replace>time_difference_check</replace>
@@ -335,12 +262,12 @@
         <option value="$PROJECT_DIR$/app/forms.py" />
         <option value="$PROJECT_DIR$/app/static/js/A_Book_Matching.js" />
         <option value="$PROJECT_DIR$/app/static/js/Change_Read_Only_NoOpenTrades.js" />
-        <option value="$PROJECT_DIR$/Aaron_Lib.py" />
         <option value="$PROJECT_DIR$/app/__init__.py" />
         <option value="$PROJECT_DIR$/config.py" />
         <option value="$PROJECT_DIR$/app/models.py" />
         <option value="$PROJECT_DIR$/aiopyfix/connection.py" />
         <option value="$PROJECT_DIR$/aiopyfix/client_example.py" />
+        <option value="$PROJECT_DIR$/Aaron_Lib.py" />
         <option value="$PROJECT_DIR$/app/routes.py" />
       </list>
     </option>
@@ -374,6 +301,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -381,11 +309,15 @@
               <item name="Risk_Aaron" type="b2602c69:ProjectViewProjectNode" />
               <item name="Risk_Aaron" type="462c0819:PsiDirectoryNode" />
             </path>
+            <path>
+              <item name="Risk_Aaron" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Risk_Aaron" type="462c0819:PsiDirectoryNode" />
+              <item name="app" type="462c0819:PsiDirectoryNode" />
+            </path>
           </expand>
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -478,11 +410,11 @@
     <editor active="true" />
     <layout>
       <window_info id="Favorites" order="0" sideWeight="0.5007899" side_tool="true" weight="0.14699684" />
-      <window_info content_ui="combo" id="Project" order="1" sideWeight="0.49921012" visible="true" weight="0.14699684" />
+      <window_info active="true" content_ui="combo" id="Project" order="1" sideWeight="0.49921012" visible="true" weight="0.14699684" />
       <window_info id="Structure" order="2" side_tool="true" weight="0.25" />
       <window_info anchor="bottom" id="Terminal" order="0" sideWeight="0.49736565" weight="0.2559653" />
       <window_info anchor="bottom" id="Event Log" order="1" sideWeight="0.50263435" side_tool="true" weight="0.2559653" />
-      <window_info active="true" anchor="bottom" x="11" y="368" width="1898" height="304" id="Python Console" order="2" sideWeight="0.49947312" visible="true" weight="0.31344903" />
+      <window_info anchor="bottom" x="11" y="368" width="1898" height="304" id="Python Console" order="2" sideWeight="0.49947312" visible="true" weight="0.31344903" />
       <window_info anchor="bottom" id="Message" order="3" />
       <window_info anchor="bottom" id="Find" order="4" sideWeight="0.49947312" weight="0.329718" />
       <window_info anchor="bottom" id="Version Control" order="5" weight="0.329718" />
@@ -691,13 +623,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/Aaron_Lib.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="493">
-          <caret line="49" column="12" selection-start-line="49" selection-start-column="12" selection-end-line="49" selection-end-column="12" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/app/models.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="442">
@@ -732,18 +657,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="58">
           <caret line="60" lean-forward="true" selection-start-line="60" selection-end-line="60" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/app/routes.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="286">
-          <caret line="914" lean-forward="true" selection-start-line="914" selection-end-line="914" />
-          <folding>
-            <element signature="e#0#30#0" expanded="true" />
-            <marker date="1573118746743" expanded="true" signature="106983:108285" ph="..." />
-            <marker date="1573118746743" expanded="true" signature="111887:112406" ph="..." />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -814,6 +727,25 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="7225">
           <caret line="425" column="50" selection-start-line="425" selection-start-column="50" selection-end-line="425" selection-end-column="50" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/Aaron_Lib.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="231">
+          <caret line="227" column="54" selection-start-line="227" selection-start-column="54" selection-end-line="227" selection-end-column="54" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/app/routes.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="300">
+          <caret line="850" column="77" selection-start-line="850" selection-start-column="77" selection-end-line="850" selection-end-column="77" />
+          <folding>
+            <element signature="e#0#30#0" expanded="true" />
+            <marker date="1573198923147" expanded="true" signature="107345:108647" ph="..." />
+            <marker date="1573198923147" expanded="true" signature="112249:112768" ph="..." />
+          </folding>
         </state>
       </provider>
     </entry>

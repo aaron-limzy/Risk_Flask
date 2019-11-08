@@ -227,6 +227,7 @@ def Check_Float(element):
 def Run_C_Prog(Path):
     p = subprocess.Popen(Path, stdout=subprocess.PIPE)
     (output, err) = p.communicate()  # Want to capture the COUT
+    #print("output: {},  err: {}".format(output, err))
     C_Return_Val = ctypes.c_int32(p.returncode).value   # Convert to -ve/+ve.
     return (C_Return_Val, output, err)
 

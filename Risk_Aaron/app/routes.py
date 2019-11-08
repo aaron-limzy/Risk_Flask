@@ -54,8 +54,8 @@ TELE_CLIENT_ID = ["486797751"]        # Aaron's Telegram ID.
 LP_MARGIN_ALERT_LEVEL = 20            # How much away from MC do we start making noise.
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display the warnings.
 
-EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "cs@bgifx.com"]
-
+#EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "cs@bgifx.com"]
+EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com"]
 
 @app.route('/')
 @app.route('/index')        # Indexpage. To show the generic page.
@@ -762,7 +762,6 @@ def Risk_auto_cut():
 def risk_auto_cut_ajax():
     # TODO: Check if user exist first.
 
-
     # Using External Table
     # aaron.risk_autocut_exclude
     # aaron.risk_autocut_group
@@ -817,8 +816,6 @@ def risk_auto_cut_ajax():
             if live != None and login != None and (live,login) not in total_result:
                 total_result[(live,login)] = ss
 
-
-
     C_Return = dict()  # The returns from C++
     C_Return[0] = "User Changed to Read-Only, position forced closed";
     C_Return[-1] = "C++ ERROR: Params Wrong";
@@ -845,7 +842,7 @@ def risk_auto_cut_ajax():
 
             c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Auto_Cut.exe') + " {live} {login} {equity_limit}".format( \
             live=live, login=login,equity_limit=equity_limit))
-            # print("c_run_return = {}".format(c_run_return))
+            print("c_run_return = {}".format(c_run_return))
             # c_run_return = 0
 
             if c_run_return[0] == 0:  # Need to save things into SQL as well.
@@ -857,10 +854,15 @@ def risk_auto_cut_ajax():
 
     return_val = dict()  # Return value to be used
     if len(total_result) > 0:   # Want to send out an email should any changes have been made.
-        raw_insert_sql = " ({live}, {login}, {equity}, {credit}, '{group}', now()) "    # Raw template for insert.
-        sql_insert_w_values = ",".join([raw_insert_sql.format(live=d["LIVE"], login=d["LOGIN"], equity=d["EQUITY"], credit=d["CREDIT"], group=d["GROUP"]) for d in To_SQL]) # SQL insert with the values.
-        sql_insert = "INSERT INTO  aaron.`risk_autocut_results` (LIVE, LOGIN, EQUITY, CREDIT, `GROUP`, DATE_TIME) VALUES {}".format(sql_insert_w_values)   # Add it to the header.
 
+        if len(To_SQL) > 0: # There might not be anything here due to an error in C exe
+            raw_insert_sql = " ({live}, {login}, {equity}, {credit}, '{group}', now()) "    # Raw template for insert.
+            sql_insert_w_values = ",".join([raw_insert_sql.format(live=d["LIVE"], login=d["LOGIN"], equity=d["EQUITY"], credit=d["CREDIT"], group=d["GROUP"]) for d in To_SQL]) # SQL insert with the values.
+            sql_insert = "INSERT INTO  aaron.`risk_autocut_results` (LIVE, LOGIN, EQUITY, CREDIT, `GROUP`, DATE_TIME) VALUES {}".format(sql_insert_w_values)   # Add it to the header.
+            print("SQL Statement: {}".format(sql_insert))
+            raw_insert_result = db.engine.execute(sql_insert)   # Insert into SQL
+
+        print("total_result: {}".format(total_result))
 
         total_result_value = list(total_result.values())
         # print(total_result_value)
@@ -874,8 +876,7 @@ def risk_auto_cut_ajax():
                          Email_Header = Email_Header, table_data_html = table_data_html, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                          Email_Footer=Email_Footer), Attachment_Name=[])
 
-        print("SQL Statement: {}".format(sql_insert))
-        raw_insert_result = db.engine.execute(sql_insert)
+
 
         return_val = list(total_result.values())
 
@@ -916,7 +917,8 @@ def CFH_Live_Position_ajax(update_all=0):  # Optional Parameter, to update from 
     database_name = "aaron"
     table_name = "CFH_Live_Trades"
 
-
+    #TODO: See if we need to run this every day to update the trades?
+    update_all = 1  # Hard code for now. Will update later
 
     # Want to get the Client number that BGI has with CFH.
     client_details = client.service.GetAccounts()
@@ -1766,8 +1768,8 @@ def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
     credit =  account_info['CreditLimit']  if 'CreditLimit' in account_info else 0
 
     database = "aaron"
-    #db_table = "lp_summary"
-    db_table = "lp_summary_copy"
+    db_table = "lp_summary"
+    #db_table = "lp_summary_copy"
     sql_insert = """INSERT INTO {database}.{db_table} (lp, deposit, pnl, equity, total_margin, free_margin, 
             credit, updated_time) VALUES ('{lp}', '{deposit}', '{pnl}', '{equity}', '{total_margin}', 
             '{free_margin}', '{credit}', now()) ON DUPLICATE KEY UPDATE deposit=VALUES(deposit), pnl=VALUES(pnl), 

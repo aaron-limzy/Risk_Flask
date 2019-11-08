@@ -55,8 +55,9 @@
           Refresh_Page_Counter = Refresh_Page_Counter + Increment_counter;
           // If the call is to be made.
           if (Refresh_Page_Counter >=  {{ setinterval }}){
-              Table1_Update();
-              Refresh_Page_Counter = 0;
+            //Increment_counter = 0;
+            Table1_Update();
+            Refresh_Page_Counter = 0;
           }
           // For the count down on the button.
           $('#Refresh_count_down').html(Refresh_Page_seconds - Refresh_Page_Counter);
@@ -187,9 +188,9 @@
                   //console.log( "Into the complete Function. " );
                   //console.log(xhr);
                   //console.log(status);
+                  Increment_counter = 1; // To restart the count
             }
         });
-        Increment_counter = 1;  // To restart the count
       }
 
 
