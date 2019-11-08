@@ -53,6 +53,8 @@
       // Call in every second, will check and update button.
       function Refresh_Page_seconds_call(){
           Refresh_Page_Counter = Refresh_Page_Counter + Increment_counter;
+          console.log( return_Time_String());
+
           // If the call is to be made.
           if (Refresh_Page_Counter >=  {{ setinterval }}){
             //Increment_counter = 0;
@@ -65,10 +67,12 @@
 
       {% endif %}
 
+      // Try to see if this casuse the page not to freeze up...
+      setInterval(refresh_page_time, 200);    // To constantly refresh clock on page
 
-      // function refresh_page_time(){           // To constantly refresh clock on page.
-      //     $('#page_time').html(return_Time_String());
-      // }
+      function refresh_page_time(){           // To constantly refresh clock on page.
+          $('#page_time').html(return_Time_String());
+      }
       // function Refresh_H1(){
       //     $('#time_header').html(return_Time_String());
       // }
@@ -156,12 +160,12 @@
       // Table_Alert_Word - Words that would cause the cell in the table to be red.
 
       function Custom_Ajax_Call(Post_Data, ajax_url, table_id, raw_return_id, error_card_id, table_caption, Table_Alert_Word ) {
-          Increment_counter = 0;  // To stop the count.
+          //Increment_counter = 0;  // To stop the count.
           $.ajax({
               url:ajax_url,
               data    : Post_Data,
               type: 'POST',
-              async: false,
+              //async: false,
               dataType: "JSON",
               timeout: 45*1000,
               success: function(data){
@@ -188,7 +192,7 @@
                   //console.log( "Into the complete Function. " );
                   //console.log(xhr);
                   //console.log(status);
-                  Increment_counter = 1; // To restart the count
+                  //Increment_counter = 1; // To restart the count
             }
         });
       }

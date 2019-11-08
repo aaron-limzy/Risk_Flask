@@ -53,6 +53,7 @@
       // Call in every second, will check and update button.
       function Refresh_Page_seconds_call(){
           Refresh_Page_Counter = Refresh_Page_Counter + Increment_counter;
+          console.log( return_Time_String());
           // If the call is to be made.
           if (Refresh_Page_Counter >=  {{ setinterval }}){
               Table1_Update();
@@ -65,9 +66,11 @@
       {% endif %}
 
 
-      // function refresh_page_time(){           // To constantly refresh clock on page.
-      //     $('#page_time').html(return_Time_String());
-      // }
+      setInterval(refresh_page_time, 200);    // To constantly refresh clock on page
+
+      function refresh_page_time(){           // To constantly refresh clock on page.
+          $('#page_time').html(return_Time_String());
+      }
       // function Refresh_H1(){
       //     $('#time_header').html(return_Time_String());
       // }
@@ -156,12 +159,12 @@
       // table_id - Table ID that data needs to be placed
       // raw_return_id - Raw Return ID to be placed in the card
       // error_card_id - Error ID to be placed in the card
-      // table_caption - Table caption to be shown
+      // table_caption - Table caption to be shown [Array]
       // zero_out - Need to Zero out the table (To make it a shorter table)
       // Table_Alert_Word - Words that would cause the cell in the table to be red.
 
       function Custom_Ajax_Call(Post_Data, ajax_url, error_card_id, table_caption, Table_Alert_Word ) {
-          Increment_counter = 0;  // To stop the count.
+          //Increment_counter = 0;  // To stop the count.
           $.ajax({
               url:ajax_url,
               data    : Post_Data,
@@ -177,6 +180,8 @@
                 if (i >= {{ Table_name|length }}){  // No more table to fit data.
                   break;
                 }
+                //
+
                 $('#Table' + (i+1).toString() ).html(Draw_Table(data[i], table_caption[i], "table table-hover table-sm table-responsive-sm basic_table bg-light",Table_Alert_Word, {{ replace_words }} ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>");
                 $('#Table' + (i+1).toString() + '_Raw').html(JSON.stringify(data[i]));
               }
@@ -202,7 +207,7 @@
                   //console.log(status);
             }
         });
-        Increment_counter = 1;  // To restart the count
+        //Increment_counter = 1;  // To restart the count
       }
 
 
