@@ -54,8 +54,8 @@ TELE_CLIENT_ID = ["486797751"]        # Aaron's Telegram ID.
 LP_MARGIN_ALERT_LEVEL = 20            # How much away from MC do we start making noise.
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display the warnings.
 
-EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "cs@bgifx.com"]
-EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com"]
+EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "risk@blackwellglobal.com", "cs@bgifx.com"]
+#EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com"]
 
 @app.route('/')
 @app.route('/index')        # Indexpage. To show the generic page.
