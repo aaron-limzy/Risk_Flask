@@ -66,7 +66,7 @@
       {% endif %}
 
 
-      setInterval(refresh_page_time, 200);    // To constantly refresh clock on page
+      setInterval(refresh_page_time, 500);    // To constantly refresh clock on page
 
       function refresh_page_time(){           // To constantly refresh clock on page.
           $('#page_time').html(return_Time_String());
@@ -351,26 +351,6 @@
           sString += '</table>';
           return sString;
       }
-      // Function to delete all the rows that has it all as 0.
-      function Table_Zero_Out(Table_Data){
-
-          if (Show_Mt4_Zero == 1) {	// If want to show. Nothing to do.
-              return Table_Data;
-          }
-          Table_Data_Updated = [];
-          for (var x in Table_Data) {
-              if (!("Vantage_lot" in Table_Data[x] &&  Table_Data[x]['Vantage_lot'] == 0 &&
-                  "MT4_Net_Vol" in Table_Data[x] &&  Table_Data[x]['MT4_Net_Vol'] == 0 &&
-                  "Squared_lot" in Table_Data[x] &&  Table_Data[x]['Squared_lot'] == 0 &&
-                  "Discrepancy" in Table_Data[x] &&  Table_Data[x]['Discrepancy'] == 0 )) {
-                  Table_Data_Updated.push(Table_Data[x]);	// Push it in if its non-empty.
-              }
-          }
-          return Table_Data_Updated;
-      }
-
-
-
 
       // Try Catch Block to catch if string can be parsed as json.
   	function check_json(str){
@@ -394,9 +374,7 @@
           var e_day = e.getDay();            // 0 - 6
           //alert("d_day = " + d_day + "  e_day = " + e_day);
       }
-
     $('#btn_refresh_page').click(Table1_Update);
-
   });
 
 

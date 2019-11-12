@@ -1922,6 +1922,26 @@ def async_Update_Runtime(Tool):
 
 
 
+
+@app.route('/setinterval_test')
+@login_required
+def Aaron_test():
+    description = Markup("Testing Set Interval")
+    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="Testing", \
+                           title="Test", ajax_url=url_for("Aaron_test_ajax"),setinterval=5,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+
+@app.route('/Aaron_test_ajax', methods=['GET', 'POST'])
+@login_required
+def Aaron_test_ajax():     # Return the Bloomberg dividend table in Json.
+
+    return_val=[{"Test":"Return: {}".format(time_now())}]
+    return json.dumps(return_val)
+
+
+
 # Function to update the SQL position from the CFH FIX.
 # CFH_Position = {"EURUSD": 100000, "GBPUSD": 2300, ...}
 def fix_position_sql_update(CFH_Position):
