@@ -753,7 +753,7 @@ def Risk_auto_cut():
     header = "Risk Auto Cut"
     description = Markup("Running only on Live 1 and Live 3.<br>Will close all client's position and change client to read-only.")
 
-    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
+    return render_template("Standard_Single_Table_Test.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
                            title=title, ajax_url=url_for("risk_auto_cut_ajax"), header=header, setinterval=10,
                            description=description, replace_words=Markup(["Today"]))
 

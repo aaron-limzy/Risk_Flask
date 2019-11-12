@@ -46,6 +46,7 @@
       //MT4_LP_Position();
       //LP_Details();
       Table1_Update();
+
       {% if setinterval %}
       var Refresh_Page_seconds = {{ setinterval }};  // When to refresh the page.
       setInterval(Refresh_Page_seconds_call, 1000);        //     Refresh the time.
@@ -73,10 +74,6 @@
       function refresh_page_time(){           // To constantly refresh clock on page.
           $('#page_time').html(return_Time_String());
       }
-      // function Refresh_H1(){
-      //     $('#time_header').html(return_Time_String());
-      // }
-
 
       function return_Time_String(){
 
@@ -84,7 +81,6 @@
           var timeSone_OffSet = e.getTimezoneOffset();
           UTC_Offset_Change = (-1 * UTC_Timing_Fixed) + timeSone_OffSet;
           var d = new Date(e.getTime() + UTC_Offset_Change*60*1000);        // Get SGT
-
 
           var day = d.getDay();            // 0 - 6
 
@@ -123,9 +119,6 @@
           current_html += "status: " + status + "<br>";
           current_html += "Error: " + error['message'] + "<br>" + error['stack'] + "<br><br>";
           $('#' + error_card_id ).html(current_html);  // Put it back into the Card.
-
-          // Want to Log the time as well here.
-
 
           console.log(return_Time_String());
           console.log(xhr);
@@ -196,9 +189,6 @@
             }
         });
       }
-
-
-
 
       function Draw_Vertical_Table(table_Data, Table_Caption, Table_Class, Replace_words) {
           var sString = '';
@@ -338,24 +328,6 @@
           sString += '</table>';
           return sString;
       }
-      // Function to delete all the rows that has it all as 0.
-      function Table_Zero_Out(Table_Data){
-
-          if (Show_Mt4_Zero == 1) {	// If want to show. Nothing to do.
-              return Table_Data;
-          }
-          Table_Data_Updated = [];
-          for (var x in Table_Data) {
-              if (!("Vantage_lot" in Table_Data[x] &&  Table_Data[x]['Vantage_lot'] == 0 &&
-                  "MT4_Net_Vol" in Table_Data[x] &&  Table_Data[x]['MT4_Net_Vol'] == 0 &&
-                  "Squared_lot" in Table_Data[x] &&  Table_Data[x]['Squared_lot'] == 0 &&
-                  "Discrepancy" in Table_Data[x] &&  Table_Data[x]['Discrepancy'] == 0 )) {
-                  Table_Data_Updated.push(Table_Data[x]);	// Push it in if its non-empty.
-              }
-          }
-          return Table_Data_Updated;
-      }
-
 
 
 

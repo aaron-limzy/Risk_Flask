@@ -7,10 +7,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fb254749-7b1b-4fde-8616-ca5c9714cfac" name="Default Changelist" comment="commit 2">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/app/routes.py" beforeDir="false" afterPath="$PROJECT_DIR$/app/routes.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/Standard_Multi_Table.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/Standard_Multi_Table.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/app/templates/Standard_Single_Table.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/Standard_Single_Table.html" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/app/templates/Standard_Single_Table_Test.html" beforeDir="false" afterPath="$PROJECT_DIR$/app/templates/Standard_Single_Table_Test.html" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -120,12 +118,12 @@
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="Python Console" value="1032" />
-          <entry key="py" value="10393" />
+          <entry key="py" value="10398" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Python" value="11425" />
+          <entry key="Python" value="11430" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -152,12 +150,12 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app/routes.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="289">
-              <caret line="1935" column="55" lean-forward="true" selection-start-line="1935" selection-start-column="55" selection-end-line="1935" selection-end-column="55" />
+            <state relative-caret-position="491">
+              <caret line="1991" column="17" lean-forward="true" selection-start-line="1991" selection-start-column="17" selection-end-line="1991" selection-end-column="17" />
               <folding>
                 <element signature="e#0#30#0" expanded="true" />
-                <marker date="1573530451732" expanded="true" signature="108029:109331" ph="..." />
-                <marker date="1573530451732" expanded="true" signature="112933:113452" ph="..." />
+                <marker date="1573536111176" expanded="true" signature="108034:109336" ph="..." />
+                <marker date="1573536111176" expanded="true" signature="112938:113457" ph="..." />
               </folding>
             </state>
           </provider>
@@ -184,7 +182,6 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>handle_read</find>
       <find>read(</find>
       <find>color</find>
       <find>&quot;35&quot;</find>
@@ -214,6 +211,7 @@
       <find>execute</find>
       <find>Run_C_Prog</find>
       <find>c_prog</find>
+      <find>standard_single_table_test</find>
     </findStrings>
     <replaceStrings>
       <replace>time_difference_check</replace>
@@ -272,7 +270,7 @@
       </list>
     </option>
   </component>
-  <component name="ProjectFrameBounds" extendedState="6">
+  <component name="ProjectFrameBounds" extendedState="7">
     <option name="x" value="-288" />
     <option name="y" value="335" />
     <option name="width" value="1936" />
@@ -406,7 +404,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <frame x="-8" y="-8" width="1936" height="1056" extended-state="7" />
     <editor active="true" />
     <layout>
       <window_info id="Favorites" order="0" sideWeight="0.5007899" side_tool="true" weight="0.14699684" />
@@ -717,12 +715,12 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/app/routes.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="289">
-          <caret line="1935" column="55" lean-forward="true" selection-start-line="1935" selection-start-column="55" selection-end-line="1935" selection-end-column="55" />
+        <state relative-caret-position="491">
+          <caret line="1991" column="17" lean-forward="true" selection-start-line="1991" selection-start-column="17" selection-end-line="1991" selection-end-column="17" />
           <folding>
             <element signature="e#0#30#0" expanded="true" />
-            <marker date="1573530451732" expanded="true" signature="108029:109331" ph="..." />
-            <marker date="1573530451732" expanded="true" signature="112933:113452" ph="..." />
+            <marker date="1573536111176" expanded="true" signature="108034:109336" ph="..." />
+            <marker date="1573536111176" expanded="true" signature="112938:113457" ph="..." />
           </folding>
         </state>
       </provider>
