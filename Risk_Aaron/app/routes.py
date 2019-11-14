@@ -915,7 +915,7 @@ def CFH_Live_Position_ajax(update_all=0):  # Optional Parameter, to update from 
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
     session = Session()
-    session.auth = HTTPBasicAuth("BG_Michael", "Bgil8888")
+    session.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!")
     client = Client(wsdl_url, transport=Transport(session=session))
 
     database_name = "aaron"
