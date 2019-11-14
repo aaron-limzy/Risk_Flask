@@ -53,9 +53,10 @@
       // Call in every second, will check and update button.
       function Refresh_Page_seconds_call(){
           Refresh_Page_Counter = Refresh_Page_Counter + Increment_counter;
-          console.log( return_Time_String());
+
           // If the call is to be made.
           if (Refresh_Page_Counter >=  {{ setinterval }}){
+            console.log( return_Time_String());
               Table1_Update();
               Refresh_Page_Counter = 0;
           }
