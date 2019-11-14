@@ -89,4 +89,9 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+<<<<<<< Updated upstream
 *.pyc
+=======
+
+.pyc
+>>>>>>> Stashed changes
