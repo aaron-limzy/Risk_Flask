@@ -1803,11 +1803,17 @@ def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
                                     total_margin="{:.2f}".format(float(total_margin)),
                                     free_margin="{:.2f}".format(float(free_margin)), credit=credit)
 
-    sql_insert= sql_insert.replace('\n', ' ').replace('  '," ") # Tidy up the SQL statement.
-    #print(account_position)
-    # print(sql_insert)
+    # ASYNC send to SQL. 
+    async_sql_insert(header = "", values = [sql_insert], footer = "")
 
-    raw_insert_result = db.engine.execute(text(sql_insert))
+
+
+    #sql_insert= sql_insert.replace('\n', ' ').replace('  '," ") # Tidy up the SQL statement.
+    #print(account_position)
+    #print(sql_insert)
+    #raw_insert_result = db.engine.execute(text(sql_insert))
+
+
     return_data = [[account_info], cfh_account_position]
 
     return json.dumps(return_data)
@@ -1977,7 +1983,7 @@ def async_sql_insert(header, values, footer, sql_max_insert=500):
         # To construct the sql statement. header + values + footer.
         sql_trades_insert = header + " , ".join(values[i * sql_max_insert:(i + 1) * sql_max_insert]) + footer
         sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
-        #print(sql_trades_insert)
+        print(sql_trades_insert)
         sql_trades_insert = text(sql_trades_insert)  # To make it to SQL friendly text.
         raw_insert_result = db.engine.execute(sql_trades_insert)
     return
@@ -1993,18 +1999,27 @@ def fix_position_sql_update(CFH_Position):
     # First, we want to update the position, as well as the updated time.
     fix_position_database = "aaron"
     fix_position_table = "cfh_live_position_fix"
-    fix_position_insert = """INSERT INTO {fix_position_database}.{fix_position_table} (`Symbol`, `position`, `Updated_time`) VALUES """.format(
+
+    # Want to construct the statement for the insert into the  DB.table.
+    # For the values that are non-zero
+    fix_position_header = """INSERT INTO {fix_position_database}.{fix_position_table} (`Symbol`, `position`, `Updated_time`) VALUES """.format(
         fix_position_database=fix_position_database, fix_position_table=fix_position_table)
-    fix_position_insert += " , ".join(["('{}', '{}', now()) ".format(k,d) for k,d in CFH_Position.items()])
-    fix_position_insert += """ ON DUPLICATE KEY UPDATE position=VALUES(position), Updated_time=VALUES(Updated_time)"""
-    fix_position_insert= fix_position_insert.replace('\n', ' ').replace('  '," ") # Tidy up the SQL statement.
-    db.engine.execute(text(fix_position_insert))    # TODO: Check SQL Insert
+    fix_position_values = ["('{}', '{}', now()) ".format(k,d) for k,d in CFH_Position.items()]
+    fix_position_footer = """ ON DUPLICATE KEY UPDATE position=VALUES(position), Updated_time=VALUES(Updated_time)"""
+
+    # Async update SQL.
+    async_sql_insert(header=fix_position_header, values = fix_position_values, footer=fix_position_footer)
+
 
     # Want to Update to Zero, for those position that are not opened now.
     Update_to_zero = """UPDATE {fix_position_database}.{fix_position_table} set position = 0, Updated_time = now() where Symbol not in ({open_symbol})""".format(
         fix_position_database=fix_position_database, fix_position_table= fix_position_table,
         open_symbol = " , ".join(['"{}"'.format(k) for k in CFH_Position]))
-    db.engine.execute(text(Update_to_zero))  # TODO: Check SQL Insert
+
+    # Async update SQL. No header and footer as we will construct the whole statement here.
+    async_sql_insert(header="", values=[Update_to_zero], footer="")
+
+
     return
 
 
