@@ -2001,7 +2001,7 @@ def fix_position_sql_update(CFH_Position):
     fix_position_values = ["('{}', '{}', now()) ".format(k,d) for k,d in CFH_Position.items()]
     fix_position_footer = """ ON DUPLICATE KEY UPDATE position=VALUES(position), Updated_time=VALUES(Updated_time)"""
 
-    # Async update SQL.
+    # Async update SQL to save runtime
     async_sql_insert(header=fix_position_header, values = fix_position_values, footer=fix_position_footer)
 
 
