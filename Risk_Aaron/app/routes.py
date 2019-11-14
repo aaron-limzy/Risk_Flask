@@ -16,6 +16,7 @@ import pandas as pd
 import numpy as np
 import requests
 import json
+import math
 
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import User, load_user, flask_users
@@ -941,7 +942,7 @@ def CFH_Live_Position_ajax(update_all=0):  # Optional Parameter, to update from 
     # To get trades.
     while total_pages != 0 or total_pages == (
             page_counter + 1):  # 27840 is the account number.
-        loop_trades = client.service.GetTrades(client_num, query_start_date, query_end_date, 200, page_counter)
+        loop_trades = client.service.GetTrades(client_num, query_start_date, query_end_date, 1000, page_counter)
         total_pages = loop_trades.TotalPages if "TotalPages" in loop_trades else 0
         page_counter = page_counter + 1
         if loop_trades.TradesList != None:  # Would be None if there are no more trades.
@@ -968,6 +969,17 @@ def CFH_Live_Position_ajax(update_all=0):  # Optional Parameter, to update from 
                                          TradeSystemId=t.TradeSystemId, TradeType=t.TradeType, TsTradeId=t.TsTradeId,
                                          ValueDate=t.ValueDate, ExternalClientId=t.ExternalClientId) for t in total_trades])
 
+
+        live_trade_values = [""" ('{Amount}',	'{BoTradeId}',	'{Cancelled}',	'{ClientOrderId}',	'{Closed}',	'{Commission}',
+        '{CommissionCurrency}',	'{ExecutionDate}',	'{InstrumentId}',	'{OrderId}',	'{Price}',	'{Side}',	'{Track}',	'{TradeDate}',	'{TradeSystemId}',
+        '{TradeType}',	'{TsTradeId}',	'{ValueDate}',	'{ExternalClientId}', DATE_SUB(now(),INTERVAL 8 HOUR)) """.format(Amount=t.Amount,
+                                         BoTradeId=t.BoTradeId, Cancelled=t.Cancelled, ClientOrderId=t.ClientOrderId,
+                                         Closed=t.Closed, Commission=t.Commission, CommissionCurrency=t.CommissionCurrency,
+                                         ExecutionDate=t.ExecutionDate, InstrumentId=t.InstrumentId, OrderId=t.OrderId,
+                                         Price=t.Price, Side=t.Side, Track=t.Track, TradeDate=t.TradeDate,
+                                         TradeSystemId=t.TradeSystemId, TradeType=t.TradeType, TsTradeId=t.TsTradeId,
+                                         ValueDate=t.ValueDate, ExternalClientId=t.ExternalClientId) for t in total_trades]
+
         live_trades_sql_footer = """ ON DUPLICATE KEY UPDATE `Amount`=VALUES(`Amount`) ,`Cancelled`=VALUES(`Cancelled`) ,
             `ClientOrderId`=VALUES(`ClientOrderId`) , 	`Closed`=VALUES(`Closed`) , 	`Commission`=VALUES(`Commission`) ,
             `CommissionCurrency`=VALUES(`CommissionCurrency`) , 	`ExecutionDate`=VALUES(`ExecutionDate`) , 	`InstrumentId`=VALUES(`InstrumentId`) ,
@@ -975,20 +987,26 @@ def CFH_Live_Position_ajax(update_all=0):  # Optional Parameter, to update from 
             `TradeSystemId`=VALUES(`TradeSystemId`) , 	`TradeType`=VALUES(`TradeType`) , 	`TsTradeId`=VALUES(`TsTradeId`) , 	`ValueDate`=VALUES(`ValueDate`) ,
             `ExternalClientId`=VALUES(`ExternalClientId`), `Updated_time`=DATE_SUB(now(),INTERVAL 8 HOUR) """
 
-        sql_trades_insert = live_trades_sql_header + live_trade_values + live_trades_sql_footer
-        sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
-        sql_trades_insert = text(sql_trades_insert) # To make it to SQL friendly text.
+        async_sql_insert(header=live_trades_sql_header,values=live_trade_values,footer= live_trades_sql_footer,sql_max_insert=1000)
+        #sql_insert_max = 1000
+        # for i in range(math.ceil(len(live_trade_values) / sql_insert_max)):
+        #
+        #
+        #     sql_trades_insert = live_trades_sql_header + " , ".join(live_trade_values[i*sql_insert_max :(i+1)*sql_insert_max]) + live_trades_sql_footer
+        #     sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
+        #     #print(sql_trades_insert)
+        #     sql_trades_insert = text(sql_trades_insert) # To make it to SQL friendly text.
+        #
+        #     raw_insert_result = db.engine.execute(sql_trades_insert)
 
-        raw_insert_result = db.engine.execute(sql_trades_insert)
 
-
-        return_val = [{k: "{}".format(t[k]) for k in t} for t in total_trades]
+    return_val = [{k: "{}".format(t[k]) for k in t} for t in total_trades]
+    #print(return_val)
 
     # # Need to update Run time on SQL Update table.
     # async_Update_Runtime("CFH_Live_Trades")
 
     return json.dumps(return_val)
-
 
 
 # Want to check and close off account/trades.
@@ -1065,35 +1083,37 @@ def CFH_Symbol_Update_ajax(update_all=0):  # Optional Parameter, to update from 
 
 
     return json.dumps(return_val)
+#
+#
+# @app.route('/g', methods=['GET', 'POST'])
+# def read_from_app_g():
+#
+#
+#     # print(app.config["MAIL_SERVER"])
+#     # print(app.config["MAIL_PORT"])
+#     # print(app.config["MAIL_USE_TLS"])
+#     # print(app.config["MAIL_USERNAME"])
+#     # print(app.config["MAIL_PASSWORD"])
+#
+#     # if "Swap_data" in g:
+#     #  print("Swap_data in g")
+#     # else:
+#     #  print("Swap_data Data? ")
+#     return render_template("upload_form.html")
 
 
-@app.route('/g', methods=['GET', 'POST'])
-def read_from_app_g():
+#
+# @app.route('/h', methods=['GET', 'POST'])
+# def read_from_app_h():
+#
+#     # Time = datetime.now().strftime("%H:%M:%S")
+#     # for t in range(10):
+#     #  SymbolTotalTest.append_field(str(t) + " " + str(Time), FormField(SymbolSwap))
+#     # form = SymbolTotalTest()
+#     # return render_template("standard_form.html", form=form)
+#     return render_template("Standard_Single_Table.html", backgroud_Filename='css/test7.jpg', Table_name="Table1", title="Table", ajax_url=url_for("LP_Margin_UpdateTime"))
 
 
-    # print(app.config["MAIL_SERVER"])
-    # print(app.config["MAIL_PORT"])
-    # print(app.config["MAIL_USE_TLS"])
-    # print(app.config["MAIL_USERNAME"])
-    # print(app.config["MAIL_PASSWORD"])
-
-    # if "Swap_data" in g:
-    #  print("Swap_data in g")
-    # else:
-    #  print("Swap_data Data? ")
-    return render_template("upload_form.html")
-
-
-
-@app.route('/h', methods=['GET', 'POST'])
-def read_from_app_h():
-
-    # Time = datetime.now().strftime("%H:%M:%S")
-    # for t in range(10):
-    #  SymbolTotalTest.append_field(str(t) + " " + str(Time), FormField(SymbolSwap))
-    # form = SymbolTotalTest()
-    # return render_template("standard_form.html", form=form)
-    return render_template("Standard_Single_Table.html", backgroud_Filename='css/test7.jpg', Table_name="Table1", title="Table", ajax_url=url_for("LP_Margin_UpdateTime"))
 
 # To check if the file exists. If it does, generate a new name.
 def Check_File_Exist(path, filename):
@@ -1942,6 +1962,28 @@ def Aaron_test_ajax():     # Return the Bloomberg dividend table in Json.
 
     return_val=[{"Test":"Return: {}".format(time_now())}]
     return json.dumps(return_val)
+
+
+# To insert into SQL asynchronously.
+# Header - To which database, table, and what columns
+# values - Comes in a list, so we can decide how many times to insert it in.
+# footer - On duplicate, what do we do?
+# sql_max_insert - Optional. How many max do we want to insert at one time.
+
+@async
+def async_sql_insert(header, values, footer, sql_max_insert=500):
+
+    for i in range(math.ceil(len(values) / sql_max_insert)):
+        # To construct the sql statement. header + values + footer.
+        sql_trades_insert = header + " , ".join(values[i * sql_max_insert:(i + 1) * sql_max_insert]) + footer
+        sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
+        #print(sql_trades_insert)
+        sql_trades_insert = text(sql_trades_insert)  # To make it to SQL friendly text.
+        raw_insert_result = db.engine.execute(sql_trades_insert)
+    return
+
+
+
 
 
 # Function to update the SQL position from the CFH FIX.
