@@ -1803,15 +1803,9 @@ def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
                                     total_margin="{:.2f}".format(float(total_margin)),
                                     free_margin="{:.2f}".format(float(free_margin)), credit=credit)
 
-    # ASYNC send to SQL. 
-    async_sql_insert(header = "", values = [sql_insert], footer = "")
+    # ASYNC send to SQL.
+    async_sql_insert(header = "", values = [sql_insert], footer="")
 
-
-
-    #sql_insert= sql_insert.replace('\n', ' ').replace('  '," ") # Tidy up the SQL statement.
-    #print(account_position)
-    #print(sql_insert)
-    #raw_insert_result = db.engine.execute(text(sql_insert))
 
 
     return_data = [[account_info], cfh_account_position]
