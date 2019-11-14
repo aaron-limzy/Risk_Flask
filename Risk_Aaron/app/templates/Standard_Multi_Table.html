@@ -66,11 +66,11 @@
       {% endif %}
 
 
-      setInterval(refresh_page_time, 500);    // To constantly refresh clock on page
-
-      function refresh_page_time(){           // To constantly refresh clock on page.
-          $('#page_time').html(return_Time_String());
-      }
+      // setInterval(refresh_page_time, 500);    // To constantly refresh clock on page
+      //
+      // function refresh_page_time(){           // To constantly refresh clock on page.
+      //     $('#page_time').html(return_Time_String());
+      // }
       // function Refresh_H1(){
       //     $('#time_header').html(return_Time_String());
       // }
@@ -169,9 +169,9 @@
               url:ajax_url,
               data    : Post_Data,
               type: 'POST',
-              async: false,
+              //async: false,
               dataType: "JSON",
-              timeout: 45*1000,
+              timeout: 20*1000,
               success: function(data){
               //data;
               //table_id;

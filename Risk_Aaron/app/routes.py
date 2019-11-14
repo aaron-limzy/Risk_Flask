@@ -751,11 +751,15 @@ def Risk_auto_cut():
 
     title = "Risk Auto Cut"
     header = "Risk Auto Cut"
-    description = Markup("Running only on Live 1 and Live 3.<br>Will close all client's position and change client to read-only.")
+    description = Markup("Running only on Live 1 and Live 3.<br>Will close all client's position and change client to read-only.<br>Sql Table (aaron.risk_autocut_exclude) for client with special requests.")
 
-    return render_template("Standard_Single_Table_Test.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
+
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
                            title=title, ajax_url=url_for("risk_auto_cut_ajax"), header=header, setinterval=10,
                            description=description, replace_words=Markup(["Today"]))
+
+
 
 @app.route('/risk_auto_cut_ajax', methods=['GET', 'POST'])
 @login_required
@@ -1922,12 +1926,11 @@ def async_Update_Runtime(Tool):
 
 
 
-
 @app.route('/setinterval_test')
 @login_required
 def Aaron_test():
     description = Markup("Testing Set Interval")
-    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="Testing", \
+    return render_template("Standard_Single_Table_Test.html", backgroud_Filename='css/Faded_car.jpg', Table_name="Testing", \
                            title="Test", ajax_url=url_for("Aaron_test_ajax"),setinterval=5,
                            description=description, replace_words=Markup(["Today"]))
 
@@ -1939,7 +1942,6 @@ def Aaron_test_ajax():     # Return the Bloomberg dividend table in Json.
 
     return_val=[{"Test":"Return: {}".format(time_now())}]
     return json.dumps(return_val)
-
 
 
 # Function to update the SQL position from the CFH FIX.
@@ -1965,6 +1967,8 @@ def fix_position_sql_update(CFH_Position):
 
 
 
+
+
 # [{'Core_Symbol': '.A50', 'bgi_long': '0.000000000000', 'bgi_short': '0.000000000000', 'Date': datetime.date(2019, 8, 13)},....]
 def find_swaps(data, symbol, date, Long_Short):
     for d in data:
@@ -1972,7 +1976,6 @@ def find_swaps(data, symbol, date, Long_Short):
             if 'Date' in d and d['Date'] == date:
                 if isinstance(d[Long_Short], float) or isinstance(d[Long_Short], int) or Check_Float(d[Long_Short]):
                     return "{:.4f}".format(float(d[Long_Short]))
-
                 else:
                     return d[Long_Short]
     return 'X'

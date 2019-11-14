@@ -14,6 +14,76 @@
 {% block scripts %}
 {{ super() }}
 <script src="{{ url_for('static', filename='js/sweetalert2.all.min.js') }}"></script>
+
+<script id="myworker_Aaron">
+
+
+  self.onmessage = function(event){
+      setInterval(call_main,1000);
+    };
+
+    var UTC_Timing_Fixed = -480;        // Used for UTC Time offset to SGT
+    var UTC_Offset_Change = 0;
+    Check_Time_Offset();
+
+    function call_main(){
+      self.postMessage(return_Time_String());
+    }
+
+
+    function Check_Time_Offset(){
+
+        var d = new Date();
+        var n = d.getTimezoneOffset();
+        UTC_Offset_Change = (-1 * UTC_Timing_Fixed) + n;
+
+        var e = new Date(d.getTime() + UTC_Offset_Change*60*1000);
+        var d_day = d.getDay();            // 0 - 6
+        var e_day = e.getDay();            // 0 - 6
+        //alert("d_day = " + d_day + "  e_day = " + e_day);
+    }
+
+
+    function return_Time_String(){
+
+        var e = new Date();
+        var timeSone_OffSet = e.getTimezoneOffset();
+        UTC_Offset_Change = (-1 * UTC_Timing_Fixed) + timeSone_OffSet;
+        var d = new Date(e.getTime() + UTC_Offset_Change*60*1000);        // Get SGT
+
+
+        var day = d.getDay();            // 0 - 6
+
+        var month = d.getMonth();        // 0-11
+        var year = d.getFullYear();     // yyyy
+
+
+        var hr = pad(d.getHours(),2);            // 0-23
+        var min = pad(d.getMinutes(),2);        // 0-59
+        var sec = pad(d.getSeconds(),2);         // 0-59
+        var date = pad(d.getDate(),2);
+
+        var day_name = ["Sun" ,"Mon", "Tue", "Wed", "Thu", "Fri", "Sat" ];
+        var mon_name = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "July", "Aug", "Sep", "Oct", "Nov","Dec"];
+
+        var Date_String = "";
+        Date_String = day_name[day] + " " + year + "-" +  mon_name[month] + "-" + date + " " + hr+":"+min+":"+sec;
+        return Date_String;
+    }
+    function pad(number, length) {
+
+        var str = '' + number;
+        while (str.length < length) {
+            str = '0' + str;
+        }
+        return str;
+    }
+
+
+</script>
+
+
+
 <script>
   $(document).ready(function(){
       var UTC_Timing_Fixed = -480;
@@ -43,10 +113,24 @@
       //var SetInterval_MT4_LP;
       //var SetInterval_LP_Details;
 
+      var workerJS =  $('#myworker_Aaron').text();
+      //var workerJS =  document.getElementById("myworker_Aaron").innerText;
+      console.log(workerJS);
+      var blob = new Blob([workerJS]);
+      var blobURL = URL.createObjectURL(blob);
+      console.log(blobURL);
+
+      var myWorker = new Worker(blobURL);
+      myWorker.onmessage = function(e){
+        console.log(e.data);
+
+      };
+
+      myWorker.postMessage("Hi There");
+
       //MT4_LP_Position();
       //LP_Details();
       Table1_Update();
-
       {% if setinterval %}
       var Refresh_Page_seconds = {{ setinterval }};  // When to refresh the page.
       setInterval(Refresh_Page_seconds_call, 1000);        //     Refresh the time.
@@ -54,7 +138,7 @@
       // Call in every second, will check and update button.
       function Refresh_Page_seconds_call(){
           Refresh_Page_Counter = Refresh_Page_Counter + Increment_counter;
-          console.log( return_Time_String());
+          //console.log( return_Time_String());
 
           // If the call is to be made.
           if (Refresh_Page_Counter >=  {{ setinterval }}){
@@ -74,6 +158,10 @@
       function refresh_page_time(){           // To constantly refresh clock on page.
           $('#page_time').html(return_Time_String());
       }
+      // function Refresh_H1(){
+      //     $('#time_header').html(return_Time_String());
+      // }
+
 
       function return_Time_String(){
 
@@ -81,6 +169,7 @@
           var timeSone_OffSet = e.getTimezoneOffset();
           UTC_Offset_Change = (-1 * UTC_Timing_Fixed) + timeSone_OffSet;
           var d = new Date(e.getTime() + UTC_Offset_Change*60*1000);        // Get SGT
+
 
           var day = d.getDay();            // 0 - 6
 
@@ -119,6 +208,9 @@
           current_html += "status: " + status + "<br>";
           current_html += "Error: " + error['message'] + "<br>" + error['stack'] + "<br><br>";
           $('#' + error_card_id ).html(current_html);  // Put it back into the Card.
+
+          // Want to Log the time as well here.
+
 
           console.log(return_Time_String());
           console.log(xhr);
@@ -189,6 +281,9 @@
             }
         });
       }
+
+
+
 
       function Draw_Vertical_Table(table_Data, Table_Caption, Table_Class, Replace_words) {
           var sString = '';
@@ -328,6 +423,24 @@
           sString += '</table>';
           return sString;
       }
+      // Function to delete all the rows that has it all as 0.
+      function Table_Zero_Out(Table_Data){
+
+          if (Show_Mt4_Zero == 1) {	// If want to show. Nothing to do.
+              return Table_Data;
+          }
+          Table_Data_Updated = [];
+          for (var x in Table_Data) {
+              if (!("Vantage_lot" in Table_Data[x] &&  Table_Data[x]['Vantage_lot'] == 0 &&
+                  "MT4_Net_Vol" in Table_Data[x] &&  Table_Data[x]['MT4_Net_Vol'] == 0 &&
+                  "Squared_lot" in Table_Data[x] &&  Table_Data[x]['Squared_lot'] == 0 &&
+                  "Discrepancy" in Table_Data[x] &&  Table_Data[x]['Discrepancy'] == 0 )) {
+                  Table_Data_Updated.push(Table_Data[x]);	// Push it in if its non-empty.
+              }
+          }
+          return Table_Data_Updated;
+      }
+
 
 
 
