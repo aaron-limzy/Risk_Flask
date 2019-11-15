@@ -897,6 +897,42 @@ def risk_auto_cut_ajax():
 
 
 # Want to check and close off account/trades.
+@app.route('/Equity_Protect_Cut', methods=['GET', 'POST'])
+@login_required
+def Equity_protect_Cut():
+
+    title = "Equity Protect Cut"
+    header = "Equity Protect Cut"
+    description = Markup("Equity Protect Cut. Will Cut position if Equity below a certain level.")
+
+
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Equity Protect Cut", \
+                           title=title, ajax_url=url_for("Equity_protect_Cut_ajax"), header=header, setinterval=10,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+
+@app.route('/Equity_protect_Cut_ajax', methods=['GET', 'POST'])
+@login_required
+def Equity_protect_Cut_ajax():
+
+    # TODO: Check if user exist first.
+    raw_sql_statement = """SELECT mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as Equity_Cut FROM 
+    live1.mt4_users,aaron.risk_equity_protect_cut 
+    WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND mt4_users.EQUITY < risk_equity_protect_cut.Equity AND mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0"""
+
+    sql_result = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
+    if len(sql_result) > 0:
+        return_val = sql_result
+    else:
+        return_val = [{"Result":"No Client to change. {}".format(time_now())}]
+
+    return json.dumps(return_val)
+
+
+
+# Want to check and close off account/trades.
 @app.route('/CFH_Live_Position', methods=['GET', 'POST'])
 @login_required
 def CFH_Live_Position():
@@ -2004,7 +2040,6 @@ def fix_position_sql_update(CFH_Position):
     # Async update SQL to save runtime
     async_sql_insert(header=fix_position_header, values = fix_position_values, footer=fix_position_footer)
 
-
     # Want to Update to Zero, for those position that are not opened now.
     Update_to_zero = """UPDATE {fix_position_database}.{fix_position_table} set position = 0, Updated_time = now() where Symbol not in ({open_symbol})""".format(
         fix_position_database=fix_position_database, fix_position_table= fix_position_table,
@@ -2012,7 +2047,6 @@ def fix_position_sql_update(CFH_Position):
 
     # Async update SQL. No header and footer as we will construct the whole statement here.
     async_sql_insert(header="", values=[Update_to_zero], footer="")
-
 
     return
 
