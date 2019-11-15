@@ -897,38 +897,129 @@ def risk_auto_cut_ajax():
 
 
 # Want to check and close off account/trades.
-@app.route('/Equity_Protect_Cut', methods=['GET', 'POST'])
+@app.route('/Equity_Protect', methods=['GET', 'POST'])
 @login_required
-def Equity_protect_Cut():
+def Equity_protect():
 
-    title = "Equity Protect Cut"
-    header = "Equity Protect Cut"
+    title = "Equity Protect"
+    header = "Equity Protect"
     description = Markup("Equity Protect Cut. Will Cut position if Equity below a certain level.")
-
+    # form = AddOffSet()
+    # if request.method == 'POST' and form.validate_on_submit():
+    #     symbol = form.Symbol.data       # Get the Data.
+    #     offset = form.Offset.data
+    #     ticket = form.Ticket.data
+    #     lp = form.LP.data
+    #     comment = form.Comment.data
+        # sql_insert = "INSERT INTO  test.`offset_live_trades` (`symbol`, `ticket`, `lots`, `Comment`, `datetime`, `lp`) VALUES" \
+        #     " ('{}','{}','{}','{}',NOW(),'{}' )".format(symbol, ticket, offset, comment, lp)
+        # # print(sql_insert)
+        # db.engine.execute(sql_insert)   # Insert into DB
+        # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Equity Protect Cut", \
-                           title=title, ajax_url=url_for("Equity_protect_Cut_ajax"), header=header, setinterval=10,
+    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut", \
+                           title=title, ajax_url=url_for("Equity_protect_Cut_ajax",_external=True), header=header, setinterval=10,
                            description=description, replace_words=Markup(["Today"]))
 
 
-
-@app.route('/Equity_protect_Cut_ajax', methods=['GET', 'POST'])
-@login_required
+# Cut position when equity falls below a certain level
+@app.route('/Equity_protect_ajax', methods=['GET', 'POST'])
+#@login_required
 def Equity_protect_Cut_ajax():
 
     # TODO: Check if user exist first.
-    raw_sql_statement = """SELECT mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as Equity_Cut FROM 
-    live1.mt4_users,aaron.risk_equity_protect_cut 
-    WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND mt4_users.EQUITY < risk_equity_protect_cut.Equity AND mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0"""
+    raw_sql_statement = """SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT 
+    FROM live1.mt4_users,aaron.risk_equity_protect_cut 
+    WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '1' AND 
+    mt4_users.EQUITY < risk_equity_protect_cut.Equity AND mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0
+    UNION
+    SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT 
+    FROM live2.mt4_users,aaron.risk_equity_protect_cut 
+    WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '2' AND mt4_users.EQUITY < risk_equity_protect_cut.Equity AND 
+    mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0
+    UNION
+    SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT 
+    FROM live3.mt4_users,aaron.risk_equity_protect_cut 
+    WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '3' AND mt4_users.EQUITY < risk_equity_protect_cut.Equity AND 
+    mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0
+    UNION
+    SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT 
+    FROM live5.mt4_users,aaron.risk_equity_protect_cut 
+    WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '5' AND mt4_users.EQUITY < risk_equity_protect_cut.Equity AND 
+    mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0"""
 
     sql_result = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
+    async_Update_Runtime("Equity_protect")
+
+
     if len(sql_result) > 0:
         return_val = sql_result
-    else:
-        return_val = [{"Result":"No Client to change. {}".format(time_now())}]
+    else:   # Nothing to do. Will return.
+        return_val = [{"Result" : "No Client to change. {}".format(time_now())}]
+        #return json.dumps("[Hello")
+        return json.dumps(return_val)
+
+    c_return = {}
+    c_return[0] = "ALL_DONE"
+    c_return[1] = "LOGIN_NUM_ERROR"
+    c_return[2] = "SERVER_NUM_ERROR"
+    c_return[3] = "LOGIN_NUM_ERROR"
+    c_return[4] = "EQUITY_ABOVE_LIMIT"
+    c_return[5] = "OPEN_POSITION"
+    c_return[6] = "MT4_UPDATE_ERROR"
+    c_return[7] = "MT4_CONNECTION_ERROR"
+    c_return[8] = "EQUITY_WITHIN_EQUITY_LIMIT"
+    c_return[9] = "SQL RETURN ERROR."  # Not in C return. Added my Python
+
+    success_change = []
+    failed_change = []
+
+    for i in range(len(sql_result)):
+        live = sql_result[i]["LIVE"] if "LIVE" in sql_result[i] else -1
+        login = sql_result[i]["LOGIN"] if "LOGIN" in sql_result[i] else -1
+        equity_cut = sql_result[i]["EQUITY_CUT"] if "EQUITY_CUT" in sql_result[i] else -1
+
+        if not any([live==-1, login==-1, equity_cut==-1]):      # Need to ensure we have the correct input
+            c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Equity_Protect.exe') + " {live} {login} {equity_cut}".format( \
+               live=live, login=login,equity_cut=equity_cut))
+            sql_result[i]["RUN_RESULTS"] = c_return[c_run_return[0]] if c_run_return[0] in c_return else "Unknown error: {}".format(c_run_return)
+
+
+            if c_run_return[0] == 0: # Successfully changed.
+                success_change.append(sql_result[i])
+            else:
+                failed_change.append(sql_result[i])
+            #c_run_return = [0,1]
+        else:
+            sql_result[i]["RUN_RESULTS"] = "SQL Return Error."
+            failed_change.append(sql_result[i])
+
+    if len(success_change) > 0:
+        #EMAIL_LIST_BGI
+        table_data_html = Array_To_HTML_Table(list(success_change[0].keys()),
+                                              [list(d.values()) for d in success_change])
+        async_send_email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[],
+                     Subject="Equity Protection cut.",
+                     HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below limit.. \
+                                <br><br> {table_data_html} This is done to protect client equity. \
+                               <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
+                         Email_Header = Email_Header, table_data_html = table_data_html, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                         Email_Footer=Email_Footer), Attachment_Name=[])
+
+    if len(failed_change) > 0:
+        async_send_email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[],
+                         Subject="Error: Equity Protection cut.",
+                         HTML_Text="{Email_Header}Hi,<br><br>The following client/s have equity below limit, but was unable to close due to errors. \
+                                        <br><br> {table_data_html}\
+                                       <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
+                             Email_Header=Email_Header, table_data_html=table_data_html,
+                             datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                             Email_Footer=Email_Footer), Attachment_Name=[])
+
 
     return json.dumps(return_val)
+    #return json.dumps("Hello World")
 
 
 

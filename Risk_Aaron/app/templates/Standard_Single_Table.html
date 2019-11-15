@@ -59,12 +59,16 @@
           // If the call is to be made.
           if (Refresh_Page_Counter >=  {{ setinterval }}){
             console.log( return_Time_String());
-            //Increment_counter = 0;
+            Increment_counter = 0;
             Table1_Update();
             Refresh_Page_Counter = 0;
           }
           // For the count down on the button.
-          $('#Refresh_count_down').html(Refresh_Page_seconds - Refresh_Page_Counter);
+          if (Refresh_Page_Counter == 0){
+            $('#Refresh_count_down').html("Running")
+          }else{
+            $('#Refresh_count_down').html(Refresh_Page_seconds - Refresh_Page_Counter);
+          }
       }
 
       {% endif %}
@@ -186,7 +190,7 @@
                   //console.log( "Into the complete Function. " );
                   //console.log(xhr);
                   //console.log(status);
-                  //Increment_counter = 1; // To restart the count
+                  Increment_counter = 1; // To restart the count
             }
         });
       }
@@ -382,6 +386,14 @@
     Genrating Data. Please Wait..
   </div>
   <br>
+
+
+    {% if form %}
+    <div>
+    {{ wtf.quick_form(form, extra_classes ="", button_map={'submit': 'btn-lg btn-success'}) }}
+    </div>
+    {% endif %}
+
 
   {% if description %}
   <br><br>
