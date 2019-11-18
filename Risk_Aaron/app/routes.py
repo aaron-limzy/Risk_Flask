@@ -922,6 +922,7 @@ def Equity_protect():
     # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Standard_Single_Table.html", backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut", \
                            title=title, ajax_url=url_for("Equity_protect_Cut_ajax",_external=True), header=header, setinterval=10,
+                           form=form,
                            description=description, replace_words=Markup(["Today"]))
 
 
