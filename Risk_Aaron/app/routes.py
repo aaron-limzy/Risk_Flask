@@ -2,7 +2,7 @@ from app import app, db, excel
 from flask import render_template, flash, redirect, url_for, request, send_from_directory, jsonify, g, Markup
 from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
-from app.forms import UploadForm, SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form, LoginForm, CreateUserForm, noTrade_ChangeGroup_Form
+from app.forms import UploadForm, SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form, LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField
 import pyexcel
 from flask_table import create_table, Col
@@ -903,23 +903,26 @@ def Equity_protect():
 
     title = "Equity Protect"
     header = "Equity Protect"
-    description = Markup("Equity Protect Cut. Will Cut position if Equity below a certain level.")
-    # form = AddOffSet()
-    # if request.method == 'POST' and form.validate_on_submit():
-    #     symbol = form.Symbol.data       # Get the Data.
-    #     offset = form.Offset.data
-    #     ticket = form.Ticket.data
-    #     lp = form.LP.data
-    #     comment = form.Comment.data
-        # sql_insert = "INSERT INTO  test.`offset_live_trades` (`symbol`, `ticket`, `lots`, `Comment`, `datetime`, `lp`) VALUES" \
-        #     " ('{}','{}','{}','{}',NOW(),'{}' )".format(symbol, ticket, offset, comment, lp)
-        # # print(sql_insert)
-        # db.engine.execute(sql_insert)   # Insert into DB
-        # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
+    description = Markup("Equity Protect Cut.<br>Will Cut position if Equity below a certain level.<br>Need to look into the table risk_equity_protect_cut.")
+    form = equity_Protect_Cut()
+    if request.method == 'POST' and form.validate_on_submit():
+        Live = form.Live.data       # Get the Data.
+        Login = form.Login.data
+        Equity_Limit = form.Equity_Limit.data
+
+
+        sql_insert = """INSERT INTO  aaron.`risk_equity_cut` (`Live`, `Account`, `Equity`) VALUES
+            ('{Live}','{Account}','{Equity}')".format(Live=Live, Account=Login, equity=Equity_Limit)"""
+        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+        
+        print(sql_insert)
+        db.engine.execute(text(sql_insert))   # Insert into DB
+    # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Standard_Single_Table.html", backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut", \
                            title=title, ajax_url=url_for("Equity_protect_Cut_ajax",_external=True), header=header, setinterval=10,
+                           form=form,
                            description=description, replace_words=Markup(["Today"]))
 
 
@@ -996,10 +999,9 @@ def Equity_protect_Cut_ajax():
             failed_change.append(sql_result[i])
 
     if len(success_change) > 0:
-        #EMAIL_LIST_BGI
         table_data_html = Array_To_HTML_Table(list(success_change[0].keys()),
                                               [list(d.values()) for d in success_change])
-        async_send_email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[],
+        async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
                      Subject="Equity Protection cut.",
                      HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below limit.. \
                                 <br><br> {table_data_html} This is done to protect client equity. \
@@ -1008,7 +1010,7 @@ def Equity_protect_Cut_ajax():
                          Email_Footer=Email_Footer), Attachment_Name=[])
 
     if len(failed_change) > 0:
-        async_send_email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[],
+        async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
                          Subject="Error: Equity Protection cut.",
                          HTML_Text="{Email_Header}Hi,<br><br>The following client/s have equity below limit, but was unable to close due to errors. \
                                         <br><br> {table_data_html}\
