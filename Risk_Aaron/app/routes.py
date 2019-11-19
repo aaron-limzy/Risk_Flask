@@ -920,9 +920,8 @@ def Equity_protect():
     # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut", \
-                           title=title, ajax_url=url_for("Equity_protect_Cut_ajax",_external=True), header=header, setinterval=10,
-                           form=form,
+    return render_template("Standard_Single_Table_Test.html", backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut", \
+                           title=title, ajax_url=url_for("Equity_protect_Cut_ajax",_external=True), header=header, setinterval=3,
                            description=description, replace_words=Markup(["Today"]))
 
 
@@ -930,6 +929,12 @@ def Equity_protect():
 @app.route('/Equity_protect_ajax', methods=['GET', 'POST'])
 #@login_required
 def Equity_protect_Cut_ajax():
+
+    # #time.sleep(5)
+    # return_val = [{"Result": "No Client to change. {}".format(time_now())}]
+    # # return json.dumps("[Hello")
+    # return json.dumps(return_val)
+
 
     # TODO: Check if user exist first.
     raw_sql_statement = """SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT 

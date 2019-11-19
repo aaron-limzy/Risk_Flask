@@ -15,42 +15,63 @@
 {{ super() }}
 <script src="{{ url_for('static', filename='js/sweetalert2.all.min.js') }}"></script>
 
-<script id="my_first_worker">
+<script type="javascript/worker" id="my_first_worker">
 
   var Increment_counter = 1;
   var Refresh_Page_Counter = 0;  // When to refresh the page.
 
-  // self.onmessage = function(event){
-  //     setInterval(call_main,1000);
-  //   };
+  self.onmessage = function(event){
+    //console.log(event);
+    xhr_call();
+    Refresh_Page_seconds_call();
+    setInterval(Refresh_Page_seconds_call,1000);
+
+    //self.postMessage(return_Time_String());
+    //xhr_call();
+  };
 
     var UTC_Timing_Fixed = -480;        // Used for UTC Time offset to SGT
     var UTC_Offset_Change = 0;
     Check_Time_Offset();
-    Table1_Update();
+    //Table1_Update();
+
+
     // function call_main(){
     //   self.postMessage(return_Time_String());
     // }
 
     // {% if setinterval %}
-    // var Refresh_Page_seconds = {{ setinterval }};  // When to refresh the page.
+    var Refresh_Page_seconds = {{ setinterval }};  // When to refresh the page.
     // setInterval(Refresh_Page_seconds_call, 1000);        //     Refresh the time.
     //
-    // // Call in every second, will check and update button.
-    // function Refresh_Page_seconds_call(){
-    //     Refresh_Page_Counter = Refresh_Page_Counter + Increment_counter;
-    //     //console.log( return_Time_String());
-    //
-    //     // If the call is to be made.
-    //     if (Refresh_Page_Counter >=  {{ setinterval }}){
-    //       //Increment_counter = 0;
-    //       Table1_Update();
-    //       Refresh_Page_Counter = 0;
-    //     }
-    //     // For the count down on the button.
-    //     //$('#Refresh_count_down').html(Refresh_Page_seconds - Refresh_Page_Counter);
-    // }
-    //
+    // Call in every second, will check and update button.
+    function Refresh_Page_seconds_call(){
+        Refresh_Page_Counter = Refresh_Page_Counter + Increment_counter;
+        //console.log( return_Time_String());
+
+        // If the call is to be made.
+        if (Refresh_Page_Counter >=  {{ setinterval }}){
+          Increment_counter = 0;
+          Refresh_Page_Counter = 0;
+
+          //Table1_Update();
+          xhr_call();    // Do the XMLHTTP call.
+          self.postMessage({Refresh_count_down : "Running.."});
+
+        }else{
+          //console.log({Refresh_count_down : (Refresh_Page_seconds - Refresh_Page_Counter)});
+          if (Increment_counter > 0){
+          // For the count down on the button.
+            self.postMessage({Refresh_count_down : (Refresh_Page_seconds - Refresh_Page_Counter)});
+          }
+        }
+
+
+
+
+        //$('#Refresh_count_down').html(Refresh_Page_seconds - Refresh_Page_Counter);
+    }
+
     // {% endif %}
 
 
@@ -71,31 +92,83 @@
         console.log(error);
     }
 
-
     function Table1_Update() {
+
+
 
         //clearInterval(SetInterval_LP_Details);
         //$( "#btn_refresh_page" ).removeClass( "btn-warning" );
         //$( "#btn_refresh_page" ).addClass( "btn-info" );
 
         var Post_Data = { };
+        xhr_call();
         //Custom_Ajax_Call(Post_Data, "{{ ajax_url }}", "Table1", "Table1_Raw", "Table1_Raw_Error", '{{ Table_name }}', ["Update Slow"] );
-
-        // const xhr = new XMLHttpRequest();
-        // xhr.open('POST', "{{ ajax_url }}")
-        // xhr.timeout = 20*1000; // time in milliseconds
-        // xhr.onload = () => {
-        //   const data = xhr.response;
-        //   self.postMessage(check_json(data));
-        // }
-        // xhr.send();
-        fetch("{{ ajax_url }}")
-        .then(res => res.json())
-        .then(posts => self.postMessage(posts))
-
-
-
+        // fetch("{{ ajax_url }}")
+        // .then(res => res.json())
+        // .then(posts => self.postMessage(posts))
     }
+
+
+  function sent_httprequest(method, url, data){
+    const promise = new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.timeout = 90*1000;         // time in milliseconds
+      //xhr.responseType = 'json';    // We expect a json back.
+      if (data){
+        xhr.setRequestHeader('Content-Type','application/json');
+      }
+      xhr.open(method, url, true);
+      xhr.onload = () => {
+        const data = xhr.response;
+        json_return_data = check_json(xhr.response);
+        if (json_return_data != false) {
+          resolve(json_return_data);  // Return the data in array/dict format.
+        }else{
+          reject(xhr.response);
+        }
+      };
+
+      xhr.onerror = () =>{
+        console.log('xmlHTTP Error');
+        console.error(xhr);
+        reject(xhr.response);
+
+
+      };
+
+      xhr.ontimeout = function (e) {
+        reject("Timeout : " + return_Time_String());
+        console.log("Timeout: " + return_Time_String());
+      // XMLHttpRequest timed out. Do something here.
+      };
+    xhr.send();
+    });
+    return promise;
+
+  }
+
+  // The actual function to do the XHR call.
+  function xhr_call(){
+    sent_httprequest("POST", "{{ ajax_url }}").then(responseData => {
+      //self.postMessage(responseData);
+      Increment_counter = 1;  // Restart the Counter.
+
+      // Post to main thread to update the DOM
+      self.postMessage({Table1: Draw_Table(responseData, "{{ Table_name }}" , "table table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }} ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
+      self.postMessage({Table1_Raw : JSON.stringify(responseData)});
+
+
+    }).catch(err => {
+      //self.postMessage(err);
+      Increment_counter = 1;  // Restart the counter.
+
+      //TODO: Try to catch the error.
+      self.postMessage({Table1_Error: "An Error Occured: " + return_Time_String(), consolidate: true});
+      console.log(err);
+
+    });
+  }
+
 
     // Try Catch Block to catch if string can be parsed as json.
   function check_json(str){
@@ -107,55 +180,6 @@
         return reurn_val;
     }
 
-    // Custom the AJAX Call. To store it into the correct table.
-    // Post_Data - The data that needs to be posted
-    // ajax_url - The Ajax URL to be posted to
-    // table_id - Table ID that data needs to be placed
-    // raw_return_id - Raw Return ID to be placed in the card
-    // error_card_id - Error ID to be placed in the card
-    // table_caption - Table caption to be shown
-    // zero_out - Need to Zero out the table (To make it a shorter table)
-    // Table_Alert_Word - Words that would cause the cell in the table to be red.
-
-    // function Custom_Ajax_Call(Post_Data, ajax_url, table_id, raw_return_id, error_card_id, table_caption, Table_Alert_Word ) {
-    //     //Increment_counter = 0;  // To stop the count.
-    //     ajax({
-    //         url:ajax_url,
-    //         data    : Post_Data,
-    //         type: 'POST',
-    //         //async: false,
-    //         dataType: "JSON",
-    //         timeout: 45*1000,
-    //         success: function(data){
-    //         data;
-    //         table_id;
-    //         //$('#' + table_id ).html(Draw_Table(data, table_caption, "table table-hover table-sm table-responsive-sm basic_table bg-light",Table_Alert_Word, {{ replace_words }} ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>");
-    //         //$('#' + raw_return_id).html(JSON.stringify(data));
-    //
-    //         self.postMessage("Worker Ajax Success Call.");
-    //       }, error: function(xhr,status,error){
-    //             //console.log( "Into the Error Function. " );
-    //
-    //             var current_html = $('#' + error_card_id).html();   // To display the error. First, we need to store the HTML as we want to append.
-    //             current_html += "-------------------------------------------------<br>";
-    //             current_html += "Ajax Response: " + JSON.stringify(xhr) + "<br>";
-    //             current_html += "status: " + status + "<br>";
-    //             current_html += "Error: " + error['message'] + "<br>" + error['stack'] + "<br>";
-    //             //$('#' + error_card_id ).html(current_html);  // Put it back into the Card.
-    //
-    //             // Want to Log the time as well here.
-    //             console.log(xhr);
-    //             console.log(xhr["responseText"]);
-    //             console.log(status);
-    //             console.log(error);
-    //       }, complete: function(xhr,status){
-    //             //console.log( "Into the complete Function. " );
-    //             //console.log(xhr);
-    //             //console.log(status);
-    //             //Increment_counter = 1; // To restart the count
-    //       }
-    //   });
-    // }
 
 
 
@@ -347,8 +371,6 @@
         }
         return str;
     }
-
-
 </script>
 
 
@@ -384,28 +406,53 @@
 
       var workerJS =  $('#my_first_worker').text();
       //var workerJS =  document.getElementById("myworker_Aaron").innerText;
-      console.log(workerJS);
+      //console.log(workerJS);
       var blob = new Blob([workerJS]);
       var blobURL = URL.createObjectURL(blob);
-      console.log(blobURL);
+      //console.log(blobURL);
 
       var myWorker = new Worker(blobURL);
       myWorker.onmessage = function(e){
-        console.log(e.data);
+        if (e.data instanceof Object){  // If it is an object, we loop thru and add it to the correct container/Div
+          ret_obj = e.data;
+          var consolidate = false;
+          if ('consolidate' in ret_obj){  // If we want to consolidate all the errors.
+            consolidate = true;
+          }
+          for (let key in ret_obj){
 
+           //if(e.data.hasOwnProperty("consolidate")) {
+           //             var current_html = $('#' + error_card_id).html();   // To display the error. First, we need to store the HTML as we want to append.
+           //             current_html += "-------------------------------------------------<br>";
+           //             current_html += "Ajax Response: " + JSON.stringify(xhr) + "<br>";
+           //             current_html += "status: " + status + "<br>";
+           //             current_html += "Error: " + error['message'] + "<br>" + error['stack'] + "<br>";
+           //             //$('#' + error_card_id ).html(current_html);  // Put it back into the Card.
+
+          //}
+             var current_html = "";
+             if (consolidate == true){  // If we need to consolidate the items.
+                var current_html = $('#' + key).html();   // To display the error. First, we need to store the HTML as we want to append.
+                current_html += "<br>-------------------------------------------------<br>";
+                //current_html += "Ajax Response: " + JSON.stringify(xhr) + "<br>";
+                //current_html += "status: " + status + "<br>";
+                //current_html += "Error: " + error['message'] + "<br>" + error['stack'] + "<br>";
+                //$('#' + error_card_id ).html(current_html);  // Put it back into the Card.
+             }
+             //console.log(`${key} : ${e.data[key]}`);
+            $('#' + key).html(current_html + ret_obj[key]);
+          }
+            //}
+          //}
+        }else{
+          console.log(e.data);
+        }
       };
 
+    // Could be anything. We just want to post something out.
+    myWorker.postMessage("START");
 
 
-
-      //
-      // const xhr = new XMLHttpRequest();
-      // xhr.open('POST', "{{ ajax_url }}")
-      // xhr.send();
-
-
-    //
-    //   myWorker.postMessage("Hi There");
     //
     //   //MT4_LP_Position();
     //   //LP_Details();
@@ -746,7 +793,7 @@
     //       //alert("d_day = " + d_day + "  e_day = " + e_day);
     //   }
 
-    $('#btn_refresh_page').click(Table1_Update);
+    //$('#btn_refresh_page').click(Table1_Update);
 
   });
 
