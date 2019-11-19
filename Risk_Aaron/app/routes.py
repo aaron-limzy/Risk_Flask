@@ -756,8 +756,8 @@ def Risk_auto_cut():
 
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
-                           title=title, ajax_url=url_for("risk_auto_cut_ajax"), header=header, setinterval=10,
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
+                           title=title, ajax_url=url_for("risk_auto_cut_ajax", _external=True), header=header, setinterval=10,
                            description=description, replace_words=Markup(["Today"]))
 
 
@@ -920,8 +920,8 @@ def Equity_protect():
     # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Standard_Single_Table_Test.html", backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut", \
-                           title=title, ajax_url=url_for("Equity_protect_Cut_ajax",_external=True), header=header, setinterval=3,
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut", \
+                           title=title, ajax_url=url_for("Equity_protect_Cut_ajax",_external=True), header=header, setinterval=20,
                            description=description, replace_words=Markup(["Today"]))
 
 
