@@ -918,10 +918,11 @@ def Equity_protect():
         print(sql_insert)
         db.engine.execute(text(sql_insert))   # Insert into DB
     # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
-
+        #
     # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut", \
-                           title=title, ajax_url=url_for("Equity_protect_Cut_ajax",_external=True), header=header, setinterval=20,
+                           title=title, ajax_url=url_for("Equity_protect_Cut_ajax",_external=True), header=header,
+                           form=form,setinterval = 20,
                            description=description, replace_words=Markup(["Today"]))
 
 

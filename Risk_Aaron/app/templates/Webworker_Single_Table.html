@@ -23,14 +23,24 @@
   self.onmessage = function(event){
     //console.log(event);
     if (event.data == "BUTTON") {  // force the xmlhttprequest to fire off.
+      {% if setinterval %}
       Refresh_Page_Counter =  {{ setinterval }};
       Refresh_Page_seconds_call();
+      {% else %}
+      xhr_call();
+      {% endif %}
     }else{
 
 
-      xhr_call();
-      Refresh_Page_seconds_call();
-      setInterval(Refresh_Page_seconds_call,1000);
+      xhr_call();    // Do the XMLHTTPRequest
+
+      {% if setinterval %}
+        Refresh_Page_seconds_call();
+        setInterval(Refresh_Page_seconds_call,1000);
+      {% endif %}
+
+
+
     }
     //self.postMessage(return_Time_String());
     //xhr_call();
@@ -46,8 +56,9 @@
     //   self.postMessage(return_Time_String());
     // }
 
-    // {% if setinterval %}
+    {% if setinterval %}
     var Refresh_Page_seconds = {{ setinterval }};  // When to refresh the page.
+
     // setInterval(Refresh_Page_seconds_call, 1000);        //     Refresh the time.
     //
     // Call in every second, will check and update button.
@@ -71,14 +82,9 @@
             self.postMessage({Refresh_count_down : (Refresh_Page_seconds - Refresh_Page_Counter)});
           }
         }
-
-
-
-
-        //$('#Refresh_count_down').html(Refresh_Page_seconds - Refresh_Page_Counter);
     }
 
-    // {% endif %}
+    {% endif %}
 
 
     function Custom_Ajax_Error(xhr,status,error,error_card_id){
@@ -483,7 +489,6 @@
     Genrating Data. Please Wait..
   </div>
   <br>
-
   {% if description %}
   <br><br>
   <span class="border border-secondary rounded bg-light p-4">{{ description }}</span>
@@ -491,6 +496,18 @@
   {% endif %}
 
 </div>
+{% if form %}
+  <div class="row">
+    <div class="col">
+
+      <hr class="col-xs-12">
+      {{ wtf.quick_form(form, button_map={'submit': 'outline-secondary btn-lg btn-light'}) }}
+
+    </div>
+  </div>
+{% endif %}
+
+
   <br>
 <p>
   <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#Table1_Raw_Div" aria-expanded="false">
