@@ -933,9 +933,11 @@ def Equity_protect_Cut_ajax():
 
     # #time.sleep(5)
     # return_val = [{"Result": "No Client to change. {}".format(time_now())}]
+    return_val = [{"LIVE":1,"LOGIN":"2040😂","BALANCE":-120.18,"EQUITY":123.341,"GROUP":"0_Test_Risk","EQUITY_CUT":10000,"RUN_RESULTS":"ALL_DONE"}]
     # # return json.dumps("[Hello")
-    # return json.dumps(return_val)
+    return json.dumps(return_val)
 
+    #TODO: Send to Risk only, for a test account.
 
     # TODO: Check if user exist first.
     raw_sql_statement = """SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT 
@@ -1034,19 +1036,19 @@ def Equity_protect_Cut_ajax():
 # Want to check and close off account/trades.
 @app.route('/CFH_Live_Position', methods=['GET', 'POST'])
 @login_required
-def CFH_Live_Position():
+def CFH_Soap_Position():
 
     title = "CFH_Live_Position"
     header = "CFH_Live_Position"
     description = Markup("Getting CFH Live Position from CFH BO via CFH's SOAP API.<br>Results will be inserted/updated to aaron.cfh_live_trades.<br>Update time in table is GMT.")
 
     return render_template("Standard_Single_Table.html", backgroud_Filename='css/notebook_pen.jpg', Table_name="CFH Live Position", \
-                           title=title, ajax_url=url_for("CFH_Live_Position_ajax"), header=header, setinterval=60*60*12,
+                           title=title, ajax_url=url_for("CFH_Soap_Position_ajax"), header=header, setinterval=60*60*12,
                            description=description, replace_words=Markup(["Today"]))
 
 @app.route('/CFH_Live_Position_ajax', methods=['GET', 'POST'])
 @login_required
-def CFH_Live_Position_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
+def CFH_Soap_Position_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
     # TODO: Update Minitor Tools Table.
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
@@ -1147,24 +1149,24 @@ def CFH_Live_Position_ajax(update_all=0):  # Optional Parameter, to update from 
 # Want to check and close off account/trades.
 @app.route('/CFH_Symbol_Update', methods=['GET', 'POST'])
 @login_required
-def CFH_Symbol_Update():
+def CFH_Soap_Symbol():
 
     title = "CFH Symbol Update"
     header = "CFH Symbol Update"
     description = Markup("Getting CFH Symbol Details from CFH BO via CFH's SOAP API.<br>Results will be inserted/updated to aaron.cfh_symbol.<br>Update time in table is GMT.")
 
     return render_template("Standard_Single_Table.html", backgroud_Filename='css/notebook_pen.jpg', Table_name="CFH Symbols", \
-                           title=title, ajax_url=url_for("CFH_Symbol_Update_ajax"), header=header,
+                           title=title, ajax_url=url_for("CFH_Soap_Symbol_ajax"), header=header,
                            description=description, replace_words=Markup(["Today"]))
 
 @app.route('/CFH_Symbol_Update_ajax', methods=['GET', 'POST'])
 @login_required
-def CFH_Symbol_Update_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
+def CFH_Soap_Symbol_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
     # TODO: CFH_Symbol_Update_ajax Minotor Tools Table.
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
     session = Session()
-    session.auth = HTTPBasicAuth("BG_Michael", "Bgil8888")
+    session.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!")
     client = Client(wsdl_url, transport=Transport(session=session))
 
     database_name = "aaron"
@@ -1399,8 +1401,8 @@ def Live3_MT4_Users():    # To upload the Files, or post which trades to delete 
 
 @app.route('/sent_file/Risk_Download')
 @login_required
-def Live3_MT4_Users_web():    # To upload the Files, or post which trades to delete on MT5
-    return render_template("Show_Table.html",header="Send file...",title="Risk Download Page")
+def Risk_Download_Page():    # To upload the Files, or post which trades to delete on MT5
+    return render_template("Risk_Download_Page.html",header="Send file...",title="Risk Download Page")
 
 
 @app.route('/ABook_Match_Trades')

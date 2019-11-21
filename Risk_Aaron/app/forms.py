@@ -87,7 +87,7 @@ class noTrade_ChangeGroup_Form(FlaskForm):
 
 # Want to create a SQL insert, for Equity Protect Cut
 class equity_Protect_Cut(FlaskForm):
-    Live = IntegerField('Live', validators=[DataRequired(), AnyOf(values=[1,2,3,5], message="Only Live 1,2,3 and 5")])
-    Login = IntegerField('Login', validators=[DataRequired(message="Only numbers are allowed")])
+    Live = IntegerField('Live', validators=[DataRequired(), AnyOf(values=[1,2,3,5], message="Only Live 1,2,3 and 5")], description = "1,2,3 or 5.")
+    Login = IntegerField('Login', validators=[DataRequired(message="Only numbers are allowed")], description = "Client Login.")
     Equity_Limit = IntegerField('Equity_Limit', validators=[DataRequired(message="Only numbers are allowed")], description = "Equity to cut position, if client equity falls below. ")
     submit = SubmitField('Submit')
