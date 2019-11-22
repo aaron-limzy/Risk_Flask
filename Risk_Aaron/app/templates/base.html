@@ -43,8 +43,8 @@
   {% block styles %}
   <link rel="stylesheet" href="https://raw.githubusercontent.com/daneden/animate.css/master/animate.css">
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=2.7.79">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootnavbar.css') }}?v=2.7.79">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=2.0.1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bootnavbar.css') }}?v=1.0.0">
   {% endblock %}
 
 </head>
@@ -86,21 +86,54 @@
               <div class="dropdown-divider"></div>
 
 
-              <li class="nav-item dropdown">
+              <li class="nav-item dropleft">
                 <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown1" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                   <b>Risk</b> running tools
                 </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdown1">
-                  <li><a class="dropdown-item" href="{{ url_for('noopentrades_changegroup') }}">Change Group (No Open Trades)</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('Equity_protect') }}">Equity Protect</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('Risk_auto_cut') }}">Risk Auto Cut</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('cfh_details') }}">CFH FIX Details</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('CFH_Soap_Position') }}">CFH Soap Position</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('CFH_Soap_Symbol') }}">CFH Soap Symbol</a></li>
+                <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown1">
+                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('cfh_details') }}">CFH FIX Details</a></li>
+                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Get_Margin_Trades%20-%20V1.6%20-%20Vantage/">REST Vantage Margin Trades</a></li>
+                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Get_Margin_Trades%20BGI%20-%20V1.3/">REST BGI Margin Trades</a></li>
+
+
+                  <div class="dropdown-divider"></div>
+
+
+                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Risk_auto_cut') }}">Risk Auto Cut</a></li>
+                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('noopentrades_changegroup') }}">Change Group</br>(No Open Trades)</a></li>
+                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Equity_protect') }}">Equity Protect</a></li>
+
+
+                  <div class="dropdown-divider"></div>
+                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('CFH_Soap_Position') }}">CFH Soap Position</a></li>
+                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('CFH_Soap_Symbol') }}">CFH Soap Symbol</a></li>
+                  <div class="dropdown-divider"></div>
+
+
+
+                  <div class="dropdown-divider"></div>
+
+
+                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/Track_Account_Open_Trades_V1/">MonitorOpen Trades</a></li>
+                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/Daily_Change_Spread_V1.9/">Daily Change Spread</a></li>
+                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Risk_AutoCut_V3.2//">Risk Auto Cut</a></li>
+                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/Change_User_Group_V1%20.1/">Change User Group</a></li>
+                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/all/ReadOnly_Equity_Below_Credit_V1.2/">Equity below Credit</a></li>
+                  <div class="dropdown-divider"></div>
+                  <li><a class="dropdown-item bg_a_lighter_green" href="https://202.88.105.6:4433/All/Daily_Change_Spread_V1.91/">Daily Change Spread</a></li>
+                  <li><a class="dropdown-item bg_a_lighter_green" href="https://202.88.105.6:4433/All/Change_Spread_manual/">HK Spread Change</a></li>
+                  <li><a class="dropdown-item bg_a_lighter_green" href="https://202.88.105.6:4433/All/NFP_Change_Spread_V1.4/">NFP Spread Change</a></li>
+                  <div class="dropdown-divider"></div>
+                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/NFP_Change_Spread_V1.4/">NFP Spread Change</a></li>
+                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/ABook_Match_Trades%20-%20V2.7/?Send_Email_Toggle=0">LP/MT4 Position</a></li>
+
+
+
+
                 </ul>
               </li>
 
-              <li class="nav-item dropdown">
+              <li class="nav-item dropleft">
                 <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                   <b>CFH</b> Web
                 </a>
@@ -110,7 +143,7 @@
                   <li><a class="dropdown-item" href="https://backoffice.cfhclearing.com">CFH Back Office</a></li>
                 </ul>
               </li>
-              <li class="nav-item dropdown">
+              <li class="nav-item dropleft">
                 <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                   Google Sheets
                 </a>
@@ -121,7 +154,7 @@
                 </ul>
               </li>
 
-              <li class="nav-item dropdown">
+              <li class="nav-item dropleft">
                 <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown4" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                   BGI Data
                 </a>
@@ -168,44 +201,11 @@
           </div>
         </li>
 
-
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Aaron Tool
-          </a>
-          <div class="dropdown-menu">
-
-            <a class="dropdown-item" href="http://192.168.64.73/All/Change_User_Group_V1%20.1/">Change User Group</a>
-            <a class="dropdown-item" href="http://192.168.64.73/all/ReadOnly_Equity_Below_Credit_V1.2/">Equity below Credit</a>
-            <a class="dropdown-item" href="http://192.168.20.61/all/Risk_AutoCut_V3.2//">Risk Auto Cut</a>
-            <a class="dropdown-item" href="http://202.88.105.3/All/LP_Position_1/">LP/MT4 Position</a>
-            <a class="dropdown-item" href="http://192.168.64.73/All/Track_Account_Open_Trades_V1/">MonitorOpen Trades</a>
-            <a class="dropdown-item" href="http://192.168.64.73/All/Daily_Change_Spread_V1.9/">Daily Change Spread</a>
-            <a class="dropdown-item" href="http://192.168.64.73/all/ABook_Match_Trades%20-%20V2.7/?Send_Email_Toggle=0">LP/MT4 Position (64.73)</a>
-            <div class="dropdown-divider"></div>
-
-            <a class="dropdown-item" href="https://202.88.105.6:4433/All/Daily_Change_Spread_V1.91/">Daily Change Spread</a>
-            <a class="dropdown-item" href="https://202.88.105.6:4433/All/Change_Spread_manual/">HK Spread Change</a>
-            <a class="dropdown-item" href="https://202.88.105.6:4433/All/NFP_Change_Spread_V1.4/">NFP Spread Change</a>
-
-            <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="http://192.168.20.61/all/ABook_Match_Trades%20-%20V2.7/?Send_Email_Toggle=0">LP/MT4
-              Position</a>
-            <a class="dropdown-item" href="http://192.168.20.61/all/NFP_Change_Spread_V1.4/">NFP Spread Change</a>
-            <a class="dropdown-item" href="http://192.168.20.61/all/ABook_Match_Trades%20-%20V2.7/?Send_Email_Toggle=0">LP/MT4 Position</a>
-            <a class="dropdown-item" href="http://192.168.20.61/all/Get_Margin_Trades%20BGI%20-%20V1.3/">REST BGI Margin Trades</a>
-            <a class="dropdown-item" href="http://192.168.20.61/all/Get_Margin_Trades%20-%20V1.6%20-%20Vantage/">REST Vantage Margin Trades</a>
-            <div class="dropdown-divider"></div>
-
-          </div>
-        </li>
-
-
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             M.Y Tool
           </a>
-          <div class="dropdown-menu">
+          <div class="dropdown-menu dropdown-menu-right">
             <a class="dropdown-item" href="http://192.168.20.117:81/www/main.html">Main</a>
             <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index.php">Total PnL</a>
             <a class="dropdown-item" href="http://192.168.64.73/www/PNL_FLOATshow_1/by_country/tableFLOATshowing2.html">Country Float</a>

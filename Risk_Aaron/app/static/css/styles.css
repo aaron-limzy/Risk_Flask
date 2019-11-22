@@ -63,10 +63,6 @@ table.basic_table tr:hover {
   background-color: #f9e3a7;
 }
 
-
-
-
-
 caption {
   padding: .75rem;
   text-align: center;
@@ -110,8 +106,6 @@ table.table_orange caption {
   background-color: #C7E679;
 }
 
-
-
 .alert_cell {
   background-color: #ff8080;
   font-size: 1.2rem;
@@ -150,4 +144,20 @@ table.table_orange caption {
   display:block;
   margin:auto;
   width:100%
+}
+
+.bg_a_dark_blue {
+  background-color: #394a6d;
+}
+
+.bg_a_dark_green {
+  background-color: #3c9d9b;
+}
+
+.bg_a_light_green {
+  background-color: #52de97;
+}
+
+.bg_a_lighter_green {
+  background-color: #d1eecc;
 }
