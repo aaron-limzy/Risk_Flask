@@ -1942,7 +1942,7 @@ def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
 
     # ASYNC send to SQL.
     async_sql_insert(header = "", values = [sql_insert], footer="")
-
+    async_Update_Runtime("CFH_FIX_Position")
 
 
     return_data = [[account_info], cfh_account_position]
