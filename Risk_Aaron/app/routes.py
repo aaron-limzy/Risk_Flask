@@ -2037,10 +2037,9 @@ def Mt4_Commission_ajax():     # Return the Bloomberg dividend table in Json.
 @login_required
 def Changed_readonly():
     description = Markup("")
-    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="Changed Read Only", \
-                           title="Read Only Clients", ajax_url=url_for("Changed_readonly_ajax"),
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="Changed Read Only", \
+                           title="Read Only Clients", ajax_url=url_for("Changed_readonly_ajax", _external=True),
                            description=description, replace_words=Markup(["Today"]))
-
 
 
 @app.route('/Changed_readonly_ajax', methods=['GET', 'POST'])
