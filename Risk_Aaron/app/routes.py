@@ -577,7 +577,6 @@ def color_negative_red(value):
 
 
 
-
 @app.route('/add_offset', methods=['GET', 'POST'])      # Want to add an offset to the ABook page.
 @login_required
 def add_off_set():
@@ -1389,14 +1388,14 @@ def Modify_MT5_Trades():    # To upload the Files, or post which trades to delet
 
 @app.route('/Get_Live3_MT4User')
 @login_required
-def Live3_MT4_Users():    # To upload the Files, or post which trades to delete on MT5
-    raw_result = db.engine.execute('select login, `GROUP`, `NAME`, CURRENCY, REGDATE from live3.mt4_users ')
-    # raw_result = db.engine.execute("select login, `NAME`, REGDATE, `GROUP`, CURRENCY from live3.mt4_users where login = 102")
-    result_data = raw_result.fetchall()
-    result_col = raw_result.keys()
-    df_users = pd.DataFrame(data=result_data, columns=result_col)
-    df_users["REGDATE"] = df_users["REGDATE"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
-    return excel.make_response_from_array(list([result_col]) + list(df_users.values), 'csv', file_name="Live3_Users.csv")
+def Live3_MT4_Users():
+    return Live_MT4_Users(3)
+
+@app.route('/Get_Live1_MT4User')
+@login_required
+def Live1_MT4_Users():
+    return Live_MT4_Users(1)
+
 
 
 @app.route('/sent_file/Risk_Download')
@@ -2256,6 +2255,16 @@ def cfh_fix_timing():
             return False
     return True
 
+
+# To get the User Data, for finance use. Used on download page.
+def Live_MT4_Users(live):    # To upload the Files, or post which trades to delete on MT5
+    raw_result = db.engine.execute('select login, `GROUP`, `NAME`, CURRENCY, REGDATE from live{}.mt4_users '.format(live))
+    # raw_result = db.engine.execute("select login, `NAME`, REGDATE, `GROUP`, CURRENCY from live3.mt4_users where login = 102")
+    result_data = raw_result.fetchall()
+    result_col = raw_result.keys()
+    df_users = pd.DataFrame(data=result_data, columns=result_col)
+    df_users["REGDATE"] = df_users["REGDATE"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+    return excel.make_response_from_array(list([result_col]) + list(df_users.values), 'csv', file_name="Live{}_Users.csv".format(live))
 
 
 def create_table_fun(table_data):
