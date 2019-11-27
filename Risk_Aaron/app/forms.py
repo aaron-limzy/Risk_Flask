@@ -53,10 +53,10 @@ class SymbolTotalTest(FlaskForm):
 
 class AddOffSet(FlaskForm):
     Symbol = StringField('Symbol', validators=[DataRequired()])
-    Offset = DecimalField('Offset BGI Lots', places=2,rounding=None,  validators=[InputRequired()])
-    Ticket = IntegerField("BGI Ticket #", validators=[DataRequired()])
-    LP =  StringField('LP (Trade to which LP)', validators=[DataRequired()])
-    Comment = StringField('Comment (If any)')
+    Offset = DecimalField('Offset BGI Lots', places=2,rounding=None,  validators=[InputRequired()], description = "Opposite direction from LP.")
+    Ticket = IntegerField("BGI Ticket #", validators=[DataRequired()],description = "Ticket number of MT4. (Required)")
+    LP =  StringField('LP (Trade to which LP)', validators=[DataRequired()],description = "LP which trade was placed on to.")
+    Comment = StringField('Comment (If any)',description = "Any other information.")
     submit = SubmitField('Submit')
 
 
