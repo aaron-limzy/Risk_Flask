@@ -1140,7 +1140,7 @@ def CFH_Soap_Position_ajax(update_all=0):  # Optional Parameter, to update from 
     #print(return_val)
 
     # # Need to update Run time on SQL Update table.
-    # async_Update_Runtime("CFH_Live_Trades")
+    async_Update_Runtime("CFH_Live_Trades")
 
     return json.dumps(return_val)
 
@@ -1429,8 +1429,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
             LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL 
             WHERE CONTRACT_SIZE>0) 
         AS B GROUP BY mt4_symbol) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
-       
-				LEFT JOIN
+		    LEFT JOIN
         (SELECT cfh_bgi_symbol.mt4_symbol as `CFH_Symbol`, position * (1/core_symbol.CONTRACT_SIZE) AS CFH_Position
             FROM aaron.`cfh_live_position_fix` 
             LEFT JOIN aaron.cfh_bgi_symbol ON cfh_live_position_fix.Symbol = cfh_bgi_symbol.CFH_Symbol
@@ -2058,6 +2057,35 @@ def Changed_readonly_ajax():
     result_dict = [dict(zip(result_col,d)) for d in result_data_clean]
 
     return json.dumps(result_dict)
+
+
+
+@app.route('/Monitor_Risk_Tools')
+@login_required
+def Monitor_Risk_Tools():
+    description = Markup("Monitor Risk tools.")
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="Risk tools", \
+                           title="Risk Tools", ajax_url=url_for("Monitor_Risk_Tools_ajax", _external=True),
+                           description=description, replace_words=Markup(["Today"]))
+
+
+@app.route('/Monitor_Risk_Tools_ajax', methods=['GET', 'POST'])
+@login_required
+def Monitor_Risk_Tools_ajax():
+
+    # Which Date to start with. We want to count back 1 day.
+    start_date = get_working_day_date(datetime.date.today(), -1, 1)
+    sql_query = text("Select * from aaron.monitor_tool_runtime")
+    raw_result = db.engine.execute(sql_query)
+    result_data = raw_result.fetchall()     # Return Result
+    # dict of the results
+    result_col = raw_result.keys()
+    # Clean up the data. Date.
+    result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
+    result_dict = [dict(zip(result_col,d)) for d in result_data_clean]
+
+    return json.dumps(result_dict)
+
 
 
 # Async Call to send email.
