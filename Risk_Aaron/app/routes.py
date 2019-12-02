@@ -1424,17 +1424,18 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
         FROM test.core_symbol
         LEFT JOIN
         (SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM 
-					(SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades` 
-					LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol 
-					LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL 
-					WHERE CONTRACT_SIZE>0) 
-				AS B GROUP BY mt4_symbol) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
+            (SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades` 
+            LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol 
+            LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL 
+            WHERE CONTRACT_SIZE>0) 
+        AS B GROUP BY mt4_symbol) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
        
 				LEFT JOIN
-        (SELECT cfh_live_position_fix.symbol as `CFH_Symbol`, position * (1/core_symbol.CONTRACT_SIZE) AS CFH_Position
-					FROM aaron.`cfh_live_position_fix` 
-					LEFT JOIN test.core_symbol ON cfh_live_position_fix.Symbol = core_symbol.SYMBOL 
-					WHERE CONTRACT_SIZE>0
+        (SELECT cfh_bgi_symbol.mt4_symbol as `CFH_Symbol`, position * (1/core_symbol.CONTRACT_SIZE) AS CFH_Position
+            FROM aaron.`cfh_live_position_fix` 
+            LEFT JOIN aaron.cfh_bgi_symbol ON cfh_live_position_fix.Symbol = cfh_bgi_symbol.CFH_Symbol
+            LEFT JOIN test.core_symbol ON core_symbol.SYMBOL = cfh_bgi_symbol.mt4_symbol  
+            WHERE CONTRACT_SIZE>0
         ) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
         LEFT JOIN
         (SELECT coresymbol AS api_SYMBOL,ROUND(SUM(api_LOT),2) AS api_LOT FROM (SELECT bgimargin_live_trades.margin_id,bgimargin_live_trades.coresymbol,position/core_symbol.CONTRACT_SIZE AS api_LOT FROM test.`bgimargin_live_trades` 
