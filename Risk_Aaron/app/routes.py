@@ -47,7 +47,7 @@ from io import StringIO
 
 
 TIME_UPDATE_SLOW_MIN = 10
-EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
+EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
 TELE_ID_MTLP_MISMATCH = "736426328:AAH90fQZfcovGB8iP617yOslnql5dFyu-M0"		# For Mismatch and LP Margin
 TELE_ID_USDTWF_MISMATCH = "776609726:AAHVrhEffiJ4yWTn1nw0ZBcYttkyY0tuN0s"        # For USDTWF
 TELE_CLIENT_ID = ["486797751"]        # Aaron's Telegram ID.
