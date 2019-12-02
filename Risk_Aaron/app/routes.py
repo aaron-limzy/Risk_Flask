@@ -2080,6 +2080,8 @@ def Monitor_Risk_Tools_ajax():
     result_data = raw_result.fetchall()     # Return Result
     # dict of the results
     result_col = raw_result.keys()
+    #TODO: Need to check the run time against the current time. To check if there has been any issues running it.
+    
     # Clean up the data. Date.
     result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
     result_dict = [dict(zip(result_col,d)) for d in result_data_clean]
