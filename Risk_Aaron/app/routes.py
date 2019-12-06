@@ -2273,12 +2273,13 @@ def Query_SQL_db_engine(sql_query):
 
 # Helper function to do a time check.
 # Return "Update Slow<br> time" if it is more then 10 mins difference.
-def time_difference_check(time_to_check, time_now = datetime.datetime.now(), time_limit=TIME_UPDATE_SLOW_MIN):
+def time_difference_check(time_to_check):
+    time_now = datetime.datetime.now()
     #time_now = datetime.datetime.now()  # Get the time now.
     if not isinstance(time_to_check, datetime.datetime):
         return "Error: Not datetime.datetime object"
 
-    if abs((time_now - time_to_check).total_seconds()) > time_limit*60: # set the update to 10 mins.
+    if abs((time_now - time_to_check).total_seconds()) > TIME_UPDATE_SLOW_MIN*60: # set the update to 10 mins.
         return time_to_check.strftime("<b>Update Slow</b><br>%Y-%m-%d<br>%H:%M:%S")
     else:
         return time_to_check.strftime("%Y-%m-%d<br>%H:%M:%S")
