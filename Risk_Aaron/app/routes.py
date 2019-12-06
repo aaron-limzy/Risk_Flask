@@ -2064,9 +2064,9 @@ def Changed_readonly_ajax():
 @login_required
 def Monitor_Risk_Tools():
     description = Markup("Monitor Risk tools.")
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="Risk tools", \
-                           title="Risk Tools", ajax_url=url_for("Monitor_Risk_Tools_ajax", _external=True),
-                           description=description, replace_words=Markup(["Today"]))
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/clock_left.jpg', Table_name="Risk tools", \
+                           title="Risk Tools", ajax_url=url_for("Monitor_Risk_Tools_ajax", _external=True), setinterval=60,
+                           description=description, replace_words=Markup(["Time Slow"]))
 
 
 @app.route('/Monitor_Risk_Tools_ajax', methods=['GET', 'POST'])
@@ -2074,19 +2074,37 @@ def Monitor_Risk_Tools():
 def Monitor_Risk_Tools_ajax():
 
     # Which Date to start with. We want to count back 1 day.
-    start_date = get_working_day_date(datetime.date.today(), -1, 1)
     sql_query = text("Select * from aaron.monitor_tool_runtime")
     raw_result = db.engine.execute(sql_query)
     result_data = raw_result.fetchall()     # Return Result
     # dict of the results
     result_col = raw_result.keys()
-    #TODO: Need to check the run time against the current time. To check if there has been any issues running it.
-    
-    # Clean up the data. Date.
-    result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
-    result_dict = [dict(zip(result_col,d)) for d in result_data_clean]
+    return_dict = [dict(zip(result_col, d)) for d in result_data]
 
-    return json.dumps(result_dict)
+    #Need to check the run time against the current time. To check if there has been any issues running it.
+    datetime_now = datetime.datetime.now()      # Get the time now.
+
+
+    for i in range(len(return_dict)):   # Loop thru and find out which ones isn't updating.
+        if 'Updated_Time' in return_dict[i] and \
+                isinstance(return_dict[i]['Updated_Time'], datetime.datetime) and \
+                    'Interval' in return_dict[i]:
+            #Compute the time difference between the last ran time.
+            time_difference =  math.ceil((datetime_now - return_dict[i]["Updated_Time"]).total_seconds())
+
+            # Checks if the tool hasn't been running. Or if there was a slow update. 
+            if (time_difference >= 3*return_dict[i]["Interval"]) or (time_difference >= 120+return_dict[i]["Interval"]):
+                return_dict[i]["Last_Ran"] = "Time Slow {}".format(time_difference)
+            else:
+                return_dict[i]["Last_Ran"] = time_difference
+
+
+            # Clean up the data. Date.
+            return_dict[i]["Updated_Time"] = return_dict[i]["Updated_Time"].strftime("%Y-%m-%d %H:%M:%S")
+
+
+
+    return json.dumps(return_dict)
 
 
 
@@ -2247,16 +2265,15 @@ def Query_SQL_db_engine(sql_query):
 
 # Helper function to do a time check.
 # Return "Update Slow<br> time" if it is more then 10 mins difference.
-def time_difference_check(time_to_check):
-    time_now = datetime.datetime.now()  # Get the time now.
+def time_difference_check(time_to_check, time_now = datetime.datetime.now(), time_limit=TIME_UPDATE_SLOW_MIN):
+    #time_now = datetime.datetime.now()  # Get the time now.
     if not isinstance(time_to_check, datetime.datetime):
         return "Error: Not datetime.datetime object"
 
-    if abs((time_now - time_to_check).total_seconds()) > TIME_UPDATE_SLOW_MIN*60: # set the update to 10 mins.
+    if abs((time_now - time_to_check).total_seconds()) > time_limit*60: # set the update to 10 mins.
         return time_to_check.strftime("<b>Update Slow</b><br>%Y-%m-%d<br>%H:%M:%S")
     else:
         return time_to_check.strftime("%Y-%m-%d<br>%H:%M:%S")
-
 
 # Query SQL and return the Zip of the results to get a record.
 def query_SQL_return_record(SQL_Query):
