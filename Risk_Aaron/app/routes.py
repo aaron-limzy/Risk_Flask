@@ -1704,7 +1704,7 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
             # sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`) VALUES" \
             #              " ('LP Details Check', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()"
             async_Update_Runtime("LP_Details_Check")
-            raw_insert_result = db.engine.execute(sql_insert)
+            #raw_insert_result = db.engine.execute(sql_insert)
 
         Tele_Message = "*LP Details* \n"  # To compose Telegram outgoing message
 
