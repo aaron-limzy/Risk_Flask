@@ -2085,14 +2085,14 @@ def Monitor_Risk_Tools_ajax():
     #Need to check the run time against the current time. To check if there has been any issues running it.
     datetime_now = datetime.datetime.now()      # Get the time now.
 
-    function_to_call = {'CFH_FIX_Position': chf_details_ajax,
-                        'CFH_Live_Trades': CFH_Soap_Position_ajax,
-                        'ChangeGroup_NoOpenTrades': noopentrades_changegroup_ajax,
-                        "Equity_protect": Equity_protect_Cut_ajax,
-                        "LP_Details_Check" : 1,
-                        "MT4/LP A Book Check"    :   1
-                        "Risk_Auto_Cut"          : 1
-                        }
+    # function_to_call = {'CFH_FIX_Position': chf_details_ajax,
+    #                     'CFH_Live_Trades': CFH_Soap_Position_ajax,
+    #                     'ChangeGroup_NoOpenTrades': noopentrades_changegroup_ajax,
+    #                     "Equity_protect": Equity_protect_Cut_ajax,
+    #                     "LP_Details_Check" : 1,
+    #                     "MT4/LP A Book Check"    :   1        ,
+    #                     "Risk_Auto_Cut"          : 1
+    #                     }
 
 
     for i in range(len(return_dict)):   # Loop thru and find out which ones isn't updating.
