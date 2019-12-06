@@ -1701,8 +1701,9 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
 
         if Send_Email_Flag == 1:    # Want to update the runtime table to ensure that tool is running.
 
-            sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`) VALUES" \
-                         " ('LP Details Check', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()"
+            # sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`) VALUES" \
+            #              " ('LP Details Check', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()"
+            async_Update_Runtime("LP_Details_Check")
             raw_insert_result = db.engine.execute(sql_insert)
 
         Tele_Message = "*LP Details* \n"  # To compose Telegram outgoing message
@@ -2084,6 +2085,15 @@ def Monitor_Risk_Tools_ajax():
     #Need to check the run time against the current time. To check if there has been any issues running it.
     datetime_now = datetime.datetime.now()      # Get the time now.
 
+    function_to_call = {'CFH_FIX_Position': chf_details_ajax,
+                        'CFH_Live_Trades': CFH_Soap_Position_ajax,
+                        'ChangeGroup_NoOpenTrades': noopentrades_changegroup_ajax,
+                        "Equity_protect": Equity_protect_Cut_ajax,
+                        "LP_Details_Check" : 1,
+                        "MT4/LP A Book Check"    :   1
+                        "Risk_Auto_Cut"          : 1
+                        }
+
 
     for i in range(len(return_dict)):   # Loop thru and find out which ones isn't updating.
         if 'Updated_Time' in return_dict[i] and \
@@ -2092,13 +2102,11 @@ def Monitor_Risk_Tools_ajax():
             #Compute the time difference between the last ran time.
             time_difference =  math.ceil((datetime_now - return_dict[i]["Updated_Time"]).total_seconds())
 
-            # Checks if the tool hasn't been running. Or if there was a slow update. 
+            # Checks if the tool hasn't been running. Or if there was a slow update.
             if (time_difference >= 3*return_dict[i]["Interval"]) or (time_difference >= 120+return_dict[i]["Interval"]):
                 return_dict[i]["Last_Ran"] = "Time Slow {}".format(time_difference)
             else:
                 return_dict[i]["Last_Ran"] = time_difference
-
-
             # Clean up the data. Date.
             return_dict[i]["Updated_Time"] = return_dict[i]["Updated_Time"].strftime("%Y-%m-%d %H:%M:%S")
 
