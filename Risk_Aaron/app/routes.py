@@ -2098,8 +2098,8 @@ def Monitor_Risk_Tools_ajax():
                         "Risk_Auto_Cut"             : risk_auto_cut_ajax
                         }
 
-    all_function_return = [d() for k,d in function_to_call.items()]
-    print(all_function_return)
+    #all_function_return = [d() for k,d in function_to_call.items()]
+    #print(all_function_return)
 
 
     for i in range(len(return_dict)):   # Loop thru and find out which ones isn't updating.
