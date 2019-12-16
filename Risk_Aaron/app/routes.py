@@ -2073,6 +2073,8 @@ def Monitor_Risk_Tools():
                            description=description, replace_words=Markup(["Time Slow"]))
 
 
+# To monitor the Risk Tools, and run them if needed.
+# Will need to update it when there are new tools.
 @app.route('/Monitor_Risk_Tools_ajax', methods=['GET', 'POST'])
 @login_required
 def Monitor_Risk_Tools_ajax():
@@ -2090,17 +2092,19 @@ def Monitor_Risk_Tools_ajax():
 
     #'CFH_Live_Trades': CFH_Soap_Position_ajax,
     #"MT4/LP A Book Check"       : ABook_Matching_Position_Vol,
+    #"LP_Details_Check": ABook_LP_Details,
 
     function_to_call = {'CFH_FIX_Position'          : chf_details_ajax,
                         'ChangeGroup_NoOpenTrades'  : noopentrades_changegroup_ajax,
                         "Equity_protect"            : Equity_protect_Cut_ajax,
-                        "LP_Details_Check"          : ABook_LP_Details,
                         "Risk_Auto_Cut"             : risk_auto_cut_ajax
                         }
 
     #all_function_return = [d() for k,d in function_to_call.items()]
     #print(all_function_return)
 
+    slow_update_list = []
+    resume_update_list = [] # List to store all the updates that had not been updating, but now is updating.
 
     for i in range(len(return_dict)):   # Loop thru and find out which ones isn't updating.
         if 'Updated_Time' in return_dict[i] and \
@@ -2109,15 +2113,53 @@ def Monitor_Risk_Tools_ajax():
             #Compute the time difference between the last ran time.
             time_difference =  math.ceil((datetime_now - return_dict[i]["Updated_Time"]).total_seconds())
 
-            # Checks if the tool hasn't been running. Or if there was a slow update.
+            # Checks if the tool hasn't been running. Or if there was a slow update. Inputs a Tuple (Tool name, Email sent)
             if (time_difference >= 3*return_dict[i]["Interval"]) or (time_difference >= 120+return_dict[i]["Interval"]):
                 return_dict[i]["Last Ran"] = "Time Slow {}".format(time_difference)
+                slow_update_list.append((return_dict[i]["Monitor_Tool"],return_dict[i]["Email_Sent"]))
+                #print("Time Slow: {}".format(return_dict[i]["Monitor_Tool"]))
+
             else:
                 return_dict[i]["Last Ran"] = time_difference
+
+                # It wasn't updating, but now is.
+                if "Interval" in return_dict[i] and time_difference < return_dict[i]["Interval"] and \
+                    "Email_Sent" in return_dict[i] and return_dict[i]["Email_Sent"] == "1":
+                    resume_update_list.append(return_dict[i]["Monitor_Tool"])
+
             # Clean up the data. Date.
             return_dict[i]["Updated_Time"] = return_dict[i]["Updated_Time"].strftime("%Y-%m-%d %H:%M:%S")
 
 
+    #print(slow_update_list)
+    #print(resume_update_list)
+
+    if len(slow_update_list) > 0:   # If there are progs that are not running, run them!
+        # Run the prog if it's not running
+        Catch_return = [function_to_call[d]() for (d,e) in slow_update_list if d in function_to_call]
+        #print(Catch_return)
+
+
+    # Only want to update those that have not been updated.
+    recent_slow_update = [s[0] for s in slow_update_list if len(s) > 2 and s[1] == '0']
+    if len(recent_slow_update) > 0:
+
+        # Update SQL, set the email to have been sent.
+        sql_query = "Update aaron.monitor_tool_runtime set Email_Sent = 1 where Monitor_Tool in ({})".format(",".join(["'{}'".format(r) for r in recent_slow_update]))
+        async_sql_insert(header=sql_query)
+
+
+        # Need to string it together to send a tele message.
+        # Will need to remove special _ character.
+        text_to_tele = "\n".join(["- {}".format(d) for d in recent_slow_update]).replace("_"," ")
+
+        async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, "*Risk Tool Slow Update*:\n{}".format(text_to_tele), TELE_CLIENT_ID)
+        #print(text_to_tele)
+
+    # For those that have started being updated.
+    if len(resume_update_list) > 0:
+        sql_query = "Update aaron.monitor_tool_runtime set Email_Sent = 0 where Monitor_Tool in ({})".format(",".join(["'{}'".format(r) for r in resume_update_list]))
+        async_sql_insert(header=sql_query)
 
     return json.dumps(return_dict)
 
@@ -2144,23 +2186,23 @@ def async_Update_Runtime(Tool):
     # print("Updating Runtime for Tool: {}".format(Tool))
 
 
-
-@app.route('/setinterval_test')
-@login_required
-def Aaron_test():
-    description = Markup("Testing Set Interval")
-    return render_template("Standard_Single_Table_Test.html", backgroud_Filename='css/Faded_car.jpg', Table_name="Testing", \
-                           title="Test", ajax_url=url_for("Aaron_test_ajax"),setinterval=5,
-                           description=description, replace_words=Markup(["Today"]))
-
-
-
-@app.route('/Aaron_test_ajax', methods=['GET', 'POST'])
-@login_required
-def Aaron_test_ajax():     # Return the Bloomberg dividend table in Json.
-
-    return_val=[{"Test":"Return: {}".format(time_now())}]
-    return json.dumps(return_val)
+#
+# @app.route('/setinterval_test')
+# @login_required
+# def Aaron_test():
+#     description = Markup("Testing Set Interval")
+#     return render_template("Standard_Single_Table_Test.html", backgroud_Filename='css/Faded_car.jpg', Table_name="Testing", \
+#                            title="Test", ajax_url=url_for("Aaron_test_ajax"),setinterval=5,
+#                            description=description, replace_words=Markup(["Today"]))
+#
+#
+#
+# @app.route('/Aaron_test_ajax', methods=['GET', 'POST'])
+# @login_required
+# def Aaron_test_ajax():     # Return the Bloomberg dividend table in Json.
+#
+#     return_val=[{"Test":"Return: {}".format(time_now())}]
+#     return json.dumps(return_val)
 
 
 # To insert into SQL asynchronously.
@@ -2170,7 +2212,7 @@ def Aaron_test_ajax():     # Return the Bloomberg dividend table in Json.
 # sql_max_insert - Optional. How many max do we want to insert at one time.
 
 @async
-def async_sql_insert(header, values, footer, sql_max_insert=500):
+def async_sql_insert(header="", values = [" "], footer = "", sql_max_insert=500):
 
     for i in range(math.ceil(len(values) / sql_max_insert)):
         # To construct the sql statement. header + values + footer.
