@@ -2079,6 +2079,11 @@ def Monitor_Risk_Tools():
 @login_required
 def Monitor_Risk_Tools_ajax():
 
+    if cfh_fix_timing() == False:  # Want to check if CFH Fix still running.
+        return_data = [{"Comment": "Out of CFH Fix timing. From UTC Sunday 2215 to Friday 2215"}]
+        return json.dumps(return_data)
+
+
     # Which Date to start with. We want to count back 1 day.
     sql_query = text("Select * from aaron.monitor_tool_runtime")
     raw_result = db.engine.execute(sql_query)
@@ -2112,6 +2117,13 @@ def Monitor_Risk_Tools_ajax():
                     'Interval' in return_dict[i]:
             #Compute the time difference between the last ran time.
             time_difference =  math.ceil((datetime_now - return_dict[i]["Updated_Time"]).total_seconds())
+
+            # No interval has been set. We can ignore this first.
+            # Clean up, and skip to the next Tool for checking.
+            if not (("Interval" in return_dict[i]) and return_dict[i]["Interval"] != None):
+                return_dict[i]["Last Ran"] = "No Interval Found."
+                return_dict[i]["Updated_Time"] = return_dict[i]["Updated_Time"].strftime("%Y-%m-%d %H:%M:%S")
+                continue
 
             # Checks if the tool hasn't been running. Or if there was a slow update. Inputs a Tuple (Tool name, Email sent)
             if (time_difference >= 3*return_dict[i]["Interval"]) or (time_difference >= 120+return_dict[i]["Interval"]):
