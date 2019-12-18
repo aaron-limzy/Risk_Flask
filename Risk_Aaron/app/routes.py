@@ -2141,7 +2141,7 @@ def Monitor_Risk_Tools_ajax():
 
 
     # Only want to update those that have not been updated.
-    recent_slow_update = [s[0] for s in slow_update_list if len(s) > 2 and s[1] == '0']
+    recent_slow_update = [s[0] for s in slow_update_list if len(s) >= 2 and s[1] == '0']
     if len(recent_slow_update) > 0:
 
         # Update SQL, set the email to have been sent.
@@ -2160,6 +2160,11 @@ def Monitor_Risk_Tools_ajax():
     if len(resume_update_list) > 0:
         sql_query = "Update aaron.monitor_tool_runtime set Email_Sent = 0 where Monitor_Tool in ({})".format(",".join(["'{}'".format(r) for r in resume_update_list]))
         async_sql_insert(header=sql_query)
+        text_to_tele = "\n".join(["- {}".format(r) for r in resume_update_list]).replace("_"," ")
+        # Post to Telegram that the tools have been updating again.
+        async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, "*Risk Tool Update (Resumed)*:\n{}".format(text_to_tele),
+                               TELE_CLIENT_ID)
+
 
     return json.dumps(return_dict)
 
