@@ -935,9 +935,9 @@ def Equity_protect_Cut_ajax():
 
     # # #time.sleep(5)
     # # return_val = [{"Result": "No Client to change. {}".format(time_now())}]
-    # return_val = [{"LIVE":1,"LOGIN":"2040😂","BALANCE":-120.18,"EQUITY":123.341,"GROUP":"0_Test_Risk","EQUITY_CUT":10000,"RUN_RESULTS":"ALL_DONE"}]
-    # # # return json.dumps("[Hello")
-    # return json.dumps(return_val)
+    return_val = [{"LIVE":1,"LOGIN":"2040😂","BALANCE":-120.18,"EQUITY":123.341,"GROUP":"0_Test_Risk","EQUITY_CUT":10000,"RUN_RESULTS":"ALL_DONE"}]
+    # # return json.dumps("[Hello")
+    return json.dumps(return_val)
 
     #TODO: Send to Risk only, for a test account.
 
@@ -2082,7 +2082,6 @@ def Monitor_Risk_Tools_ajax():
     if cfh_fix_timing() == False:  # Want to check if CFH Fix still running.
         return_data = [{"Comment": "Out of CFH Fix timing. From UTC Sunday 2215 to Friday 2215"}]
         return json.dumps(return_data)
-
 
     # Which Date to start with. We want to count back 1 day.
     sql_query = text("Select * from aaron.monitor_tool_runtime")
