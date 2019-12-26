@@ -935,9 +935,9 @@ def Equity_protect_Cut_ajax():
 
     # # #time.sleep(5)
     # # return_val = [{"Result": "No Client to change. {}".format(time_now())}]
-    return_val = [{"LIVE":1,"LOGIN":"2040😂","BALANCE":-120.18,"EQUITY":123.341,"GROUP":"0_Test_Risk","EQUITY_CUT":10000,"RUN_RESULTS":"ALL_DONE"}]
-    # # return json.dumps("[Hello")
-    return json.dumps(return_val)
+    # return_val = [{"LIVE":1,"LOGIN":"2040😂","BALANCE":-120.18,"EQUITY":123.341,"GROUP":"0_Test_Risk","EQUITY_CUT":10000,"RUN_RESULTS":"ALL_DONE"}]
+    # # # return json.dumps("[Hello")
+    # return json.dumps(return_val)
 
     #TODO: Send to Risk only, for a test account.
 
