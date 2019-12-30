@@ -4,19 +4,20 @@ from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
 from app.forms import UploadForm, SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form, LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField
-import pyexcel
 from flask_table import create_table, Col
+
+import pyexcel
 import urllib3
 import decimal
 import datetime
-import os
-import os
 import os
 import pandas as pd
 import numpy as np
 import requests
 import json
 import math
+import asyncio
+import psutil   # Want to get Computer CPU Details/Usage/Memory
 
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import User, load_user, flask_users
@@ -24,8 +25,6 @@ from sqlalchemy import text
 from Aaron_Lib import *
 
 from aiopyfix.client_example import CFH_Position_n_Info
-import asyncio
-
 
 from requests.auth import HTTPBasicAuth  # or HTTPDigestAuth, or OAuth1, etc.
 from requests import Session
@@ -2179,6 +2178,33 @@ def Monitor_Risk_Tools_ajax():
 
     return json.dumps(return_dict)
 
+
+@app.route('/Usage')
+@login_required
+def Computer_Usage():
+    description = Markup("Reflects the Server Usage.<br>")
+    header = "Server Usage Details."
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="Server Computer Usage", \
+                           title="Server Usage", ajax_url=url_for("Computer_Usage_Ajax", _external=True), header=header, setinterval=30,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+@app.route('/Usage_ajax', methods=['GET', 'POST'])
+@login_required
+def Computer_Usage_Ajax():
+    # gives a single float value
+    cpu_per = psutil.cpu_percent()
+    # gives an object with many fields
+    psutil.virtual_memory()
+    # you can convert that object to a dictionary
+    mem_usage = dict(psutil.virtual_memory()._asdict())
+
+
+    if cpu_per >= 90:    # If the CPU usage is more than 90%, we need to know.
+        async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, "*Server Usage:*:{}%".format(cpu_per), TELE_CLIENT_ID)
+
+    return_data = [{"CPU_Usage": "{}%".format(cpu_per), "RAM Memory": "{}%".format(mem_usage['percent'])}]
+    return json.dumps(return_data)
 
 
 # Async Call to send email.
