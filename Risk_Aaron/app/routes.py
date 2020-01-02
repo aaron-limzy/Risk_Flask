@@ -2184,7 +2184,7 @@ def Monitor_Risk_Tools_ajax():
 def Computer_Usage():
     description = Markup("Reflects the Server Usage.<br>")
     header = "Server Usage Details."
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="Server Computer Usage", \
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/mac_keyboard_side.jpg', Table_name="Server Computer Usage", \
                            title="Server Usage", ajax_url=url_for("Computer_Usage_Ajax", _external=True), header=header, setinterval=30,
                            description=description, replace_words=Markup(["Today"]))
 
@@ -2198,7 +2198,6 @@ def Computer_Usage_Ajax():
     psutil.virtual_memory()
     # you can convert that object to a dictionary
     mem_usage = dict(psutil.virtual_memory()._asdict())
-
 
     if cpu_per >= 90:    # If the CPU usage is more than 90%, we need to know.
         async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, "*Server Usage:*:{}%".format(cpu_per), TELE_CLIENT_ID)
