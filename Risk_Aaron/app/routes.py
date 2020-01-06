@@ -2286,6 +2286,10 @@ def fix_position_sql_update(CFH_Position):
     # Async update SQL to save runtime
     async_sql_insert(header=fix_position_header, values = fix_position_values, footer=fix_position_footer)
 
+    if len(CFH_Position) == 0:
+        CFH_Position[""] = ""
+
+
     # Want to Update to Zero, for those position that are not opened now.
     Update_to_zero = """UPDATE {fix_position_database}.{fix_position_table} set position = 0, Updated_time = now() where Symbol not in ({open_symbol})""".format(
         fix_position_database=fix_position_database, fix_position_table= fix_position_table,
