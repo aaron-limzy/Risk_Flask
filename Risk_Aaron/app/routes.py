@@ -2206,6 +2206,40 @@ def Computer_Usage_Ajax():
     return json.dumps(return_data)
 
 
+# Want to check and close off account/trades.
+@app.route('/Balance_equity_exclude', methods=['GET', 'POST'])
+@login_required
+def Exclude_Equity_Below_Credit():
+    title = Markup("Exclude<br>Balance Below Credit")
+    header = title
+    description = Markup(
+        "<b>To Exclude from the running tool of Balance_Below_Credit</b><br>Will add account into live1.balance_equity_exclude.<br>To allow client to trade on Credit")
+
+    form = equity_Protect_Cut()
+    print("Method: {}".format(request.method))
+    print("validate_on_submit: {}".format(form.validate_on_submit()))
+    form.validate_on_submit()
+    if request.method == 'POST' and form.validate_on_submit():
+        Live = form.Live.data  # Get the Data.
+        Login = form.Login.data
+        Equity_Limit = form.Equity_Limit.data
+
+        sql_insert = """INSERT INTO  live1.`balance_equity_exclude` (`Live`, `Login`, `Equity_Limit`) VALUES
+            ('{Live}','{Account}','{Equity}') ON DUPLICATE KEY UPDATE `Equity_Limit`=VALUES(`Equity_Limit`) """.format(Live=Live, Account=Login, Equity=Equity_Limit)
+        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+
+        print(sql_insert)
+        db.engine.execute(text(sql_insert))  # Insert into DB
+        flash("Live: {live}, Login: {login} Equity limit: {equity_limit} has been added to live1.`balance_equity_exclude`.".format(live=Live, login=Login, equity_limit=Equity_Limit))
+
+    # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
+    # backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut",  replace_words=Markup(["Today"])
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("General_Form.html",
+                           title=title, header=header,
+                           form=form, description=description)
+
+
 # Async Call to send email.
 @async
 def async_send_email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name):
