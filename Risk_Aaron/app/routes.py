@@ -2,7 +2,7 @@ from app import app, db, excel
 from flask import render_template, flash, redirect, url_for, request, send_from_directory, jsonify, g, Markup
 from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
-from app.forms import UploadForm, SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form, LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut
+from app.forms import UploadForm, SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form, LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField
 from flask_table import create_table, Col
 
@@ -753,7 +753,18 @@ def Risk_auto_cut():
 
     title = "Risk Auto Cut"
     header = "Risk Auto Cut"
-    description = Markup("Running only on Live 1 and Live 3.<br>Will close all client's position and change client to read-only.<br>Sql Table (aaron.risk_autocut_exclude) for client with special requests.")
+
+    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+    # For Login in aaron.Risk_autocut and Credit_limit != 0
+
+
+    description = Markup('Running only on <font color = "red"> Live 1 and Live 3</font>.<br>'   + \
+                         "Will <b>close all client's position</b> and <b>change client to read-only</b>.<br>" + \
+                         "Sql Table (aaron.risk_autocut_exclude) for client with special requests.<br><br>" + \
+                         "<b>1)</b> For <font color = 'red'>%TW%</font> Clients : <br>EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND <br>`ENABLE` = 1 AND ENABLE_READONLY = 0<br><br>" + \
+                         "<b>2)</b>For other clients, where GROUP` IN  <font color = 'red'>aaron.risk_autocut_group</font> and EQUITY < CREDIT <br><br>" + \
+                         "<b>3)</b> For Login in <font color = 'red'>aaron.Risk_autocut</font> and <font color = 'red'>Credit_limit != 0</font>")
 
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
@@ -773,6 +784,10 @@ def risk_auto_cut_ajax():
     # aaron.risk_autocut_group
 
     Live_server = [1,2,3,5]
+
+    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+    # For Login in aaron.Risk_autocut and Credit_limit != 0
 
     # To check the Lucky Draw Login. All TW clients for login not in aaron.risk_autocut_exclude
     raw_sql_statement = """SELECT LOGIN, '3' as LIVE, mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT
@@ -895,6 +910,70 @@ def risk_auto_cut_ajax():
 
     return json.dumps(return_val)
 
+
+# Want to insert into table.
+# From Flask.
+@app.route('/Risk_Autocut_exclude', methods=['GET', 'POST'])
+@login_required
+def Exclude_Risk_Autocut():
+    title = Markup("Exclude<br>Risk Auto Cut")
+    header = title
+    description = Markup(
+        "<b>To Exclude from the running tool of Risk Auto Cut</b><br>Will add account into aaron.risk_autocut_Exclude.<br>To Exclude client from being autocut")
+
+    form = equity_Protect_Cut()
+    #print("Method: {}".format(request.method))
+    #print("validate_on_submit: {}".format(form.validate_on_submit()))
+    form.validate_on_submit()
+    if request.method == 'POST' and form.validate_on_submit():
+        Live = form.Live.data  # Get the Data.
+        Login = form.Login.data
+        Equity_Limit = form.Equity_Limit.data
+
+        sql_insert = """INSERT INTO  aaron.`risk_autocut_Exclude` (`Live`, `Login`, `Equity_Limit`) VALUES
+            ('{Live}','{Account}','{Equity}') ON DUPLICATE KEY UPDATE `Equity_Limit`=VALUES(`Equity_Limit`) """.format(Live=Live, Account=Login, Equity=Equity_Limit)
+        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+
+        print(sql_insert)
+        db.engine.execute(text(sql_insert))  # Insert into DB
+        flash("Live: {live}, Login: {login} Equity limit: {equity_limit} has been added to aaron.`risk_autocut_Exclude`.".format(live=Live, login=Login, equity_limit=Equity_Limit))
+
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("General_Form.html",
+                           title=title, header=header,
+                           form=form, description=description)
+
+
+# Want to insert into table.
+# From Flask.
+@app.route('/Risk_Autocut_Include', methods=['GET', 'POST'])
+@login_required
+def Include_Risk_Autocut():
+    title = Markup("Include<br>Client Group into<br>Risk Auto Cut")
+    header = title
+    description = Markup(
+        "<b>To Include the Client Group into the running tool of Risk Auto Cut</b><br>")
+
+    form = Live_Group()
+    #print("Method: {}".format(request.method))
+    #print("validate_on_submit: {}".format(form.validate_on_submit()))
+    form.validate_on_submit()
+    if request.method == 'POST' and form.validate_on_submit():
+        Live = form.Live.data  # Get the Data.
+        Client_Group = form.Client_Group.data
+
+        sql_insert = """INSERT INTO  aaron.`risk_autocut_group` (`Live`, `GROUP`) VALUES
+            ('{Live}','{Group}')""".format(Live=Live, Group=Client_Group)
+        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+
+        print(sql_insert)
+        db.engine.execute(text(sql_insert))  # Insert into DB
+        flash("Live: {live}, Group: {Group} has been added to aaron.`risk_autocut_group`.".format(live=Live, Group=Client_Group))
+
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("General_Form.html",
+                           title=title, header=header,
+                           form=form, description=description)
 
 
 # Want to check and close off account/trades.
@@ -2206,7 +2285,8 @@ def Computer_Usage_Ajax():
     return json.dumps(return_data)
 
 
-# Want to check and close off account/trades.
+# Want to insert into table.
+# From Flask.
 @app.route('/Balance_equity_exclude', methods=['GET', 'POST'])
 @login_required
 def Exclude_Equity_Below_Credit():
@@ -2238,6 +2318,14 @@ def Exclude_Equity_Below_Credit():
     return render_template("General_Form.html",
                            title=title, header=header,
                            form=form, description=description)
+
+
+
+
+
+
+
+
 
 
 # Async Call to send email.
@@ -2333,8 +2421,6 @@ def fix_position_sql_update(CFH_Position):
     async_sql_insert(header="", values=[Update_to_zero], footer="")
 
     return
-
-
 
 
 

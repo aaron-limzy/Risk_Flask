@@ -43,7 +43,7 @@
   {% block styles %}
   <link rel="stylesheet" href="https://raw.githubusercontent.com/daneden/animate.css/master/animate.css">
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=2.0.1">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=2.0.7">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootnavbar.css') }}?v=1.0.0">
   {% endblock %}
 
@@ -98,11 +98,12 @@
 
                   <div class="dropdown-divider"></div>
 
-
                   <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Risk_auto_cut') }}">Risk Auto Cut</a></li>
+                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Exclude_Risk_Autocut') }}">Risk Auto Cut Exclude</a></li>
+                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Include_Risk_Autocut') }}">Include Into Risk Auto Cut</a></li>
+                  <div class="dropdown-divider"></div>
                   <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('noopentrades_changegroup') }}">Change Group</br>(No Open Trades)</a></li>
                   <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Equity_protect') }}">Equity Protect</a></li>
-
 
                   <div class="dropdown-divider"></div>
                   <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('CFH_Soap_Position') }}">CFH Soap Position</a></li>
@@ -110,10 +111,7 @@
                   <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Computer_Usage') }}">Server Usage</a></a></a></li>
                   <div class="dropdown-divider"></div>
 
-
-
                   <div class="dropdown-divider"></div>
-
 
                   <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/Track_Account_Open_Trades_V1/">MonitorOpen Trades</a></li>
                   <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/Daily_Change_Spread_V1.9/">Daily Change Spread</a></li>
@@ -130,9 +128,6 @@
                   <div class="dropdown-divider"></div>
                   <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/NFP_Change_Spread_V1.4/">NFP Spread Change</a></li>
                   <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/ABook_Match_Trades%20-%20V2.7/?Send_Email_Toggle=0">LP/MT4 Position</a></li>
-
-
-
 
                 </ul>
               </li>
