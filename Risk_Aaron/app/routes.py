@@ -2452,19 +2452,7 @@ def find_dividend(data, symbol, date):
     else:
         return "X"
 
-# Want to either count forward or backwards, the number of weekdays.
-def get_working_day_date(start_date, increment_decrement_val, weekdays_count):
 
-    return_date = start_date
-    backtrace_days = 0
-    weekday_count = 0   # how many weekdays have we looped thru
-    while weekday_count < weekdays_count: # How many weekdays do we want to go back by?
-        backtrace_days += increment_decrement_val   # Either + 1 or -1
-        return_date = start_date + datetime.timedelta(days=backtrace_days)
-        if return_date.weekday() in [0,1,2,3,4]: # We will count it if weekdays.
-            weekday_count += 1
-
-    return return_date
 
 # Helper function to check if string is json
 def is_json(myjson):

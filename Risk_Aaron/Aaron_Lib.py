@@ -240,3 +240,18 @@ def Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs):
         bot.sendMessage(chat_id=c_id, text=text_to_tele, parse_mode=telegram.ParseMode.MARKDOWN)
 #Chat_IDs=[486797751]
 #Bot_token = "708830467:AAHq9GVujNqPhvAKiXhMhqW_Qsl9ObdYiY4"
+
+
+# Want to either count forward or backwards, the number of weekdays.
+def get_working_day_date(start_date, increment_decrement_val, weekdays_count):
+
+    return_date = start_date
+    backtrace_days = 0
+    weekday_count = 0   # how many weekdays have we looped thru
+    while weekday_count < weekdays_count: # How many weekdays do we want to go back by?
+        backtrace_days += increment_decrement_val   # Either + 1 or -1
+        return_date = start_date + datetime.timedelta(days=backtrace_days)
+        if return_date.weekday() in [0,1,2,3,4]: # We will count it if weekdays.
+            weekday_count += 1
+
+    return return_date
