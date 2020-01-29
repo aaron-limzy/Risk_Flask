@@ -136,16 +136,7 @@
                 </ul>
               </li>
 
-              <li class="nav-item dropleft">
-                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  <b>CFH</b> Web
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdown2">
-                  <li><a class="dropdown-item" href="http://www.cfhclearing.com/products/">CHF Product List</a></li>
-                  <li><a class="dropdown-item" href="https://trade.cfhclearing.com/Pages/Login.aspx?ReturnUrl=%2f">CFH Clear Pro Web</a></li>
-                  <li><a class="dropdown-item" href="https://backoffice.cfhclearing.com">CFH Back Office</a></li>
-                </ul>
-              </li>
+
               <li class="nav-item dropleft">
                 <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                   Google Sheets
@@ -154,6 +145,9 @@
                   <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/1wBifOwaghe3lRsxRTRUMkTBEvLN8pmUWlHuGTuoXfFY/edit#gid=1332723419">Risk/Marketting Holiday Timing</a></li>
                   <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/1o-VNxW4aywl5P4QImhZxCS5-Q1-irJhXwaWfND1pNog/edit#gid=0">MT4 Trading Timing ⌚</a></li>
                   <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/19agQW-D4iiewHWLQCeumY4V04-VNLdbyLE0NEDVElEY/edit#gid=0">MT5 Trading Timing ⌚</a></li>
+
+
+
                 </ul>
               </li>
 
@@ -165,6 +159,7 @@
                   <li><a class="dropdown-item" href="{{ url_for('BGI_Swaps') }}">BGI Swaps</a></li>
                   <li><a class="dropdown-item" href="{{ url_for('Changed_readonly') }}">Changed Read Only</a></li>
                   <li><a class="dropdown-item" href="{{ url_for('Bloomberg_Dividend') }}">Bloomberg Dividend</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('BGI_Convert_Rate') }}">BGI FX Convert Rates</a></li>
                 </ul>
               </li>
               <li class="dropdown-divider"></li>
@@ -218,9 +213,9 @@
           </a>
 
           <div class="dropdown-menu dropdown-menu-right">
-            <a class="dropdown-item" href="http://testinfinitum.blackwellglobal.com/bgisetting/index.action">Live 1 Setting</a>
+            <a class="dropdown-item" href="http://testinfinitum.blackwellglobal.com/bgisetting-test2/index.action">Live 1 setting</a>
             <a class="dropdown-item" href="http://testinfinitum.blackwellglobal.com/bgisetting-test/index.action">Live 2 Setting</a>
-            <a class="dropdown-item" href="http://testinfinitum.blackwellglobal.com/bgisetting-test2/index.action">Live 3 setting</a>
+            <a class="dropdown-item" href="http://testinfinitum.blackwellglobal.com/bgisetting/index.action">Live 3 Setting</a>
 
           </div>
         </li>
@@ -236,7 +231,7 @@
 
             <li class="nav-item dropleft">
               <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown10" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <b>OZ Web</b>
+                <b>OZ</b> Web</b>
               </a>
               <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown10">
                 <li><a class="dropdown-item" href="https://38.76.4.235:44300/Account/Login?ReturnUrl=%2F">BGI NY4 Margin Hub</a></li>
@@ -254,11 +249,20 @@
 
               </ul>
             </li>
-
+            <li class="nav-item dropleft">
+              <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <b>CFH</b> Web
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown2">
+                <li><a class="dropdown-item" href="http://www.cfhclearing.com/products/">CHF Product List</a></li>
+                <li><a class="dropdown-item" href="https://trade.cfhclearing.com/Pages/Login.aspx?ReturnUrl=%2f">CFH Clear Pro Web</a></li>
+                <li><a class="dropdown-item" href="https://backoffice.cfhclearing.com">CFH Back Office</a></li>
+              </ul>
+            </li>
 
             <li class="nav-item dropleft">
               <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown11" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <b>3rd party Swaps</b>
+                <b>Swaps [External Broker]
               </a>
               <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown11">
                 <li><a class="dropdown-item" href="https://www.fxdd.com/mt/en/trading/offering">Fxdd Swaps</a></li>
@@ -267,10 +271,6 @@
                 <li><a class="dropdown-item" href="https://www.tradeviewforex.com/room/forex-resources/rollover-rates">Tradeview forex Swaps</a></li>
                 <li><a class="dropdown-item" href="https://ebhforex.com/faq/rollover-policy/">EBH Swaps</a></li>
                 <li><a class="dropdown-item" href="https://www.home.saxo/en-sg/rates-and-conditions/forex/trading-conditions#historic-swap-points">Saxo Swaps</a></li>
-
-
-
-
               </ul>
             </li>
 

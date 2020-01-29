@@ -1,5 +1,5 @@
 from app import app, db, excel
-from flask import render_template, flash, redirect, url_for, request, send_from_directory, jsonify, g, Markup
+from flask import render_template, flash, redirect, url_for, request, send_from_directory, jsonify, g, Markup, Blueprint, abort
 from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
 from app.forms import UploadForm, SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form, LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group
@@ -43,6 +43,8 @@ logging.getLogger('suds.wsdl').setLevel(logging.DEBUG)
 
 from .decorators import async
 from io import StringIO
+
+simple_page = Blueprint('simple_page', __name__, template_folder='templates')
 
 
 TIME_UPDATE_SLOW_MIN = 10
@@ -2285,6 +2287,54 @@ def Computer_Usage_Ajax():
     return json.dumps(return_data)
 
 
+
+@app.route('/Convert_rate')
+@login_required
+def BGI_Convert_Rate():
+    description = Markup("BGI Convert Rate.<br>")
+    header = "BGI_Convert Rate."
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/autumn.jpg', Table_name="BGI Convert Rate", \
+                           title="BGI Convert Rate", ajax_url=url_for("BGI_Convert_Rate_Ajax", _external=True), header=header,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+@app.route('/Convert_rate_ajax', methods=['GET', 'POST'])
+@login_required
+def BGI_Convert_Rate_Ajax():
+
+    sql_query = text("""select symbol, max(time) as time, average from live1.daily_prices_temp as A
+    where LENGTH(A.SYMBOL) = 6 and A.SYMBOL like "%USD%"
+    group by A.SYMBOL""")
+
+    raw_result = db.engine.execute(sql_query)
+    result_data = raw_result.fetchall()     # Return Result
+    # dict of the results
+    result_col = raw_result.keys()
+    # Clean up the data. Date.
+    result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
+
+    return_val=[]
+    for r in result_data_clean:
+        if not isinstance(r[0], str) or len(r) != 3 or r[2] == 0:
+            continue
+        #print(r)
+        #print( r[0].find("USD"))
+        if r[0].find("USD") == 3:
+            r[0] = r[0][:3] # Want the front 3 letters
+            r[2] = round(r[2], 4)
+            return_val.append(r)
+        elif r[0].find("USD") == 0:
+
+            r[0] = r[0][3:] # Want the back 3 letters
+            r[2] = 1/r[2]   # Need to reciprocal the amount
+            r[2] = round(r[2], 4)
+            return_val.append(r)
+
+    result_dict = [dict(zip(result_col,d)) for d in return_val]
+
+    return json.dumps(result_dict)
+
+
 # Want to insert into table.
 # From Flask.
 @app.route('/Balance_equity_exclude', methods=['GET', 'POST'])
@@ -2318,12 +2368,6 @@ def Exclude_Equity_Below_Credit():
     return render_template("General_Form.html",
                            title=title, header=header,
                            form=form, description=description)
-
-
-
-
-
-
 
 
 
