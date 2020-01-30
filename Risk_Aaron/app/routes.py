@@ -2,7 +2,7 @@ from app import app, db, excel
 from flask import render_template, flash, redirect, url_for, request, send_from_directory, jsonify, g, Markup, Blueprint, abort
 from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
-from app.forms import UploadForm, SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form, LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group
+from app.forms import SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form, LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField
 from flask_table import create_table, Col
 
@@ -161,51 +161,6 @@ def Dividend():
 #                             filename)
 
 
-@app.route('/upload_LP_Swaps', methods=['GET', 'POST'])
-def upload_excel():
-    form = UploadForm()
-
-    if request.method == 'POST' and form.validate_on_submit():
-
-        record_dict = request.get_records(field_name='upload', name_columns_by_row=0)
-
-        month_year = datetime.datetime.now().strftime('%b-%Y')
-        month_year_folder = app.config["VANTAGE_UPLOAD_FOLDER"] + "/" + month_year
-
-        filename = secure_filename(request.files['upload'].filename)
-
-        filename_postfix_xlsx = Check_File_Exist(month_year_folder, ".".join(
-            filename.split(".")[:-1]) + ".xlsx")  # Checks, Creates folders and return AVAILABLE filename
-
-        # Want to Let the users download the File..
-        # return excel.make_response_from_records(record_dict, "xls", status=200, file_name=filename_without_postfix)
-
-        pyexcel.save_as(records=record_dict, dest_file_name=filename_postfix_xlsx)
-
-        column_name = []
-        file_data = []
-        for cc, record in enumerate(record_dict):
-            if cc == 0:
-                column_name = list(record_dict[cc].keys())
-            buffer = dict()
-            print(record)
-            for i, j in record.items():
-                if i == "":
-                    i = "Empty"
-                buffer[i] = j
-                print(i, j)
-            file_data.append(buffer)
-
-        T = create_table()
-        table = T(file_data, classes=["table", "table-striped", "table-bordered", "table-hover"])
-        if (len(file_data) > 0) and isinstance(file_data[0], dict):
-            for c in file_data[0]:
-                if c != "\n":
-                    table.add_column(c, Col(c, th_html_attrs={"style": "background-color:# afcdff"}))
-        # 
-        return render_template("upload_form.html", form=form, table=table)
-
-    return render_template("upload_form.html", form=form)
 
 # 
 # @app.route('/test1', methods=['GET', 'POST'])
@@ -1334,26 +1289,7 @@ def CFH_Soap_Symbol_ajax(update_all=0):  # Optional Parameter, to update from th
 
 
 
-# To check if the file exists. If it does, generate a new name.
-def Check_File_Exist(path, filename):
-    folders = [a for a in path.split("/") if (a != "" and a != ".")]
-    for i, folder in enumerate(folders):
-        folder = "/".join(folders[:i + 1])  # WE Want the current one as well.
-        if os.path.isdir(folder) == False:
-            os.mkdir(folder)
-    File_Counter = 0
-    FileName = filename  # To be used and changed later. Appended to the end.
-    while True:
-        full_path_filename = path + "/" + FileName
-        if os.path.isfile(full_path_filename) == False:
-            break
-        else:
-            File_Counter += 1
-            FileName_Split = filename.split(".")
-            FileName_Split[-2] = FileName_Split[-2] + "_" + str(File_Counter)
-            FileName = ".".join(FileName_Split)
 
-    return path + "/" + FileName
 
 
 def markup_swaps(Val, positive_markup, negative_markup ):
@@ -2033,55 +1969,7 @@ def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
     return json.dumps(return_data)
 
 
-@app.route('/BGI_Swaps')
-@login_required
-def BGI_Swaps():
-    description = Markup("Swap values uploaded onto MT4/MT5. <br>\
-   Swaps would be charged on the roll over to the next day.<br> \
-    Three day swaps would be charged for FX on weds and CFDs on fri. ")
-    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="BGI_Swaps", \
-                           title="BGISwaps", ajax_url=url_for("BGI_Swaps_ajax"),
-                           description=description, replace_words=Markup(["Today"]))
 
-
-
-@app.route('/BGI_Swaps_ajax', methods=['GET', 'POST'])
-@login_required
-def BGI_Swaps_ajax():     # Return the Bloomberg dividend table in Json.
-
-    start_date = get_working_day_date(datetime.date.today(), -1, 5)
-    sql_query = text("SELECT * FROM test.`bgi_swaps` where date >= '{}' ORDER BY Core_Symbol, Date".format(start_date.strftime("%Y-%m-%d")))
-    raw_result = db.engine.execute(sql_query)
-    result_data = raw_result.fetchall()
-    result_col = raw_result.keys()
-    return_result = [dict(zip(result_col, d)) for d in result_data]
-
-
-
-    # Want to get unuqie dates, and sort them.
-    unique_date = list(set([d['Date'] for d in return_result if 'Date' in d]))
-    unique_date.sort()
-
-    # Want to get unuqie Symbol, and sort them.
-    unique_symbol = list(set([d['Core_Symbol'] for d in return_result if 'Core_Symbol' in d]))
-    unique_symbol.sort()
-
-
-    swap_total = [] # To store all the symbol
-    for s in unique_symbol:
-        swap_long_buffer = dict()
-        swap_short_buffer = dict()
-        swap_long_buffer['Symbol'] = s  # Save symbol name
-        swap_long_buffer['Direction'] = "Long"
-        swap_short_buffer['Symbol'] = s
-        swap_short_buffer['Direction'] = "Short"
-        for d in unique_date:       # Want to get Values of short and long.
-            swap_long_buffer[d.strftime("%Y-%m-%d (%a)")] = find_swaps(return_result, s, d, "bgi_long")
-            swap_short_buffer[d.strftime("%Y-%m-%d (%a)")] = find_swaps(return_result, s, d, "bgi_short")
-        swap_total.append(swap_long_buffer)
-        swap_total.append(swap_short_buffer)
-
-    return json.dumps(swap_total)
 
 @app.route('/MT4_Commission')
 @login_required
@@ -2465,36 +2353,6 @@ def fix_position_sql_update(CFH_Position):
     async_sql_insert(header="", values=[Update_to_zero], footer="")
 
     return
-
-
-
-# [{'Core_Symbol': '.A50', 'bgi_long': '0.000000000000', 'bgi_short': '0.000000000000', 'Date': datetime.date(2019, 8, 13)},....]
-def find_swaps(data, symbol, date, Long_Short):
-    for d in data:
-        if 'Core_Symbol' in d and d['Core_Symbol'] == symbol:
-            if 'Date' in d and d['Date'] == date:
-                if isinstance(d[Long_Short], float) or isinstance(d[Long_Short], int) or Check_Float(d[Long_Short]):
-                    return "{:.4f}".format(float(d[Long_Short]))
-                else:
-                    return d[Long_Short]
-    return 'X'
-
-
-# Get the dividend value from the list of dicts.
-def find_dividend(data, symbol, date):
-
-    for d in data:
-        if "mt4_symbol" in d and d["mt4_symbol"] == symbol and \
-            "date" in d and d["date"] == date:
-            return_val = ""
-            if (get_working_day_date(start_date=date, increment_decrement_val=-1, weekdays_count=1) == datetime.date.today()):
-                return_val += "Today"   # Want to append words, for javascript to know which to highlight
-            if d["dividend"] == 0:
-                return "{}-".format(return_val)
-            else:
-                return "{}{}".format(d["dividend"], return_val)
-    else:
-        return "X"
 
 
 

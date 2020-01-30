@@ -34,6 +34,10 @@ if app.config['VANTAGE_UPLOAD_FOLDER']:
 from app import routes, errors
 
 
+from app.Swaps.routes import swaps
+
+app.register_blueprint(swaps)
+
 if not app.debug:
     if app.config['MAIL_SERVER']:
         auth = None
