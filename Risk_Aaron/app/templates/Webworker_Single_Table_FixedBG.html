@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+
+{% block styles %}
+{{ super() }}
+<style>
+  body { background: #eee url({{ url_for('static', filename=backgroud_Filename) }});
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;}
+</style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/sweetalert2.all.min.js') }}"></script>
+
+{% endblock %}
+
+
+{% block app_content %}
+<h1 class="right-text">
+  {% if header %}
+  {{ header }}
+  {% else %}
+  Risk
+  {% endif %}
+  <br>
+  <span id="page_time"></span>
+
+</h1>
+
+<div class="container">
+<div class="row">
+  <br>
+  {% if description %}
+  <br><br>
+  <span class="border border-secondary rounded bg-light p-4">{{ description }}</span>
+  <br>
+  {% endif %}
+
+</div>
+{% if form %}
+<div class="container general_form">
+  <div class="row">
+    <div class="col">
+      <hr class="col-xs-12">
+      {{ wtf.quick_form(form, button_map={'submit': 'outline-secondary btn-lg btn-light'}) }}
+    </div>
+  </div>
+</div>
+
+{% endif %}
+
+
+{% if table %}
+<br>
+<h2>Uploaded Swap Values</h2>
+<div class="container">
+
+{{ table  }}
+
+</div>
+<br>
+{% endif %}
+
+
+
+
+</div>
+
+{% if html %} <br>{{ html }}{% endif %}
+
+
+  <br>
+<p>
+  <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#Table1_Raw_Div" aria-expanded="false">
+    Show Table
+  </button>
+
+</p>
+
+<div class="collapse" id="Table1_Raw_Div">
+  <div class="card card-body">
+    <b>Table 1 Raw JSON:</b> <br>
+    <span id="Table1_Raw"></span>
+  </div>
+  <div class="card card-body">
+    <b>MT4/LP Position Ajax Error:</b> <br>
+    <span id="Table1_Error"></span>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block navbar_button %}
+{% if setinterval %}
+<button class="btn btn-warning navbar-btn nav-button" id="btn_refresh_page">Refresh<br>Page: <span id="Refresh_count_down"></span> </button>
+{% endif %}
+
+{% endblock %}

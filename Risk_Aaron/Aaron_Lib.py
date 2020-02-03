@@ -93,9 +93,18 @@ def Get_time_String_Simple():
 #
 
 # Array to HTML Table.
-def Array_To_HTML_Table(Table_Header, Table_Data,  Highlight_words = []):
+# ['table', 'table-striped', 'table-hover', 'table-bordered', 'table-light', 'table-sm']
+def Array_To_HTML_Table(Table_Header, Table_Data,  Highlight_words = [], Table_Class = []):
     # HTML_Table_Header = "<table border = \"1\" cellpadding = \"4\" bordercolor = \"Black\" style=\"text-align:center;\"  >"
-    HTML_Table_Header = "<table border = \"2\" cellpadding = \"4\" bordercolor = \"Black\" style=\"text-align:center;\"  >"
+    #HTML_Table_Header = "<table border = \"2\" cellpadding = \"4\" bordercolor = \"Black\" style=\"text-align:center; \"  >"
+
+
+    if len(Table_Class) == 0:  # Will set a default table class if needed, else, set to the classes needed
+        HTML_Table_Header = "<table border = \"2\" cellpadding = \"4\" bordercolor = \"Black\" style=\"text-align:center; \"  >"
+    else:
+        HTML_Table_Header = '<table class="{table_class}">'.format(table_class=" ".join(Table_Class))
+
+
     HTML_Table_Code = HTML_Table_Header
     Header_Count = len(Table_Header)
 
