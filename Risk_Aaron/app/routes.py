@@ -2,7 +2,7 @@ from app import app, db, excel
 from flask import render_template, flash, redirect, url_for, request, send_from_directory, jsonify, g, Markup, Blueprint, abort
 from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
-from app.forms import SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form, LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group
+from app.forms import SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form, LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField
 from flask_table import create_table, Col
 
@@ -718,17 +718,20 @@ def Risk_auto_cut():
 
     description = Markup('Running only on <font color = "red"> Live 1 and Live 3</font>.<br>'   + \
                          "Will <b>close all client's position</b> and <b>change client to read-only</b>.<br>" + \
-                         "Sql Table (aaron.risk_autocut_exclude) for client with special requests.<br><br>" + \
-                         "<b>1)</b> For <font color = 'red'>%TW%</font> Clients : <br>EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND <br>`ENABLE` = 1 AND ENABLE_READONLY = 0<br><br>" + \
-                         "<b>2)</b>For other clients, where GROUP` IN  <font color = 'red'>aaron.risk_autocut_group</font> and EQUITY < CREDIT <br><br>" + \
-                         "<b>3)</b> For Login in <font color = 'red'>aaron.Risk_autocut</font> and <font color = 'red'>Credit_limit != 0</font>")
+                         "Sql Table ( <font color = 'red'>aaron.risk_autocut_exclude</font>) for client excluded from the autocut.<br>" + \
+                         "Sql Table ( <font color = 'red'>aaron.risk_autocut_include</font>) for client with special requests.<br><br>" + \
+                         "<b>1)</b> For <font color = 'red'>%TW%</font> Clients : <br>EQUITY < CREDIT AND <br>((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND" + \
+                                "<br>`ENABLE` = 1 AND ENABLE_READONLY = 0<br>and " + \
+                                " LOGIN NOT IN ( <font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>" + \
+                         "<b>2)</b>For other clients, where GROUP` IN  <font color = 'red'>aaron.risk_autocut_group</font> and EQUITY < CREDIT and<br>" + \
+                                " LOGIN NOT IN  (<font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>" + \
+                         "<b>3)</b> For Login in <font color = 'red'>aaron.Risk_autocut_exclude</font> and <font color = 'red'>Credit_limit != 0</font> and <br>" +\
+                                " LOGIN NOT IN ( <font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>")
 
-
-    # TODO: Add Form to add login/Live/limit into the exclude table.
+        # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
                            title=title, ajax_url=url_for("risk_auto_cut_ajax", _external=True), header=header, setinterval=10,
                            description=description, replace_words=Markup(["Today"]))
-
 
 
 @app.route('/risk_auto_cut_ajax', methods=['GET', 'POST'])
@@ -747,10 +750,12 @@ def risk_auto_cut_ajax():
     # For Login in aaron.Risk_autocut and Credit_limit != 0
 
     # To check the Lucky Draw Login. All TW clients for login not in aaron.risk_autocut_exclude
+    # Also done a check to cause hedging clients to SO
     raw_sql_statement = """SELECT LOGIN, '3' as LIVE, mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT
             FROM live3.mt4_users WHERE `GROUP` LIKE '%TW%' AND EQUITY < CREDIT AND 
         ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0 and
-        LOGIN not in (select login from aaron.risk_autocut_exclude where LIVE = 3)"""
+        LOGIN not in (select login from aaron.risk_autocut_exclude where LIVE = 3) and 
+        LOGIN not in (select login from aaron.risk_autocut_include where LIVE = 3 and EQUITY_LIMIT <> 0)"""
 
     raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
     sql_result1 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
@@ -759,13 +764,16 @@ def risk_auto_cut_ajax():
     # For the client's whose groups are in aaron.risk_autocut_group, and login not in aaron.risk_autocut_exclude
     raw_sql_statement = """SELECT DISTINCT mt4_trades.LOGIN,'{Live}' AS LIVE,  mt4_users. `GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT
     FROM live{Live}.mt4_trades, live{Live}.mt4_users WHERE
-    mt4_trades.LOGIN = mt4_users.LOGIN AND mt4_users. `GROUP` IN 
-        (SELECT `GROUP` FROM aaron.risk_autocut_group WHERE LIVE = '{Live}') 
-    AND 
+    mt4_trades.LOGIN = mt4_users.LOGIN AND 
+        ( mt4_users.`GROUP` IN (SELECT `GROUP` FROM aaron.risk_autocut_group WHERE LIVE = '{Live}') 
+                                OR
+        mt4_users.LOGIN IN (SELECT LOGIN FROM aaron.risk_autocut_include WHERE LIVE = '{Live}' and EQUITY_LIMIT = 0)
+        )    AND 
     CLOSE_TIME = '1970-01-01 00:00:00' AND 
     CMD < 6 AND 
     EQUITY < CREDIT AND 
-    mt4_trades.LOGIN NOT IN(SELECT LOGIN FROM aaron.risk_autocut_exclude WHERE `LIVE` = '{Live}')  """
+    mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_exclude WHERE `LIVE` = '{Live}') AND
+    mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_include WHERE `LIVE` = '{Live}' and EQUITY_LIMIT <> 0)"""
 
     raw_sql_statement = " UNION ".join([raw_sql_statement.format(Live=n) for n in Live_server])  # construct the SQL Statment
     raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
@@ -773,17 +781,19 @@ def risk_auto_cut_ajax():
 
 
 
-    # For the client's who are in aaron.Risk_autocut_exclude and Credit_limit != 0
+    # For the client's who are in aaron.risk_autocut_include and Credit_limit != 0
     raw_sql_statement = """SELECT DISTINCT T.LOGIN, {Live} AS LIVE,  U.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT, R.EQUITY_LIMIT as EQUITY_LIMIT
-    FROM live{Live}.mt4_users as U, aaron.risk_autocut_exclude as R, live{Live}.mt4_trades as T
+    FROM live{Live}.mt4_users as U, aaron.risk_autocut_include as R, live{Live}.mt4_trades as T
     WHERE R.LIVE = {Live} and R.EQUITY_LIMIT != 0 and
-    R.LOGIN = U.LOGIN and U.EQUITY < R.EQUITY_LIMIT and  
-    U.LOGIN = T.LOGIN and T.CLOSE_TIME = '1970-01-01 00:00:00' """
+    R.LOGIN = U.LOGIN and U.EQUITY < R.EQUITY_LIMIT and
+    U.LOGIN = T.LOGIN and T.CLOSE_TIME = '1970-01-01 00:00:00' AND
+    U.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_exclude WHERE `LIVE` = '{Live}')"""
 
     raw_sql_statement = " UNION ".join([raw_sql_statement.format(Live=n) for n in Live_server])  # construct the SQL Statment
     raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
     sql_result3 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
 
+    #sql_result3 = []
 
     total_result = dict()
     sql_results = [sql_result1, sql_result2, sql_result3]
@@ -870,13 +880,16 @@ def risk_auto_cut_ajax():
 
 # Want to insert into table.
 # From Flask.
-@app.route('/Risk_Autocut_exclude', methods=['GET', 'POST'])
+@app.route('/Risk_Autocut_include', methods=['GET', 'POST'])
 @login_required
-def Exclude_Risk_Autocut():
-    title = Markup("Exclude<br>Risk Auto Cut")
+def Include_Risk_Autocut():
+    title = Markup("Include Risk Auto Cut")
     header = title
     description = Markup(
-        "<b>To Exclude from the running tool of Risk Auto Cut</b><br>Will add account into aaron.risk_autocut_Exclude.<br>To Exclude client from being autocut")
+        """<b>To Include into the running tool of Risk Auto Cut</b>
+        <br>Will add account into aaron.risk_autocut_include.<br>
+        To include client from being autocut.<br>
+        If Equity_Limit = 0, will cut normally when Equity < credit""")
 
     form = equity_Protect_Cut()
     #print("Method: {}".format(request.method))
@@ -887,25 +900,63 @@ def Exclude_Risk_Autocut():
         Login = form.Login.data
         Equity_Limit = form.Equity_Limit.data
 
-        sql_insert = """INSERT INTO  aaron.`risk_autocut_Exclude` (`Live`, `Login`, `Equity_Limit`) VALUES
+        sql_insert = """INSERT INTO  aaron.`risk_autocut_Include` (`Live`, `Login`, `Equity_Limit`) VALUES
             ('{Live}','{Account}','{Equity}') ON DUPLICATE KEY UPDATE `Equity_Limit`=VALUES(`Equity_Limit`) """.format(Live=Live, Account=Login, Equity=Equity_Limit)
         sql_insert = sql_insert.replace("\t", "").replace("\n", "")
 
         print(sql_insert)
         db.engine.execute(text(sql_insert))  # Insert into DB
-        flash("Live: {live}, Login: {login} Equity limit: {equity_limit} has been added to aaron.`risk_autocut_Exclude`.".format(live=Live, login=Login, equity_limit=Equity_Limit))
+        flash("Live: {live}, Login: {login} Equity limit: {equity_limit} has been added to aaron.`risk_autocut_Include`.".format(live=Live, login=Login, equity_limit=Equity_Limit))
 
-    # TODO: Add Form to add login/Live/limit into the exclude table.
+    # TODO: Add Form to add login/Live/limit into the include table.
     return render_template("General_Form.html",
                            title=title, header=header,
                            form=form, description=description)
 
 
+
 # Want to insert into table.
 # From Flask.
-@app.route('/Risk_Autocut_Include', methods=['GET', 'POST'])
+@app.route('/Risk_Autocut_exclude', methods=['GET', 'POST'])
 @login_required
-def Include_Risk_Autocut():
+def Exclude_Risk_Autocut():
+    title = Markup("Exclude Risk Auto Cut")
+    header = title
+    description = Markup(
+        """<b>To Exclude into the running tool of Risk Auto Cut</b>
+        <br>Will add account into aaron.risk_autocut_Exclude.<br>
+        To Exclude client from being autocut.""")
+
+    form = risk_AutoCut_Exclude()
+    #print("Method: {}".format(request.method))
+    #print("validate_on_submit: {}".format(form.validate_on_submit()))
+    form.validate_on_submit()
+    if request.method == 'POST' and form.validate_on_submit():
+        Live = form.Live.data  # Get the Data.
+        Login = form.Login.data
+
+        sql_insert = """INSERT INTO  aaron.`risk_autocut_exclude` (`Live`, `Login`) VALUES
+            ('{Live}','{Account}') ON DUPLICATE KEY UPDATE Login=VALUES(Login)  """.format(Live=Live, Account=Login)
+        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+
+        print(sql_insert)
+        db.engine.execute(text(sql_insert))  # Insert into DB
+        flash("Live: {live}, Login: {login} has been added to aaron.`risk_autocut_exclude`.".format(live=Live, login=Login))
+
+    # TODO: Add Form to add login/Live/limit into the include table.
+    return render_template("General_Form.html",
+                           title=title, header=header,
+                           form=form, description=description)
+
+
+
+
+
+# Want to insert into table.
+# From Flask.
+@app.route('/Risk_Autocut_Include_Group', methods=['GET', 'POST'])
+@login_required
+def Include_Risk_Autocut_Group():
     title = Markup("Include<br>Client Group into<br>Risk Auto Cut")
     header = title
     description = Markup(
