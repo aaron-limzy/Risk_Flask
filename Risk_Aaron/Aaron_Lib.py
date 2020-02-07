@@ -48,6 +48,7 @@ def Send_Email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name
     me = "aaron.riskbgi@gmail.com"
     you = To_recipients
     # Create message container - the correct MIME type is multipart/alternative.
+    msg = MIMEMultipart()
     msg = MIMEMultipart('alternative')
     # Bcc_recipients = ["aaron.lim@blackwellglobal.com"]
 
