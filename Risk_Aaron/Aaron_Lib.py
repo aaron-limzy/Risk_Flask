@@ -242,12 +242,12 @@ def Run_C_Prog(Path):
     return (C_Return_Val, output, err)
 
 # #Post_To_Telegram("708830467:AAHq9GVujNqPhvAKiXhMhqW_Qsl9ObdYiY4", "Test: Hello World.", ["486797751"])
-def Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs):
+def Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode=telegram.ParseMode.MARKDOWN):
     #URL = "https://api.telegram.org/bot" + Bot_token + "/"
     #https://api.telegram.org/bot708830467:AAHq9GVujNqPhvAKiXhMhqW_Qsl9ObdYiY4/getUpdates
     bot = telegram.Bot(token=Bot_token)
     for c_id in Chat_IDs:
-        bot.sendMessage(chat_id=c_id, text=text_to_tele, parse_mode=telegram.ParseMode.MARKDOWN)
+        bot.sendMessage(chat_id=c_id, text=text_to_tele, parse_mode=Parse_mode)
 #Chat_IDs=[486797751]
 #Bot_token = "708830467:AAHq9GVujNqPhvAKiXhMhqW_Qsl9ObdYiY4"
 

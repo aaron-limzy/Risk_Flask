@@ -1103,9 +1103,10 @@ def ABook_Matching():    # To upload the Files, or post which trades to delete o
 @login_required
 def ABook_Matching_Position_Vol():    # To upload the Files, or post which trades to delete on MT5
 
-    mismatch_count_1 = 1   # Notify when mismatch has lasted 1st time.
-    mismatch_count_2 = 15   # Second notify when mismatched has lasted a second timessss
-    cfh_soap_query_count = 5   # Want to fully quiery and update from CFH when mismatches reaches this.
+    mismatch_count = [1,5,15]
+    #mismatch_count_1 = 1   # Notify when mismatch has lasted 1st time.
+    #mismatch_count_2 = 15   # Second notify when mismatched has lasted a second timessss
+    cfh_soap_query_count = [5]   # Want to fully quiery and update from CFH when mismatches reaches this.
 
     sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(CFH_Position,0) AS CFH_Lots ,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+ COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
         ,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy 
@@ -1237,23 +1238,20 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 
                 # If there are mismatches, first thing to do is to update CFH. All trades.
                 # Some older trades might have been closed.
-                if any([d["Mismatch_count"] == cfh_soap_query_count for d in Notify_Mismatch]):
-                    chf_details_ajax()  # Want to update CFH Live Trades.
+                if any([d["Mismatch_count"] in cfh_soap_query_count for d in Notify_Mismatch]):
+                    chf_fix_details_ajax()  # Want to update CFH Live Trades.
                     #TODO: Update Vantage Live trades too, if possible.
 
                     #CFH_Live_Position_ajax(update_all=1)    # Want to update all trades from CFH
                     #print("Mismatch. Will Send SOAP to refresh all trades.")
 
 
-            Tele_Message = "*MT4/LP Position* \n"  # To compose Telegram outgoing message
+            Tele_Message = "<b>MT4/LP Position</b> \n\n"  # To compose Telegram outgoing message
             email_html_body = "Hi, <br><br>";
             Email_Title_Array = []
 
             # If there are mismatch count that are either mismatch_count_1 or mismatch_count_2, we will send the email.
-            if any([(d["Mismatch_count"] == mismatch_count_1) or (d["Mismatch_count"] == mismatch_count_2) for d in Notify_Mismatch]):    # If there are to be notified.
-
-
-
+            if any([ d["Mismatch_count"] in mismatch_count for d in Notify_Mismatch]):    # If there are to be notified.
 
                 Play_Sound += 1  # Raise the flag to play sound.
                 Notify_mismatch_table_html = Array_To_HTML_Table(list(Notify_Mismatch[0].keys()), [list(d.values()) for d in Notify_Mismatch])
@@ -1268,27 +1266,29 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
                 bridge_trades = Mismatch_trades_bridge(symbol=Current_discrepancy, hours=8, mins=15)
                 mt4_trades = Mismatch_trades_mt4(symbol=Current_discrepancy, hours=7, mins=15)
 
-                bridge_trades_html_table = Array_To_HTML_Table(Table_Header = bridge_trades[0], Table_Data=bridge_trades[1]) if len(bridge_trades[1]) > 0 else "No Trades Found for that time perid.\n"
-                mt4_trades_html_table = Array_To_HTML_Table(Table_Header=mt4_trades[0], Table_Data=mt4_trades[1]) if len(mt4_trades[1]) > 0 else "No Trades Found for that time perid.\n"
+                bridge_trades_html_table = Array_To_HTML_Table(Table_Header = bridge_trades[0], Table_Data=bridge_trades[1]) if len(bridge_trades[1]) > 0 else "- No Trades Found for that time perid.\n"
+                mt4_trades_html_table = Array_To_HTML_Table(Table_Header=mt4_trades[0], Table_Data=mt4_trades[1]) if len(mt4_trades[1]) > 0 else "- No Trades Found for that time perid.\n"
 
                 email_html_body += "<br><b><u>MT4 trades</u></b> around the time:<br>{mt4_table}<br><br><b><u>Bridge trades</u></b> around that time:<br>{bridge_table}<br>".format(
                     mt4_table=mt4_trades_html_table,bridge_table=bridge_trades_html_table)
 
                 # print(Notify_Mismatch)
-                Tele_Message += "{} mismatch:\n {}".format(len(Current_discrepancy), ", ".join(["{} ({})\n".format(c["SYMBOL"], c["Discrepancy"]) for c in Notify_Mismatch]))
+                Tele_Message += "<pre>{} Mismatch</pre>\n {}".format(len(Current_discrepancy), " ".join(["{}:{} Lots, {} Mins.\n".format(c["SYMBOL"], c["Discrepancy"], c["Mismatch_count"]) for c in Notify_Mismatch]))
 
-            Cleared_Symbol = [sym for sym,count in Past_discrepancy.items() if (sym not in Current_discrepancy) and (count >= mismatch_count_1) ]    # Symbol that had mismatches and now it's been cleared.
+            Cleared_Symbol = [sym for sym,count in Past_discrepancy.items() if (sym not in Current_discrepancy) and count >= min(mismatch_count) ]    # Symbol that had mismatches and now it's been cleared.
 
             # If Mismatchs have been cleared.
             if len(Cleared_Symbol) > 0:     # There are symbols that have been cleared
                 # Get the Symbol data from current SQL return data.
+                
+
                 Cleared_Symbol_data = [d for d in curent_result if "SYMBOL" in d and d["SYMBOL"] in Cleared_Symbol]
                 # Create the HTML Table
                 Notify_cleared_table_html = Array_To_HTML_Table(list(Cleared_Symbol_data[0].keys()),
                                                                  [list(d.values()) for d in Cleared_Symbol_data])
                 Email_Title_Array.append("Cleared")
                 email_html_body += "The Following symbol/s mismatch have been cleared: {} <br> {}".format(", ".join(Cleared_Symbol), Notify_cleared_table_html)
-                Tele_Message += "{} Cleared: {}\n".format(len(Cleared_Symbol), ", ".join(Cleared_Symbol))
+                Tele_Message += "{} Cleared: <b>{}</b>\n".format(len(Cleared_Symbol), ", ".join(Cleared_Symbol))
 
 
 
@@ -1306,8 +1306,15 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 
                 # Send_Email(EMAIL_LIST_ALERT, [], "A Book Position ({}) ".format("/ ".join(Email_Title_Array)), Email_Header + email_html_body + Email_Footer, [])
 
+                # Want to send to telegram the timing that the API was updated.
+                api_update_time = api_update_details[0] if len(api_update_details) else {}
+                api_update_str = "\n<pre>Update time</pre>\n" + "\n".join(["{k} : {d}".format(k=k, d=d.replace("<br>", " ")) for k,d in api_update_time.items()]) \
+                                        if len(api_update_details) else ""
+
+                Tele_Message += api_update_str
+
                 # Send the Telegram message.
-                async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Message, TELE_CLIENT_ID)
+                async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Message, TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
 
         # '[{"Vantage_Update_Time": "2019-09-17 16:54:20", "BGI_Margin_Update_Time": "2019-09-17 16:54:23"}]'
 
@@ -1549,14 +1556,14 @@ def cfh_details():
 
     description = Markup("Pull CFH Details.")
     return render_template("Standard_Multi_Table.html", backgroud_Filename='css/Mac_table_user.jpeg', Table_name=["CFH Account Details", "CFH Live Position"], \
-                           title="CFH Details", ajax_url=url_for("chf_details_ajax"),setinterval=30,
+                           title="CFH Details", ajax_url=url_for("chf_fix_details_ajax"),setinterval=30,
                            description=description, replace_words=Markup(["Today"]))
 
 
 
 @app.route('/CFH/Details_ajax', methods=['GET', 'POST'])
 @login_required
-def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
+def chf_fix_details_ajax():     # Return the Bloomberg dividend table in Json.
 
     datetime_now = datetime.datetime.utcnow()
     datetime_now.weekday() # 0 - monday
@@ -1721,7 +1728,7 @@ def Monitor_Risk_Tools_ajax():
     #"MT4/LP A Book Check"       : ABook_Matching_Position_Vol,
     #"LP_Details_Check": ABook_LP_Details,
 
-    function_to_call = {'CFH_FIX_Position'          : chf_details_ajax,
+    function_to_call = {'CFH_FIX_Position'          : chf_fix_details_ajax,
                         'ChangeGroup_NoOpenTrades'  : noopentrades_changegroup_ajax,
                         "Equity_protect"            : Equity_protect_Cut_ajax,
                         "Risk_Auto_Cut"             : risk_auto_cut_ajax
@@ -2001,8 +2008,14 @@ def async_send_email(To_recipients, cc_recipients, Subject, HTML_Text, Attachmen
 
 # Async Call to send telegram message.
 @async
-def async_Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs):
-    Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs)
+def async_Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode=""):
+
+    if Parse_mode == "":
+        Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs)
+    else:
+        Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode = Parse_mode)
+
+
 
 # Async update the runtime table for update.
 @async
