@@ -50,8 +50,8 @@ from io import StringIO
 TIME_UPDATE_SLOW_MIN = 10
 
 
-#EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
-EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
+EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
+#EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
 
 
 TELE_ID_MTLP_MISMATCH = "736426328:AAH90fQZfcovGB8iP617yOslnql5dFyu-M0"		# For Mismatch and LP Margin
@@ -1103,7 +1103,7 @@ def ABook_Matching():    # To upload the Files, or post which trades to delete o
 @login_required
 def ABook_Matching_Position_Vol():    # To upload the Files, or post which trades to delete on MT5
 
-    mismatch_count = [1,5,15]
+    mismatch_count = [5,15]
     #mismatch_count_1 = 1   # Notify when mismatch has lasted 1st time.
     #mismatch_count_2 = 15   # Second notify when mismatched has lasted a second timessss
     cfh_soap_query_count = [5]   # Want to fully quiery and update from CFH when mismatches reaches this.
@@ -1273,7 +1273,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
                     mt4_table=mt4_trades_html_table,bridge_table=bridge_trades_html_table)
 
                 # print(Notify_Mismatch)
-                Tele_Message += "<pre>{} Mismatch</pre>\n {}".format(len(Current_discrepancy), " ".join(["{}:{} Lots, {} Mins.\n".format(c["SYMBOL"], c["Discrepancy"], c["Mismatch_count"]) for c in Notify_Mismatch]))
+                Tele_Message += "<pre>{} Mismatch</pre>\n {}".format(len(Current_discrepancy), " ".join(["{}: {} Lots, {} Mins.\n".format(c["SYMBOL"], c["Discrepancy"], c["Mismatch_count"]) for c in Notify_Mismatch]))
 
             Cleared_Symbol = [sym for sym,count in Past_discrepancy.items() if (sym not in Current_discrepancy) and count >= min(mismatch_count) ]    # Symbol that had mismatches and now it's been cleared.
 
@@ -1516,12 +1516,16 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
 def LP_Margin_UpdateTime():     # To query for LP/Margin Update time to check that it's being updated.
     # TODO: To add in sutible alert should this stop updating and such.
     # TODO: Date return as String instead of datetime. Cannot compare the date to notify when it's slow.
+
+
     sql_query = text("""select
     COALESCE(Vantage_Update_Time, 'No Open Trades') as Vantage_Update_Time,
-    COALESCE(BGI_Margin_Updated_Time, 'No Open Trades') as BGI_Margin_Update_Time
+    COALESCE(BGI_Margin_Updated_Time, 'No Open Trades') as BGI_Margin_Update_Time,
+    COALESCE(CFH_Updated_Time, 'No Open Trades') as CFH_Updated_Time
     from
     (select min(updated_time) as Vantage_Update_Time from test.vantage_live_trades where position != 0) as V,
-    (select updated_time as BGI_Margin_Updated_Time from test.bgimargin_live_trades where coresymbol = 'update') as BGI""")
+    (select updated_time as BGI_Margin_Updated_Time from test.bgimargin_live_trades where coresymbol = 'update') as BGI,
+    (select min(updated_time) as CFH_Updated_Time from aaron.cfh_live_position_fix) as CFH""")
 
     raw_result = db.engine.execute(sql_query)
     result_data = raw_result.fetchall()
