@@ -1111,7 +1111,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
         ,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy 
         FROM test.core_symbol
         LEFT JOIN
-        (SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM ss
+        (SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM 
             (SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades` 
             LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol 
             LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL 
@@ -1268,8 +1268,8 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
                 bridge_trades = Mismatch_trades_bridge(symbol=Current_discrepancy, hours=8, mins=15)
                 mt4_trades = Mismatch_trades_mt4(symbol=Current_discrepancy, hours=7, mins=15)
 
-                bridge_trades_html_table = Array_To_HTML_Table(Table_Header = bridge_trades[0], Table_Data=bridge_trades[1]) if len(bridge_trades) > 0 else "No Trades Found for that time perid.\n"
-                mt4_trades_html_table = Array_To_HTML_Table(Table_Header=mt4_trades[0], Table_Data=mt4_trades[1])
+                bridge_trades_html_table = Array_To_HTML_Table(Table_Header = bridge_trades[0], Table_Data=bridge_trades[1]) if len(bridge_trades[1]) > 0 else "No Trades Found for that time perid.\n"
+                mt4_trades_html_table = Array_To_HTML_Table(Table_Header=mt4_trades[0], Table_Data=mt4_trades[1]) if len(mt4_trades[1]) > 0 else "No Trades Found for that time perid.\n"
 
                 email_html_body += "<br><b><u>MT4 trades</u></b> around the time:<br>{mt4_table}<br><br><b><u>Bridge trades</u></b> around that time:<br>{bridge_table}<br>".format(
                     mt4_table=mt4_trades_html_table,bridge_table=bridge_trades_html_table)
@@ -1621,35 +1621,35 @@ def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
 
 
 
-@app.route('/MT4_Commission')
-@login_required
-def MT4_Commission():
-    description = Markup("Swap values uploaded onto MT4/MT5. <br>\
-   Swaps would be charged on the roll over to the next day.<br> \
-    Three day swaps would be charged for FX on weds and CFDs on fri. ")
-    return render_template("Standard_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="BGI_Swaps", \
-                           title="BGISwaps", ajax_url=url_for("Mt4_Commission_ajax"),
-                           description=description, replace_words=Markup([]))
-
-
-@app.route('/Mt4_Commission_ajax', methods=['GET', 'POST'])
-@login_required
-def Mt4_Commission_ajax():     # Return the Bloomberg dividend table in Json.
-
-    # start_date = get_working_day_date(datetime.date.today(), -1, 5)
-    sql_query = text("""select mt4_groups.`GROUP`, mt4_securities.`NAME`, mt4_groups.CURRENCY, mt4_groups.DEFAULT_LEVERAGE, mt4_groups.MARGIN_CALL, mt4_groups.MARGIN_STOPOUT, mt4_secgroups.`SHOW`, mt4_secgroups.TRADE, mt4_secgroups.SPREAD_DIFF, 
-        mt4_secgroups.COMM_BASE, mt4_secgroups.COMM_TYPE, mt4_secgroups.COMM_LOTS, mt4_secgroups.COMM_AGENT, mt4_secgroups.COMM_AGENT_TYPE, mt4_secgroups.COMM_AGENT_LOTS  from 
-        live5.mt4_groups, live5.mt4_secgroups, live5.mt4_securities
-        where mt4_groups.SECGROUPS = mt4_secgroups.SECGROUPS and mt4_secgroups.TYPE = mt4_securities.TYPE and
-        mt4_secgroups.`SHOW` = 1 and mt4_groups.`ENABLE` = 1
-        GROUP BY `GROUP`, mt4_securities.`NAME`""")
-
-    raw_result = db.engine.execute(sql_query)
-    result_data = raw_result.fetchall()
-    result_col = raw_result.keys()
-    return_result = [dict(zip(result_col, d)) for d in result_data]
-
-    return json.dumps(return_result)
+# @app.route('/MT4_Commission')
+# @login_required
+# def MT4_Commission():
+#     description = Markup("Swap values uploaded onto MT4/MT5. <br>\
+#    Swaps would be charged on the roll over to the next day.<br> \
+#     Three day swaps would be charged for FX on weds and CFDs on fri. ")
+#     return render_template("Standard_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="BGI_Swaps", \
+#                            title="BGISwaps", ajax_url=url_for("Mt4_Commission_ajax"),
+#                            description=description, replace_words=Markup([]))
+#
+#
+# @app.route('/Mt4_Commission_ajax', methods=['GET', 'POST'])
+# @login_required
+# def Mt4_Commission_ajax():     # Return the Bloomberg dividend table in Json.
+#
+#     # start_date = get_working_day_date(datetime.date.today(), -1, 5)
+#     sql_query = text("""select mt4_groups.`GROUP`, mt4_securities.`NAME`, mt4_groups.CURRENCY, mt4_groups.DEFAULT_LEVERAGE, mt4_groups.MARGIN_CALL, mt4_groups.MARGIN_STOPOUT, mt4_secgroups.`SHOW`, mt4_secgroups.TRADE, mt4_secgroups.SPREAD_DIFF,
+#         mt4_secgroups.COMM_BASE, mt4_secgroups.COMM_TYPE, mt4_secgroups.COMM_LOTS, mt4_secgroups.COMM_AGENT, mt4_secgroups.COMM_AGENT_TYPE, mt4_secgroups.COMM_AGENT_LOTS  from
+#         live5.mt4_groups, live5.mt4_secgroups, live5.mt4_securities
+#         where mt4_groups.SECGROUPS = mt4_secgroups.SECGROUPS and mt4_secgroups.TYPE = mt4_securities.TYPE and
+#         mt4_secgroups.`SHOW` = 1 and mt4_groups.`ENABLE` = 1
+#         GROUP BY `GROUP`, mt4_securities.`NAME`""")
+#
+#     raw_result = db.engine.execute(sql_query)
+#     result_data = raw_result.fetchall()
+#     result_col = raw_result.keys()
+#     return_result = [dict(zip(result_col, d)) for d in result_data]
+#
+#     return json.dumps(return_result)
 
 
 # Want to show which clients got recently changed to read only.
@@ -1657,8 +1657,8 @@ def Mt4_Commission_ajax():     # Return the Bloomberg dividend table in Json.
 @app.route('/Changed_readonly')
 @login_required
 def Changed_readonly():
-    description = Markup("")
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="Changed Read Only", \
+    description = Markup("Showing Clients that has been changed to read only in the last 2 working days.")
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Mac_Coffee.jpg', Table_name="Changed Read Only", \
                            title="Read Only Clients", ajax_url=url_for("Changed_readonly_ajax", _external=True),
                            description=description, replace_words=Markup(["Today"]))
 
@@ -1668,15 +1668,20 @@ def Changed_readonly():
 def Changed_readonly_ajax():
 
     # Which Date to start with. We want to count back 1 day. 
-    start_date = get_working_day_date(datetime.date.today(), -1, 1)
+    start_date = get_working_day_date(datetime.date.today(),increment_decrement_val= -1,weekdays_count= 2)
     sql_query = text("Select * from test.changed_read_only WHERE `date` >= '{}' order by Date DESC".format(start_date.strftime("%Y-%m-%d")))
     raw_result = db.engine.execute(sql_query)
     result_data = raw_result.fetchall()     # Return Result
-    # dict of the results
-    result_col = raw_result.keys()
-    # Clean up the data. Date.
-    result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
-    result_dict = [dict(zip(result_col,d)) for d in result_data_clean]
+
+    result_dict = []
+    if len(result_data) > 0:
+        # dict of the results
+        result_col = raw_result.keys()
+        # Clean up the data. Date.
+        result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
+        result_dict = [dict(zip(result_col,d)) for d in result_data_clean]
+    else:
+        result_dict.append({'Result': 'No Clients has been changed since <b>{}</b> MT4 Server Time.'.format(start_date.strftime("%Y-%m-%d"))})
 
     return json.dumps(result_dict)
 

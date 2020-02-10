@@ -167,10 +167,11 @@ def upload_excel():
         table_values = [list(d.values()) for d in file_data]
 
         #return render_template("upload_form.html", form=form, table=table)
-        return render_template("Webworker_Single_Table_FixedBG.html", backgroud_Filename='css/Charts.jpg',
-                               form=form, Table_name="Swaps", header=header, description=description, title=title, html=Markup(Array_To_HTML_Table(table_col, table_values,Table_Class=['table', 'table-striped', 'table-hover', 'table-bordered', 'table-light', 'table-sm'])))
+        return render_template("Single_Table_FixedBG.html", backgroud_Filename='css/Charts.jpg',
+                               form=form, Table_name="Swaps", header=header, description=description, title=title, html=Markup(Array_To_HTML_Table(table_col, table_values,
+                                            Table_Class=['table', 'table-striped', 'table-hover', 'table-bordered', 'table-light', 'table-sm'])))
 
-    return render_template("Webworker_Single_Table_FixedBG.html",  backgroud_Filename='css/Charts.jpg',
+    return render_template("Single_Table_FixedBG.html",  backgroud_Filename='css/Charts.jpg',
                            form=form, Table_name="Swaps", header=header, description=description, title=title,
                            html=Markup(Array_To_HTML_Table(Table_Header=[str(i) for i in range(20)], Table_Data=[["{:.4f}".format(random.random()) for i in range(20)] for j in range(100)],
                                                            Table_Class=['table', 'table-striped', 'table-hover', 'table-bordered', 'table-light', 'table-sm'])))
