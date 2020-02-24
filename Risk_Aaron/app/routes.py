@@ -1940,7 +1940,7 @@ def Mismatch_trades_mt4(symbol = [], hours=7, mins=16):
     time_gmt_query = (datetime.datetime.now()-datetime.timedelta(hours=hours, minutes=mins)).strftime("%Y-%m-%d %H:%M:00")
 
 
-    raw_query = """SELECT '{live}' as LIVE, LOGIN, SYMBOL, CMD, VOLUME, OPEN_TIME, CLOSE_TIME, OPEN_PRICE, CLOSE_PRICE, `GROUP`, `COMMENT`  
+    raw_query = """SELECT '{live}' as LIVE, LOGIN, TICKET, SYMBOL, CMD, VOLUME, OPEN_TIME, CLOSE_TIME, OPEN_PRICE, CLOSE_PRICE, `GROUP`, `COMMENT`  
     FROM live{live}.mt4_trades WHERE (OPEN_TIME >= '{time_query}' or CLOSE_TIME >= '{time_query}')
     and CMD < 6 and `GROUP` in (select * from live{live}.a_group) {symbol_list}"""
     raw_query = raw_query.replace("\n", "")
