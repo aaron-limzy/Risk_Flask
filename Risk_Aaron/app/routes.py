@@ -1581,7 +1581,7 @@ def chf_fix_details_ajax():     # Return the Bloomberg dividend table in Json.
 
     # Get the Position and Info from CFH FIX.
     [account_info, account_position] = CFH_Position_n_Info()
-    #print(account_info)
+
     if len(account_info) == 0 : # If there are no return.
         return_data = [[{"Error": "No Return Value"}], [{"Error": "No Return Value"}]]
         return json.dumps(return_data)
@@ -1623,7 +1623,6 @@ def chf_fix_details_ajax():     # Return the Bloomberg dividend table in Json.
                                     total_margin="{:.2f}".format(float(total_margin)),
                                     free_margin="{:.2f}".format(float(free_margin)), credit=credit)
 
-    #print(sql_insert)
     # ASYNC send to SQL.
     async_sql_insert(header = "", values = [sql_insert], footer="")
     async_Update_Runtime("CFH_FIX_Position")
