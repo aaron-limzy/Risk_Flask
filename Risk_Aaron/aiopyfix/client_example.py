@@ -13,7 +13,6 @@ class Side(Enum):
     buy = 1
     sell = 2
 
-
 # Will get connected to CFH FIX
 # Will Send FIx Message to ask for position
 # Will then send to ask for Account Info (Balance Credit...)
@@ -30,13 +29,8 @@ class Client(FIXEngine):
         # self.client_num = "197201"
 
 
-
-
         self.client_account_info = dict()
         self.client_open_position = dict()
-
-
-
 
 
         #self.loop = loop # Place holder

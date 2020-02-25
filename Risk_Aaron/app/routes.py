@@ -1602,11 +1602,14 @@ def chf_fix_details_ajax():     # Return the Bloomberg dividend table in Json.
              (float(account_info["OpenPL"]) if "OpenPL" in account_info else 0) + \
              (float(account_info["CreditLimit"]) if "CreditLimit" in account_info else 0)
 
-
+    credit = float(account_info["SecurityDeposit"]) if "SecurityDeposit" in account_info else 0
+    #credit =  account_info['CreditLimit']  if 'CreditLimit' in account_info else 0
     account_info['equity'] = equity
+
+
     total_margin = account_info['MarginRequirement'] if 'MarginRequirement' in account_info else 0
     free_margin = account_info['AvailableForMarginTrading'] if 'AvailableForMarginTrading' in account_info else 0
-    credit =  account_info['CreditLimit']  if 'CreditLimit' in account_info else 0
+
 
     database = "aaron"
     db_table = "lp_summary"
