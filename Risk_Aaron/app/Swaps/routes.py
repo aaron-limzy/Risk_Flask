@@ -4,7 +4,7 @@ from flask_login import current_user, login_user, logout_user, login_required
 from Aaron_Lib import *
 from app.Swaps.A_Utils import *
 from sqlalchemy import text
-from app import app, db, excel
+from app.extensions import db, excel
 
 from app.Swaps.forms import UploadForm
 
@@ -128,7 +128,7 @@ def upload_excel():
         record_dict = request.get_records(field_name='upload', name_columns_by_row=0)
 
         month_year = datetime.datetime.now().strftime('%b-%Y')
-        month_year_folder = app.config["VANTAGE_UPLOAD_FOLDER"] + "/" + month_year
+        month_year_folder = swaps.config["VANTAGE_UPLOAD_FOLDER"] + "/" + month_year
 
         filename = secure_filename(request.files['upload'].filename)
 

@@ -41,6 +41,7 @@ class Config(object):
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     ADMINS = ['aaron.lim@blackwellglobal.com']
+    #WTF_CSRF_TIME_LIMIT= None
 
 
 

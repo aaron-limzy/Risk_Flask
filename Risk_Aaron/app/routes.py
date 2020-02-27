@@ -1,8 +1,11 @@
-from app import app, db, excel
-from flask import render_template, flash, redirect, url_for, request, send_from_directory, jsonify, g, Markup, Blueprint, abort
+from app.extensions import  excel
+from flask import render_template, flash, redirect, url_for, request, send_from_directory, jsonify, g, Markup, Blueprint, abort, current_app
 from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
-from app.forms import SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form, LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude
+
+from app.forms import SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form
+from app.forms import LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude
+
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField
 from flask_table import create_table, Col
 
@@ -10,6 +13,7 @@ import pyexcel
 import urllib3
 import decimal
 import datetime
+
 import os
 import pandas as pd
 import numpy as np
@@ -22,6 +26,7 @@ import psutil   # Want to get Computer CPU Details/Usage/Memory
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import User, load_user, flask_users
 from sqlalchemy import text
+from flask_sqlalchemy import SQLAlchemy
 from Aaron_Lib import *
 
 from aiopyfix.client_example import CFH_Position_n_Info
@@ -48,8 +53,6 @@ import pandas as pd
 import numpy as np
 import json
 
-
-
 from .decorators import async
 from io import StringIO
 
@@ -58,9 +61,8 @@ from io import StringIO
 
 TIME_UPDATE_SLOW_MIN = 10
 
-
 EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
-#EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
+EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
 
 
 TELE_ID_MTLP_MISMATCH = "736426328:AAH90fQZfcovGB8iP617yOslnql5dFyu-M0"		# For Mismatch and LP Margin
@@ -73,18 +75,24 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display
 EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "risk@blackwellglobal.com", "cs@bgifx.com"]
 #EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com"]
 
-@app.route('/')
-@app.route('/index')        # Indexpage. To show the generic page.
+
+
+db = SQLAlchemy()  # <--- The db object belonging to the blueprint
+main_app = Blueprint('main_app', __name__)
+
+
+@main_app.route('/')
+@main_app.route('/index')        # Indexpage. To show the generic page.
 @login_required
 def index():
     # return render_template("index.html", header="index page", description="Hello")
     return render_template("index.html", header="Risk Tool.", description="Welcome {}".format(current_user.id))
 
-@app.route('/login', methods=['GET', 'POST'])       # Login Page. If user is login-ed, will re-direct to index.
+@main_app.route('/login', methods=['GET', 'POST'])       # Login Page. If user is login-ed, will re-direct to index.
 def login():
 
     if current_user.is_authenticated:
-        return redirect(url_for('index'))
+        return redirect(url_for('main_app.index'))
     # else:
         # print("User is not authenticated. ")
 
@@ -93,20 +101,20 @@ def login():
         user = load_user(username=form.username.data.lower())
         if user is None or not user.check_password(form.password.data): # If Login error
             flash('Invalid username or password')
-            return redirect(url_for('login'))
+            return redirect(url_for('main_app.login'))
         else:
             flash('Login successful')
             login_user(user, remember=form.remember_me.data)
 
             next_page = request.args.get('next')
             if not next_page or url_parse(next_page).netloc != '':
-                next_page = url_for('index')
+                next_page = url_for('main_app.index')
             return redirect(next_page)
 
     return render_template('General_Form.html', title='Sign In',header="Sign In", form=form)
 
 
-@app.route('/admin/create_user', methods=['GET', 'POST'])       # Login Page. If user is login-ed, will re-direct to index.
+@main_app.route('/admin/create_user', methods=['GET', 'POST'])       # Login Page. If user is login-ed, will re-direct to index.
 @login_required
 def Create_User():
 
@@ -131,14 +139,14 @@ def Create_User():
     return render_template('General_Form.html', title='Create User',header="Create User", form=form)
 
 
-@app.route('/logout', methods=['GET', 'POST'])  # Will logout the user.
+@main_app.route('/logout', methods=['GET', 'POST'])  # Will logout the user.
 @login_required
 def logout():
     logout_user()
-    return redirect(url_for('login'))
+    return redirect(url_for('main_app.login'))
 
 
-@app.route('/Dividend')
+@main_app.route('/Dividend')
 def Dividend():
     return render_template("base.html")
 
@@ -162,7 +170,7 @@ def color_negative_red(value):
 
 
 
-@app.route('/add_offset', methods=['GET', 'POST'])      # Want to add an offset to the ABook page.
+@main_app.route('/add_offset', methods=['GET', 'POST'])      # Want to add an offset to the ABook page.
 @login_required
 def add_off_set():
     form = AddOffSet()
@@ -193,7 +201,7 @@ def add_off_set():
 
 # Want to change user group should they have no trades.
 # ie: From B to A or A to B.
-@app.route('/noopentrades_changegroup', methods=['GET', 'POST'])
+@main_app.route('/noopentrades_changegroup', methods=['GET', 'POST'])
 @login_required
 def noopentrades_changegroup():
     # TODO: Need to check insert return.
@@ -222,7 +230,7 @@ def noopentrades_changegroup():
     return render_template("Change_USer_Group.html", form=form,title=title, header=header, description=Markup(description))
 
 
-@app.route('/noopentrades_changegroup_ajax', methods=['GET', 'POST'])
+@main_app.route('/noopentrades_changegroup_ajax', methods=['GET', 'POST'])
 @login_required
 def noopentrades_changegroup_ajax():
     # TODO: Check if user exist first.
@@ -256,7 +264,7 @@ def noopentrades_changegroup_ajax():
 
 
     # Need to update Run time on SQL Update table.
-    async_Update_Runtime("ChangeGroup_NoOpenTrades")
+    async_update_Runtime(app=current_app._get_current_object(), Tool="ChangeGroup_NoOpenTrades")
 
     if len(sql_result) == 0:    # If there are nothing to be changed.
         return_val = {"All": [{"Comment":"Login awaiting change: 0", "Last Query time": "{}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))}]}
@@ -284,7 +292,7 @@ def noopentrades_changegroup_ajax():
                 if all([server,login,previous_group, new_group]):     # Need to run C++ Should there be anything to change.
                     # # (C_Return_Val, output, err)
                     # c_run_return= [0,0,0]   # Artificial Results.
-                    c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Change_User.exe') + " {server} {login} {previous_group} {new_group}".format(
+                    c_run_return = Run_C_Prog("main_app" + url_for('main_app.static', filename='Exec/Change_User.exe') + " {server} {login} {previous_group} {new_group}".format(
                         server=server,login=login,previous_group=previous_group,new_group=new_group))
 
 
@@ -330,7 +338,7 @@ def noopentrades_changegroup_ajax():
 
 
 # Want to check and close off account/trades.
-@app.route('/Risk_auto_cut', methods=['GET', 'POST'])
+@main_app.route('/Risk_auto_cut', methods=['GET', 'POST'])
 @login_required
 def Risk_auto_cut():
 
@@ -356,11 +364,11 @@ def Risk_auto_cut():
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
-                           title=title, ajax_url=url_for("risk_auto_cut_ajax", _external=True), header=header, setinterval=10,
+                           title=title, ajax_url=url_for('main_app.risk_auto_cut_ajax', _external=True), header=header, setinterval=10,
                            description=description, replace_words=Markup(["Today"]))
 
 
-@app.route('/risk_auto_cut_ajax', methods=['GET', 'POST'])
+@main_app.route('/risk_auto_cut_ajax', methods=['GET', 'POST'])
 @login_required
 def risk_auto_cut_ajax():
     # TODO: Check if user exist first.
@@ -454,7 +462,7 @@ def risk_auto_cut_ajax():
             # # print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
 
 
-            c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Auto_Cut.exe') + " {live} {login} {equity_limit}".format( \
+            c_run_return = Run_C_Prog("main_app" + url_for('main_app.static', filename='Exec/Risk_Auto_Cut.exe') + " {live} {login} {equity_limit}".format( \
             live=live, login=login,equity_limit=equity_limit))
             print("c_run_return = {}".format(c_run_return))
             # c_run_return = 0
@@ -498,7 +506,7 @@ def risk_auto_cut_ajax():
         return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
 
     # # Need to update Run time on SQL Update table.
-    async_Update_Runtime("Risk_Auto_Cut")
+    async_update_Runtime(app=current_app._get_current_object(), Tool="Risk_Auto_Cut")
 
 
     return json.dumps(return_val)
@@ -506,7 +514,7 @@ def risk_auto_cut_ajax():
 
 # Want to insert into table.
 # From Flask.
-@app.route('/Risk_Autocut_include', methods=['GET', 'POST'])
+@main_app.route('/Risk_Autocut_include', methods=['GET', 'POST'])
 @login_required
 def Include_Risk_Autocut():
     title = Markup("Include Risk Auto Cut")
@@ -543,7 +551,7 @@ def Include_Risk_Autocut():
 
 # Want to insert into table.
 # From Flask.
-@app.route('/Risk_Autocut_exclude', methods=['GET', 'POST'])
+@main_app.route('/Risk_Autocut_exclude', methods=['GET', 'POST'])
 @login_required
 def Exclude_Risk_Autocut():
     title = Markup("Exclude Risk Auto Cut")
@@ -580,7 +588,7 @@ def Exclude_Risk_Autocut():
 
 # Want to insert into table.
 # From Flask.
-@app.route('/Risk_Autocut_Include_Group', methods=['GET', 'POST'])
+@main_app.route('/Risk_Autocut_Include_Group', methods=['GET', 'POST'])
 @login_required
 def Include_Risk_Autocut_Group():
     title = Markup("Include<br>Client Group into<br>Risk Auto Cut")
@@ -611,7 +619,7 @@ def Include_Risk_Autocut_Group():
 
 
 # Want to check and close off account/trades.
-@app.route('/Equity_Protect', methods=['GET', 'POST'])
+@main_app.route('/Equity_Protect', methods=['GET', 'POST'])
 @login_required
 def Equity_protect():
 
@@ -629,20 +637,20 @@ def Equity_protect():
         sql_insert = """INSERT INTO  aaron.`risk_equity_protect_cut` (`Live`, `Account`, `Equity`) VALUES
             ('{Live}','{Account}','{Equity}') ON DUPLICATE KEY UPDATE Equity=VALUES(Equity)""".format(Live=Live, Account=Login, Equity=Equity_Limit)
         sql_insert = sql_insert.replace("\t", "").replace("\n", "")
-        
+
         print(sql_insert)
         db.engine.execute(text(sql_insert))   # Insert into DB
         flash("Live: {Live}, Account: {Account}, Equity: {Equity} updated in aaron.`risk_equity_protect_cut`.".format(Live=Live, Account=Login, Equity=Equity_Limit))
 
 
     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut", \
-                           title=title, ajax_url=url_for("Equity_protect_Cut_ajax",_external=True), header=header,
+                           title=title, ajax_url=url_for('main_app.Equity_protect_Cut_ajax',_external=True), header=header,
                            form=form,setinterval = 20,
                            description=description, replace_words=Markup(["Today"]))
 
 
 # Cut position when equity falls below a certain level
-@app.route('/Equity_protect_ajax', methods=['GET', 'POST'])
+@main_app.route('/Equity_protect_ajax', methods=['GET', 'POST'])
 #@login_required
 def Equity_protect_Cut_ajax():
 
@@ -676,7 +684,7 @@ def Equity_protect_Cut_ajax():
     mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0"""
 
     sql_result = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
-    async_Update_Runtime("Equity_protect")
+    async_update_Runtime(app=current_app._get_current_object(), Tool="Equity_protect")
 
 
     if len(sql_result) > 0:
@@ -707,7 +715,7 @@ def Equity_protect_Cut_ajax():
         equity_cut = sql_result[i]["EQUITY_CUT"] if "EQUITY_CUT" in sql_result[i] else -1
 
         if not any([live==-1, login==-1, equity_cut==-1]):      # Need to ensure we have the correct input
-            c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Equity_Protect.exe') + " {live} {login} {equity_cut}".format( \
+            c_run_return = Run_C_Prog("main_app" + url_for('main_app.static', filename='Exec/Risk_Equity_Protect.exe') + " {live} {login} {equity_cut}".format( \
                live=live, login=login,equity_cut=equity_cut))
             sql_result[i]["RUN_RESULTS"] = c_return[c_run_return[0]] if c_run_return[0] in c_return else "Unknown error: {}".format(c_run_return)
 
@@ -749,7 +757,7 @@ def Equity_protect_Cut_ajax():
 
 
 # Want to check and close off account/trades.
-@app.route('/CFH_Live_Position', methods=['GET', 'POST'])
+@main_app.route('/CFH_Live_Position', methods=['GET', 'POST'])
 @login_required
 def CFH_Soap_Position():
 
@@ -758,10 +766,10 @@ def CFH_Soap_Position():
     description = Markup("Getting CFH Live Position from CFH BO via CFH's SOAP API.<br>Results will be inserted/updated to aaron.cfh_live_trades.<br>Update time in table is GMT.")
 
     return render_template("Standard_Single_Table.html", backgroud_Filename='css/notebook_pen.jpg', Table_name="CFH Live Position", \
-                           title=title, ajax_url=url_for("CFH_Soap_Position_ajax"), header=header, setinterval=60*60*12,
+                           title=title, ajax_url=url_for('main_app.CFH_Soap_Position_ajax'), header=header, setinterval=60*60*12,
                            description=description, replace_words=Markup(["Today"]))
 
-@app.route('/CFH_Live_Position_ajax', methods=['GET', 'POST'])
+@main_app.route('/CFH_Live_Position_ajax', methods=['GET', 'POST'])
 @login_required
 def CFH_Soap_Position_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
     # TODO: Update Minitor Tools Table.
@@ -839,7 +847,7 @@ def CFH_Soap_Position_ajax(update_all=0):  # Optional Parameter, to update from 
             `TradeSystemId`=VALUES(`TradeSystemId`) , 	`TradeType`=VALUES(`TradeType`) , 	`TsTradeId`=VALUES(`TsTradeId`) , 	`ValueDate`=VALUES(`ValueDate`) ,
             `ExternalClientId`=VALUES(`ExternalClientId`), `Updated_time`=DATE_SUB(now(),INTERVAL 8 HOUR) """
 
-        async_sql_insert(header=live_trades_sql_header,values=live_trade_values,footer= live_trades_sql_footer,sql_max_insert=1000)
+        async_sql_insert(app=current_app._get_current_object(),header=live_trades_sql_header,values=live_trade_values,footer= live_trades_sql_footer,sql_max_insert=1000)
         #sql_insert_max = 1000
         # for i in range(math.ceil(len(live_trade_values) / sql_insert_max)):
         #
@@ -856,13 +864,14 @@ def CFH_Soap_Position_ajax(update_all=0):  # Optional Parameter, to update from 
     #print(return_val)
 
     # # Need to update Run time on SQL Update table.
-    async_Update_Runtime("CFH_Live_Trades")
+    async_update_Runtime(app=current_app._get_current_object(), Tool="CFH_Live_Trades")
+    #print(return_val)
 
     return json.dumps(return_val)
 
 
 # Want to check and close off account/trades.
-@app.route('/CFH_Symbol_Update', methods=['GET', 'POST'])
+@main_app.route('/CFH_Symbol_Update', methods=['GET', 'POST'])
 @login_required
 def CFH_Soap_Symbol():
 
@@ -871,10 +880,10 @@ def CFH_Soap_Symbol():
     description = Markup("Getting CFH Symbol Details from CFH BO via CFH's SOAP API.<br>Results will be inserted/updated to aaron.cfh_symbol.<br>Update time in table is GMT.")
 
     return render_template("Standard_Single_Table.html", backgroud_Filename='css/notebook_pen.jpg', Table_name="CFH Symbols", \
-                           title=title, ajax_url=url_for("CFH_Soap_Symbol_ajax"), header=header,
+                           title=title, ajax_url=url_for('main_app.CFH_Soap_Symbol_ajax'), header=header,
                            description=description, replace_words=Markup(["Today"]))
 
-@app.route('/CFH_Symbol_Update_ajax', methods=['GET', 'POST'])
+@main_app.route('/CFH_Symbol_Update_ajax', methods=['GET', 'POST'])
 @login_required
 def CFH_Soap_Symbol_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
     # TODO: CFH_Symbol_Update_ajax Minotor Tools Table.
@@ -937,15 +946,15 @@ def CFH_Soap_Symbol_ajax(update_all=0):  # Optional Parameter, to update from th
     return json.dumps(return_val)
 #
 #
-# @app.route('/g', methods=['GET', 'POST'])
-# def read_from_app_g():
+# @main_app.route('/g', methods=['GET', 'POST'])
+# def read_from_main_app_g():
 #
 #
-#     # print(app.config["MAIL_SERVER"])
-#     # print(app.config["MAIL_PORT"])
-#     # print(app.config["MAIL_USE_TLS"])
-#     # print(app.config["MAIL_USERNAME"])
-#     # print(app.config["MAIL_PASSWORD"])
+#     # print(main_app.config["MAIL_SERVER"])
+#     # print(main_app.config["MAIL_PORT"])
+#     # print(main_app.config["MAIL_USE_TLS"])
+#     # print(main_app.config["MAIL_USERNAME"])
+#     # print(main_app.config["MAIL_PASSWORD"])
 #
 #     # if "Swap_data" in g:
 #     #  print("Swap_data in g")
@@ -955,15 +964,15 @@ def CFH_Soap_Symbol_ajax(update_all=0):  # Optional Parameter, to update from th
 
 
 #
-# @app.route('/h', methods=['GET', 'POST'])
-# def read_from_app_h():
+# @main_app.route('/h', methods=['GET', 'POST'])
+# def read_from_main_app_h():
 #
 #     # Time = datetime.now().strftime("%H:%M:%S")
 #     # for t in range(10):
 #     #  SymbolTotalTest.append_field(str(t) + " " + str(Time), FormField(SymbolSwap))
 #     # form = SymbolTotalTest()
 #     # return render_template("standard_form.html", form=form)
-#     return render_template("Standard_Single_Table.html", backgroud_Filename='css/test7.jpg', Table_name="Table1", title="Table", ajax_url=url_for("LP_Margin_UpdateTime"))
+#     return render_template("Standard_Single_Table.html", backgroud_Filename='css/test7.jpg', Table_name="Table1", title="Table", ajax_url=url_for('main_app.LP_Margin_UpdateTime'))
 
 
 
@@ -993,7 +1002,7 @@ def Check_Float(element):
 
 
 
-@app.route('/is_prime')
+@main_app.route('/is_prime')
 @login_required
 def is_prime_query_AccDetails():    # Query Is Prime
 
@@ -1001,7 +1010,7 @@ def is_prime_query_AccDetails():    # Query Is Prime
     return render_template("Is_prime_html.html",header="IS Prime Account Details")
 
 
-@app.route('/is_prime_return_json', methods=['GET', 'POST'])    # Query Is Prime, Returns a Json.
+@main_app.route('/is_prime_return_json', methods=['GET', 'POST'])    # Query Is Prime, Returns a Json.
 @login_required
 def is_prime_query_AccDetails_json():
     API_URL_BASE = 'https://api.isprimefx.com/api/'
@@ -1010,7 +1019,7 @@ def is_prime_query_AccDetails_json():
 
     # login and extract the authentication token
     response = requests.post(API_URL_BASE + 'login', \
-    headers={'Content-Type': 'application/json'}, data=json.dumps({'username': USERNAME, 'password': PASSWORD}), verify=False)
+    headers={'Content-Type': 'main_application/json'}, data=json.dumps({'username': USERNAME, 'password': PASSWORD}), verify=False)
     token = response.json()['token']
     headers = {'X-Token': token}
 
@@ -1056,7 +1065,7 @@ def is_prime_query_AccDetails_json():
     return json.dumps(account_dict)
 
 
-@app.route('/MT5_Modify_Trade', methods=['GET', 'POST'])
+@main_app.route('/MT5_Modify_Trade', methods=['GET', 'POST'])
 @login_required
 def Modify_MT5_Trades():    # To upload the Files, or post which trades to delete on MT5
     form = MT5_Modify_Trades_Form()
@@ -1073,7 +1082,7 @@ def Modify_MT5_Trades():    # To upload the Files, or post which trades to delet
         else:
             print("Not Validated. ")
 
-        # 
+        #
         # if file_form.validate_on_submit():
         #  record_dict = request.get_records(field_name='upload', name_columns_by_row=0)
         #  print(record_dict)
@@ -1083,32 +1092,32 @@ def Modify_MT5_Trades():    # To upload the Files, or post which trades to delet
 
 
 
-@app.route('/Get_Live3_MT4User')
+@main_app.route('/Get_Live3_MT4User')
 @login_required
 def Live3_MT4_Users():
     return Live_MT4_Users(3)
 
-@app.route('/Get_Live1_MT4User')
+@main_app.route('/Get_Live1_MT4User')
 @login_required
 def Live1_MT4_Users():
     return Live_MT4_Users(1)
 
 
 
-@app.route('/sent_file/Risk_Download')
+@main_app.route('/sent_file/Risk_Download')
 @login_required
 def Risk_Download_Page():    # To upload the Files, or post which trades to delete on MT5
     return render_template("Risk_Download_Page.html",header="Send file...",title="Risk Download Page")
 
 
-@app.route('/ABook_Match_Trades')
+@main_app.route('/ABook_Match_Trades')
 @login_required
 def ABook_Matching():    # To upload the Files, or post which trades to delete on MT5
 
     return render_template("A_Book_Matching.html",header="A Book Matching", title="LP/MT4 Position")
 
 
-@app.route('/ABook_Match_Trades_Position', methods=['GET', 'POST'])
+@main_app.route('/ABook_Match_Trades_Position', methods=['GET', 'POST'])
 @login_required
 def ABook_Matching_Position_Vol():    # To upload the Files, or post which trades to delete on MT5
 
@@ -1240,7 +1249,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
                              + email_table_html + "<br>Thanks,<br>Aaron" + Email_Footer, [])
         else:
             if Send_Email_Flag == 1:  # Only when Send Email Alert is set, we will
-                async_Update_Runtime('MT4/LP A Book Check')     # Want to update the runtime table to ensure that tool is running.
+                async_update_Runtime(app=current_app._get_current_object(), Tool='MT4/LP A Book Check')     # Want to update the runtime table to ensure that tool is running.
 
 
 
@@ -1289,7 +1298,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
             # If Mismatchs have been cleared.
             if len(Cleared_Symbol) > 0:     # There are symbols that have been cleared
                 # Get the Symbol data from current SQL return data.
-                
+
 
                 Cleared_Symbol_data = [d for d in curent_result if "SYMBOL" in d and d["SYMBOL"] in Cleared_Symbol]
                 # Create the HTML Table
@@ -1333,7 +1342,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
     return json.dumps(return_result)
 
 
-@app.route('/ABook_LP_Details', methods=['GET', 'POST'])
+@main_app.route('/ABook_LP_Details', methods=['GET', 'POST'])
 @login_required
 def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. Will alert if email is set to send.
                             # Checks Margin against MC/SO values, with some buffer as alert.
@@ -1432,7 +1441,7 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
 
             # sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`) VALUES" \
             #              " ('LP Details Check', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()"
-            async_Update_Runtime("LP_Details_Check")
+            async_update_Runtime(app=current_app._get_current_object(), Tool="LP_Details_Check")
             #raw_insert_result = db.engine.execute(sql_insert)
 
         Tele_Message = "*LP Details* \n"  # To compose Telegram outgoing message
@@ -1471,7 +1480,7 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
                     async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
                     LP_position_Table = List_of_Dict_To_Horizontal_HTML_Table(LP_Position_Show_Table, ['Slow', 'Margin Call', 'Alert'])
                     async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
-                                     Subject = "LP Account Approaching SO.",
+                                     Subject = "LP Account main_approaching SO.",
                                      HTML_Text="{}Hi,<br><br>LP Account margin reaching SO Levels. <br>{}<br>This Email was generated at: {} (SGT)<br><br>Thanks,<br>Aaron{}".
                                      format(Email_Header, LP_position_Table, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),Email_Footer),
                                      Attachment_Name=[])
@@ -1499,7 +1508,7 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
                     async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
                     LP_position_Table = List_of_Dict_To_Horizontal_HTML_Table(LP_Position_Show_Table, ['Slow', 'Margin Call', 'Alert'])
                     async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
-                                     Subject = "LP Account Approaching MC.",
+                                     Subject = "LP Account main_approaching MC.",
                                      HTML_Text="{}Hi,<br><br>LP Account margin reaching SO Levels. <br>{}<br>This Email was generated at: {} (SGT)<br><br>Thanks,<br>Aaron{}".
                                      format(Email_Header, LP_position_Table, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),Email_Footer),
                                      Attachment_Name=[])
@@ -1520,7 +1529,7 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
 
 
 
-@app.route('/LP_Margin_UpdateTime', methods=['GET', 'POST'])
+@main_app.route('/LP_Margin_UpdateTime', methods=['GET', 'POST'])
 @login_required
 def LP_Margin_UpdateTime():     # To query for LP/Margin Update time to check that it's being updated.
     # TODO: To add in sutible alert should this stop updating and such.
@@ -1561,7 +1570,7 @@ def try_string_to_datetime(sstr):
 
 
 
-@app.route('/CFH/Details')
+@main_app.route('/CFH/Details')
 @login_required
 def cfh_details():
     #TODO: Add this into a blue print.
@@ -1569,12 +1578,12 @@ def cfh_details():
 
     description = Markup("Pull CFH Details.")
     return render_template("Standard_Multi_Table.html", backgroud_Filename='css/Mac_table_user.jpeg', Table_name=["CFH Account Details", "CFH Live Position"], \
-                           title="CFH Details", ajax_url=url_for("chf_fix_details_ajax"),setinterval=30,
+                           title="CFH Details", ajax_url=url_for('main_app.chf_fix_details_ajax'),setinterval=30,
                            description=description, replace_words=Markup(["Today"]))
 
 
 
-@app.route('/CFH/Details_ajax', methods=['GET', 'POST'])
+@main_app.route('/CFH/Details_ajax', methods=['GET', 'POST'])
 @login_required
 def chf_fix_details_ajax():     # Return the Bloomberg dividend table in Json.
 
@@ -1595,7 +1604,7 @@ def chf_fix_details_ajax():     # Return the Bloomberg dividend table in Json.
         return_data = [[{"Error": "No Return Value"}], [{"Error": "No Return Value"}]]
         return json.dumps(return_data)
 
-    fix_position_sql_update(account_position)   # Will append the position to SQL. Will Zero out any others.
+    fix_position_sql_update(account_position)   # Will main_append the position to SQL. Will Zero out any others.
     cfh_account_position = [{"Symbol": k, "Position" : d} for k, d in account_position.items()]
 
 
@@ -1633,8 +1642,8 @@ def chf_fix_details_ajax():     # Return the Bloomberg dividend table in Json.
                                     free_margin="{:.2f}".format(float(free_margin)), credit=credit)
 
     # ASYNC send to SQL.
-    async_sql_insert(header = "", values = [sql_insert], footer="")
-    async_Update_Runtime("CFH_FIX_Position")
+    async_sql_insert(app=current_app._get_current_object(),header = "", values = [sql_insert], footer="")
+    async_update_Runtime(app=current_app._get_current_object(), Tool="CFH_FIX_Position")
 
 
     return_data = [[account_info], cfh_account_position]
@@ -1644,18 +1653,18 @@ def chf_fix_details_ajax():     # Return the Bloomberg dividend table in Json.
 
 
 
-# @app.route('/MT4_Commission')
+# @main_app.route('/MT4_Commission')
 # @login_required
 # def MT4_Commission():
 #     description = Markup("Swap values uploaded onto MT4/MT5. <br>\
 #    Swaps would be charged on the roll over to the next day.<br> \
 #     Three day swaps would be charged for FX on weds and CFDs on fri. ")
 #     return render_template("Standard_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="BGI_Swaps", \
-#                            title="BGISwaps", ajax_url=url_for("Mt4_Commission_ajax"),
+#                            title="BGISwaps", ajax_url=url_for('main_app.Mt4_Commission_ajax'),
 #                            description=description, replace_words=Markup([]))
 #
 #
-# @app.route('/Mt4_Commission_ajax', methods=['GET', 'POST'])
+# @main_app.route('/Mt4_Commission_ajax', methods=['GET', 'POST'])
 # @login_required
 # def Mt4_Commission_ajax():     # Return the Bloomberg dividend table in Json.
 #
@@ -1677,16 +1686,16 @@ def chf_fix_details_ajax():     # Return the Bloomberg dividend table in Json.
 
 # Want to show which clients got recently changed to read only.
 # Due to Equity < Balance.
-@app.route('/Changed_readonly')
+@main_app.route('/Changed_readonly')
 @login_required
 def Changed_readonly():
     description = Markup("Showing Clients that has been changed to read only in the last 2 working days.")
     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Mac_Coffee.jpg', Table_name="Changed Read Only", \
-                           title="Read Only Clients", ajax_url=url_for("Changed_readonly_ajax", _external=True),
+                           title="Read Only Clients", ajax_url=url_for('main_app.Changed_readonly_ajax', _external=True),
                            description=description, replace_words=Markup(["Today"]))
 
 
-@app.route('/Changed_readonly_ajax', methods=['GET', 'POST'])
+@main_app.route('/Changed_readonly_ajax', methods=['GET', 'POST'])
 @login_required
 def Changed_readonly_ajax():
 
@@ -1710,18 +1719,18 @@ def Changed_readonly_ajax():
 
 
 
-@app.route('/Monitor_Risk_Tools')
+@main_app.route('/Monitor_Risk_Tools')
 @login_required
 def Monitor_Risk_Tools():
     description = Markup("Monitor Risk tools.")
     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/clock_left.jpg', Table_name="Risk tools", \
-                           title="Risk Tools", ajax_url=url_for("Monitor_Risk_Tools_ajax", _external=True), setinterval=60,
+                           title="Risk Tools", ajax_url=url_for('main_app.Monitor_Risk_Tools_ajax', _external=True), setinterval=60,
                            description=description, replace_words=Markup(["Time Slow"]))
 
 
 # To monitor the Risk Tools, and run them if needed.
 # Will need to update it when there are new tools.
-@app.route('/Monitor_Risk_Tools_ajax', methods=['GET', 'POST'])
+@main_app.route('/Monitor_Risk_Tools_ajax', methods=['GET', 'POST'])
 @login_required
 def Monitor_Risk_Tools_ajax():
 
@@ -1803,7 +1812,7 @@ def Monitor_Risk_Tools_ajax():
 
         # Update SQL, set the email to have been sent.
         sql_query = "Update aaron.monitor_tool_runtime set Email_Sent = 1 where Monitor_Tool in ({})".format(",".join(["'{}'".format(r) for r in recent_slow_update]))
-        async_sql_insert(header=sql_query)
+        async_sql_insert(app=current_app._get_current_object(),header=sql_query)
 
 
         # Need to string it together to send a tele message.
@@ -1816,7 +1825,7 @@ def Monitor_Risk_Tools_ajax():
     # For those that have started being updated.
     if len(resume_update_list) > 0:
         sql_query = "Update aaron.monitor_tool_runtime set Email_Sent = 0 where Monitor_Tool in ({})".format(",".join(["'{}'".format(r) for r in resume_update_list]))
-        async_sql_insert(header=sql_query)
+        async_sql_insert(app=current_app._get_current_object(),header=sql_query)
         text_to_tele = "\n".join(["- {}".format(r) for r in resume_update_list]).replace("_"," ")
         # Post to Telegram that the tools have been updating again.
         async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, "*Risk Tool Update (Resumed)*:\n{}".format(text_to_tele),
@@ -1826,17 +1835,17 @@ def Monitor_Risk_Tools_ajax():
     return json.dumps(return_dict)
 
 
-@app.route('/Usage')
+@main_app.route('/Usage')
 @login_required
 def Computer_Usage():
     description = Markup("Reflects the Server Usage.<br>")
     header = "Server Usage Details."
     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/mac_keyboard_side.jpg', Table_name="Server Computer Usage", \
-                           title="Server Usage", ajax_url=url_for("Computer_Usage_Ajax", _external=True), header=header, setinterval=30,
+                           title="Server Usage", ajax_url=url_for('main_app.Computer_Usage_Ajax', _external=True), header=header, setinterval=30,
                            description=description, replace_words=Markup(["Today"]))
 
 
-@app.route('/Usage_ajax', methods=['GET', 'POST'])
+@main_app.route('/Usage_ajax', methods=['GET', 'POST'])
 @login_required
 def Computer_Usage_Ajax():
     # gives a single float value
@@ -1854,17 +1863,17 @@ def Computer_Usage_Ajax():
 
 
 
-@app.route('/Convert_rate')
+@main_app.route('/Convert_rate')
 @login_required
 def BGI_Convert_Rate():
     description = Markup("BGI Convert Rate.<br>")
     header = "BGI_Convert Rate."
     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/autumn.jpg', Table_name="BGI Convert Rate", \
-                           title="BGI Convert Rate", ajax_url=url_for("BGI_Convert_Rate_Ajax", _external=True), header=header,
+                           title="BGI Convert Rate", ajax_url=url_for('main_app.BGI_Convert_Rate_Ajax', _external=True), header=header,
                            description=description, replace_words=Markup(["Today"]))
 
 
-@app.route('/Convert_rate_ajax', methods=['GET', 'POST'])
+@main_app.route('/Convert_rate_ajax', methods=['GET', 'POST'])
 @login_required
 def BGI_Convert_Rate_Ajax():
 
@@ -1903,7 +1912,7 @@ def BGI_Convert_Rate_Ajax():
 
 # Want to insert into table.
 # From Flask.
-@app.route('/Balance_equity_exclude', methods=['GET', 'POST'])
+@main_app.route('/Balance_equity_exclude', methods=['GET', 'POST'])
 @login_required
 def Exclude_Equity_Below_Credit():
     title = Markup("Exclude<br>Balance Below Credit")
@@ -2034,27 +2043,33 @@ def async_Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode=""):
 
 
 # Async update the runtime table for update.
+
 @async
-def async_Update_Runtime(Tool):
-    # Want to update the runtime table to ensure that tool is running.
-    sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`) VALUES" + \
-                 " ('{Tool}', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()".format(Tool=Tool)
-    raw_insert_result = db.engine.execute(sql_insert)
-    # print("Updating Runtime for Tool: {}".format(Tool))
+def async_update_Runtime(app, Tool):
+
+    #start = time.perf_counter()
+    with app.app_context(): # Using current_app._get_current_object()
+        # Want to update the runtime table to ensure that tool is running.
+        sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`) VALUES" + \
+                     " ('{Tool}', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()".format(Tool=Tool)
+        raw_insert_result = db.engine.execute(sql_insert)
+        # print("Updating Runtime for Tool: {}".format(Tool))
+    #total_time = time.perf_counter() - start
+    #print('Total Time taken for non-sync SQL insert: {}'.format(total_time))
 
 
 #
-# @app.route('/setinterval_test')
+# @main_app.route('/setinterval_test')
 # @login_required
 # def Aaron_test():
 #     description = Markup("Testing Set Interval")
 #     return render_template("Standard_Single_Table_Test.html", backgroud_Filename='css/Faded_car.jpg', Table_name="Testing", \
-#                            title="Test", ajax_url=url_for("Aaron_test_ajax"),setinterval=5,
+#                            title="Test", ajax_url=url_for('main_app.Aaron_test_ajax'),setinterval=5,
 #                            description=description, replace_words=Markup(["Today"]))
 #
 #
 #
-# @app.route('/Aaron_test_ajax', methods=['GET', 'POST'])
+# @main_app.route('/Aaron_test_ajax', methods=['GET', 'POST'])
 # @login_required
 # def Aaron_test_ajax():     # Return the Bloomberg dividend table in Json.
 #
@@ -2069,15 +2084,16 @@ def async_Update_Runtime(Tool):
 # sql_max_insert - Optional. How many max do we want to insert at one time.
 
 @async
-def async_sql_insert(header="", values = [" "], footer = "", sql_max_insert=500):
+def async_sql_insert(app, header="", values = [" "], footer = "", sql_max_insert=500):
 
-    for i in range(math.ceil(len(values) / sql_max_insert)):
-        # To construct the sql statement. header + values + footer.
-        sql_trades_insert = header + " , ".join(values[i * sql_max_insert:(i + 1) * sql_max_insert]) + footer
-        sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
-        #print(sql_trades_insert)
-        sql_trades_insert = text(sql_trades_insert)  # To make it to SQL friendly text.
-        raw_insert_result = db.engine.execute(sql_trades_insert)
+    with app.app_context():  # Using current_app._get_current_object()
+        for i in range(math.ceil(len(values) / sql_max_insert)):
+            # To construct the sql statement. header + values + footer.
+            sql_trades_insert = header + " , ".join(values[i * sql_max_insert:(i + 1) * sql_max_insert]) + footer
+            sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
+            #print(sql_trades_insert)
+            sql_trades_insert = text(sql_trades_insert)  # To make it to SQL friendly text.
+            raw_insert_result = db.engine.execute(sql_trades_insert)
     return
 
 
@@ -2128,7 +2144,7 @@ def get_Live1_Vol():
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     return graphJSON
 
-@app.route('/plotly_index')
+@main_app.route('/plotly_index')
 def plotly_index():
 
     bar = get_Live1_Vol()
@@ -2152,7 +2168,7 @@ def fix_position_sql_update(CFH_Position):
     fix_position_footer = """ ON DUPLICATE KEY UPDATE position=VALUES(position), Updated_time=VALUES(Updated_time)"""
 
     # Async update SQL to save runtime
-    async_sql_insert(header=fix_position_header, values = fix_position_values, footer=fix_position_footer)
+    async_sql_insert(app=current_app._get_current_object(),header=fix_position_header, values = fix_position_values, footer=fix_position_footer)
 
     if len(CFH_Position) == 0:
         CFH_Position[""] = ""
@@ -2164,7 +2180,7 @@ def fix_position_sql_update(CFH_Position):
         open_symbol = " , ".join(['"{}"'.format(k) for k in CFH_Position]))
 
     # Async update SQL. No header and footer as we will construct the whole statement here.
-    async_sql_insert(header="", values=[Update_to_zero], footer="")
+    async_sql_insert(app=current_app._get_current_object(),header="", values=[Update_to_zero], footer="")
 
     return
 
@@ -2238,7 +2254,7 @@ def Live_MT4_Users(live):    # To upload the Files, or post which trades to dele
     result_data = raw_result.fetchall()
     result_col = raw_result.keys()
     df_users = pd.DataFrame(data=result_data, columns=result_col)
-    df_users["REGDATE"] = df_users["REGDATE"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+    df_users["REGDATE"] = df_users["REGDATE"].main_apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
     return excel.make_response_from_array(list([result_col]) + list(df_users.values), 'csv', file_name="Live{}_Users.csv".format(live))
 
 

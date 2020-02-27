@@ -3,7 +3,7 @@ from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextA
 from wtforms.validators import DataRequired, ValidationError, Email, EqualTo, Length, NumberRange, InputRequired, AnyOf
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 from flask_uploads import UploadSet, IMAGES, configure_uploads
-from app import excel_format
+from app.extensions import excel_format
 from app.models import *
 
 # Configure the image uploading via Flask-Uploads
