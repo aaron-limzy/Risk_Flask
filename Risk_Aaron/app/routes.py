@@ -40,6 +40,15 @@ logging.getLogger('suds.xsd.schema').setLevel(logging.DEBUG)
 logging.getLogger('suds.wsdl').setLevel(logging.DEBUG)
 
 
+import plotly
+import plotly.graph_objs as go
+import plotly.express as px
+
+import pandas as pd
+import numpy as np
+import json
+
+
 
 from .decorators import async
 from io import StringIO
@@ -2072,6 +2081,58 @@ def async_sql_insert(header="", values = [" "], footer = "", sql_max_insert=500)
     return
 
 
+
+
+def create_plot():
+
+    N = 40
+    x = np.linspace(0, 1, N)
+    y = np.random.randn(N)
+    df = pd.DataFrame({'x': x, 'y': y}) # creating a sample dataframe
+
+    data = [
+        go.Scatter(
+            x=df['x'], # assign x as the dataframe column 'x'
+            y=df['y']
+        )
+    ]
+    graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
+    return graphJSON
+
+
+
+def get_Live1_Vol():
+
+
+    query_bridge_SQL = """select LEFT(SYMBOL,6) as Symbols, SUM(VOLUME/100) as Total_Volume
+        From live1.mt4_trades
+        WHERE close_time = '1970-01-01 00:00:00'
+        and `GROUP` not like '0_%' and `GROUP` not like 'sub%' and CMD < 2
+        GROUP BY LEFT(Symbol,6)
+        ORDER BY Total_Volume"""
+
+    sql_query = text(query_bridge_SQL)
+
+    raw_result = db.engine.execute(sql_query)
+    result_data = raw_result.fetchall()     # Return Result
+    # dict of the results
+    result_col = raw_result.keys()
+    # Clean up the data. Date.
+    result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
+
+    df = pd.DataFrame(data=result_data, columns=result_col) # creating a datafram
+    fig = px.bar(df, y=df['Symbols'],x=df['Total_Volume'], orientation='h',
+                 height=1000, width = 2000,
+                 title='Live 1 Open Position')
+
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    return graphJSON
+
+@app.route('/plotly_index')
+def plotly_index():
+
+    bar = get_Live1_Vol()
+    return render_template('index_plotly.html', plot=bar)
 
 
 

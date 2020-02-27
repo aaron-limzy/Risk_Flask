@@ -15,6 +15,7 @@ from logging.handlers import SMTPHandler
 app = Flask(__name__)
 #app = Flask("Main")
 app.config.from_object(Config)
+
 bootstrap = Bootstrap(app)
 db = SQLAlchemy(app)
 excel.init_excel(app)
