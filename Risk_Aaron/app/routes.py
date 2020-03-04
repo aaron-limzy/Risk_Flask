@@ -1085,6 +1085,12 @@ def Live1_MT4_Users():
     return Live_MT4_Users(1)
 
 
+@app.route('/Get_Live5_MT4User')
+@login_required
+def Live5_MT4_Users():
+    return Live_MT4_Users(5)
+
+
 
 @app.route('/sent_file/Risk_Download')
 @login_required
@@ -2179,6 +2185,8 @@ def Live_MT4_Users(live):    # To upload the Files, or post which trades to dele
     df_users = pd.DataFrame(data=result_data, columns=result_col)
     df_users["REGDATE"] = df_users["REGDATE"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
     return excel.make_response_from_array(list([result_col]) + list(df_users.values), 'csv', file_name="Live{}_Users.csv".format(live))
+
+
 
 
 def create_table_fun(table_data):
