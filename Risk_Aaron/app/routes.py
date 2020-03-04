@@ -292,7 +292,7 @@ def noopentrades_changegroup_ajax():
                 if all([server,login,previous_group, new_group]):     # Need to run C++ Should there be anything to change.
                     # # (C_Return_Val, output, err)
                     # c_run_return= [0,0,0]   # Artificial Results.
-                    c_run_return = Run_C_Prog("main_app" + url_for('main_app.static', filename='Exec/Change_User.exe') + " {server} {login} {previous_group} {new_group}".format(
+                    c_run_return = Run_C_Prog("app" + url_for('main_app.static', filename='Exec/Change_User.exe') + " {server} {login} {previous_group} {new_group}".format(
                         server=server,login=login,previous_group=previous_group,new_group=new_group))
 
 
@@ -462,7 +462,7 @@ def risk_auto_cut_ajax():
             # # print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
 
 
-            c_run_return = Run_C_Prog("main_app" + url_for('main_app.static', filename='Exec/Risk_Auto_Cut.exe') + " {live} {login} {equity_limit}".format( \
+            c_run_return = Run_C_Prog("app" + url_for('main_app.static', filename='Exec/Risk_Auto_Cut.exe') + " {live} {login} {equity_limit}".format( \
             live=live, login=login,equity_limit=equity_limit))
             print("c_run_return = {}".format(c_run_return))
             # c_run_return = 0
@@ -715,7 +715,7 @@ def Equity_protect_Cut_ajax():
         equity_cut = sql_result[i]["EQUITY_CUT"] if "EQUITY_CUT" in sql_result[i] else -1
 
         if not any([live==-1, login==-1, equity_cut==-1]):      # Need to ensure we have the correct input
-            c_run_return = Run_C_Prog("main_app" + url_for('main_app.static', filename='Exec/Risk_Equity_Protect.exe') + " {live} {login} {equity_cut}".format( \
+            c_run_return = Run_C_Prog("app" + url_for('main_app.static', filename='Exec/Risk_Equity_Protect.exe') + " {live} {login} {equity_cut}".format( \
                live=live, login=login,equity_cut=equity_cut))
             sql_result[i]["RUN_RESULTS"] = c_return[c_run_return[0]] if c_run_return[0] in c_return else "Unknown error: {}".format(c_run_return)
 
@@ -741,6 +741,9 @@ def Equity_protect_Cut_ajax():
                          Email_Footer=Email_Footer), Attachment_Name=[])
 
     if len(failed_change) > 0:
+        table_data_html = Array_To_HTML_Table(list(failed_change[0].keys()),
+                                              [list(d.values()) for d in failed_change])
+
         async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
                          Subject="Error: Equity Protection cut.",
                          HTML_Text="{Email_Header}Hi,<br><br>The following client/s have equity below limit, but was unable to close due to errors. \
@@ -2096,59 +2099,6 @@ def async_sql_insert(app, header="", values = [" "], footer = "", sql_max_insert
             raw_insert_result = db.engine.execute(sql_trades_insert)
     return
 
-
-
-
-def create_plot():
-
-    N = 40
-    x = np.linspace(0, 1, N)
-    y = np.random.randn(N)
-    df = pd.DataFrame({'x': x, 'y': y}) # creating a sample dataframe
-
-    data = [
-        go.Scatter(
-            x=df['x'], # assign x as the dataframe column 'x'
-            y=df['y']
-        )
-    ]
-    graphJSON = json.dumps(data, cls=plotly.utils.PlotlyJSONEncoder)
-    return graphJSON
-
-
-
-def get_Live1_Vol():
-
-
-    query_bridge_SQL = """select LEFT(SYMBOL,6) as Symbols, SUM(VOLUME/100) as Total_Volume
-        From live1.mt4_trades
-        WHERE close_time = '1970-01-01 00:00:00'
-        and `GROUP` not like '0_%' and `GROUP` not like 'sub%' and CMD < 2
-        GROUP BY LEFT(Symbol,6)
-        ORDER BY Total_Volume"""
-
-    sql_query = text(query_bridge_SQL)
-
-    raw_result = db.engine.execute(sql_query)
-    result_data = raw_result.fetchall()     # Return Result
-    # dict of the results
-    result_col = raw_result.keys()
-    # Clean up the data. Date.
-    result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
-
-    df = pd.DataFrame(data=result_data, columns=result_col) # creating a datafram
-    fig = px.bar(df, y=df['Symbols'],x=df['Total_Volume'], orientation='h',
-                 height=1000, width = 2000,
-                 title='Live 1 Open Position')
-
-    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-    return graphJSON
-
-@main_app.route('/plotly_index')
-def plotly_index():
-
-    bar = get_Live1_Vol()
-    return render_template('index_plotly.html', plot=bar)
 
 
 

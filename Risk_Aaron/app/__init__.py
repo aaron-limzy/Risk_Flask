@@ -81,6 +81,7 @@ def register_extensions(server):
 def register_blueprints(server):
     from app.Swaps.routes import swaps
     from app.routes import main_app
+    from app.Plotly.routes import analysis
 
     # Want to see if we can init the Blueprint db
     main_app_db.init_app(server)
@@ -89,6 +90,7 @@ def register_blueprints(server):
 
     server.register_blueprint(main_app)
     server.register_blueprint(swaps)
+    server.register_blueprint(analysis)
 
 
 def register_dashapps(app):
