@@ -1073,17 +1073,21 @@ def Modify_MT5_Trades():    # To upload the Files, or post which trades to delet
     return render_template("MT5_Modify_Trades.html", form=form, header="MT5 Modify Trades", description="MT5 Modify Trades")
 
 
-
-@app.route('/Get_Live3_MT4User')
-@login_required
-def Live3_MT4_Users():
-    return Live_MT4_Users(3)
-
 @app.route('/Get_Live1_MT4User')
 @login_required
 def Live1_MT4_Users():
     return Live_MT4_Users(1)
 
+
+@app.route('/Get_Live2_MT4User')
+@login_required
+def Live2_MT4_Users():
+    return Live_MT4_Users(2)
+
+@app.route('/Get_Live3_MT4User')
+@login_required
+def Live3_MT4_Users():
+    return Live_MT4_Users(3)
 
 @app.route('/Get_Live5_MT4User')
 @login_required
