@@ -61,8 +61,7 @@ from io import StringIO
 
 TIME_UPDATE_SLOW_MIN = 10
 
-EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
-EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
+
 
 
 TELE_ID_MTLP_MISMATCH = "736426328:AAH90fQZfcovGB8iP617yOslnql5dFyu-M0"		# For Mismatch and LP Margin
@@ -72,12 +71,20 @@ TELE_CLIENT_ID = ["486797751"]        # Aaron's Telegram ID.
 LP_MARGIN_ALERT_LEVEL = 20            # How much away from MC do we start making noise.
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display the warnings.
 
+
+
+
+EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
+EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
 EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "risk@blackwellglobal.com", "cs@bgifx.com"]
 #EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com"]
 
 
 
 db = SQLAlchemy()  # <--- The db object belonging to the blueprint
+
+#main_app = Blueprint('main_app', "main")
+
 main_app = Blueprint('main_app', __name__)
 
 
@@ -1094,23 +1101,31 @@ def Modify_MT5_Trades():    # To upload the Files, or post which trades to delet
     return render_template("MT5_Modify_Trades.html", form=form, header="MT5 Modify Trades", description="MT5 Modify Trades")
 
 
+@main_app.route('/Get_Live1_MT4User')
+@login_required
+def Live1_MT4_Users():
+    return Live_MT4_Users(1)
+
+@main_app.route('/Get_Live2_MT4User')
+@login_required
+def Live2_MT4_Users():
+    return Live_MT4_Users(2)
 
 @main_app.route('/Get_Live3_MT4User')
 @login_required
 def Live3_MT4_Users():
     return Live_MT4_Users(3)
 
-@main_app.route('/Get_Live1_MT4User')
+@main_app.route('/Get_Live5_MT4User')
 @login_required
-def Live1_MT4_Users():
-    return Live_MT4_Users(1)
-
+def Live5_MT4_Users():
+    return Live_MT4_Users(5)
 
 
 @main_app.route('/sent_file/Risk_Download')
 @login_required
 def Risk_Download_Page():    # To upload the Files, or post which trades to delete on MT5
-    return render_template("Risk_Download_Page.html",header="Send file...",title="Risk Download Page")
+    return render_template("Risk_Download_Page.html",header="",title="Risk Download Page")
 
 
 @main_app.route('/ABook_Match_Trades')
@@ -1483,7 +1498,7 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
                     async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
                     LP_position_Table = List_of_Dict_To_Horizontal_HTML_Table(LP_Position_Show_Table, ['Slow', 'Margin Call', 'Alert'])
                     async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
-                                     Subject = "LP Account main_approaching SO.",
+                                     Subject = "LP Account approaching SO.",
                                      HTML_Text="{}Hi,<br><br>LP Account margin reaching SO Levels. <br>{}<br>This Email was generated at: {} (SGT)<br><br>Thanks,<br>Aaron{}".
                                      format(Email_Header, LP_position_Table, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),Email_Footer),
                                      Attachment_Name=[])
@@ -1511,7 +1526,7 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
                     async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
                     LP_position_Table = List_of_Dict_To_Horizontal_HTML_Table(LP_Position_Show_Table, ['Slow', 'Margin Call', 'Alert'])
                     async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
-                                     Subject = "LP Account main_approaching MC.",
+                                     Subject = "LP Account approaching MC.",
                                      HTML_Text="{}Hi,<br><br>LP Account margin reaching SO Levels. <br>{}<br>This Email was generated at: {} (SGT)<br><br>Thanks,<br>Aaron{}".
                                      format(Email_Header, LP_position_Table, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),Email_Footer),
                                      Attachment_Name=[])
@@ -1607,7 +1622,7 @@ def chf_fix_details_ajax():     # Return the Bloomberg dividend table in Json.
         return_data = [[{"Error": "No Return Value"}], [{"Error": "No Return Value"}]]
         return json.dumps(return_data)
 
-    fix_position_sql_update(account_position)   # Will main_append the position to SQL. Will Zero out any others.
+    fix_position_sql_update(account_position)   # Will append the position to SQL. Will Zero out any others.
     cfh_account_position = [{"Symbol": k, "Position" : d} for k, d in account_position.items()]
 
 
@@ -2204,7 +2219,7 @@ def Live_MT4_Users(live):    # To upload the Files, or post which trades to dele
     result_data = raw_result.fetchall()
     result_col = raw_result.keys()
     df_users = pd.DataFrame(data=result_data, columns=result_col)
-    df_users["REGDATE"] = df_users["REGDATE"].main_apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+    df_users["REGDATE"] = df_users["REGDATE"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
     return excel.make_response_from_array(list([result_col]) + list(df_users.values), 'csv', file_name="Live{}_Users.csv".format(live))
 
 

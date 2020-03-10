@@ -19,7 +19,7 @@ import dash
 
 def create_app():
     server = Flask(__name__)
-    #server = Flask("Main")
+    #server = Flask("Main", static_folder='static')
     server.config.from_object(Config)
     register_dashapps(server)
     register_extensions(server)
