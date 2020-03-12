@@ -43,14 +43,33 @@
   </div>
 
 </div>
+<div class="row">
 
-<div class="chart" id="bargraph">
-    <script>
-        var graphs = {{plot | safe}};
-        Plotly.plot('bargraph',graphs,{});
-    </script>
+  <div class="col-sm chart" id="plot1">
+      <script>
+          var graphs = {{plot | safe}};
+          Plotly.plot('plot1',graphs,{});
+      </script>
+  </div>
+
+
+  <div class="col-sm chart" id="plot2">
+      <script>
+          var graphs2 = {{plot2 | safe}};
+          Plotly.newPlot('plot2',graphs2,{});
+      </script>
+  </div>
+
+
+  <div class="col-sm chart" id="plot3">
+      <script>
+          var graphs3 = {{plot3 | safe}};
+          Plotly.newPlot('plot3',graphs3,{});
+      </script>
+  </div>
+
+
 </div>
-
 
 
 {% endblock %}

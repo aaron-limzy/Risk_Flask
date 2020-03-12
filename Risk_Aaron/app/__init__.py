@@ -34,6 +34,7 @@ def create_app():
 def register_extensions(server):
     from app.extensions import db, login, bootstrap, excel, excel_format
 
+
     db.init_app(server)
     login.init_app(server)
     login.login_view = 'main_app.login'

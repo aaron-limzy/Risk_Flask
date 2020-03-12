@@ -20,6 +20,7 @@ import time
 import telegram #pip install python-telegram-bot==12.0.0b1 --upgradepymysql
 
 import pymysql
+import socket
 
 SQL_IP = "192.168.64.73"
 SQL_User = "mt4"
@@ -265,3 +266,13 @@ def get_working_day_date(start_date, increment_decrement_val, weekdays_count):
             weekday_count += 1
 
     return return_date
+
+# Get machine IP.
+def get_machine_ip_address():
+
+    hostname = socket.gethostname()
+    IPAddr = socket.gethostbyname(hostname)
+    #print("Your Computer Name is:" + hostname)
+    #print("Your Computer IP Address is:" + IPAddr)
+    return(IPAddr)
+
