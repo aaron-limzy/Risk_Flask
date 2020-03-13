@@ -146,9 +146,9 @@ def get_country_charts(country, df):
     #print("Getting {} df and charts {} Seconds.".format(country,(datetime.datetime.now()-start).total_seconds()))
     vol_sum = '{:,.2f}'.format(round(sum(df['VOLUME']),2))
     revenue_sum = '{:,.2f}'.format(round(sum(df['REVENUE']),2))
-    cn_summary = {'COUNTRY' : country, 'VOLUME': vol_sum, 'REVENUE' : revenue_sum, 'TIME': Get_time_String()}
+    summary = {'COUNTRY' : country, 'VOLUME': vol_sum, 'REVENUE' : revenue_sum, 'TIME': Get_time_String()}
     #print(cn_summary)
-    return json.dumps([bar, pnl_bar, heat_map, cn_summary], cls=plotly.utils.PlotlyJSONEncoder)
+    return json.dumps([bar, pnl_bar, heat_map, summary], cls=plotly.utils.PlotlyJSONEncoder)
 
 
 
@@ -307,7 +307,7 @@ def plot_volVSgroup_heat_map(df, chart_title):
         ),
         yaxis_tickfont_size=14,
         xaxis=dict(
-            title_text="Net Volume",
+            title_text="Client Group",
             titlefont=dict(size=20),
             automargin=True,
             layer='below traces'
