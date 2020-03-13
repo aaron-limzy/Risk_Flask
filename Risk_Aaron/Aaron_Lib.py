@@ -78,15 +78,15 @@ def Send_Email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name
 
 
 def Get_time_String():
-    now = datetime.now()
-    return now.strftime("%Y-%b-%d_%H-%M-%S")
+    now = datetime.datetime.now()
+    return now.strftime("%Y-%b-%d %H:%M:%S")
 
     # return str(now.year) + "-" + str(now.month) + "-" + str(now.day) + "_" + str(now.hour) + "-" + str(
     #    now.minute) + "-" + str(now.second)
 
 
 def Get_time_String_Simple():
-    now = datetime.now()
+    now = datetime.datetime.now()
     return now.strftime("%Y-%b-%d %H:00")
 #
 #

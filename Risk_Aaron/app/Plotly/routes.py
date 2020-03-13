@@ -66,6 +66,17 @@ def create_plot():
 
 
 
+# TW Side SQL
+def get_tw_df():
+
+    query_bridge_SQL = """SELECT LOGIN, SYMBOL, CMD, SUM(VOLUME*0.01) as VOLUME, OPEN_TIME, SUM(SWAPS + PROFIT) AS REVENUE, live3.`mt4_trades`.`GROUP`
+        FROM live3.`mt4_trades`
+        WHERE mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' and `GROUP` in (SELECT `GROUP` FROM live5.group_table 
+                    WHERE LIVE = 'live3' AND COUNTRY = 'TW' and CURRENCY = 'USD')
+        AND LENGTH(mt4_trades.LOGIN) > 4 AND mt4_trades.CMD < 2 
+        GROUP BY LOGIN, SYMBOL, CMD       """
+    return get_country_df(query_bridge_SQL)
+
 # Get the Dataframe for CN
 def get_cn_df():
 
@@ -75,8 +86,11 @@ def get_cn_df():
     WHERE mt4_trades.`GROUP`=X.`GROUP` AND LENGTH(mt4_trades.LOGIN) > 4 AND mt4_trades.CMD < 2 
     AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00'
     """
+    return get_country_df(query_bridge_SQL)
 
-    sql_query = text(query_bridge_SQL)
+
+def get_country_df(sql_statement):
+    sql_query = text(sql_statement)
 
     raw_result = db.engine.execute(sql_query)
     result_data = raw_result.fetchall()     # Return Result
@@ -86,16 +100,62 @@ def get_cn_df():
     #result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
 
     df = pd.DataFrame(data=result_data, columns=result_col) # creating a dataframe
-    return df
-
-
-def get_Live1_Vol(df):
-
-    # Trying to get core symbol
-    df['SYMBOL'] = df['SYMBOL'].apply(lambda x: x[:6])
 
     # Trying to get the net Volume
     df['NET_VOLUME'] = df.apply(lambda x: x['VOLUME'] if x['CMD'] == 0 else -1 * x['VOLUME'], axis=1)
+
+    return df
+
+
+
+@analysis.route('/analysis/cn_live_vol_ajax')
+@login_required
+# Gets the cn df, and uses it to plot the various charts.
+def cn_live_vol_ajax():
+
+    # start = datetime.datetime.now()
+    # df = get_cn_df()
+    # bar = plot_open_position_net(df, chart_title = "[CN] Open Position")
+    # cn_pnl_bar = plot_open_position_revenue(df, chart_title="[CN] Open Position Revenue")
+    # cn_heat_map = plot_volVSgroup_heat_map(df,chart_title="[CN] Net Position by Group")
+    # print("Getting cn df and charts {} Seconds.".format((datetime.datetime.now()-start).total_seconds()))
+    # vol_sum = round(sum(df['VOLUME']),2)
+    # net_vol_sum = round(sum(df['NET_VOLUME']),2)
+    # revenue_sum = round(sum(df['REVENUE']),2)
+    # cn_summary = {'COUNTRY' : 'CN', 'VOLUME': vol_sum, "NET VOLUME": net_vol_sum, "REVENUE" : revenue_sum, 'TIME': Get_time_String()}
+    # print(cn_summary)
+    # return json.dumps([bar, cn_pnl_bar, cn_heat_map, cn_summary], cls=plotly.utils.PlotlyJSONEncoder)
+
+    return get_country_charts(country="CN", df= get_cn_df())
+
+
+
+@analysis.route('/analysis/tw_live_vol_ajax')
+@login_required
+# Gets the cn df, and uses it to plot the various charts.
+def tw_live_vol_ajax():
+    return get_country_charts(country="TW", df= get_tw_df())
+
+# Generic get the country charts.
+def get_country_charts(country, df):
+
+    start = datetime.datetime.now()
+    bar = plot_open_position_net(df, chart_title = "[{}] Open Position".format(country))
+    pnl_bar = plot_open_position_revenue(df, chart_title="[{}] Open Position Revenue".format(country))
+    heat_map = plot_volVSgroup_heat_map(df,chart_title="[{}] Net Position by Group".format(country))
+    #print("Getting {} df and charts {} Seconds.".format(country,(datetime.datetime.now()-start).total_seconds()))
+    vol_sum = '{:,.2f}'.format(round(sum(df['VOLUME']),2))
+    revenue_sum = '{:,.2f}'.format(round(sum(df['REVENUE']),2))
+    cn_summary = {'COUNTRY' : country, 'VOLUME': vol_sum, 'REVENUE' : revenue_sum, 'TIME': Get_time_String()}
+    #print(cn_summary)
+    return json.dumps([bar, pnl_bar, heat_map, cn_summary], cls=plotly.utils.PlotlyJSONEncoder)
+
+
+
+def plot_open_position_net(df, chart_title):
+
+    # Trying to get core symbol
+    df['SYMBOL'] = df['SYMBOL'].apply(lambda x: x[:6])
 
 
     df['ABS_NET_VOLUME'] = abs(df['NET_VOLUME'])  # We want to look at the abs value. (Dosn't matter long or short)
@@ -125,7 +185,7 @@ def get_Live1_Vol(df):
     fig.update_layout(
         autosize=False,
         width=800,
-        height=1200,
+        height=800,
         margin=dict( pad=10),
         yaxis=dict(
             title_text="Symbols",
@@ -139,20 +199,20 @@ def get_Live1_Vol(df):
             titlefont=dict(size=20),layer='below traces'
         ),
         xaxis_tickfont_size=15,
-        title_text='[CN] Open Position',
+        title_text='{} (Client Side)'.format(chart_title),
         titlefont=dict(size=28),
         title_x=0.5
     )
-    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    # graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    #
+    # return graphJSON
+    return fig
 
-    return graphJSON
 
-def get_cn_revenue_Vol(df):
+
+def plot_open_position_revenue(df, chart_title):
     # Trying to get core symbol
     df['SYMBOL'] = df['SYMBOL'].apply(lambda x: x[:6])
-
-    # Trying to get the net Volume
-    df['NET_VOLUME'] = df.apply(lambda x: x['VOLUME'] if x['CMD'] == 0 else -1 * x['VOLUME'], axis=1)
 
     # Trying to get revenue on BGI Side
     df['REVENUE'] = -1 * df['REVENUE']  # Want to flip, for our View
@@ -184,7 +244,7 @@ def get_cn_revenue_Vol(df):
     fig.update_layout(
         autosize=False,
         width=800,
-        height=1200,
+        height=800,
         yaxis=dict(
             title_text="Symbols",
             titlefont=dict(size=20),
@@ -200,7 +260,7 @@ def get_cn_revenue_Vol(df):
             layer='below traces'
         ),
         xaxis_tickfont_size=15,
-        title_text='[CN] Open Position Revenue (BGI Side)',
+        title_text='{} (BGI Side)'.format(chart_title),
         titlefont=dict(size=28),
         title_x=0.5,
         margin=dict(
@@ -208,27 +268,19 @@ def get_cn_revenue_Vol(df):
     )
 
     fig.update_yaxes(automargin=True)
-    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-
-    return graphJSON
+    #graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    #return graphJSON
+    return fig
 
 @analysis.route('/analysis/plotly_index')
 @login_required
-def plotly_index():
+def cn_index():
 
-    df = get_cn_df()
-    bar = get_Live1_Vol(df)
-
-    cn_pnl_bar = get_cn_revenue_Vol(df)
-    cn_heat_map = vol_heat_map(df)
-    #plot2=cn_pnl_bar
-    return render_template('index_plotly.html', plot=bar, plot2=cn_pnl_bar, plot3=cn_heat_map)
+    return render_template('index_plotly.html', title="Float Country")
 
 
 
-def vol_heat_map(df):
-    # Trying to get the net Volume
-    df['NET_VOLUME'] = df.apply(lambda x: x['VOLUME'] if x['CMD'] == 0 else -1 * x['VOLUME'], axis=1)
+def plot_volVSgroup_heat_map(df, chart_title):
 
     df_group_volume = df.groupby(['SYMBOL', 'GROUP'])['NET_VOLUME'].sum().reset_index().sort_values('GROUP',
                                                                                                     ascending=True)
@@ -245,7 +297,7 @@ def vol_heat_map(df):
     fig.update_layout(
         autosize=False,
         width=800,
-        height=1200,
+        height=800,
         yaxis=dict(
             title_text="Symbols",
             titlefont=dict(size=20),
@@ -261,7 +313,7 @@ def vol_heat_map(df):
             layer='below traces'
         ),
         xaxis_tickfont_size=10,
-        title_text='[CN] Net Position by Group',
+        title_text='{} (Client Side)'.format(chart_title),
         titlefont=dict(size=28),
         title_x=0.5,
         margin=dict(
@@ -269,8 +321,9 @@ def vol_heat_map(df):
     )
 
     fig.update_yaxes(automargin=True)
-    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-    return graphJSON
+    # graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    # return graphJSON
+    return fig
 
 
     # df_group_volume = df.groupby(['SYMBOL', 'GROUP'])['VOLUME'].sum().reset_index().sort_values('GROUP', ascending=True)

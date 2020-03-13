@@ -72,12 +72,15 @@ LP_MARGIN_ALERT_LEVEL = 20            # How much away from MC do we start making
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display the warnings.
 
 
+# TODO: or should we check if it's 64.73?
+if get_machine_ip_address() == '192.168.20.14': #Only On Aaron's computer
 
-
-EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
-EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
-EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "risk@blackwellglobal.com", "cs@bgifx.com"]
-#EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com"]
+    EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
+    EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com"]
+    print("On Aaron's Computer")
+else:
+    EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
+    EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "risk@blackwellglobal.com", "cs@bgifx.com"]
 
 
 
@@ -299,7 +302,7 @@ def noopentrades_changegroup_ajax():
                 if all([server,login,previous_group, new_group]):     # Need to run C++ Should there be anything to change.
                     # # (C_Return_Val, output, err)
                     # c_run_return= [0,0,0]   # Artificial Results.
-                    c_run_return = Run_C_Prog("app" + url_for('main_app.static', filename='Exec/Change_User.exe') + " {server} {login} {previous_group} {new_group}".format(
+                    c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Change_User.exe') + " {server} {login} {previous_group} {new_group}".format(
                         server=server,login=login,previous_group=previous_group,new_group=new_group))
 
 
@@ -329,7 +332,7 @@ def noopentrades_changegroup_ajax():
         sql_update_statement += """ ) and `CHANGED` = 0 """
         sql_update_statement = text(sql_update_statement)   # To SQL Friendly Text.
         print(sql_update_statement)
-        #raw_insert_result = db.engine.execute(sql_update_statement) # TO SQL
+        raw_insert_result = db.engine.execute(sql_update_statement) # TO SQL
 
 
     val = [list(a.values()) for a in sql_result]
@@ -469,15 +472,15 @@ def risk_auto_cut_ajax():
             # # print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
 
 
-            c_run_return = Run_C_Prog("app" + url_for('main_app.static', filename='Exec/Risk_Auto_Cut.exe') + " {live} {login} {equity_limit}".format( \
+            c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Auto_Cut.exe') + " {live} {login} {equity_limit}".format( \
             live=live, login=login,equity_limit=equity_limit))
-            print("c_run_return = {}".format(c_run_return))
+            #print("c_run_return = {}".format(c_run_return))
             # c_run_return = 0
 
             if c_run_return[0] == 0:  # Need to save things into SQL as well.
                 To_SQL.append(d)
-            elif c_run_return[0] not in C_Return:
-                print(c_run_return)
+            # elif c_run_return[0] not in C_Return:
+            #     print(c_run_return)
 
             total_result[k]["RESULT"] = C_Return[c_run_return[0]] if c_run_return[0] in C_Return else "Unknown Error"
 
@@ -488,10 +491,10 @@ def risk_auto_cut_ajax():
             raw_insert_sql = " ({live}, {login}, {equity}, {credit}, '{group}', now()) "    # Raw template for insert.
             sql_insert_w_values = ",".join([raw_insert_sql.format(live=d["LIVE"], login=d["LOGIN"], equity=d["EQUITY"], credit=d["CREDIT"], group=d["GROUP"]) for d in To_SQL]) # SQL insert with the values.
             sql_insert = "INSERT INTO  aaron.`risk_autocut_results` (LIVE, LOGIN, EQUITY, CREDIT, `GROUP`, DATE_TIME) VALUES {}".format(sql_insert_w_values)   # Add it to the header.
-            print("SQL Statement: {}".format(sql_insert))
+            #print("SQL Statement: {}".format(sql_insert))
             raw_insert_result = db.engine.execute(sql_insert)   # Insert into SQL
 
-        print("total_result: {}".format(total_result))
+        #print("total_result: {}".format(total_result))
 
         total_result_value = list(total_result.values())
         # print(total_result_value)
@@ -722,7 +725,7 @@ def Equity_protect_Cut_ajax():
         equity_cut = sql_result[i]["EQUITY_CUT"] if "EQUITY_CUT" in sql_result[i] else -1
 
         if not any([live==-1, login==-1, equity_cut==-1]):      # Need to ensure we have the correct input
-            c_run_return = Run_C_Prog("app" + url_for('main_app.static', filename='Exec/Risk_Equity_Protect.exe') + " {live} {login} {equity_cut}".format( \
+            c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Equity_Protect.exe') + " {live} {login} {equity_cut}".format( \
                live=live, login=login,equity_cut=equity_cut))
             sql_result[i]["RUN_RESULTS"] = c_return[c_run_return[0]] if c_run_return[0] in c_return else "Unknown error: {}".format(c_run_return)
 
