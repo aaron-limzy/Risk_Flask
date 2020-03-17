@@ -161,9 +161,7 @@ def plot_open_position_net(df, chart_title):
     df['ABS_NET_VOLUME'] = abs(df['NET_VOLUME'])  # We want to look at the abs value. (Dosn't matter long or short)
 
     # Want to do the Group, to start having a consolidated df to plot.
-    df_sum = df.groupby('SYMBOL')[['VOLUME', 'NET_VOLUME', 'ABS_NET_VOLUME']].sum().reset_index().sort_values(
-        'ABS_NET_VOLUME', ascending=True)
-    top_n_symbols = 15  # Want to see top how many?
+    df_sum = df.groupby('SYMBOL')[['VOLUME', 'NET_VOLUME', 'ABS_NET_VOLUME']].sum().reset_index().sort_values('ABS_NET_VOLUME', ascending=True)
 
 
     top_n_symbols = 15  # Want to see top how many?
@@ -184,7 +182,7 @@ def plot_open_position_net(df, chart_title):
     fig.update_layout(barmode='group')
     fig.update_layout(
         autosize=False,
-        width=800,
+        width=550,
         height=800,
         margin=dict( pad=10),
         yaxis=dict(
@@ -200,7 +198,7 @@ def plot_open_position_net(df, chart_title):
         ),
         xaxis_tickfont_size=15,
         title_text='{} (Client Side)'.format(chart_title),
-        titlefont=dict(size=28),
+        titlefont=dict(size=20),
         title_x=0.5
     )
     # graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -243,7 +241,7 @@ def plot_open_position_revenue(df, chart_title):
     # Figure Layout.
     fig.update_layout(
         autosize=False,
-        width=800,
+        width=550,
         height=800,
         yaxis=dict(
             title_text="Symbols",
@@ -261,7 +259,7 @@ def plot_open_position_revenue(df, chart_title):
         ),
         xaxis_tickfont_size=15,
         title_text='{} (BGI Side)'.format(chart_title),
-        titlefont=dict(size=28),
+        titlefont=dict(size=20),
         title_x=0.5,
         margin=dict(
             pad=10)
@@ -296,13 +294,13 @@ def plot_volVSgroup_heat_map(df, chart_title):
 
     fig.update_layout(
         autosize=False,
-        width=800,
+        width=550,
         height=800,
         yaxis=dict(
             title_text="Symbols",
             titlefont=dict(size=20),
             automargin=True,
-            ticks="outside", tickcolor='white', ticklen=50,
+            ticks="outside", tickcolor='white', ticklen=5,
             layer='below traces'
         ),
         yaxis_tickfont_size=14,
@@ -314,10 +312,8 @@ def plot_volVSgroup_heat_map(df, chart_title):
         ),
         xaxis_tickfont_size=10,
         title_text='{} (Client Side)'.format(chart_title),
-        titlefont=dict(size=28),
-        title_x=0.5,
-        margin=dict(
-            pad=10)
+        titlefont=dict(size=20),
+        title_x=0.5
     )
 
     fig.update_yaxes(automargin=True)
