@@ -182,7 +182,7 @@ def plot_open_position_net(df, chart_title):
     fig.update_layout(barmode='group')
     fig.update_layout(
         autosize=False,
-        width=550,
+        width=420,
         height=800,
         margin=dict( pad=10),
         yaxis=dict(
@@ -241,7 +241,7 @@ def plot_open_position_revenue(df, chart_title):
     # Figure Layout.
     fig.update_layout(
         autosize=False,
-        width=550,
+        width=420,
         height=800,
         yaxis=dict(
             title_text="Symbols",
@@ -294,7 +294,7 @@ def plot_volVSgroup_heat_map(df, chart_title):
 
     fig.update_layout(
         autosize=False,
-        width=550,
+        width=420,
         height=800,
         yaxis=dict(
             title_text="Symbols",
