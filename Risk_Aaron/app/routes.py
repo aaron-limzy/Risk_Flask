@@ -1128,7 +1128,7 @@ def Live5_MT4_Users():
 @main_app.route('/sent_file/Risk_Download')
 @login_required
 def Risk_Download_Page():    # To upload the Files, or post which trades to delete on MT5
-    return render_template("Risk_Download_Page.html",header="",title="Risk Download Page")
+    return render_template("Risk_Download_Page.html",header=" ",title="Risk Download Page")
 
 
 @main_app.route('/ABook_Match_Trades')
