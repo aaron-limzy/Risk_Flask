@@ -276,3 +276,24 @@ def get_machine_ip_address():
     #print("Your Computer IP Address is:" + IPAddr)
     return(IPAddr)
 
+
+# CFH Fix works from UTC Sunday 1730 - Friday 2215
+# GMT = UTC timing
+# We want to allow for Sunday 1735 - Friday 2210 Connection.
+# Giving 5 mins buffer.
+def cfh_fix_timing():
+    datetime_now = datetime.datetime.utcnow()
+    weekd = datetime_now.weekday()  # Monday = 0
+
+    # # For Testing
+    # if weekd == 3 and datetime_now.time() > datetime.time(8, 7, 0):
+    #     return False
+
+    if weekd >= 4:
+        if weekd == 4 and datetime_now.time() > datetime.time(22,10,0):  # Friday
+            return False
+        if weekd == 5:  # Sat
+            return False
+        if weekd == 6 and datetime_now.time() < datetime.time(17,35,0):   # Sunday
+            return False
+    return True

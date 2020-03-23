@@ -1,17 +1,19 @@
 from flask import Flask
 
-
 from config import Config
 
 from flask_uploads import IMAGES, configure_uploads
 
 from flask_login import LoginManager, UserMixin, login_required
 from flask.helpers import get_root_path
+
 from werkzeug.security import generate_password_hash
 import os
 
 import logging
 from logging.handlers import SMTPHandler
+
+
 
 
 from app.routes import db as main_app_db  # blueprint db
@@ -33,7 +35,6 @@ def create_app():
 
 def register_extensions(server):
     from app.extensions import db, login, bootstrap, excel, excel_format
-
 
     db.init_app(server)
     login.init_app(server)

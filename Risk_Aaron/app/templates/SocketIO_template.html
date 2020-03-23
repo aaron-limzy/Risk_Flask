@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+
+{% block styles %}
+{{ super() }}
+<style>
+  body { background: #eee url({{ url_for('static', filename='css/index.jpg') }});
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;}
+</style>
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+
+
+
+<script>
+  test1()
+  setInterval(test1, 15000);
+
+  var All_Country_open_position = {};
+
+
+  function test1(){
+    $.ajax({
+        url: "{{ url_for('analysis.cn_live_vol_ajax') }}",
+        type: "GET",
+        contentType: 'application/json;charset=UTF-8',
+        data: {},
+        dataType:"json",
+        success: function (data) {
+            Plotly.newPlot('cn_plot1', data[0] );
+            Plotly.newPlot('cn_plot2', data[1] );
+            Plotly.newPlot('cn_plot3', data[2] );
+            console.log(data[3]);
+            All_Country_open_position['CN'] = data[3];
+            $( "#Country_Table" ).html(  country_float() );
+        }
+    });
+
+    $.ajax({
+        url: "{{ url_for('analysis.tw_live_vol_ajax') }}",
+        type: "GET",
+        contentType: 'application/json;charset=UTF-8',
+        data: {},
+        dataType:"json",
+        success: function (data) {
+            Plotly.newPlot('tw_plot1', data[0] );
+            Plotly.newPlot('tw_plot2', data[1] );
+            Plotly.newPlot('tw_plot3', data[2] );
+            console.log(data[3]);
+            All_Country_open_position['TW'] = data[3];
+            $( "#Country_Table" ).html(  country_float()  );
+        }
+    });
+  }
+
+  function country_float(){
+    return Draw_Table([All_Country_open_position['CN'], All_Country_open_position['TW']], "Country Float",  "table table-hover table-responsive-sm basic_table display-4", [])
+  }
+
+
+  // Draws a horizontal table.
+  function Draw_Table(table_Data, Table_Caption, Table_Class, Alert_Words) {
+      var sString = '';
+      //------------- Table Header -----------------------------
+      sString += '<table class="' + Table_Class + '">';
+      sString += '<caption>' + Table_Caption + '</caption>';
+      sString += '<tr>';
+
+      for (var x in table_Data) {
+          //For table header.
+          for (var xx in table_Data[x]) {
+              sString += '<th>';
+              sString += xx;
+              sString += '</th>';
+          }
+          break;
+      }
+
+      //variable instanceof Array
+      sString += '</tr>';
+
+      //------------- Table Data -----------------------------
+
+      for (var x in table_Data) {
+          //For each row
+
+          sString += '<tr>';
+
+          for (var xx in table_Data[x]) {
+              //For each data
+              var string_buffer = "";
+              string_buffer += table_Data[x][xx];
+
+              var Alert_Word_found = 0;
+              for (var aw in Alert_Words) {	// Loop thru the list of alert words
+                  // Loop thru the array
+                  if (string_buffer.search(Alert_Words[aw]) >= 0) {
+                      Alert_Word_found = 1;
+                      break;
+                  }
+              }
+
+              Table_Column = xx;	// Get the Column Name
+              if ((xx.search("Discrepancy") >= 0) && (table_Data[x][xx] != 0)){	// If its the discrepancy Column/Row, we want to Flag out any that isn't 0.
+                  Alert_Word_found = 1;
+              }
+
+               if ((xx.search("Mismatch_count") >= 0) && (table_Data[x][xx] >= 10)){	// If its the Mismatch_count Column/Row, we want to Flag out any larger then 10
+                  Alert_Word_found = 1;
+              }
+
+
+              if (Alert_Word_found == 1) {
+                  // If there is an error, change the color of the cell
+                  sString += '<td class="alert_cell">';
+                  //sString+= '<td>';
+              } else {
+                  sString += '<td>';
+              }
+
+              if (table_Data[x][xx]instanceof Array == true || table_Data[x][xx]instanceof Object == true) {
+                  //sString += "Is Array..." ;
+
+                  sString += Draw_Vertical_Table(table_Data[x][xx], "", "table_orange ");
+              } else {
+
+                  sString += table_Data[x][xx];
+              }
+              sString += "</td>";
+
+          }
+          sString += '</tr>';
+      }
+      sString += '</table>';
+      return sString;
+  }
+
+
+</script>
+
+
+
+
+{% endblock %}
+
+{% block app_content %}
+
+<br>
+
+<div id="Country_Table">
+</div>
+<div class="row">
+  <div class="col-sm chart" id="cn_plot1"> </div>
+  <div class="col-sm chart" id="cn_plot2"> </div>
+  <div class="col-sm chart" id="cn_plot3">  </div>
+</div>
+<br>
+<div class="row">
+  <div class="col-sm chart" id="tw_plot1"> </div>
+  <div class="col-sm chart" id="tw_plot2"> </div>
+  <div class="col-sm chart" id="tw_plot3">  </div>
+</div>
+<br>
+<div class="row">
+  <div class="col-sm chart" id="hk_plot1"> </div>
+  <div class="col-sm chart" id="hk_plot2"> </div>
+  <div class="col-sm chart" id="hk_plot3">  </div>
+</div>
+
+
+{% endblock %}

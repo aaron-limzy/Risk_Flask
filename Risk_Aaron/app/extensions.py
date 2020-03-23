@@ -5,8 +5,10 @@ import flask_excel as excel
 from flask_uploads import UploadSet
 from flask_bootstrap import Bootstrap
 
+
 db = SQLAlchemy()
 login = LoginManager()
 bootstrap = Bootstrap()
+
 excel_format = UploadSet('files', extensions=('xls', 'xlsx', 'csv'))
 #db = SQLAlchemy(server)

@@ -242,7 +242,7 @@ def noopentrades_changegroup():
 
 @main_app.route('/noopentrades_changegroup_ajax', methods=['GET', 'POST'])
 @login_required
-def noopentrades_changegroup_ajax():
+def noopentrades_changegroup_ajax(update_tool_time=1):
     # TODO: Check if user exist first.
 
     live_to_run = [1,2, 3, 5]  # Only want to run this on Live 1 and 3.
@@ -274,7 +274,8 @@ def noopentrades_changegroup_ajax():
 
 
     # Need to update Run time on SQL Update table.
-    async_update_Runtime(app=current_app._get_current_object(), Tool="ChangeGroup_NoOpenTrades")
+    if update_tool_time == 1:
+        async_update_Runtime(app=current_app._get_current_object(), Tool="ChangeGroup_NoOpenTrades")
 
     if len(sql_result) == 0:    # If there are nothing to be changed.
         return_val = {"All": [{"Comment":"Login awaiting change: 0", "Last Query time": "{}".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))}]}
@@ -380,9 +381,10 @@ def Risk_auto_cut():
 
 @main_app.route('/risk_auto_cut_ajax', methods=['GET', 'POST'])
 @login_required
-def risk_auto_cut_ajax():
+def risk_auto_cut_ajax(update_tool_time=1):
     # TODO: Check if user exist first.
 
+    #print("Risk Auto Cut Ajax")
     # Using External Table
     # aaron.risk_autocut_exclude
     # aaron.risk_autocut_group
@@ -516,7 +518,8 @@ def risk_auto_cut_ajax():
         return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
 
     # # Need to update Run time on SQL Update table.
-    async_update_Runtime(app=current_app._get_current_object(), Tool="Risk_Auto_Cut")
+    if update_tool_time ==1:
+        async_update_Runtime(app=current_app._get_current_object(), Tool="Risk_Auto_Cut")
 
 
     return json.dumps(return_val)
@@ -662,7 +665,7 @@ def Equity_protect():
 # Cut position when equity falls below a certain level
 @main_app.route('/Equity_protect_ajax', methods=['GET', 'POST'])
 #@login_required
-def Equity_protect_Cut_ajax():
+def Equity_protect_Cut_ajax(update_tool_time=1):
 
     # # #time.sleep(5)
     # # return_val = [{"Result": "No Client to change. {}".format(time_now())}]
@@ -694,7 +697,8 @@ def Equity_protect_Cut_ajax():
     mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0"""
 
     sql_result = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
-    async_update_Runtime(app=current_app._get_current_object(), Tool="Equity_protect")
+    if update_tool_time == 1:
+        async_update_Runtime(app=current_app._get_current_object(), Tool="Equity_protect")
 
 
     if len(sql_result) > 0:
@@ -1606,7 +1610,7 @@ def cfh_details():
 
 @main_app.route('/CFH/Details_ajax', methods=['GET', 'POST'])
 @login_required
-def chf_fix_details_ajax():     # Return the Bloomberg dividend table in Json.
+def chf_fix_details_ajax(update_tool_time=1):     # Return the Bloomberg dividend table in Json.
 
     datetime_now = datetime.datetime.utcnow()
     datetime_now.weekday() # 0 - monday
@@ -1664,7 +1668,9 @@ def chf_fix_details_ajax():     # Return the Bloomberg dividend table in Json.
 
     # ASYNC send to SQL.
     async_sql_insert(app=current_app._get_current_object(),header = "", values = [sql_insert], footer="")
-    async_update_Runtime(app=current_app._get_current_object(), Tool="CFH_FIX_Position")
+
+    if update_tool_time == 1:
+        async_update_Runtime(app=current_app._get_current_object(), Tool="CFH_FIX_Position")
 
 
     return_data = [[account_info], cfh_account_position]
@@ -1823,9 +1829,8 @@ def Monitor_Risk_Tools_ajax():
 
     if len(slow_update_list) > 0:   # If there are progs that are not running, run them!
         # Run the prog if it's not running
-        Catch_return = [function_to_call[d]() for (d,e) in slow_update_list if d in function_to_call]
+        Catch_return = [function_to_call[d](update_tool_time=0) for (d,e) in slow_update_list if d in function_to_call]
         #print(Catch_return)
-
 
     # Only want to update those that have not been updated.
     recent_slow_update = [s[0] for s in slow_update_list if len(s) >= 2 and s[1] == '0']
@@ -2006,8 +2011,8 @@ def Mismatch_trades_mt4(symbol = [], hours=7, mins=16):
 # symbol = ['USDJPY', 'EURUSD', 'USDSGD', 'XAUUSD']
 def Mismatch_trades_bridge(symbol=[], hours=8, mins=16):
 
-    if len(symbol) > 0:
-        symbol_list =  " AND (" + " OR ".join(["SYMBOL LIKE '%{}%'".format(s) for s in symbol]) + ")"
+    if len(symbol) > 0: # If CFD, we want to replace . with %
+        symbol_list =  " AND (" + " OR ".join(["SYMBOL LIKE '%{}%'".format(s.replace(".","%")) for s in symbol]) + ")"
     else:
         symbol_list = ""
 
@@ -2064,15 +2069,15 @@ def async_Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode=""):
 
 
 # Async update the runtime table for update.
-
 @async
 def async_update_Runtime(app, Tool):
 
     #start = time.perf_counter()
     with app.app_context(): # Using current_app._get_current_object()
         # Want to update the runtime table to ensure that tool is running.
-        sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`) VALUES" + \
-                     " ('{Tool}', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()".format(Tool=Tool)
+        sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`, `email_sent`) VALUES" + \
+                     " ('{Tool}', now(), 0) ON DUPLICATE KEY UPDATE Updated_Time=now(), email_sent=VALUES(email_sent)".format(
+                         Tool=Tool)
         raw_insert_result = db.engine.execute(sql_insert)
         # print("Updating Runtime for Tool: {}".format(Tool))
     #total_time = time.perf_counter() - start
@@ -2193,26 +2198,6 @@ def query_SQL_return_record(SQL_Query):
     result_col = raw_result.keys()
     collate = [dict(zip(result_col, a)) for a in result_data]
     return collate
-
-# CFH Fix works from UTC Sunday 1730 - Friday 2215
-# We want to allow for Sunday 1735 - Friday 2210 Connection.
-# Giving 5 mins buffer.
-def cfh_fix_timing():
-    datetime_now = datetime.datetime.utcnow()
-    weekd = datetime_now.weekday()  # Monday = 0
-
-    # # For Testing
-    # if weekd == 3 and datetime_now.time() > datetime.time(8, 7, 0):
-    #     return False
-
-    if weekd >= 4:
-        if weekd == 4 and datetime_now.time() > datetime.time(22,10,0):  # Friday
-            return False
-        if weekd == 5:  # Sat
-            return False
-        if weekd == 6 and datetime_now.time() < datetime.time(17,35,0):   # Sunday
-            return False
-    return True
 
 
 # To get the User Data, for finance use. Used on download page.
