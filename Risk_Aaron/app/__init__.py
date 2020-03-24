@@ -14,8 +14,6 @@ import logging
 from logging.handlers import SMTPHandler
 
 
-
-
 from app.routes import db as main_app_db  # blueprint db
 import dash
 

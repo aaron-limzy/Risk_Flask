@@ -108,17 +108,41 @@ def get_country_df(sql_statement):
 
 
 
-# Insert into aaron.
-def insert_to_sql_float():
+@analysis.route('/Save_BGI_Float', methods=['GET', 'POST'])
+@login_required
+def save_BGI_float():
 
+    title = "Save BGI Float"
+    header = "Saving BGI Float"
+
+    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+    # For Login in aaron.Risk_autocut and Credit_limit != 0
+
+
+    description = Markup("Will Save BGI Float Data. ")
+
+        # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/city_overview.jpg', Table_name="Save Floating", \
+                           title=title, ajax_url=url_for('analysis.save_BGI_float_Ajax', _external=True), header=header, setinterval=12,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+# Insert into aaron.BGI_Float_History
+# Will select, pull it out into Python, before inserting it into the table.
+# Tried doing Insert.. Select. But there was desdlock situation..
+@analysis.route('/save_BGI_float_Ajax', methods=['GET', 'POST'])
+def save_BGI_float_Ajax():
+
+    start = datetime.datetime.now()
     # TODO: Only want to save during trading hours.
+    # TODO: Want to write a custom function, and not rely on using CFH timing.
     if not cfh_fix_timing():
-        return
+        return json.dumps([{'Update time': "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
-    sql_statement = """INSERT INTO aaron.BGI_Float_History (country, symbol, volume, revenue, datetime)
-    SELECT COUNTRY, SYMBOL, SUMVOL as VOL, PROFIT*-1 AS REVENUE, now() as DATETIME FROM(
+    sql_statement = """SELECT COUNTRY, SYMBOL1 as SYMBOL, SUMVOL as VOL, PROFIT*-1 AS REVENUE, now() as DATETIME FROM(
     (SELECT 'live1' AS LIVE,group_table.COUNTRY, 
-    CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL,
+    CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
     SUM(CASE WHEN mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS SUMVOL,
     ROUND(SUM(CASE 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
@@ -129,10 +153,10 @@ def insert_to_sql_float():
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS PROFIT
     FROM live1.mt4_trades,live5.group_table WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' 
-    AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live1' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, Symbol)
+    AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live1' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, SYMBOL1)
     UNION
     (SELECT 'live2' AS LIVE,group_table.COUNTRY, 
-    CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL,
+    CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
     SUM(CASE WHEN mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS SUMVOL,
     ROUND(SUM(CASE 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
@@ -143,10 +167,10 @@ def insert_to_sql_float():
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS PROFIT
     FROM live2.mt4_trades,live5.group_table WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' 
-    AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live2' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, Symbol)
+    AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live2' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, SYMBOL1)
     UNION
     (SELECT 'live3' AS LIVE,group_table.COUNTRY, 
-    CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL,
+    CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
     SUM(CASE WHEN mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS SUMVOL,
     ROUND(SUM(CASE 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
@@ -157,10 +181,10 @@ def insert_to_sql_float():
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS PROFIT
     FROM live3.mt4_trades,live5.group_table WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' 
-    AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live3' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, Symbol)
+    AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live3' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, SYMBOL1)
     UNION
     (SELECT 'live5' AS LIVE,group_table.COUNTRY,  
-    CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL,
+    CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
     SUM(CASE WHEN mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS SUMVOL,
     ROUND(SUM(CASE 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
@@ -171,20 +195,103 @@ def insert_to_sql_float():
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS PROFIT
     FROM live5.mt4_trades,live5.group_table WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' 
-    AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live5' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, Symbol)
+    AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live5' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, SYMBOL1)
     ) AS B 
-    GROUP BY B.COUNTRY, B.SYMBOL
+    GROUP BY B.COUNTRY, B.SYMBOL1
     HAVING COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST')
     ORDER BY COUNTRY, SYMBOL"""
 
+
+    # Want to get results for the above query, to get the Floating PnL
     sql_query = text(sql_statement)
-    raw_result = db.engine.execute(sql_query)
+    raw_result = db.engine.execute(sql_query)  # Select From DB
+    result_data = raw_result.fetchall()     # Return Result
+
+    # dict of the results
+    #result_col = raw_result.keys()
+    #return_val = [dict(zip(result_col,r)) for r in result_clean]
+
+    # Want to clean up the data
+    # Date, as well as decimals to string.
+    result_clean = [["'{}'".format(d) if  not isinstance(d, datetime.datetime) else "'{}'".format(Get_SQL_Timestring(d))
+                     for d in r] for r in result_data]
+    # Form the string into (), values for the insert.
+    result_array = ["({})".format(" , ".join(r)) for r in result_clean]
+
+    # Want to insert into the Table.
+    insert_into_table = text("INSERT INTO aaron.BGI_Float_History (`country`, `symbol`, `volume`, `revenue`, `datetime`) VALUES {}".format(" , ".join(result_array)))
+    raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
+
 
     # Insert into the Checking tools.
-    Tool = "BGI Float History"
+    Tool = "BGI_Float_History"
     sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`, `email_sent`) VALUES" + \
-                 " ('{Tool}', now(), 0) ON DUPLICATE KEY UPDATE Updated_Time=now(), email_sent=VALUES(email_sent)".format(Tool=Tool)
+                 " ('{Tool}', now(), 0) ON DUPLICATE KEY UPDATE Updated_Time=now(), email_sent=VALUES(email_sent)".format(
+                     Tool=Tool)
     raw_insert_result = db.engine.execute(sql_insert)
+
+    end = datetime.datetime.now()
+    print("Saving floating PnL tool: {}s".format((end - start).total_seconds()))
+    return json.dumps([{'Update time': Get_time_String()}])
+
+
+@analysis.route('/BGI_Country_Float', methods=['GET', 'POST'])
+@login_required
+def BGI_Country_Float():
+
+    title = "Country Float"
+    header = "Country Float"
+
+    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+    # For Login in aaron.Risk_autocut and Credit_limit != 0
+
+
+    description = Markup("Floating PnL By Country")
+
+        # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Country_Float.html", backgroud_Filename='css/city_overview.jpg', Table_name="Country Float", \
+                           title=title, ajax_url=url_for('analysis.BGI_Country_Float_ajax', _external=True), header=header, setinterval=15,
+                           description=description, replace_words=Markup([]))
+
+
+
+# Get BGUI Float by country
+@analysis.route('/BGI_Country_Float_ajax', methods=['GET', 'POST'])
+def BGI_Country_Float_ajax():
+
+    start = datetime.datetime.now()
+
+    # TODO: Only want to save during trading hours.
+    # TODO: Want to write a custom function, and not rely on using CFH timing.
+    if not cfh_fix_timing():
+        return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
+
+    sql_statement = """SELECT COUNTRY, SUM(ABS(VOLUME)) AS VOLUME, SUM(REVENUE) AS REVENUE, DATETIME
+            FROM aaron.bgi_float_history
+            WHERE DATETIME IN (SELECT MAX(DATETIME) FROM aaron.bgi_float_history)
+            GROUP BY COUNTRY
+            ORDER BY REVENUE DESC"""
+
+    sql_query = text(sql_statement)
+
+    raw_result = db.engine.execute(sql_query)   # Insert select..
+    result_data = raw_result.fetchall()     # Return Result
+
+    # Want to clean up the data
+
+    Get_time_String
+    result_clean = [[Get_time_String(d) if isinstance(d, datetime.datetime) else d for d in r] for r in result_data]
+    #result_clean = [[readable_format(d) for d in r] for r in result_data]
+    # dict of the results
+    result_col = raw_result.keys()
+    return_val = [dict(zip(result_col,r)) for r in result_clean]
+
+
+    end = datetime.datetime.now()
+    print("Getting Country PnL tool: {}s".format((end - start).total_seconds()))
+    return json.dumps(return_val)
+
 
 
 

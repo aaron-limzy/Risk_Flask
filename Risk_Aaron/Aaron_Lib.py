@@ -77,12 +77,25 @@ def Send_Email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name
     # server.sendmail(me, To_recipients + Bcc_recipients + cc_recipients, msg.as_string())
 
 
-def Get_time_String():
-    now = datetime.datetime.now()
-    return now.strftime("%Y-%b-%d %H:%M:%S")
+def Get_time_String(datetime_format = None):
+    if datetime_format == None: # If there is no input
+        datetime_format = datetime.datetime.now()
+    return datetime_format.strftime("%Y-%b-%d %H:%M:%S")
+
+def Get_SQL_Timestring(datetime_format=None):
+    if datetime_format == None:  # If there is no input
+        datetime_format = datetime.datetime.now()
+    return datetime_format.strftime("%Y-%m-%d %H:%M:%S")
 
     # return str(now.year) + "-" + str(now.month) + "-" + str(now.day) + "_" + str(now.hour) + "-" + str(
     #    now.minute) + "-" + str(now.second)
+
+def readable_format(val):
+    if isinstance(val, float):  #Return comma seperated, 2dp string
+        return "{:,.2f}".format(val)
+    if  isinstance(val, datetime.datetime):
+        return Get_time_String(val)
+    return "{}".format(val)
 
 
 def Get_time_String_Simple():

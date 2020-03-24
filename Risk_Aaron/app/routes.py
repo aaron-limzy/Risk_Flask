@@ -56,6 +56,7 @@ import json
 from .decorators import async
 from io import StringIO
 
+
 #simple_page = Blueprint('simple_page', __name__, template_folder='templates')
 
 
