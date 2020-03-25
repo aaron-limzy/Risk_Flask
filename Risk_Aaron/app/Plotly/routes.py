@@ -14,6 +14,9 @@ import pandas as pd
 import numpy as np
 import json
 
+import emoji
+import flag
+
 from app.Swaps.forms import UploadForm
 
 from flask_table import create_table, Col
@@ -123,8 +126,9 @@ def save_BGI_float():
     description = Markup("Will Save BGI Float Data. ")
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/city_overview.jpg', Table_name="Save Floating", \
-                           title=title, ajax_url=url_for('analysis.save_BGI_float_Ajax', _external=True), header=header, setinterval=12,
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/city_overview.jpg', icon="css/save.png",
+                           Table_name="Save Floating 💾", title=title,
+                            ajax_url=url_for('analysis.save_BGI_float_Ajax', _external=True), header=header, setinterval=12,
                            description=description, replace_words=Markup(["Today"]))
 
 
@@ -134,16 +138,17 @@ def save_BGI_float():
 @analysis.route('/save_BGI_float_Ajax', methods=['GET', 'POST'])
 def save_BGI_float_Ajax():
 
-    start = datetime.datetime.now()
+    #start = datetime.datetime.now()
     # TODO: Only want to save during trading hours.
     # TODO: Want to write a custom function, and not rely on using CFH timing.
     if not cfh_fix_timing():
         return json.dumps([{'Update time': "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
-    sql_statement = """SELECT COUNTRY, SYMBOL1 as SYMBOL, SUMVOL as VOL, PROFIT*-1 AS REVENUE, now() as DATETIME FROM(
+    sql_statement = """SELECT COUNTRY, SYMBOL1 as SYMBOL, NETVOL, SUMVOL as VOL, PROFIT*-1 AS REVENUE, now() as DATETIME FROM(
     (SELECT 'live1' AS LIVE,group_table.COUNTRY, 
     CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
     SUM(CASE WHEN mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS SUMVOL,
+		SUM(CASE WHEN (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' and mt4_trades.cmd = 0) THEN mt4_trades.VOLUME WHEN (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' and mt4_trades.cmd = 1) THEN -1*mt4_trades.VOLUME ELSE 0 END)*0.01 AS NETVOL,
     ROUND(SUM(CASE 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
@@ -158,6 +163,7 @@ def save_BGI_float_Ajax():
     (SELECT 'live2' AS LIVE,group_table.COUNTRY, 
     CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
     SUM(CASE WHEN mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS SUMVOL,
+		SUM(CASE WHEN (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' and mt4_trades.cmd = 0) THEN mt4_trades.VOLUME WHEN (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' and mt4_trades.cmd = 1) THEN -1*mt4_trades.VOLUME ELSE 0 END)*0.01 AS NETVOL,
     ROUND(SUM(CASE 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
@@ -172,6 +178,7 @@ def save_BGI_float_Ajax():
     (SELECT 'live3' AS LIVE,group_table.COUNTRY, 
     CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
     SUM(CASE WHEN mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS SUMVOL,
+		SUM(CASE WHEN (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' and mt4_trades.cmd = 0) THEN mt4_trades.VOLUME WHEN (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' and mt4_trades.cmd = 1) THEN -1*mt4_trades.VOLUME ELSE 0 END)*0.01 AS NETVOL,
     ROUND(SUM(CASE 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
@@ -181,11 +188,15 @@ def save_BGI_float_Ajax():
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS PROFIT
     FROM live3.mt4_trades,live5.group_table WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' 
-    AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live3' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, SYMBOL1)
+    AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM live3.cambodia_exclude)
+
+
+    AND mt4_trades.CMD <2 AND group_table.LIVE = 'live3' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, SYMBOL1)
     UNION
     (SELECT 'live5' AS LIVE,group_table.COUNTRY,  
     CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
     SUM(CASE WHEN mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS SUMVOL,
+		SUM(CASE WHEN (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' and mt4_trades.cmd = 0) THEN mt4_trades.VOLUME WHEN (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' and mt4_trades.cmd = 1) THEN -1*mt4_trades.VOLUME ELSE 0 END)*0.01 AS NETVOL,
     ROUND(SUM(CASE 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
@@ -207,19 +218,37 @@ def save_BGI_float_Ajax():
     raw_result = db.engine.execute(sql_query)  # Select From DB
     result_data = raw_result.fetchall()     # Return Result
 
-    # dict of the results
-    #result_col = raw_result.keys()
-    #return_val = [dict(zip(result_col,r)) for r in result_clean]
+    result_col = raw_result.keys() # The column names
+
+    # Since the Country and Symbols are Primary keys,
+    # We want to add up the sums.
+    country_symbol = {}
+    for r in result_data:
+        country = r[0]
+        # Want to get core value
+        symbol = cfd_core_symbol(r[1])
+        net_volume = r[2]
+        volume = r[3]
+        revenue = r[4]
+        date_time = r[5]
+        if (country, symbol, date_time) not in country_symbol:
+            country_symbol[(country, symbol, date_time)] = [net_volume, volume, revenue]
+        else:
+            country_symbol[(country, symbol, date_time)][0] += net_volume
+            country_symbol[(country, symbol, date_time)][1] += volume
+            country_symbol[(country, symbol, date_time)][2] += revenue
+    # Put it back to the same array.
+    result_data_clean = [[k[0], k[1], d[1], d[2], d[0], k[2]] for k,d in country_symbol.items()]
 
     # Want to clean up the data
     # Date, as well as decimals to string.
     result_clean = [["'{}'".format(d) if  not isinstance(d, datetime.datetime) else "'{}'".format(Get_SQL_Timestring(d))
-                     for d in r] for r in result_data]
+                         for d in r] for r in result_data_clean]
     # Form the string into (), values for the insert.
     result_array = ["({})".format(" , ".join(r)) for r in result_clean]
 
     # Want to insert into the Table.
-    insert_into_table = text("INSERT INTO aaron.BGI_Float_History (`country`, `symbol`, `volume`, `revenue`, `datetime`) VALUES {}".format(" , ".join(result_array)))
+    insert_into_table = text("INSERT INTO aaron.BGI_Float_History (`country`, `symbol`, `volume`, `revenue`, `net_volume`, `datetime`) VALUES {}".format(" , ".join(result_array)))
     raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
 
 
@@ -230,9 +259,12 @@ def save_BGI_float_Ajax():
                      Tool=Tool)
     raw_insert_result = db.engine.execute(sql_insert)
 
-    end = datetime.datetime.now()
-    print("\nSaving floating PnL tool: {}s\n".format((end - start).total_seconds()))
+    #end = datetime.datetime.now()
+    #print("\nSaving floating PnL tool: {}s\n".format((end - start).total_seconds()))
     return json.dumps([{'Update time': Get_time_String()}])
+
+
+
 
 
 @analysis.route('/BGI_Country_Float', methods=['GET', 'POST'])
@@ -264,7 +296,7 @@ def BGI_Country_Float():
 @analysis.route('/BGI_Country_Float_ajax', methods=['GET', 'POST'])
 def BGI_Country_Float_ajax():
 
-    #start = datetime.datetime.now()
+    start = datetime.datetime.now()
 
     # TODO: Only want to save during trading hours.
     # TODO: Want to write a custom function, and not rely on using CFH timing.
@@ -275,7 +307,24 @@ def BGI_Country_Float_ajax():
             FROM aaron.bgi_float_history
             WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.bgi_float_history)
             GROUP BY COUNTRY
-            ORDER BY REVENUE DESC"""
+            """
+
+    # sql_statement = """SELECT COUNTRY, SUM(ABS(VOLUME)) AS VOLUME, SUM(REVENUE) AS REVENUE, DATETIME
+    #     FROM aaron.bgi_float_history,(
+    #     SELECT DISTINCT(datetime) AS DT
+    #     FROM aaron.bgi_float_history
+    #     WHERE DATETIME >= (NOW() - INTERVAL 2 DAY)
+    #     GROUP BY LEFT(DATETIME, 15)
+    #     ) AS A
+    #     WHERE bgi_float_history.datetime = A.DT
+    #     GROUP BY COUNTRY, DATETIME
+    #
+    #     UNION
+    #
+    #     SELECT COUNTRY, SUM(ABS(VOLUME)) AS VOLUME, SUM(REVENUE) AS REVENUE, DATETIME
+    #                 FROM aaron.bgi_float_history
+    #                 WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.bgi_float_history)
+    #                 GROUP BY COUNTRY"""
 
     sql_query = text(sql_statement)
 
@@ -284,8 +333,10 @@ def BGI_Country_Float_ajax():
 
     result_col = raw_result.keys()  # Column names
 
+
+
     end = datetime.datetime.now()
-    #print("\nGetting Country PnL tool[Before df]: {}s\n".format((end - start).total_seconds()))
+    print("\nGetting Country PnL tool[After Query]: {}s\n".format((end - start).total_seconds()))
 
     df = pd.DataFrame(result_data, columns=result_col)
 
@@ -294,21 +345,26 @@ def BGI_Country_Float_ajax():
     # We want to show Client Side for Dealing as well as A book Clients.
     df['REVENUE'] = df.apply(lambda x: -1*x['REVENUE'] if (x["COUNTRY"].find("_A") > 0 or x["COUNTRY"].find('Dealing') >= 0) else x['REVENUE'], axis=1)
 
+    # For the display of table, we only want the latest data inout.
+    df_to_table = df[df['DATETIME'] == df['DATETIME'].max()].drop_duplicates()
+
     # Get Datetime into string
-    df['DATETIME'] = df['DATETIME'].apply(lambda x: Get_time_String(x))
+    df_to_table['DATETIME'] = df_to_table['DATETIME'].apply(lambda x: Get_time_String(x))
 
     # Sort by Revenue
-    df.sort_values(by=["REVENUE"], inplace=True, ascending=False)
+    df_to_table.sort_values(by=["REVENUE"], inplace=True, ascending=False)
 
     # Want to show on the chart. Do not need additional info as text it would be too long.
-    chart_Country = list(df['COUNTRY'].values)
+    chart_Country = list(df_to_table['COUNTRY'].values)
 
-    df['COUNTRY'] = df.apply(lambda x: '{} (Client Side)'.format(x['COUNTRY']) if (
+    df_to_table['COUNTRY'] = df_to_table.apply(lambda x: '{} (Client Side)'.format(x['COUNTRY']) if (
                 x["COUNTRY"].find("_A") > 0 or x["COUNTRY"].find('Dealing') >= 0) else x['COUNTRY'], axis=1)
 
 
-    df_records = df.to_records(index=False)
+    df_records = df_to_table.to_records(index=False)
     df_records = [list(a) for a in df_records]
+
+    #print(emoji.emojize('Python is :china: :TW: :NZ: :HK:'))
 
     # Want to clean up the data
     result_clean = [[Get_time_String(d) if isinstance(d, datetime.datetime) else d for d in r] for r in result_data]
@@ -319,9 +375,9 @@ def BGI_Country_Float_ajax():
     #print("\nGetting Country PnL tool[Before Chart]: {}s\n".format((end - start).total_seconds()))
 
     # For plotting.
-    bar_color = df['REVENUE'].apply(lambda x: "green" if x >= 0 else 'red')
+    bar_color = df_to_table['REVENUE'].apply(lambda x: "green" if x >= 0 else 'red')
     fig = go.Figure(data=[
-        go.Bar(name="Total Volume", y=df['REVENUE'], x=chart_Country, text=df['REVENUE'], textposition='outside',
+        go.Bar(name="Total Volume", y=df_to_table['REVENUE'], x=chart_Country, text=df_to_table['REVENUE'], textposition='outside',
                cliponaxis=False, textfont=dict(size=14), marker_color=bar_color)
     ])
 
@@ -344,9 +400,122 @@ def BGI_Country_Float_ajax():
     )
 
     end = datetime.datetime.now()
-    #print("\nGetting Country PnL tool: {}s\n".format((end - start).total_seconds()))
+    print("\nGetting Country PnL tool: {}s\n".format((end - start).total_seconds()))
     return json.dumps([return_val, fig], cls=plotly.utils.PlotlyJSONEncoder)
 
+
+
+
+
+@analysis.route('/BGI_Symbol_Float', methods=['GET', 'POST'])
+@login_required
+def BGI_Symbol_Float():
+
+    title = "Symbol Float"
+    header = "Symbol Float"
+
+    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+    # For Login in aaron.Risk_autocut and Credit_limit != 0
+
+
+    description = Markup("<b>Floating PnL By Symbol.</b><br> Revenue = Profit + Swaps<br>")
+
+
+        # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Country_Float.html", backgroud_Filename='css/World_Map.jpg', icon= "", Table_name="Symbol Float 🎶", \
+                           title=title, ajax_url=url_for('analysis.BGI_Symbol_Float_ajax', _external=True), header=header, setinterval=15,
+                           description=description, replace_words=Markup(['(Client Side)']))
+
+
+
+# Get BGI Float by Symbol
+@analysis.route('/BGI_Symbol_Float_ajax', methods=['GET', 'POST'])
+def BGI_Symbol_Float_ajax():
+
+    start = datetime.datetime.now()
+
+    # TODO: Only want to save during trading hours.
+    # TODO: Want to write a custom function, and not rely on using CFH timing.
+    if not cfh_fix_timing():
+        return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
+
+    sql_statement = """SELECT SYMBOL, SUM(ABS(VOLUME)) AS VOLUME, SUM(NET_VOLUME) AS NETVOL, SUM(REVENUE) AS REVENUE, DATETIME
+            FROM aaron.bgi_float_history
+            WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.bgi_float_history)
+            AND COUNTRY NOT LIKE "%_A" and COUNTRY NOT LIKE 'Dealing%'
+            GROUP BY SYMBOL
+            ORDER BY REVENUE DESC
+            """
+
+    sql_query = text(sql_statement)
+    raw_result = db.engine.execute(sql_query)   # Insert select..
+    result_data = raw_result.fetchall()     # Return Result
+
+    result_col = raw_result.keys()  # Column names
+
+
+
+    end = datetime.datetime.now()
+    print("\nGetting SYMBOL PnL tool[After Query]: {}s\n".format((end - start).total_seconds()))
+
+    df = pd.DataFrame(result_data, columns=result_col)
+
+    # For the display of table, we only want the latest data inout.
+    df_to_table = df[df['DATETIME'] == df['DATETIME'].max()].drop_duplicates()
+
+    # Get Datetime into string
+    df_to_table['DATETIME'] = df_to_table['DATETIME'].apply(lambda x: Get_time_String(x))
+
+    # Sort by Revenue
+    df_to_table.sort_values(by=["REVENUE"], inplace=True, ascending=False)
+
+    # Want to show on the chart. Do not need additional info as text it would be too long.
+
+
+    df_records = df_to_table.to_records(index=False)
+    df_records = [list(a) for a in df_records]
+
+    #print(emoji.emojize('Python is :china: :TW: :NZ: :HK:'))
+
+    # Want to clean up the data
+    result_clean = [[Get_time_String(d) if isinstance(d, datetime.datetime) else d for d in r] for r in result_data]
+
+    return_val = [dict(zip(result_col,d)) for d in df_records]
+
+    #end = datetime.datetime.now()
+    #print("\nGetting Country PnL tool[Before Chart]: {}s\n".format((end - start).total_seconds()))
+
+    # For plotting.
+
+    fig = []
+    # bar_color = df_to_table['REVENUE'].apply(lambda x: "green" if x >= 0 else 'red')
+    # fig = go.Figure(data=[
+    #     go.Bar(name="Total Volume", y=df_to_table['REVENUE'], x=chart_Country, text=df_to_table['REVENUE'], textposition='outside',
+    #            cliponaxis=False, textfont=dict(size=14), marker_color=bar_color)
+    # ])
+    #
+    # fig.update_layout(
+    #     autosize=True,
+    #     margin=dict(pad=1),
+    #     yaxis=dict(
+    #         title_text="Revenue",
+    #         ticks="outside", tickcolor='white', ticklen=15,
+    #         layer='below traces'
+    #     ),
+    #     yaxis_tickfont_size=14,
+    #     xaxis=dict(
+    #         title_text="Country"
+    #     ),
+    #     xaxis_tickfont_size=15,
+    #     title_text='Floating Revenue by Country',
+    #     titlefont=dict(size=28, family="'Montserrat', sans-serif"),
+    #     title_x=0.5
+    # )
+
+    end = datetime.datetime.now()
+    print("\nGetting SYMBOL PnL tool: {}s\n".format((end - start).total_seconds()))
+    return json.dumps([return_val, fig], cls=plotly.utils.PlotlyJSONEncoder)
 
 
 

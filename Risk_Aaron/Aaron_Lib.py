@@ -310,3 +310,19 @@ def cfh_fix_timing():
         if weekd == 6 and datetime_now.time() < datetime.time(17,35,0):   # Sunday
             return False
     return True
+
+
+# Want to attempt to find the CFD's core symbol.
+# no need the postfix
+def cfd_core_symbol(str_val):
+
+    if str_val.find(".") != 0:
+        return str_val
+    cfd_symbol = ['.A50', '.AUS200', '.DE30', '.ES35', '.F40', '.HK50', '.JP225', '.STOXX50', '.UK100', '.UKOil', '.US100', '.US30',
+     '.US500', '.USOil']
+    for c in cfd_symbol:
+        if str_val.lower().find(c.lower()) == 0:
+            return c
+    return str_val
+
+
