@@ -271,7 +271,7 @@ def BGI_Country_Float_ajax():
 
     sql_statement = """SELECT COUNTRY, SUM(ABS(VOLUME)) AS VOLUME, SUM(REVENUE) AS REVENUE, DATETIME
             FROM aaron.bgi_float_history
-            WHERE DATETIME IN (SELECT MAX(DATETIME) FROM aaron.bgi_float_history)
+            WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.bgi_float_history)
             GROUP BY COUNTRY
             ORDER BY REVENUE DESC"""
 
