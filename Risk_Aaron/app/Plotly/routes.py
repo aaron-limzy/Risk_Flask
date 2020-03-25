@@ -247,14 +247,16 @@ def BGI_Country_Float():
     # For Login in aaron.Risk_autocut and Credit_limit != 0
 
 
-    description = Markup("Floating PnL By Country.<br> Revenue = Profit + Swaps<br>" +
-                         "_A Groups shows Client side PnL (<b>Not flipped</b>).<br>" +
-                         "All others are BGI Side (Flipped)")
+    description = Markup("<b>Floating PnL By Country.</b><br> Revenue = Profit + Swaps<br>" +
+                         "_A Groups shows Client side PnL (<span style = 'background-color: #C7E679'>Client Side</span>).<br>" +
+                         "All others are BGI Side (Flipped)<br><br>" +
+                         "Data taken from aaron.bgi_float_history table.")
+
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Country_Float.html", backgroud_Filename='css/World_Map.jpg', Table_name="Country Float", \
+    return render_template("Webworker_Country_Float.html", backgroud_Filename='css/World_Map.jpg', icon= "css/Globe.png", Table_name="Country Float 🌎", \
                            title=title, ajax_url=url_for('analysis.BGI_Country_Float_ajax', _external=True), header=header, setinterval=15,
-                           description=description, replace_words=Markup(['(Flipped)']))
+                           description=description, replace_words=Markup(['(Client Side)']))
 
 
 
@@ -262,7 +264,7 @@ def BGI_Country_Float():
 @analysis.route('/BGI_Country_Float_ajax', methods=['GET', 'POST'])
 def BGI_Country_Float_ajax():
 
-    start = datetime.datetime.now()
+    #start = datetime.datetime.now()
 
     # TODO: Only want to save during trading hours.
     # TODO: Want to write a custom function, and not rely on using CFH timing.
@@ -283,14 +285,27 @@ def BGI_Country_Float_ajax():
     result_col = raw_result.keys()  # Column names
 
     end = datetime.datetime.now()
-    print("\nGetting Country PnL tool[Before df]: {}s\n".format((end - start).total_seconds()))
+    #print("\nGetting Country PnL tool[Before df]: {}s\n".format((end - start).total_seconds()))
 
     df = pd.DataFrame(result_data, columns=result_col)
+
+
+
     # We want to show Client Side for Dealing as well as A book Clients.
     df['REVENUE'] = df.apply(lambda x: -1*x['REVENUE'] if (x["COUNTRY"].find("_A") > 0 or x["COUNTRY"].find('Dealing') >= 0) else x['REVENUE'], axis=1)
-    df['COUNTRY'] = df.apply(lambda x: '{} (Flipped)'.format(x['COUNTRY']) if (x["COUNTRY"].find("_A") > 0 or x["COUNTRY"].find('Dealing') >= 0) else x['COUNTRY'], axis=1)
+
+    # Get Datetime into string
     df['DATETIME'] = df['DATETIME'].apply(lambda x: Get_time_String(x))
+
+    # Sort by Revenue
     df.sort_values(by=["REVENUE"], inplace=True, ascending=False)
+
+    # Want to show on the chart. Do not need additional info as text it would be too long.
+    chart_Country = list(df['COUNTRY'].values)
+
+    df['COUNTRY'] = df.apply(lambda x: '{} (Client Side)'.format(x['COUNTRY']) if (
+                x["COUNTRY"].find("_A") > 0 or x["COUNTRY"].find('Dealing') >= 0) else x['COUNTRY'], axis=1)
+
 
     df_records = df.to_records(index=False)
     df_records = [list(a) for a in df_records]
@@ -300,19 +315,36 @@ def BGI_Country_Float_ajax():
 
     return_val = [dict(zip(result_col,d)) for d in df_records]
 
-    end = datetime.datetime.now()
-    print("\nGetting Country PnL tool[Before Chart]: {}s\n".format((end - start).total_seconds()))
+    #end = datetime.datetime.now()
+    #print("\nGetting Country PnL tool[Before Chart]: {}s\n".format((end - start).total_seconds()))
 
     # For plotting.
     bar_color = df['REVENUE'].apply(lambda x: "green" if x >= 0 else 'red')
-    bar_color
     fig = go.Figure(data=[
-        go.Bar(name="Total Volume", y=df['REVENUE'], x=df['COUNTRY'], text=df['REVENUE'], textposition='outside',
+        go.Bar(name="Total Volume", y=df['REVENUE'], x=chart_Country, text=df['REVENUE'], textposition='outside',
                cliponaxis=False, textfont=dict(size=14), marker_color=bar_color)
     ])
 
+    fig.update_layout(
+        autosize=True,
+        margin=dict(pad=1),
+        yaxis=dict(
+            title_text="Revenue",
+            ticks="outside", tickcolor='white', ticklen=15,
+            layer='below traces'
+        ),
+        yaxis_tickfont_size=14,
+        xaxis=dict(
+            title_text="Country"
+        ),
+        xaxis_tickfont_size=15,
+        title_text='Floating Revenue by Country',
+        titlefont=dict(size=28, family="'Montserrat', sans-serif"),
+        title_x=0.5
+    )
+
     end = datetime.datetime.now()
-    print("\nGetting Country PnL tool: {}s\n".format((end - start).total_seconds()))
+    #print("\nGetting Country PnL tool: {}s\n".format((end - start).total_seconds()))
     return json.dumps([return_val, fig], cls=plotly.utils.PlotlyJSONEncoder)
 
 

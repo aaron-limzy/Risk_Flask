@@ -35,8 +35,11 @@
     })
   </script>
 
-
-  <link rel="icon" type="image/png" href="{{ url_for('static', filename='css/icon.png') }}">
+  {% if icon %}
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename=icon) }}">
+  {% else %}
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='css/icon.png') }}">
+  {% endif %}
 
   {% endblock %}
 
@@ -286,6 +289,7 @@
             <li><a class="dropdown-item" href="https://www.dailyfx.com/economic-calendar">Daily FX Calandar</a></li>
             <li><a class="dropdown-item" href="https://www.poundsterlingforecast.com/">Pound Sterling Forcast</a></li>
             <li><a class="dropdown-item" href="https://global.markets.com/holiday-schedule/">Global Markets Trading Holiday</a></li>
+            <li><a class="dropdown-item" href="https://tw.rter.info/bank/BKTWTWTP/">USDTWD Web Scrape</a></li>
             <div class="dropdown-divider"></div>
             <li><a class="dropdown-item" href="https://support.metaquotes.net/en/users/login?returnUrl=%2Fen">Meta Support</a></li>
             </ul>
