@@ -1,8 +1,14 @@
 import os
-
+from Aaron_Lib import *
 
 class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY') or "lalala-We-don't-know-what-it-isss"
+
+    if get_machine_ip_address() == '192.168.64.73':
+        print("On server")
+    else:
+        print("Not on Server")
+
     SQLALCHEMY_DATABASE_URI ='mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/aaron'
 
     SQLALCHEMY_BINDS = {

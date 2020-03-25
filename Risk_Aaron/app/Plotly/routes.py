@@ -231,7 +231,7 @@ def save_BGI_float_Ajax():
     raw_insert_result = db.engine.execute(sql_insert)
 
     end = datetime.datetime.now()
-    print("Saving floating PnL tool: {}s".format((end - start).total_seconds()))
+    print("\nSaving floating PnL tool: {}s\n".format((end - start).total_seconds()))
     return json.dumps([{'Update time': Get_time_String()}])
 
 
@@ -247,12 +247,14 @@ def BGI_Country_Float():
     # For Login in aaron.Risk_autocut and Credit_limit != 0
 
 
-    description = Markup("Floating PnL By Country")
+    description = Markup("Floating PnL By Country.<br> Revenue = Profit + Swaps<br>" +
+                         "_A Groups shows Client side PnL (<b>Not flipped</b>).<br>" +
+                         "All others are BGI Side (Flipped)")
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Country_Float.html", backgroud_Filename='css/city_overview.jpg', Table_name="Country Float", \
+    return render_template("Webworker_Country_Float.html", backgroud_Filename='css/World_Map.jpg', Table_name="Country Float", \
                            title=title, ajax_url=url_for('analysis.BGI_Country_Float_ajax', _external=True), header=header, setinterval=15,
-                           description=description, replace_words=Markup([]))
+                           description=description, replace_words=Markup(['(Flipped)']))
 
 
 
@@ -278,19 +280,36 @@ def BGI_Country_Float_ajax():
     raw_result = db.engine.execute(sql_query)   # Insert select..
     result_data = raw_result.fetchall()     # Return Result
 
+    result_col = raw_result.keys()  # Column names
+
+    df = pd.DataFrame(result_data, columns=result_col)
+    # We want to show Client Side for Dealing as well as A book Clients.
+    df['REVENUE'] = df.apply(lambda x: -1*x['REVENUE'] if (x["COUNTRY"].find("_A") > 0 or x["COUNTRY"].find('Dealing') >= 0) else x['REVENUE'], axis=1)
+    df['COUNTRY'] = df.apply(lambda x: '{} (Flipped)'.format(x['COUNTRY']) if (x["COUNTRY"].find("_A") > 0 or x["COUNTRY"].find('Dealing') >= 0) else x['COUNTRY'], axis=1)
+    df['DATETIME'] = df['DATETIME'].apply(lambda x: Get_time_String(x))
+    df.sort_values(by=["REVENUE"], inplace=True, ascending=False)
+
+    df_records = df.to_records(index=False)
+    df_records = [list(a) for a in df_records]
+
     # Want to clean up the data
-
-    Get_time_String
     result_clean = [[Get_time_String(d) if isinstance(d, datetime.datetime) else d for d in r] for r in result_data]
-    #result_clean = [[readable_format(d) for d in r] for r in result_data]
-    # dict of the results
-    result_col = raw_result.keys()
-    return_val = [dict(zip(result_col,r)) for r in result_clean]
 
+    return_val = [dict(zip(result_col,d)) for d in df_records]
 
     end = datetime.datetime.now()
-    print("Getting Country PnL tool: {}s".format((end - start).total_seconds()))
-    return json.dumps(return_val)
+
+
+    # For plotting.
+    bar_color = df['REVENUE'].apply(lambda x: "green" if x >= 0 else 'red')
+    bar_color
+    fig = go.Figure(data=[
+        go.Bar(name="Total Volume", y=df['REVENUE'], x=df['COUNTRY'], text=df['REVENUE'], textposition='outside',
+               cliponaxis=False, textfont=dict(size=14), marker_color=bar_color)
+    ])
+    #fig.show()
+    print("\nGetting Country PnL tool: {}s\n".format((end - start).total_seconds()))
+    return json.dumps([return_val, fig], cls=plotly.utils.PlotlyJSONEncoder)
 
 
 
