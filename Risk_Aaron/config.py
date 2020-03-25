@@ -5,19 +5,30 @@ class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY') or "lalala-We-don't-know-what-it-isss"
 
     if get_machine_ip_address() == '192.168.64.73':
-        print("On server")
+        SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://Aaron_Local:aaron_local@localhost/aaron'
+
+        SQLALCHEMY_BINDS = {
+            'test': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/test',
+            'live1': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/live1',
+            'live2': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/live2',
+            'live3': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/live3',
+            'live5': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/live5'
+        }
+
+        print("On server (64.73). Will use local host connection.")
     else:
-        print("Not on Server")
+        SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/aaron'
 
-    SQLALCHEMY_DATABASE_URI ='mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/aaron'
+        SQLALCHEMY_BINDS = {
+            'test': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/test',
+            'live1': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live1',
+            'live2': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live2',
+            'live3': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live3',
+            'live5': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live5'
+        }
+        print("Not on Server (64.73) Will use Internal IP to link SQL. ")
 
-    SQLALCHEMY_BINDS = {
-        'test': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/test',
-        'live1': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live1',
-        'live2': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live2',
-        'live3': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live3',
-        'live5': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live5'
-    }
+
 
     # Don't need to signal the app whenever there is a change.
     SQLALCHEMY_TRACK_MODIFICATIONS = False
