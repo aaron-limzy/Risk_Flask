@@ -282,6 +282,9 @@ def BGI_Country_Float_ajax():
 
     result_col = raw_result.keys()  # Column names
 
+    end = datetime.datetime.now()
+    print("\nGetting Country PnL tool[Before df]: {}s\n".format((end - start).total_seconds()))
+
     df = pd.DataFrame(result_data, columns=result_col)
     # We want to show Client Side for Dealing as well as A book Clients.
     df['REVENUE'] = df.apply(lambda x: -1*x['REVENUE'] if (x["COUNTRY"].find("_A") > 0 or x["COUNTRY"].find('Dealing') >= 0) else x['REVENUE'], axis=1)
@@ -298,7 +301,7 @@ def BGI_Country_Float_ajax():
     return_val = [dict(zip(result_col,d)) for d in df_records]
 
     end = datetime.datetime.now()
-
+    print("\nGetting Country PnL tool[Before Chart]: {}s\n".format((end - start).total_seconds()))
 
     # For plotting.
     bar_color = df['REVENUE'].apply(lambda x: "green" if x >= 0 else 'red')
@@ -307,7 +310,8 @@ def BGI_Country_Float_ajax():
         go.Bar(name="Total Volume", y=df['REVENUE'], x=df['COUNTRY'], text=df['REVENUE'], textposition='outside',
                cliponaxis=False, textfont=dict(size=14), marker_color=bar_color)
     ])
-    #fig.show()
+
+    end = datetime.datetime.now()
     print("\nGetting Country PnL tool: {}s\n".format((end - start).total_seconds()))
     return json.dumps([return_val, fig], cls=plotly.utils.PlotlyJSONEncoder)
 
