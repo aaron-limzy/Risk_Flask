@@ -126,7 +126,7 @@ def save_BGI_float():
     description = Markup("Will Save BGI Float Data. ")
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/city_overview.jpg', icon="css/save.png",
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/city_overview.jpg', icon="css/save_Filled.png",
                            Table_name="Save Floating 💾", title=title,
                             ajax_url=url_for('analysis.save_BGI_float_Ajax', _external=True), header=header, setinterval=12,
                            description=description, replace_words=Markup(["Today"]))
@@ -248,7 +248,9 @@ def save_BGI_float_Ajax():
     result_array = ["({})".format(" , ".join(r)) for r in result_clean]
 
     # Want to insert into the Table.
-    insert_into_table = text("INSERT INTO aaron.BGI_Float_History (`country`, `symbol`, `volume`, `revenue`, `net_volume`, `datetime`) VALUES {}".format(" , ".join(result_array)))
+    #closed_revenue_today
+    #closed_vol_today
+    insert_into_table = text("INSERT INTO aaron.BGI_Float_History (`country`, `symbol`, `floating_volume`, `floating_revenue`, `net_floating_volume`, `datetime`) VALUES {}".format(" , ".join(result_array)))
     raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
 
 
@@ -303,7 +305,7 @@ def BGI_Country_Float_ajax():
     if not cfh_fix_timing():
         return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
-    sql_statement = """SELECT COUNTRY, SUM(ABS(VOLUME)) AS VOLUME, SUM(REVENUE) AS REVENUE, DATETIME
+    sql_statement = """SELECT COUNTRY, SUM(ABS(floating_volume)) AS VOLUME, SUM(floating_revenue) AS REVENUE, DATETIME
             FROM aaron.bgi_float_history
             WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.bgi_float_history)
             GROUP BY COUNTRY
@@ -440,7 +442,7 @@ def BGI_Symbol_Float_ajax():
     if not cfh_fix_timing():
         return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
-    sql_statement = """SELECT SYMBOL, SUM(ABS(VOLUME)) AS VOLUME, SUM(NET_VOLUME) AS NETVOL, SUM(REVENUE) AS REVENUE, DATETIME
+    sql_statement = """SELECT SYMBOL, SUM(ABS(floating_volume)) AS VOLUME, SUM(net_floating_volume) AS NETVOL, SUM(floating_revenue) AS REVENUE, DATETIME
             FROM aaron.bgi_float_history
             WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.bgi_float_history)
             AND COUNTRY NOT LIKE "%_A" and COUNTRY NOT LIKE 'Dealing%'
