@@ -6,6 +6,9 @@ from werkzeug.urls import url_parse
 from app.forms import SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form
 from app.forms import LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude
 
+# Import function to call in case the page dosn't run.
+from app.Plotly.routes import save_BGI_float_Ajax
+
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField
 from flask_table import create_table, Col
 
@@ -22,6 +25,7 @@ import json
 import math
 import asyncio
 import psutil   # Want to get Computer CPU Details/Usage/Memory
+
 
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import User, load_user, flask_users
@@ -1784,7 +1788,8 @@ def Monitor_Risk_Tools_ajax():
     function_to_call = {'CFH_FIX_Position'          : chf_fix_details_ajax,
                         'ChangeGroup_NoOpenTrades'  : noopentrades_changegroup_ajax,
                         "Equity_protect"            : Equity_protect_Cut_ajax,
-                        "Risk_Auto_Cut"             : risk_auto_cut_ajax
+                        "Risk_Auto_Cut"             : risk_auto_cut_ajax,
+                        "BGI_Float_History"         : save_BGI_float_Ajax
                         }
 
     #all_function_return = [d() for k,d in function_to_call.items()]
