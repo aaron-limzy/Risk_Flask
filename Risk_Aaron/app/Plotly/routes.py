@@ -363,7 +363,7 @@ def BGI_Country_Float():
 @analysis.route('/BGI_Country_Float_ajax', methods=['GET', 'POST'])
 def BGI_Country_Float_ajax():
 
-    start = datetime.datetime.now()
+    #start = datetime.datetime.now()
 
     # TODO: Only want to save during trading hours.
     # TODO: Want to write a custom function, and not rely on using CFH timing.
@@ -407,8 +407,8 @@ def BGI_Country_Float_ajax():
 
 
 
-    end = datetime.datetime.now()
-    print("\nGetting Country PnL tool[After Query]: {}s\n".format((end - start).total_seconds()))
+    #end = datetime.datetime.now()
+    #print("\nGetting Country PnL tool[After Query]: {}s\n".format((end - start).total_seconds()))
 
     df = pd.DataFrame(result_data, columns=result_col)
 
@@ -472,8 +472,8 @@ def BGI_Country_Float_ajax():
         title_x=0.5
     )
 
-    end = datetime.datetime.now()
-    print("\nGetting Country PnL tool: {}s\n".format((end - start).total_seconds()))
+    #end = datetime.datetime.now()
+    #print("\nGetting Country PnL tool: {}s\n".format((end - start).total_seconds()))
     return json.dumps([return_val, fig], cls=plotly.utils.PlotlyJSONEncoder)
 
 
