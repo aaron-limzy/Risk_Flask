@@ -55,6 +55,8 @@
     //Table1_Update();
 
 
+    Ajax_data = [];
+
     // function call_main(){
     //   self.postMessage(return_Time_String());
     // }
@@ -164,7 +166,7 @@
 
   // The actual function to do the XHR call.
   function xhr_call(){
-    sent_httprequest("POST", "{{ ajax_url }}").then(responseData => {
+    sent_httprequest("POST", "{{ ajax_url }}", Ajax_data).then(responseData => {
       //self.postMessage(responseData);
       Increment_counter = 1;  // Restart the Counter.
 
@@ -172,6 +174,7 @@
       self.postMessage({Table1: Draw_Table(responseData[0], "{{ Table_name }}" , "table table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }} ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
       self.postMessage({Table1_Raw : JSON.stringify(responseData)});
       self.postMessage({plot1 : responseData[1]});
+      self.postMessage({To_Save : responseData[2]});
 
 
 

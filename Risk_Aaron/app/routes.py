@@ -1732,7 +1732,7 @@ def Changed_readonly():
 def Changed_readonly_ajax():
 
     # Which Date to start with. We want to count back 1 day. 
-    start_date = get_working_day_date(datetime.date.today(),increment_decrement_val= -1,weekdays_count= 2)
+    start_date = get_working_day_date(datetime.date.today(), weekdays_count= -2)
     sql_query = text("Select * from test.changed_read_only WHERE `date` >= '{}' order by Date DESC".format(start_date.strftime("%Y-%m-%d")))
     raw_result = db.engine.execute(sql_query)
     result_data = raw_result.fetchall()     # Return Result
