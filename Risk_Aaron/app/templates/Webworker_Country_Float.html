@@ -166,7 +166,7 @@
 
   // The actual function to do the XHR call.
   function xhr_call(){
-    sent_httprequest("POST", "{{ ajax_url }}", Ajax_data).then(responseData => {
+    sent_httprequest("POST", "{{ ajax_url }}").then(responseData => {
       //self.postMessage(responseData);
       Increment_counter = 1;  // Restart the Counter.
 
