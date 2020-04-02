@@ -34,7 +34,7 @@ def BGI_Swaps():
 @login_required
 def BGI_Swaps_ajax():     # Return the Bloomberg dividend table in Json.
 
-    start_date = get_working_day_date(datetime.date.today(), -1, 5)
+    start_date = get_working_day_date(datetime.date.today(), -5)
     sql_query = text("SELECT * FROM test.`bgi_swaps` where date >= '{}' ORDER BY Core_Symbol, Date".format(start_date.strftime("%Y-%m-%d")))
     raw_result = db.engine.execute(sql_query)
     result_data = raw_result.fetchall()
