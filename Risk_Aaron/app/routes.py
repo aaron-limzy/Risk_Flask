@@ -57,7 +57,7 @@ import pandas as pd
 import numpy as np
 import json
 
-from .decorators import async
+from .decorators import async_fun
 from io import StringIO
 
 
@@ -1229,7 +1229,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
         Past_Details = json.loads(post_data["MT4_LP_Position_save"][0]) if ("MT4_LP_Position_save" in post_data) \
                                                                            and (isinstance(post_data['MT4_LP_Position_save'], list)) \
                                                                            and is_json(post_data["MT4_LP_Position_save"][0]) \
-                                                                            else None
+                                                                            else []
         send_email_total = int(post_data["send_email_total"][0]) if ("send_email_total" in post_data) \
                                                                    and (isinstance(post_data['send_email_total'], list)) else 0
 
@@ -2058,13 +2058,13 @@ def Mismatch_trades_bridge(symbol=[], hours=8, mins=16):
 
 
 # Async Call to send email.
-@async
+@async_fun
 def async_send_email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name):
     Send_Email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name)
 
 
 # Async Call to send telegram message.
-@async
+@async_fun
 def async_Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode=""):
 
     if Parse_mode == "":
@@ -2075,7 +2075,7 @@ def async_Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode=""):
 
 
 # Async update the runtime table for update.
-@async
+@async_fun
 def async_update_Runtime(app, Tool):
 
     #start = time.perf_counter()
@@ -2115,7 +2115,7 @@ def async_update_Runtime(app, Tool):
 # footer - On duplicate, what do we do?
 # sql_max_insert - Optional. How many max do we want to insert at one time.
 
-@async
+@async_fun
 def async_sql_insert(app, header="", values = [" "], footer = "", sql_max_insert=500):
 
     with app.app_context():  # Using current_app._get_current_object()
