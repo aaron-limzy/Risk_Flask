@@ -2,7 +2,8 @@ import os
 from Aaron_Lib import *
 
 class Config(object):
-    SECRET_KEY = os.environ.get('SECRET_KEY') or "lalala-We-don't-know-what-it-isss"
+    SECRET_KEY = os.environ.get('SECRET_KEY') or "DSF#23kjsdh8aSAd@34asdf8akl23j48sdla"
+    #SECRET_KEY = os.environ.get('SECRET_KEY') or "lalala-We-don't-know-what-it-isss"
 
     if get_machine_ip_address() == '192.168.64.73':
         SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://Aaron_Local:aaron_local@localhost/aaron'

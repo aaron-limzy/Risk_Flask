@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, Markup, url_for, request
+from flask import Blueprint, render_template, Markup, url_for, request, session
 from flask_login import current_user, login_user, logout_user, login_required
 
 from Aaron_Lib import *
@@ -27,6 +27,11 @@ import pyexcel
 from werkzeug.utils import secure_filename
 
 analysis = Blueprint('analysis', __name__)
+
+
+AARON_BOT = "736426328:AAH90fQZfcovGB8iP617yOslnql5dFyu-M0"		# For Mismatch and LP Margin
+TELE_ID_USDTWF_MISMATCH = "776609726:AAHVrhEffiJ4yWTn1nw0ZBcYttkyY0tuN0s"        # For USDTWF
+TELE_CLIENT_ID = ["486797751"]        # Aaron's Telegram ID.
 
 # @analysis.route('/Swaps/BGI_Swaps')
 #
@@ -149,8 +154,15 @@ def save_BGI_float_Ajax(update_tool_time=1):
     if not cfh_fix_timing():
         return json.dumps([{'Update time': "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
+    if check_session_live1_timing() == False:    # If False, It needs an update.
+        Post_To_Telegram(AARON_BOT, "Retrieving and saving previous day PnL.", TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+        # TOREMOVE: Comment out the print.
+        print("Saving Previous Day PnL")
+        #TODO: Maybe make this async?
+        save_previous_day_PnL()                 # We will take this chance to get the Previous day's PnL as well.
 
-    server_time_diff_str = "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
+    # Want to reduce the query overheads. So try to use the saved value as much as possible.
+    server_time_diff_str = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
 
     sql_statement = """SELECT COUNTRY, SYMBOL1 as SYMBOL, NET_FLOATING_VOLUME, SUM_FLOATING_VOLUME, FLOATING_PROFIT*-1 AS FLOATING_REVENUE,SUM_CLOSED_VOLUME, -1*CLOSED_PROFIT, DATE_SUB(now(),INTERVAL ({ServerTimeDiff_Query}) HOUR) as DATETIME FROM(
     (SELECT 'live1' AS LIVE,group_table.COUNTRY, 
@@ -396,10 +408,37 @@ def liveserver_Previousday_start_timing(live1_server_difference=6, hour_from_230
     return return_time
 
 
+# Using Live 5 timing as guide.
+# Since live 5 uses 0000 - 2400
+# Will minus 1 day, and take 2300 to give live 1 timing
+def liveserver_Nextday_start_timing(live1_server_difference=6, hour_from_2300 = 0, time = 0):
 
-def save_PnL_Daily():
+    if time == 0:   # Check if we had a start time
+        now = datetime.datetime.now()
+    else:
+        now = time
+    # Weekday: Minus how many days.
+    # 6 = Sunday. We want to go ahead how many days, if it' that weekday (in key)
+    next_day_start = {0: 1, 1: 1, 2: 1, 3: 1, 4: 3, 5: 2, 6: 1}
 
-    live1_server_difference = get_live1_time_difference()
+    # + 1 hour to force it into the next day.
+    live5_server_timing = now - datetime.timedelta(hours=live1_server_difference) + datetime.timedelta(hours=1)
+    return_time = get_working_day_date(start_date=live5_server_timing,
+                        weekdays_count=  next_day_start[live5_server_timing.weekday()],
+                                       weekdaylist=[0, 1, 2, 3, 4, 5, 6])
+    return_time = return_time - datetime.timedelta(days=1)  # minus 1 days, and use 2300hrs
+    return_time = return_time.replace(hour=23, minute=0, second=0, microsecond=0)
+    return_time = return_time + datetime.timedelta(hours=hour_from_2300)
+
+    #print("server_Time:{}, start_time: {}".format(live1_server_timing, return_time))
+    return return_time
+
+# To save previous working day PnL to aaron.bgi_dailypnl_by_country_group
+def save_previous_day_PnL():
+
+    # Trying to reduce the over-heads as much as possible.
+    live1_server_difference = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else get_live1_time_difference()
+
     live1_start_time = liveserver_Previousday_start_timing(live1_server_difference=live1_server_difference, hour_from_2300=0)
     live5_start_time = liveserver_Previousday_start_timing(live1_server_difference=live1_server_difference,
                                                            hour_from_2300=1)
@@ -414,13 +453,13 @@ def save_PnL_Daily():
     CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
 	SUM(CASE WHEN mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS Closed_Vol,
 		ROUND(SUM(CASE 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS CLOSED_PROFIT
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') ) THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS CLOSED_PROFIT
 	
 	FROM live1.mt4_trades,live5.group_table WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND {live123_Time_String} AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live1' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, SYMBOL1)
     UNION
@@ -428,26 +467,26 @@ def save_PnL_Daily():
     CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
     SUM(CASE WHEN mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS Closed_Vol,
 		ROUND(SUM(CASE 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS CLOSED_PROFIT
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') ) THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS CLOSED_PROFIT
     FROM live2.mt4_trades,live5.group_table WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND {live123_Time_String} AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live2' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, SYMBOL1)
     UNION
     (SELECT 'live3' AS LIVE,group_table.COUNTRY, 
     CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
     SUM(CASE WHEN mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS Closed_Vol,
      ROUND(SUM(CASE 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS CLOSED_PROFIT
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') ) THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS CLOSED_PROFIT
     FROM live3.mt4_trades,live5.group_table WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND {live123_Time_String}  AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM live3.cambodia_exclude)
 
 
@@ -457,13 +496,13 @@ def save_PnL_Daily():
     CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
     SUM(CASE WHEN mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS Closed_Vol,
     ROUND(SUM(CASE 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
-    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS CLOSED_PROFIT
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') ) THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') ) THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS CLOSED_PROFIT
     FROM live5.mt4_trades,live5.group_table WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND {live5_Time_String} AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live5' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, SYMBOL1)
     ) AS B 
     GROUP BY B.COUNTRY, B.SYMBOL1
@@ -475,9 +514,6 @@ def save_PnL_Daily():
     result_data = raw_result.fetchall()     # Return Result
 
     result_col = raw_result.keys() # The column names
-
-
-
 
 
     # Since the Country and Symbols are Primary keys,
@@ -526,11 +562,17 @@ def save_PnL_Daily():
 # Query SQL to return the previous day's PnL By Country
 def get_country_daily_pnl():
 
+    # Want to check what is the date that we should be retrieving.
+    # Trying to reduce the over-heads as much as possible.
+    live1_server_difference = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else get_live1_time_difference()
+
+    live1_start_time = liveserver_Previousday_start_timing(live1_server_difference=live1_server_difference, hour_from_2300=5)
+    date_of_pnl = "{}".format(live1_start_time.strftime("%Y-%m-%d"))
 
     sql_statement = """SELECT COUNTRY, SUM(VOLUME) AS VOLUME, SUM(REVENUE) AS REVENUE, DATE
             FROM aaron.`bgi_dailypnl_by_country_group`
-            WHERE DATE = (SELECT MAX(DATE) FROM aaron.`bgi_dailypnl_by_country_group`)
-            GROUP BY COUNTRY"""
+            WHERE DATE = '{}'
+            GROUP BY COUNTRY""".format(date_of_pnl)
 
     # Want to get results for the above query, to get the Floating PnL
     sql_query = text(sql_statement)
@@ -539,6 +581,43 @@ def get_country_daily_pnl():
     result_col = raw_result.keys() # The column names
     return pd.DataFrame(result_data, columns=result_col)
 
+
+
+# Clear session data.
+# TODO: will need to somehow call this...
+@analysis.route('/Clear_session_ajax', methods=['GET', 'POST'])
+def Clear_session_ajax():
+    list_of_pop = ["live1_sgt_time_diff", "live1_sgt_time_update", "yesterday_pnl_by_country"]
+    for u in list_of_pop:
+        session.pop(u, None)
+    return "Session Cleared: {}".format(", ".join(list_of_pop))
+
+
+
+# Will alter the session details.
+# does not return anything
+def check_session_live1_timing():
+
+    return_val = False  # If session timing is outdated, or needs to be updated.
+    # Might need to set the session life time. I think?
+    # Want to save some stuff in session so that we don't have to keep querying for it.
+    if "live1_sgt_time_diff" in session and \
+        "live1_sgt_time_update" in session and  \
+        datetime.datetime.now() < session["live1_sgt_time_update"] :
+        return_val = True
+        #print("From session: {}. Next update time: {}".format(session['live1_sgt_time_diff'], session['live1_sgt_time_update']))
+    else:
+        print(session)
+        #print("Getting live1 time diff from SQL.")
+        session['live1_sgt_time_diff'] = get_live1_time_difference()
+
+        # Will get the timing that we need to update again. Want to get start of next working day in SGT
+        # so, will need to ADD the hours back.
+        session['live1_sgt_time_update'] = liveserver_Nextday_start_timing(
+                    live1_server_difference=session['live1_sgt_time_diff'],
+                        hour_from_2300=0) + datetime.timedelta(hours=session['live1_sgt_time_diff'], minutes=10)
+
+    return return_val
 
 # Get BGUI Float by country
 @analysis.route('/BGI_Country_Float_ajax', methods=['GET', 'POST'])
@@ -551,8 +630,32 @@ def BGI_Country_Float_ajax():
     if not cfh_fix_timing():
         return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
-    server_time_diff_str = "SELECT RESULT FROM aaron.`aaron_misc_data` where item = 'live1_time_diff'"
+    check_session_live1_timing()
+    # Will check the timing
+    if check_session_live1_timing() == True and "yesterday_pnl_by_country" in session:
+        #print("From in memory")
 
+        df_yesterday_country_float = pd.DataFrame.from_dict(session["yesterday_pnl_by_country"])
+        #print(df_yesterday_country_float)
+    else:       # If session timing is outdated, or needs to be updated.
+        #print("Getting from DB")
+        df_yesterday_country_float = get_country_daily_pnl()
+        session["yesterday_pnl_by_country"] =  df_yesterday_country_float.to_dict()
+
+    #print(dict(zip(["{}".format(c) for c in list(df_yesterday_country_float.columns) if c.find("COUNTRY") == -1], \
+    #    ["YESTERDAY_{}".format(c) for c in list(df_yesterday_country_float.columns) if c.find("COUNTRY") == -1])))
+
+    # Want to change the names of the columns. But we need to preserve the COUNTRY name since we use that to merge.
+    df_yesterday_country_float.rename(columns=dict(zip(["{}".format(c) for c in list(df_yesterday_country_float.columns) if c.find("COUNTRY") == -1], \
+        ["YESTERDAY_{}".format(c) for c in list(df_yesterday_country_float.columns) if c.find("COUNTRY") == -1])), inplace=True)
+
+   # print(df_yesterday_country_float)
+    #df_yesterday_country_float.rename(columns={"REVENUE":"YESTERDAY_REVENUE"})
+
+
+    # Want to reduce the overheads.
+    server_time_diff_str = " {} ".format(session["live1_sgt_time_diff"]) if "live1_sgt_time_diff" in session else \
+            "SELECT RESULT FROM aaron.`aaron_misc_data` where item = 'live1_time_diff'"
 
     sql_statement = """SELECT COUNTRY, SUM(ABS(floating_volume)) AS FLOAT_VOLUME, SUM(floating_revenue) AS FLOAT_REVENUE,
                              SUM(CLOSED_VOL_TODAY) AS CLOSED_VOL ,SUM(CLOSED_REVENUE_TODAY) AS CLOSED_REVENUE,
@@ -601,33 +704,49 @@ def BGI_Country_Float_ajax():
     # For the display of table, we only want the latest data inout.
     df_to_table = df[df['DATETIME'] == df['DATETIME'].max()].drop_duplicates()
 
+    # Join the DF by 'COUNTRY'
+    df_to_table = df_to_table.merge(df_yesterday_country_float, on="COUNTRY", how='left')
+    df_to_table.fillna("-", inplace=True) # Want to fill up all the empty ones with 0
+
     # Get Datetime into string
     df_to_table['DATETIME'] = df_to_table['DATETIME'].apply(lambda x: Get_time_String(x))
 
     # Sort by Revenue
     df_to_table.sort_values(by=["FLOAT_REVENUE"], inplace=True, ascending=False)
 
+
     # Want to show on the chart. Do not need additional info as text it would be too long.
     chart_Country = list(df_to_table['COUNTRY'].values)
+
+
+
+
 
     # Adding words to the country name, to be flagged out by Javascript to color the cell
     df_to_table['COUNTRY'] = df_to_table.apply(lambda x: '{} (Client Side)'.format(x['COUNTRY']) if (
                 x["COUNTRY"].find("_A") > 0 or x["COUNTRY"].find('Dealing') >= 0) else x['COUNTRY'], axis=1)
 
+    # print("df_to_table")
+    # print(df_to_table2)
 
     df_records = df_to_table.to_records(index=False)
+    # print("to record")
+    # print( df_records)
+
     df_records = [list(a) for a in df_records]
 
     #print(emoji.emojize('Python is :china: :TW: :NZ: :HK:'))
 
     # Want to clean up the data
     result_clean = [[Get_time_String(d) if isinstance(d, datetime.datetime) else d for d in r] for r in result_data]
-
-    return_val = [dict(zip(result_col,d)) for d in df_records]
+    dataframe_col = list(df_to_table.columns)
+    return_val = [dict(zip(dataframe_col,d)) for d in df_records]
+    #print(return_val)
 
     #end = datetime.datetime.now()
     #print("\nGetting Country PnL tool[Before Chart]: {}s\n".format((end - start).total_seconds()))
 
+    fig = []
     # For plotting.
     bar_color = df_to_table['FLOAT_REVENUE'].apply(lambda x: "green" if x >= 0 else 'red')
     fig = go.Figure(data=[
