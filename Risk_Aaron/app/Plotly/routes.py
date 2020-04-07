@@ -677,13 +677,13 @@ def BGI_Country_Float_ajax():
         #print("Getting from DB")
         df_yesterday_country_float = get_country_daily_pnl()
         if "DATE" in df_yesterday_country_float:  # We want to save it as a string.
-            print("DATE IN")
+            #print("DATE IN")
             df_yesterday_country_float['DATE'] = df_yesterday_country_float['DATE'].apply(
                 lambda x: x.strftime("%Y-%m-%d") if isinstance(x, datetime.date) else x)
         session["yesterday_pnl_by_country"] =  df_yesterday_country_float.to_dict()
 
 
-    print(session["yesterday_pnl_by_country"])
+    #print(session["yesterday_pnl_by_country"])
     # if "DATE" in df_yesterday_country_float:    # We want to save it as a string.
     #     print("DATE IN")
     #     df_yesterday_country_float['DATE'] = df_yesterday_country_float['DATE'].apply(lambda x: x.strftime("%Y-%m-%d") if isinstance(x, datetime.date) else x)
