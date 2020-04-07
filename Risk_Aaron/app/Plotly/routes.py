@@ -433,8 +433,39 @@ def liveserver_Nextday_start_timing(live1_server_difference=6, hour_from_2300 = 
     #print("server_Time:{}, start_time: {}".format(live1_server_timing, return_time))
     return return_time
 
+
+# Want to check if the PnL has been saved for the previous day.
+# Return False IF No PnL for previous Day
+def check_previous_day_pnl_in_DB():
+
+    return_val = False
+    live1_server_difference = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in\
+                                                                session else get_live1_time_difference()
+    # Use live 1 time, plus 5 hours,to offset any DST
+    live1_start_time = liveserver_Previousday_start_timing(live1_server_difference=live1_server_difference, hour_from_2300=5)
+
+    pnl_date = live1_start_time.strftime("%Y-%m-%d")
+
+    insert_into_table = text("SELECT count(*) FROM aaron.bgi_dailypnl_by_country_group WHERE DATE ='{}'".format(pnl_date))
+    raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
+    result_data = raw_result.fetchall()     # Return Result
+    if len(result_data) > 0:
+        if len(result_data[0])> 0:
+            if result_data[0][0] > 2:
+                return_val = True
+
+    return return_val
+
+
+
+
 # To save previous working day PnL to aaron.bgi_dailypnl_by_country_group
 def save_previous_day_PnL():
+
+    # If PnL Has been saved already. We don't need to save it again.
+    if check_previous_day_pnl_in_DB():
+        #print("PnL for previous day has been saved.")
+        return
 
     # Trying to reduce the over-heads as much as possible.
     live1_server_difference = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else get_live1_time_difference()
@@ -442,9 +473,11 @@ def save_previous_day_PnL():
     live1_start_time = liveserver_Previousday_start_timing(live1_server_difference=live1_server_difference, hour_from_2300=0)
     live5_start_time = liveserver_Previousday_start_timing(live1_server_difference=live1_server_difference,
                                                            hour_from_2300=1)
-    pnl_date = (live1_start_time + datetime.timedelta(hours=5)).strftime("%Y-%m-%d")    # Use live 1 time, plus 3 hours,to offset any DST
+    pnl_date = (live1_start_time + datetime.timedelta(hours=5)).strftime("%Y-%m-%d")    # Use live 1 time, plus 5 hours,to offset any DST
 
-    ServerTimeDiff_Query = "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
+    # Want to reduce the overheads
+    ServerTimeDiff_Query = "{}".format(session["live1_sgt_time_diff"]) if "live1_sgt_time_diff" in session \
+        else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
     live123_Time_String = "mt4_trades.close_time >= '{}' and mt4_trades.close_time < '{}'".format(live1_start_time, live1_start_time + datetime.timedelta(days=1))
     live5_Time_String = "mt4_trades.close_time >= '{}' and mt4_trades.close_time < '{}'".format(live5_start_time, live5_start_time + datetime.timedelta(days=1))
 
@@ -578,8 +611,11 @@ def get_country_daily_pnl():
     sql_query = text(sql_statement)
     raw_result = db.engine.execute(sql_query)  # Select From DB
     result_data = raw_result.fetchall()     # Return Result
-    result_col = raw_result.keys() # The column names
-    return pd.DataFrame(result_data, columns=result_col)
+    result_col = raw_result.keys()  # The column names
+
+    # If empty, we just want to return an empty data frame. So that the following merge will not cause any issues
+    return_df = pd.DataFrame(result_data, columns=result_col) if len(result_data) > 0 else pd.DataFrame()
+    return return_df
 
 
 
@@ -640,7 +676,20 @@ def BGI_Country_Float_ajax():
     else:       # If session timing is outdated, or needs to be updated.
         #print("Getting from DB")
         df_yesterday_country_float = get_country_daily_pnl()
+        if "DATE" in df_yesterday_country_float:  # We want to save it as a string.
+            print("DATE IN")
+            df_yesterday_country_float['DATE'] = df_yesterday_country_float['DATE'].apply(
+                lambda x: x.strftime("%Y-%m-%d") if isinstance(x, datetime.date) else x)
         session["yesterday_pnl_by_country"] =  df_yesterday_country_float.to_dict()
+
+
+    print(session["yesterday_pnl_by_country"])
+    # if "DATE" in df_yesterday_country_float:    # We want to save it as a string.
+    #     print("DATE IN")
+    #     df_yesterday_country_float['DATE'] = df_yesterday_country_float['DATE'].apply(lambda x: x.strftime("%Y-%m-%d") if isinstance(x, datetime.date) else x)
+
+        #print(df_yesterday_country_float['DATE'])
+        #print(df_yesterday_country_float['DATE'].apply(type))
 
     #print(dict(zip(["{}".format(c) for c in list(df_yesterday_country_float.columns) if c.find("COUNTRY") == -1], \
     #    ["YESTERDAY_{}".format(c) for c in list(df_yesterday_country_float.columns) if c.find("COUNTRY") == -1])))
@@ -649,7 +698,7 @@ def BGI_Country_Float_ajax():
     df_yesterday_country_float.rename(columns=dict(zip(["{}".format(c) for c in list(df_yesterday_country_float.columns) if c.find("COUNTRY") == -1], \
         ["YESTERDAY_{}".format(c) for c in list(df_yesterday_country_float.columns) if c.find("COUNTRY") == -1])), inplace=True)
 
-   # print(df_yesterday_country_float)
+    #print(df_yesterday_country_float)
     #df_yesterday_country_float.rename(columns={"REVENUE":"YESTERDAY_REVENUE"})
 
 
@@ -705,8 +754,10 @@ def BGI_Country_Float_ajax():
     df_to_table = df[df['DATETIME'] == df['DATETIME'].max()].drop_duplicates()
 
     # Join the DF by 'COUNTRY'
-    df_to_table = df_to_table.merge(df_yesterday_country_float, on="COUNTRY", how='left')
-    df_to_table.fillna("-", inplace=True) # Want to fill up all the empty ones with 0
+    if "COUNTRY" in list(df_yesterday_country_float.columns):
+        df_to_table = df_to_table.merge(df_yesterday_country_float, on="COUNTRY", how='left')
+
+    df_to_table.fillna(0, inplace=True) # Want to fill up all the empty ones with 0
 
     # Get Datetime into string
     df_to_table['DATETIME'] = df_to_table['DATETIME'].apply(lambda x: Get_time_String(x))
@@ -720,61 +771,78 @@ def BGI_Country_Float_ajax():
 
 
 
-
-
     # Adding words to the country name, to be flagged out by Javascript to color the cell
     df_to_table['COUNTRY'] = df_to_table.apply(lambda x: '{} (Client Side)'.format(x['COUNTRY']) if (
                 x["COUNTRY"].find("_A") > 0 or x["COUNTRY"].find('Dealing') >= 0) else x['COUNTRY'], axis=1)
 
-    # print("df_to_table")
-    # print(df_to_table2)
+    # Don't want the zeros. 0 is discarded.
+    datetime_pull =  [c for c in list(df_to_table['DATETIME'].unique()) if c != 0] if  "DATETIME" in df_to_table else  ["No Datetime in df."]
+
+    # if 'YESTERDAY_DATE' in df_to_table:  # Want to get the date as date, without the time!
+    #     print(df_to_table['YESTERDAY_DATE'].apply(type))
+    #     df_to_table['YESTERDAY_DATE'] = df_to_table['YESTERDAY_DATE'].apply(lambda x: x.strftime("%Y-%m-%d") if isinstance(x, datetime.date) else x)
+    #     print( df_to_table['YESTERDAY_DATE'])
+    #     print(df_to_table['YESTERDAY_DATE'].apply(type))
+
+    yesterday_datetime_pull = [c for c in list(df_to_table['YESTERDAY_DATE'].unique()) if c != 0] if "YESTERDAY_DATE" in df_to_table else ["No YESTERDAY_DATE in df."]
+    #print(datetime_pull)
+    #print(yesterday_datetime_pull)
+
+    # If we need to rename the columns. We need to change here as well! WE removed "DATETIME", "YESTERDAY_DATE",
+    show_col = ["COUNTRY", "FLOAT_VOLUME", "FLOAT_REVENUE" ,"CLOSED_VOL", "CLOSED_REVENUE", "YESTERDAY_REVENUE", "YESTERDAY_VOLUME"]
+    df_show_col = [d for d in show_col if d in df_to_table]
+    #print(df_show_col)
+
+
+    # Reduce the number of columns.
+    df_to_table = df_to_table[df_show_col]
 
     df_records = df_to_table.to_records(index=False)
-    # print("to record")
-    # print( df_records)
-
+    dataframe_col = list(df_to_table.columns)
     df_records = [list(a) for a in df_records]
 
     #print(emoji.emojize('Python is :china: :TW: :NZ: :HK:'))
 
     # Want to clean up the data
     result_clean = [[Get_time_String(d) if isinstance(d, datetime.datetime) else d for d in r] for r in result_data]
-    dataframe_col = list(df_to_table.columns)
+
     return_val = [dict(zip(dataframe_col,d)) for d in df_records]
     #print(return_val)
 
     #end = datetime.datetime.now()
     #print("\nGetting Country PnL tool[Before Chart]: {}s\n".format((end - start).total_seconds()))
 
-    fig = []
+    #fig = []
     # For plotting.
-    bar_color = df_to_table['FLOAT_REVENUE'].apply(lambda x: "green" if x >= 0 else 'red')
-    fig = go.Figure(data=[
-        go.Bar(name="Total Volume", y=df_to_table['FLOAT_REVENUE'], x=chart_Country, text=df_to_table['FLOAT_REVENUE'], textposition='outside',
-               cliponaxis=False, textfont=dict(size=14), marker_color=bar_color)
-    ])
+    # bar_color = df_to_table['FLOAT_REVENUE'].apply(lambda x: "green" if x >= 0 else 'red')
+    # fig = go.Figure(data=[
+    #     go.Bar(name="Total Volume", y=df_to_table['FLOAT_REVENUE'], x=chart_Country, text=df_to_table['FLOAT_REVENUE'], textposition='outside',
+    #            cliponaxis=False, textfont=dict(size=14), marker_color=bar_color)
+    # ])
 
-    fig.update_layout(
-        autosize=True,
-        margin=dict(pad=1),
-        yaxis=dict(
-            title_text="Floating Revenue",
-            ticks="outside", tickcolor='white', ticklen=15,
-            layer='below traces'
-        ),
-        yaxis_tickfont_size=14,
-        xaxis=dict(
-            title_text="Country"
-        ),
-        xaxis_tickfont_size=15,
-        title_text='Floating Revenue by Country',
-        titlefont=dict(size=28, family="'Montserrat', sans-serif"),
-        title_x=0.5
-    )
+    # fig.update_layout(
+    #     autosize=True,
+    #     margin=dict(pad=1),
+    #     yaxis=dict(
+    #         title_text="Floating Revenue",
+    #         ticks="outside", tickcolor='white', ticklen=15,
+    #         layer='below traces'
+    #     ),
+    #     yaxis_tickfont_size=14,
+    #     xaxis=dict(
+    #         title_text="Country"
+    #     ),
+    #     xaxis_tickfont_size=15,
+    #     title_text='Floating Revenue by Country',
+    #     titlefont=dict(size=28, family="'Montserrat', sans-serif"),
+    #     title_x=0.5
+    # )
 
     #end = datetime.datetime.now()
     #print("\nGetting Country PnL tool: {}s\n".format((end - start).total_seconds()))
-    return json.dumps([return_val, fig, 123], cls=plotly.utils.PlotlyJSONEncoder)
+
+    return json.dumps([return_val, ", ".join(datetime_pull), ", ".join(yesterday_datetime_pull)], cls=plotly.utils.PlotlyJSONEncoder)
+    #return json.dumps([return_val], cls=plotly.utils.PlotlyJSONEncoder)
 
 
 
