@@ -360,8 +360,9 @@ def BGI_Country_Float():
 
     description = Markup("<b>Floating PnL By Country.</b><br> Revenue = Profit + Swaps<br>" +
                          "_A Groups shows Client side PnL (<span style = 'background-color: #C7E679'>Client Side</span>).<br>" +
-                         "All others are BGI Side (Flipped)<br><br>" +
-                         "Data taken from aaron.bgi_float_history table.")
+                         "All others are BGI Side (Flipped, BGI Side)<br><br>" +
+                         "Data taken from aaron.bgi_float_history table.<br><br>" +
+                         "Tableau Data taken off same table. However, needs to click (<span style = 'background-color: yellow'>Refresh</span>) for data to be re-synced.")
 
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
@@ -670,7 +671,7 @@ def BGI_Country_Float_ajax():
     # Will check the timing
     if check_session_live1_timing() == True and "yesterday_pnl_by_country" in session:
         #print("From in memory")
-
+        # From in memory of session
         df_yesterday_country_float = pd.DataFrame.from_dict(session["yesterday_pnl_by_country"])
         #print(df_yesterday_country_float)
     else:       # If session timing is outdated, or needs to be updated.

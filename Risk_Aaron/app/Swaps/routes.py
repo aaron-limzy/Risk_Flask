@@ -84,8 +84,8 @@ def Bloomberg_Dividend():
 @login_required
 def Bloomberg_Dividend_ajax():     # Return the Bloomberg dividend table in Json.
 
-    start_date = get_working_day_date(datetime.date.today(), -1, 3)
-    end_date = get_working_day_date(datetime.date.today(), 1, 5)
+    start_date = get_working_day_date(datetime.date.today(), -3)
+    end_date = get_working_day_date(datetime.date.today(), 5)
 
     sql_query = text("Select * from aaron.bloomberg_dividend WHERE `date` >= '{}' and `date` <= '{}' AND WEEKDAY(`date`) BETWEEN 0 AND 4 ORDER BY date".format(start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d")))
 
@@ -109,7 +109,7 @@ def Bloomberg_Dividend_ajax():     # Return the Bloomberg dividend table in Json
         symbol_dividend_date = dict()
         symbol_dividend_date["Symbol"] = s
         for d in all_dates:
-            symbol_dividend_date[get_working_day_date(start_date=d, increment_decrement_val=-1, weekdays_count=1).strftime( \
+            symbol_dividend_date[get_working_day_date(start_date=d, weekdays_count=-1).strftime( \
                 "%Y-%m-%d")] =  find_dividend(result_dict, s, d)
         return_data.append(symbol_dividend_date)
     return json.dumps(return_data)

@@ -170,23 +170,26 @@
       //self.postMessage(responseData);
       Increment_counter = 1;  // Restart the Counter.
 
+      var below_table =  '<div class="left-text small-text bg-light p-1 m-1"> <table class="table table-sm"><tbody>';
+      below_table += '<tr><th scope="row">Refresh time</th><td>' + return_Time_String() + '</td></tr>';
 
-      var below_table =  '<div class="left-text small-text bg-light p-1 m-1">' + "Refresh time: " + return_Time_String() ;
 
       if (responseData.length >= 3) {
-        below_table += "<br>Country [Floating]  Refresh: " + responseData[1];
-        below_table += "<br>Country [Yesterday] Refresh: " + responseData[2];
+        below_table += '<tr><th scope="row">Country [Floating]  Refresh</th><td>' + responseData[1] + '</td></tr>';
+        below_table += '<tr><th scope="row">Country [Yesterday] Refresh</th><td>' + responseData[2] + '</td></tr>';
+        //below_table += "<br>Country [Floating]  Refresh: " + responseData[1];
+        //below_table += "<br>Country [Yesterday] Refresh: " + responseData[2];
       }
 
-      below_table += "</div>";
+      below_table += "</tbody> </table></div>";
 
-      console.log(responseData.length);
+      //console.log(responseData.length);
 
       // Post to main thread to update the DOM
       self.postMessage({Table1: Draw_Table(responseData[0], "{{ Table_name }}" , "table table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }} ) + below_table});
       self.postMessage({Table1_Raw : JSON.stringify(responseData)});
       // self.postMessage({plot1 : responseData[1]});
-      self.postMessage({To_Save : responseData[2]});
+      //self.postMessage({To_Save : responseData[2]});
 
 
 
@@ -556,17 +559,15 @@
 <!-- <div class="row">
   <div class="col-sm chart" id="plot1"> </div>
 </div> -->
-
-<script type='text/javascript' src='http://192.168.64.56/javascripts/api/viz_v1.js'></script>
+<script type='text/javascript' src='http://202.88.105.5/javascripts/api/viz_v1.js'></script>
 <div class='tableauPlaceholder' style='width: 1600px; height: 950px;'><object class='tableauViz' width='1600' height='950' style='display:none;'>
-    <param name='host_url' value='http%3A%2F%2F192.168.64.56%2F' />
+    <param name='host_url' value='http%3A%2F%2F202.88.105.5%2F' />
     <param name='embed_code_version' value='3' />
     <param name='site_root' value='' />
     <param name='name' value='Aaron-BGIFloating&#47;Dashboard1' />
     <param name='tabs' value='yes' />
     <param name='toolbar' value='yes' />
     <param name='showAppBanner' value='false' /></object></div>
-
 {% if table %}
 <br>
 <h2>Uploaded Swap Values</h2>

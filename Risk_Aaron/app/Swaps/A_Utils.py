@@ -7,7 +7,7 @@ def find_dividend(data, symbol, date):
     for d in data:
         if "mt4_symbol" in d and d["mt4_symbol"] == symbol and "date" in d and d["date"] == date:
             return_val = ""
-            if (get_working_day_date(start_date=date, increment_decrement_val=-1, weekdays_count=1) == datetime.date.today()):
+            if (get_working_day_date(start_date=date, weekdays_count=-1) == datetime.date.today()):
                 return_val += "Today"   # Want to append words, for javascript to know which to highlight
             if d["dividend"] == 0:
                 return "{}-".format(return_val)
