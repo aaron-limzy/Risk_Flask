@@ -357,7 +357,6 @@ def BGI_Country_Float():
     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
     # For Login in aaron.Risk_autocut and Credit_limit != 0
 
-
     description = Markup("<b>Floating PnL By Country.</b><br> Revenue = Profit + Swaps<br>" +
                          "_A Groups shows Client side PnL (<span style = 'background-color: #C7E679'>Client Side</span>).<br>" +
                          "All others are BGI Side (Flipped, BGI Side)<br><br>" +
@@ -482,7 +481,7 @@ def save_previous_day_PnL():
     live123_Time_String = "mt4_trades.close_time >= '{}' and mt4_trades.close_time < '{}'".format(live1_start_time, live1_start_time + datetime.timedelta(days=1))
     live5_Time_String = "mt4_trades.close_time >= '{}' and mt4_trades.close_time < '{}'".format(live5_start_time, live5_start_time + datetime.timedelta(days=1))
 
-    sql_statement = """SELECT COUNTRY, SYMBOL1 as SYMBOL, Closed_Vol,  -1*CLOSED_PROFIT AS REVENUE, DATE_SUB(now(),INTERVAL ({ServerTimeDiff_Query}) HOUR) as DATETIME FROM(
+    sql_statement = """SELECT COUNTRY, SYMBOL1 as SYMBOL, SUM(Closed_Vol),  -1*SUM(CLOSED_PROFIT AS REVENUE), DATE_SUB(now(),INTERVAL ({ServerTimeDiff_Query}) HOUR) as DATETIME FROM(
     (SELECT 'live1'AS LIVE,group_table.COUNTRY, 
     CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
 	SUM(CASE WHEN mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS Closed_Vol,
@@ -607,6 +606,32 @@ def get_country_daily_pnl():
             FROM aaron.`bgi_dailypnl_by_country_group`
             WHERE DATE = '{}'
             GROUP BY COUNTRY""".format(date_of_pnl)
+
+    # Want to get results for the above query, to get the Floating PnL
+    sql_query = text(sql_statement)
+    raw_result = db.engine.execute(sql_query)  # Select From DB
+    result_data = raw_result.fetchall()     # Return Result
+    result_col = raw_result.keys()  # The column names
+
+    # If empty, we just want to return an empty data frame. So that the following merge will not cause any issues
+    return_df = pd.DataFrame(result_data, columns=result_col) if len(result_data) > 0 else pd.DataFrame()
+    return return_df
+
+
+# Query SQL to return the previous day's PnL By Symbol
+def get_symbol_daily_pnl():
+
+    # Want to check what is the date that we should be retrieving.
+    # Trying to reduce the over-heads as much as possible.
+    live1_server_difference = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else get_live1_time_difference()
+
+    live1_start_time = liveserver_Previousday_start_timing(live1_server_difference=live1_server_difference, hour_from_2300=5)
+    date_of_pnl = "{}".format(live1_start_time.strftime("%Y-%m-%d"))
+
+    sql_statement = """SELECT SYMBOL, SUM(VOLUME) AS VOLUME, SUM(REVENUE) AS REVENUE, DATE
+            FROM aaron.`bgi_dailypnl_by_country_group`
+            WHERE DATE = '{}'
+            GROUP BY SYMBOL""".format(date_of_pnl)
 
     # Want to get results for the above query, to get the Floating PnL
     sql_query = text(sql_statement)
@@ -861,11 +886,14 @@ def BGI_Symbol_Float():
     # For Login in aaron.Risk_autocut and Credit_limit != 0
 
 
-    description = Markup("<b>Floating PnL By Symbol.</b><br> Revenue = Profit + Swaps<br>")
+    description = Markup("<b>Floating PnL By Symbol.</b><br> Revenue = Profit + Swaps<br>"+
+                         "Includes B book Groups. Includes HK as well.<br>"+
+                         "No _A and Dealing Groups.<br>" +
+                         "Yesterday Data saved in cookies.<br>")
 
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Country_Float.html", backgroud_Filename='css/World_Map.jpg', icon= "", Table_name="Symbol Float 🎶", \
+    return render_template("Webworker_Symbol_Float.html", backgroud_Filename='css/yellow-grey.jpg', icon= "", Table_name="Symbol Float 🎶", \
                            title=title, ajax_url=url_for('analysis.BGI_Symbol_Float_ajax', _external=True), header=header, setinterval=15,
                            description=description, replace_words=Markup(['(Client Side)']))
 
@@ -882,13 +910,15 @@ def BGI_Symbol_Float_ajax():
     if not cfh_fix_timing():
         return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
+    print(get_symbol_daily_pnl())
+
     server_time_diff_str = "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
 
     sql_statement = """SELECT SYMBOL, SUM(ABS(floating_volume)) AS VOLUME, SUM(net_floating_volume) AS NETVOL, 
                             SUM(floating_revenue) AS REVENUE, DATE_ADD(DATETIME,INTERVAL ({ServerTimeDiff_Query}) HOUR) AS DATETIME
             FROM aaron.bgi_float_history
             WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.bgi_float_history)
-            AND COUNTRY NOT LIKE "%_A" and COUNTRY NOT LIKE 'Dealing%'
+            AND COUNTRY NOT LIKE "%_A" and COUNTRY NOT LIKE 'Dealing%' and COUNTRY NOT LIKE 'HK%'
             GROUP BY SYMBOL
             ORDER BY REVENUE DESC
             """.format(ServerTimeDiff_Query=server_time_diff_str)

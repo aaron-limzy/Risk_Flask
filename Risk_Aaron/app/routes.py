@@ -2208,12 +2208,14 @@ def query_SQL_return_record(SQL_Query):
 
 # To get the User Data, for finance use. Used on download page.
 def Live_MT4_Users(live):    # To upload the Files, or post which trades to delete on MT5
-    raw_result = db.engine.execute('select login, `GROUP`, `NAME`, CURRENCY, REGDATE from live{}.mt4_users '.format(live))
+    raw_result = db.engine.execute('select login, `GROUP`, `NAME`, CURRENCY, REGDATE, `ENABLE`, `ENABLE_READONLY` from live{}.mt4_users '.format(live))
     # raw_result = db.engine.execute("select login, `NAME`, REGDATE, `GROUP`, CURRENCY from live3.mt4_users where login = 102")
     result_data = raw_result.fetchall()
     result_col = raw_result.keys()
     df_users = pd.DataFrame(data=result_data, columns=result_col)
     df_users["REGDATE"] = df_users["REGDATE"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
+    df_users["ENABLE"] = df_users["ENABLE"].apply(lambda x: "YES" if x==0 else "NO")
+    df_users["ENABLE_READONLY"] = df_users["ENABLE_READONLY"].apply(lambda x: "YES" if x == 0 else "NO")
     return excel.make_response_from_array(list([result_col]) + list(df_users.values), 'csv', file_name="Live{}_Users.csv".format(live))
 
 

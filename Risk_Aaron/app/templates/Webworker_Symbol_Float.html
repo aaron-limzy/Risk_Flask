@@ -1,0 +1,601 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+
+{% block styles %}
+{{ super() }}
+<style>
+  body { background: #eee url({{ url_for('static', filename=backgroud_Filename) }});
+  background-repeat: no-repeat;
+  background-size: cover;}
+</style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+
+<script src="{{ url_for('static', filename='js/sweetalert2.all.min.js') }}"></script>
+
+<script type="javascript/worker" id="my_first_worker">
+
+  var Increment_counter = 1;
+  var Refresh_Page_Counter = 0;  // When to refresh the page.
+
+  self.onmessage = function(event){
+    //console.log(event);
+    if (event.data == "BUTTON") {  // force the xmlhttprequest to fire off.
+      {% if setinterval %}
+      Refresh_Page_Counter =  {{ setinterval }};
+      Refresh_Page_seconds_call();
+      {% else %}
+      xhr_call();
+      {% endif %}
+    }else{
+
+
+      xhr_call();    // Do the XMLHTTPRequest
+
+      {% if setinterval %}
+        Refresh_Page_seconds_call();
+        setInterval(Refresh_Page_seconds_call,1000);
+      {% endif %}
+
+
+
+    }
+    //self.postMessage(return_Time_String());
+    //xhr_call();
+  };
+
+    var UTC_Timing_Fixed = -480;        // Used for UTC Time offset to SGT
+    var UTC_Offset_Change = 0;
+    Check_Time_Offset();
+    //Table1_Update();
+
+
+    Ajax_data = [];
+
+    // function call_main(){
+    //   self.postMessage(return_Time_String());
+    // }
+
+    {% if setinterval %}
+    var Refresh_Page_seconds = {{ setinterval }};  // When to refresh the page.
+
+    // setInterval(Refresh_Page_seconds_call, 1000);        //     Refresh the time.
+    //
+    // Call in every second, will check and update button.
+    function Refresh_Page_seconds_call(){
+        Refresh_Page_Counter = Refresh_Page_Counter + Increment_counter;
+        //console.log( return_Time_String());
+
+        // If the call is to be made.
+        if (Refresh_Page_Counter >=  {{ setinterval }}){
+          Increment_counter = 0;
+          Refresh_Page_Counter = 0;
+
+          //Table1_Update();
+          xhr_call();    // Do the XMLHTTP call.
+          self.postMessage({Refresh_count_down : "Running.."});
+
+        }else{
+          //console.log({Refresh_count_down : (Refresh_Page_seconds - Refresh_Page_Counter)});
+          if (Increment_counter > 0){
+          // For the count down on the button.
+            self.postMessage({Refresh_count_down : (Refresh_Page_seconds - Refresh_Page_Counter)});
+          }
+        }
+    }
+
+    {% endif %}
+
+
+    function Custom_Ajax_Error(xhr,status,error,error_card_id){
+
+        var current_html = $('#' + error_card_id).html();   // To display the error. First, we need to store the HTML as we want to append.
+        current_html += "------------------------- ↓" + return_Time_String() + " ↓------------------------<br>";
+        current_html += "Ajax Response: " + JSON.stringify(xhr) + "<br>";
+        current_html += "status: " + status + "<br>";
+        current_html += "Error: " + error['message'] + "<br>" + error['stack'] + "<br><br>";
+        $('#' + error_card_id ).html(current_html);  // Put it back into the Card.
+
+        // Want to Log the time as well here.
+        console.log(return_Time_String());
+        console.log(xhr);
+        console.log(xhr["responseText"]);
+        console.log(status);
+        console.log(error);
+    }
+
+    function Table1_Update() {
+
+
+
+        //clearInterval(SetInterval_LP_Details);
+        //$( "#btn_refresh_page" ).removeClass( "btn-warning" );
+        //$( "#btn_refresh_page" ).addClass( "btn-info" );
+
+        var Post_Data = { };
+        xhr_call();
+        //Custom_Ajax_Call(Post_Data, "{{ ajax_url }}", "Table1", "Table1_Raw", "Table1_Raw_Error", '{{ Table_name }}', ["Update Slow"] );
+        // fetch("{{ ajax_url }}")
+        // .then(res => res.json())
+        // .then(posts => self.postMessage(posts))
+    }
+
+
+  function sent_httprequest(method, url, data){
+    const promise = new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.timeout = 90*1000;         // time in milliseconds
+      //xhr.responseType = 'json';    // We expect a json back.
+      if (data){
+        xhr.setRequestHeader('Content-Type','application/json');
+      }
+      xhr.open(method, url, true);
+      xhr.onload = () => {
+        const data = xhr.response;
+        json_return_data = check_json(xhr.response);
+        if (json_return_data != false) {
+          resolve(json_return_data);  // Return the data in array/dict format.
+        }else{
+          reject(xhr.response);
+        }
+      };
+
+      xhr.onerror = () =>{
+        console.log('xmlHTTP Error');
+        console.error(xhr);
+        reject(xhr.response);
+
+
+      };
+
+      xhr.ontimeout = function (e) {
+        reject("Timeout : " + return_Time_String());
+        console.log("Timeout: " + return_Time_String());
+      // XMLHttpRequest timed out. Do something here.
+      };
+    xhr.send();
+    });
+    return promise;
+
+  }
+
+  // The actual function to do the XHR call.
+  function xhr_call(){
+    sent_httprequest("POST", "{{ ajax_url }}").then(responseData => {
+      //self.postMessage(responseData);
+      Increment_counter = 1;  // Restart the Counter.
+
+      var below_table =  '<div class="left-text small-text bg-light p-1 m-1"> <table class="table table-sm"><tbody>';
+      below_table += '<tr><th scope="row">Refresh time</th><td>' + return_Time_String() + '</td></tr>';
+
+
+      if (responseData.length >= 3) {
+        below_table += '<tr><th scope="row">Country [Floating]  Refresh</th><td>' + responseData[1] + '</td></tr>';
+        below_table += '<tr><th scope="row">Country [Yesterday] Refresh</th><td>' + responseData[2] + '</td></tr>';
+        //below_table += "<br>Country [Floating]  Refresh: " + responseData[1];
+        //below_table += "<br>Country [Yesterday] Refresh: " + responseData[2];
+      }
+
+      below_table += "</tbody> </table></div>";
+
+      //console.log(responseData.length);
+
+      // Post to main thread to update the DOM
+      self.postMessage({Table1: Draw_Table(responseData[0], "{{ Table_name }}" , "table table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }} ) + below_table});
+      self.postMessage({Table1_Raw : JSON.stringify(responseData)});
+      // self.postMessage({plot1 : responseData[1]});
+      //self.postMessage({To_Save : responseData[2]});
+
+
+
+
+
+
+    }).catch(err => {
+      //self.postMessage(err);
+      Increment_counter = 1;  // Restart the counter.
+
+      //TODO: Try to catch the error.
+      self.postMessage({Table1_Error: "An Error Occured: " + return_Time_String(), consolidate: true});
+      console.log(err);
+
+    });
+  }
+
+
+    // Try Catch Block to catch if string can be parsed as json.
+  function check_json(str){
+        try {
+           reurn_val = JSON.parse(str);
+        } catch (e) {
+          return false;
+        }
+        return reurn_val;
+    }
+
+
+
+
+
+    function Draw_Vertical_Table(table_Data, Table_Caption, Table_Class, Replace_words) {
+        var sString = '';
+
+        //------------- Table Header -----------------------------
+        sString += '<table class="' + Table_Class + '">';
+        sString += '<caption>' + Table_Caption + '</caption>';
+        sString += '<tr>';
+        //------------- Table Data -----------------------------
+
+        for (var x in table_Data) {
+            //For each row, For each data
+
+            sString += '<tr>';
+
+            //for(var xx in table_Data[x]){	//
+
+            var string_buffer = "";
+            string_buffer += table_Data[x];
+
+            sString += '<td><b>' + x + '</b></td>';
+
+            if (string_buffer.search("ERROR") >= 0) {
+                // If there is an error, change the color of the cell
+                sString += '<td bgColor="#ff8080">';
+                //sString+= '<td>';
+            } else {
+                sString += '<td>';
+            }
+
+            if (table_Data[x]instanceof Array == true || table_Data[x]instanceof Object == true) {
+                //sString += "Is Array..." ;
+
+                sString += Draw_Vertical_Table(table_Data[x], "", "table_orange", Replace_words);
+            } else {
+                sString += table_Data[x];
+            }
+
+            sString += "</td>";
+
+            sString += '</tr>';
+        }
+        sString += '</table>';
+        return sString;
+    }
+
+
+
+    // Draws a horizontal table.
+    function Draw_Table(table_Data, Table_Caption, Table_Class, Alert_Words, Replace_words) {
+        var sString = '';
+        //------------- Table Header -----------------------------
+        sString += '<table class="' + Table_Class + '">';
+        sString += '<caption>' + Table_Caption + '</caption>';
+        sString += '<tr>';
+
+        for (var x in table_Data) {
+            //For table header.
+            for (var xx in table_Data[x]) {
+                sString += '<th>';
+                sString += xx;
+                sString += '</th>';
+            }
+            break;
+        }
+
+        //variable instanceof Array
+        sString += '</tr>';
+
+        //------------- Table Data -----------------------------
+
+        for (var x in table_Data) {
+            //For each row
+
+            sString += '<tr>';
+
+            for (var xx in table_Data[x]) {
+                //For each data
+                var string_buffer = "";
+                string_buffer += table_Data[x][xx];
+
+
+
+                var Alert_Word_found = 0;
+                for (var aw in Alert_Words) {	// Loop thru the list of alert words
+                    // Loop thru the array
+                    if (string_buffer.search(Alert_Words[aw]) >= 0) {
+                        Alert_Word_found = 1;
+                        break;
+                    }
+                }
+
+                var Relace_Word_found = 0;
+                for (var rw in Replace_words) {	// Loop thru the list of Replace words
+                    // Loop thru the array
+                    if (string_buffer.search(Replace_words[aw]) >= 0) {
+                        Relace_Word_found = 1;
+                        string_buffer = table_Data[x][xx].replace(Replace_words[aw], "")
+                        break;
+                    }
+                }
+
+
+                Table_Column = xx;	// Get the Column Name
+                if ((xx.search("Discrepancy") >= 0) && (table_Data[x][xx] != 0)){	// If its the discrepancy Column/Row, we want to Flag out any that isn't 0.
+                    Alert_Word_found = 1;
+                }
+
+                 if ((xx.search("Mismatch_count") >= 0) && (table_Data[x][xx] >= 10)){	// If its the Mismatch_count Column/Row, we want to Flag out any larger then 10
+                    Alert_Word_found = 1;
+                }
+
+
+                if (Alert_Word_found == 1) {
+                    // If there is an error, change the color of the cell
+                    sString += '<td class="alert_cell">';
+                    //sString+= '<td>';
+                } else if (Relace_Word_found == 1) {
+                    //If replace words was found, we want to give it a class
+                    sString += '<td class="table_highlight">';
+                    //sString+= '<td>';
+                } else {
+                    sString += '<td>';
+                }
+
+                if (table_Data[x][xx]instanceof Array == true || table_Data[x][xx]instanceof Object == true) {
+                    //sString += "Is Array..." ;
+
+                    sString += Draw_Vertical_Table(table_Data[x][xx], "", "table_orange ", Replace_words);
+                } else  if (typeof(table_Data[x][xx]) === 'number'){  // If it's a number. we want to write it with a comma for easy reading.
+
+                  if (table_Data[x][xx] < 0){
+                    sString += "<font color='red'>" +  numberWithCommas(table_Data[x][xx]) + "</font>";
+                  }else{
+                    sString += numberWithCommas(table_Data[x][xx]);
+                  }
+                }else
+                {
+
+                    sString += string_buffer;
+                }
+                sString += "</td>";
+
+            }
+            sString += '</tr>';
+        }
+        sString += '</table>';
+        return sString;
+      }
+
+
+    function numberWithCommas(x) {
+      return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+    }
+
+    function Check_Time_Offset(){
+        var d = new Date();
+        var n = d.getTimezoneOffset();
+        UTC_Offset_Change = (-1 * UTC_Timing_Fixed) + n;
+
+        var e = new Date(d.getTime() + UTC_Offset_Change*60*1000);
+        var d_day = d.getDay();            // 0 - 6
+        var e_day = e.getDay();            // 0 - 6
+        //alert("d_day = " + d_day + "  e_day = " + e_day);
+    }
+
+
+    function return_Time_String(){
+
+        var e = new Date();
+        var timeSone_OffSet = e.getTimezoneOffset();
+        UTC_Offset_Change = (-1 * UTC_Timing_Fixed) + timeSone_OffSet;
+        var d = new Date(e.getTime() + UTC_Offset_Change*60*1000);        // Get SGT
+
+
+        var day = d.getDay();            // 0 - 6
+
+        var month = d.getMonth();        // 0-11
+        var year = d.getFullYear();     // yyyy
+
+
+        var hr = pad(d.getHours(),2);            // 0-23
+        var min = pad(d.getMinutes(),2);        // 0-59
+        var sec = pad(d.getSeconds(),2);         // 0-59
+        var date = pad(d.getDate(),2);
+
+        var day_name = ["Sun" ,"Mon", "Tue", "Wed", "Thu", "Fri", "Sat" ];
+        var mon_name = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "July", "Aug", "Sep", "Oct", "Nov","Dec"];
+
+        var Date_String = "";
+        Date_String = day_name[day] + " " + year + "-" +  mon_name[month] + "-" + date + " " + hr+":"+min+":"+sec;
+        return Date_String;
+    }
+
+    function pad(number, length) {
+
+        var str = '' + number;
+        while (str.length < length) {
+            str = '0' + str;
+        }
+        return str;
+    }
+</script>
+
+
+
+<script>
+  $(document).ready(function(){
+      var UTC_Timing_Fixed = -480;
+      var UTC_Offset_Change = 0;
+      //setInterval(Refresh_H1, 500);        //     Refresh the time.
+
+      var Show_Mt4_Zero = 0;                  // Button Controlled
+      var play_Sound = 0;                     // Button Controlled. Will be set once the DOM loads.
+
+      var send_email_flag = 1;                 // Button Controlled
+      var Refresh_Page_Disable = 2;           // To count when the refresh page button can be used again.
+
+      var MT4_LP_Position_save = {};       // Used to save the past position
+      var lp_attention_email_count = 0;       // LP Details Send email Count
+      var lp_mc_email_count = 0;       // LP Details Send email Count
+      var lp_time_issue_count = 0;       // LP Details Send email Count
+      var lp_so_email_count = 0;       // LP Details Send email Count
+
+      var Page_Run_Count=0;           // A running counter.
+
+      var UTC_Timing_Fixed = -480;        // Used for UTC Time offset to SGT
+      var UTC_Offset_Change = 0;
+      var Increment_counter = 1;
+
+      var Refresh_Page_Counter = 0;  // When to refresh the page.
+
+      //var SetInterval_MT4_LP;
+      //var SetInterval_LP_Details;
+
+      var workerJS =  $('#my_first_worker').text();
+      //var workerJS =  document.getElementById("myworker_Aaron").innerText;
+      //console.log(workerJS);
+      var blob = new Blob([workerJS]);
+      var blobURL = URL.createObjectURL(blob);
+      //console.log(blobURL);
+
+      var myWorker = new Worker(blobURL);
+      myWorker.onmessage = function(e){
+        if (e.data instanceof Object){  // If it is an object, we loop thru and add it to the correct container/Div
+          ret_obj = e.data;
+          var consolidate = false;
+          if ('consolidate' in ret_obj){  // If we want to consolidate all the errors.
+            consolidate = true;
+          }
+          for (let key in ret_obj){
+
+           //if(e.data.hasOwnProperty("consolidate")) {
+
+
+          //}
+             var current_html = "";
+             if (consolidate == true){  // If we need to consolidate the items.
+                var current_html = $('#' + key).html();   // To display the error. First, we need to store the HTML as we want to append.
+                current_html += "<br>-------------------------------------------------<br>";
+                //current_html += "Ajax Response: " + JSON.stringify(xhr) + "<br>";
+                //current_html += "status: " + status + "<br>";
+                //current_html += "Error: " + error['message'] + "<br>" + error['stack'] + "<br>";
+                //$('#' + error_card_id ).html(current_html);  // Put it back into the Card.
+             }
+             //console.log(`${key} : ${e.data[key]}`);
+
+            if (key.search("plot") == -1){  // If there's no need to plot.
+              $('#' + key).html(current_html + ret_obj[key]);
+            }else{
+              console.log(ret_obj[key]);
+              Plotly.newPlot(key, ret_obj[key]);
+            }
+
+
+          }
+            //}
+          //}
+        }else{
+          console.log(e.data);
+        }
+      };
+
+    // Could be anything. We just want to post something out.
+    myWorker.postMessage("START");
+
+
+    $('#btn_refresh_page').click(function() {
+      myWorker.postMessage("BUTTON");  // Send a click to the web worker
+    });
+
+  });
+
+
+</script>
+{% endblock %}
+
+
+{% block app_content %}
+<h1 class="right-text">
+  {% if header %}
+  {{ header }}
+  {% else %}
+  Risk
+  {% endif %}
+  <br>
+  <span id="page_time"></span>
+
+</h1>
+
+<div class="row">
+  <div class="col-lg-12 col-md-12 col-sm-12" id="Table1">
+    Genrating Data. Please Wait..
+  </div>
+
+  <br>
+  {% if description %}
+  <br><br>
+  <span class="border border-secondary rounded bg-light p-4">{{ description }}</span>
+  <br>
+  {% endif %}
+
+</div>
+{% if form %}
+<div class="container general_form">
+  <div class="row">
+    <div class="col">
+      <hr class="col-xs-12">
+      {{ wtf.quick_form(form, button_map={'submit': 'outline-secondary btn-lg btn-light'}) }}
+    </div>
+  </div>
+</div>
+
+{% endif %}
+
+<!-- <div class="row">
+  <div class="col-sm chart" id="plot1"> </div>
+</div> -->
+
+{% if table %}
+<br>
+<h2>Uploaded Swap Values</h2>
+<div class="container">
+
+{{ table  }}
+
+</div>
+<br>
+{% endif %}
+
+  <br>
+<p>
+  <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#Table1_Raw_Div" aria-expanded="false">
+    Show Table
+  </button>
+
+</p>
+
+<div class="collapse" id="Table1_Raw_Div">
+  <div class="card card-body">
+    <b>Table 1 Raw JSON:</b> <br>
+    <span id="Table1_Raw"></span>
+  </div>
+  <div class="card card-body">
+    <b>MT4/LP Position Ajax Error:</b> <br>
+    <span id="Table1_Error"></span>
+  </div>
+</div>
+
+{% endblock %}
+
+
+{% block navbar_button %}
+{% if setinterval %}
+<button class="btn btn-warning navbar-btn nav-button" id="btn_refresh_page">Refresh<br>Page: <span id="Refresh_count_down"></span> </button>
+{% endif %}
+
+{% endblock %}
