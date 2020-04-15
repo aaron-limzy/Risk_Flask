@@ -692,11 +692,13 @@ def BGI_Country_Float_ajax():
     if not cfh_fix_timing():
         return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
-    check_session_live1_timing()
+    #check_session_live1_timing()
     # Will check the timing
     if check_session_live1_timing() == True and "yesterday_pnl_by_country" in session:
         #print("From in memory")
         # From in memory of session
+        print("live1_sgt_time_update ' {}".format(session["live1_sgt_time_update"]))
+        
         df_yesterday_country_float = pd.DataFrame.from_dict(session["yesterday_pnl_by_country"])
         #print(df_yesterday_country_float)
     else:       # If session timing is outdated, or needs to be updated.
