@@ -1789,7 +1789,7 @@ def Monitor_Risk_Tools_ajax():
                         'ChangeGroup_NoOpenTrades'  : noopentrades_changegroup_ajax,
                         "Equity_protect"            : Equity_protect_Cut_ajax,
                         "Risk_Auto_Cut"             : risk_auto_cut_ajax,
-                        "BGI_Float_History"         : save_BGI_float_Ajax
+                        "bgi_float_history_save"         : save_BGI_float_Ajax
                         }
 
     #all_function_return = [d() for k,d in function_to_call.items()]
