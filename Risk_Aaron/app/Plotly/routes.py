@@ -366,7 +366,7 @@ def BGI_Country_Float():
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Country_Float.html", backgroud_Filename='css/World_Map.jpg', icon= "css/Globe.png", Table_name="Country Float 🌎", \
-                           title=title, ajax_url=url_for('analysis.BGI_Country_Float_ajax', _external=True), header=header, setinterval=15,
+                           title=title, ajax_url=url_for('analysis.BGI_Country_Float_ajax', _external=True), ajax_clear_cookie_url=url_for("analysis.Clear_session_ajax", _external=True), header=header, setinterval=15,
                            description=description, replace_words=Markup(['(Client Side)']))
 
 
@@ -651,8 +651,11 @@ def get_symbol_daily_pnl():
 def Clear_session_ajax():
     list_of_pop = ["live1_sgt_time_diff", "live1_sgt_time_update", "yesterday_pnl_by_country"]
     for u in list_of_pop:
-        session.pop(u, None)
+        if u in session:
+            session.pop(u, None)
     return "Session Cleared: {}".format(", ".join(list_of_pop))
+
+
 
 
 
@@ -669,7 +672,9 @@ def check_session_live1_timing():
         return_val = True
         #print("From session: {}. Next update time: {}".format(session['live1_sgt_time_diff'], session['live1_sgt_time_update']))
     else:
-        print(session)
+        #print(session)
+        Clear_session_ajax()    # Clear all cookies. And reload everything again.
+
         #print("Getting live1 time diff from SQL.")
         session['live1_sgt_time_diff'] = get_live1_time_difference()
 
@@ -698,11 +703,12 @@ def BGI_Country_Float_ajax():
         #print("From in memory")
         # From in memory of session
         print("live1_sgt_time_update ' {}".format(session["live1_sgt_time_update"]))
-        
+
         df_yesterday_country_float = pd.DataFrame.from_dict(session["yesterday_pnl_by_country"])
         #print(df_yesterday_country_float)
     else:       # If session timing is outdated, or needs to be updated.
         #print("Getting from DB")
+
         df_yesterday_country_float = get_country_daily_pnl()
         if "DATE" in df_yesterday_country_float:  # We want to save it as a string.
             #print("DATE IN")

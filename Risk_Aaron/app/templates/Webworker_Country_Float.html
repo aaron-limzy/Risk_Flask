@@ -32,8 +32,11 @@
       {% else %}
       xhr_call();
       {% endif %}
-    }else{
+    }else if (event.data == "CLEAR_COOKIES") {  // Want to clear the cookies.
+      sent_httprequest("POST", "{{ ajax_clear_cookie_url }}").then(responseData => {});
+      }
 
+    else {
 
       xhr_call();    // Do the XMLHTTPRequest
 
@@ -512,6 +515,12 @@
       myWorker.postMessage("BUTTON");  // Send a click to the web worker
     });
 
+    $('#Clear_Cookie').click(function() {
+      myWorker.postMessage("CLEAR_COOKIES");  // Send a click to the web worker
+    });
+
+
+
   });
 
 
@@ -584,6 +593,9 @@
   <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#Table1_Raw_Div" aria-expanded="false">
     Show Table
   </button>
+
+  <button class="btn btn-secondary" id="Clear_Cookie">Clear Cookies </button>
+
 
 </p>
 
