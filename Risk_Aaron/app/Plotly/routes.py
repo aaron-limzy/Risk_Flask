@@ -684,7 +684,7 @@ def check_session_live1_timing():
         #print(session.keys())
         #print("From session: {}. Next update time: {}".format(session['live1_sgt_time_diff'], session['live1_sgt_time_update']))
     else:
-        #print(session)
+        print(session)
         Clear_session_ajax()    # Clear all cookies. And reload everything again.
 
         #print("Getting live1 time diff from SQL.")
