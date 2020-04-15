@@ -630,7 +630,7 @@ def get_symbol_daily_pnl():
 
     sql_statement = """SELECT SYMBOL, SUM(VOLUME) AS VOLUME, SUM(REVENUE) AS REVENUE, DATE
             FROM aaron.`bgi_dailypnl_by_country_group`
-            WHERE DATE = '{}'
+            WHERE DATE = '{}' AND COUNTRY in (SELECT COUNTRY from live5.group_table where BOOK = "B")
             GROUP BY SYMBOL""".format(date_of_pnl)
 
     # Want to get results for the above query, to get the Floating PnL
@@ -645,17 +645,28 @@ def get_symbol_daily_pnl():
 
 
 
+# Want to delete from the table where min is not 1.
+# TODO: will need to improve this when MY gives the code
+def delete_from_floating_table():
+    print("Trying to delete from aaron.`bgi_float_history`")
+    insert_into_table = text("DELETE FROM aaron.`bgi_float_history` WHERE MINUTE(datetime) <> 1")
+    raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
+
 # Clear session data.
-# TODO: will need to somehow call this...
+# Called when refreshing cookies.
 @analysis.route('/Clear_session_ajax', methods=['GET', 'POST'])
 def Clear_session_ajax():
-    list_of_pop = ["live1_sgt_time_diff", "live1_sgt_time_update", "yesterday_pnl_by_country"]
-    for u in list_of_pop:
-        if u in session:
+    #list_of_pop = ["live1_sgt_time_diff", "live1_sgt_time_update", "yesterday_pnl_by_country", "yesterday_pnl_by_symbol"]
+
+    delete_from_floating_table()
+
+    list_of_pop = []
+    # We want to clear everything, other then the system generated ones.
+    for u in list(session.keys()):
+        if u not in  ['_fresh', '_id', 'csrf_token']:
             session.pop(u, None)
+            list_of_pop.append(u)
     return "Session Cleared: {}".format(", ".join(list_of_pop))
-
-
 
 
 
@@ -670,6 +681,7 @@ def check_session_live1_timing():
         "live1_sgt_time_update" in session and  \
         datetime.datetime.now() < session["live1_sgt_time_update"] :
         return_val = True
+        #print(session.keys())
         #print("From session: {}. Next update time: {}".format(session['live1_sgt_time_diff'], session['live1_sgt_time_update']))
     else:
         #print(session)
@@ -702,7 +714,7 @@ def BGI_Country_Float_ajax():
     if check_session_live1_timing() == True and "yesterday_pnl_by_country" in session:
         #print("From in memory")
         # From in memory of session
-        print("live1_sgt_time_update ' {}".format(session["live1_sgt_time_update"]))
+        #print("live1_sgt_time_update ' {}".format(session["live1_sgt_time_update"]))
 
         df_yesterday_country_float = pd.DataFrame.from_dict(session["yesterday_pnl_by_country"])
         #print(df_yesterday_country_float)
@@ -896,12 +908,14 @@ def BGI_Symbol_Float():
 
     description = Markup("<b>Floating PnL By Symbol.</b><br> Revenue = Profit + Swaps<br>"+
                          "Includes B book Groups. Includes HK as well.<br>"+
-                         "No _A and Dealing Groups.<br>" +
+                         'Using Live5.group_table where book = "B"<br>' +
+                         'Values are all on <b>BGI Side</b>. <br>' +
+                         'Sort by absolute net volume.<br>'+
                          "Yesterday Data saved in cookies.<br>")
 
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Symbol_Float.html", backgroud_Filename='css/yellow-grey.jpg', icon= "", Table_name="Symbol Float 🎶", \
+    return render_template("Webworker_Symbol_Float.html", backgroud_Filename='css/yellow-grey.jpg', icon= "", Table_name="Symbol Float (B 📘)", \
                            title=title, ajax_url=url_for('analysis.BGI_Symbol_Float_ajax', _external=True), header=header, setinterval=15,
                            description=description, replace_words=Markup(['(Client Side)']))
 
@@ -916,17 +930,53 @@ def BGI_Symbol_Float_ajax():
     # TODO: Only want to save during trading hours.
     # TODO: Want to write a custom function, and not rely on using CFH timing.
     if not cfh_fix_timing():
-        return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
+        return json.dumps([[{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}]])
 
-    print(get_symbol_daily_pnl())
+
+
+    if check_session_live1_timing() == True and "yesterday_pnl_by_symbol" in session:
+        # From "in memory" of session
+
+        df_yesterday_symbol_pnl = pd.DataFrame.from_dict(session["yesterday_pnl_by_symbol"])
+    else:       # If session timing is outdated, or needs to be updated.
+        print("Getting from DB")
+
+        df_yesterday_symbol_pnl = get_symbol_daily_pnl()
+        if "DATE" in df_yesterday_symbol_pnl:  # We want to save it as a string.
+            #print("DATE IN")
+            df_yesterday_symbol_pnl['DATE'] = df_yesterday_symbol_pnl['DATE'].apply(
+                lambda x: x.strftime("%Y-%m-%d") if isinstance(x, datetime.date) else x)
+        session["yesterday_pnl_by_symbol"] =  df_yesterday_symbol_pnl.to_dict()
+
+    # Want to get the Unique date for the "Yesterday" date.
+    # Want to know the date of the symbol "yesterday" details.
+    yesterday_datetime_pull = [c for c in list(df_yesterday_symbol_pnl['DATE'].unique()) if
+                               c != 0] if "DATE" in df_yesterday_symbol_pnl else ["No YESTERDAY_DATE in df."]
+
+    # We already know the date. No need to carry on with this data.
+    if "DATE" in df_yesterday_symbol_pnl:
+        df_yesterday_symbol_pnl.pop('DATE')
+
+    # Want to change the names of the columns. But we need to preserve the COUNTRY name since we use that to merge.
+    df_yesterday_symbol_pnl.rename(columns=dict(zip(["{}".format(c) for c in list(df_yesterday_symbol_pnl.columns) if c.find("SYMBOL") == -1], \
+        ["YESTERDAY_{}".format(c) for c in list(df_yesterday_symbol_pnl.columns) if c.find("SYMBOL") == -1])), inplace=True)
+
+
+
+
+    #print(df_yesterday_symbol_pnl)
+
 
     server_time_diff_str = "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
 
-    sql_statement = """SELECT SYMBOL, SUM(ABS(floating_volume)) AS VOLUME, SUM(net_floating_volume) AS NETVOL, 
-                            SUM(floating_revenue) AS REVENUE, DATE_ADD(DATETIME,INTERVAL ({ServerTimeDiff_Query}) HOUR) AS DATETIME
+    sql_statement = """SELECT SYMBOL, SUM(ABS(floating_volume)) AS VOLUME, -1 * SUM(net_floating_volume) AS NETVOL, 
+                            SUM(floating_revenue) AS REVENUE, 
+                            SUM(closed_vol_today) as "TODAY_VOL",
+                            SUM(closed_revenue_today) as "TODAY_REVENUE",                            
+                            DATE_ADD(DATETIME,INTERVAL ({ServerTimeDiff_Query}) HOUR) AS DATETIME
             FROM aaron.bgi_float_history
             WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.bgi_float_history)
-            AND COUNTRY NOT LIKE "%_A" and COUNTRY NOT LIKE 'Dealing%' and COUNTRY NOT LIKE 'HK%'
+            AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "B")
             GROUP BY SYMBOL
             ORDER BY REVENUE DESC
             """.format(ServerTimeDiff_Query=server_time_diff_str)
@@ -939,8 +989,8 @@ def BGI_Symbol_Float_ajax():
 
 
 
-    end = datetime.datetime.now()
-    print("\nGetting SYMBOL PnL tool[After Query]: {}s\n".format((end - start).total_seconds()))
+    #end = datetime.datetime.now()
+    #print("\nGetting SYMBOL PnL tool[After Query]: {}s\n".format((end - start).total_seconds()))
 
     df = pd.DataFrame(result_data, columns=result_col)
 
@@ -950,21 +1000,42 @@ def BGI_Symbol_Float_ajax():
     # Get Datetime into string
     df_to_table['DATETIME'] = df_to_table['DATETIME'].apply(lambda x: Get_time_String(x))
 
-    # Sort by Revenue
-    df_to_table.sort_values(by=["REVENUE"], inplace=True, ascending=False)
 
-    # Want to show on the chart. Do not need additional info as text it would be too long.
+    # yesterday_datetime_pull = [c for c in list(df_yesterday_symbol_pnl['DATE'].unique()) if
+    #                            c != 0] if "DATE" in df_yesterday_symbol_pnl else ["No YESTERDAY_DATE in df."]
+    #
 
 
-    df_records = df_to_table.to_records(index=False)
+    datetime_pull =  [c for c in list(df_to_table['DATETIME'].unique()) if c != 0] if  "DATETIME" in df_to_table else  ["No Datetime in df."]
+
+
+
+    # Sort by abs net volume
+    df_to_table["ABS_NET"] = df_to_table["NETVOL"].apply(lambda x: abs(x))
+    df_to_table.sort_values(by=["ABS_NET"], inplace=True, ascending=False)
+    df_to_table.pop('ABS_NET')
+
+
+    # We already know the date. No need to carry on with this data.
+    if "DATETIME" in df_to_table:
+        df_to_table.pop('DATETIME')
+
+    # Go ahead to merge the tables.
+    if "SYMBOL" in df_to_table and "SYMBOL" in df_yesterday_symbol_pnl:
+        df_to_table = df_to_table.merge(df_yesterday_symbol_pnl, on="SYMBOL", how='left')
+        df_to_table.fillna(0, inplace=True)  # Want to fill up all the empty ones with 0
+
+
+
+
+    # Need to check if the columns are in the df.
+    # taking this chance to re-arrange them as well.
+    col_of_df = [c for c in ["SYMBOL", "NETVOL", "VOLUME", "REVENUE", "TODAY_VOL", "TODAY_REVENUE", "YESTERDAY_VOLUME", "YESTERDAY_REVENUE"] if c in  list(df_to_table.columns)]
+
+    df_records = df_to_table[col_of_df].to_records(index=False)
     df_records = [list(a) for a in df_records]
 
-    #print(emoji.emojize('Python is :china: :TW: :NZ: :HK:'))
-
-    # Want to clean up the data
-    result_clean = [[Get_time_String(d) if isinstance(d, datetime.datetime) else d for d in r] for r in result_data]
-
-    return_val = [dict(zip(result_col,d)) for d in df_records]
+    return_val = [dict(zip(col_of_df,d)) for d in df_records]
 
     #end = datetime.datetime.now()
     #print("\nGetting Country PnL tool[Before Chart]: {}s\n".format((end - start).total_seconds()))
@@ -996,11 +1067,9 @@ def BGI_Symbol_Float_ajax():
     #     title_x=0.5
     # )
 
-    end = datetime.datetime.now()
-    print("\nGetting SYMBOL PnL tool: {}s\n".format((end - start).total_seconds()))
-    return json.dumps([return_val, fig, 123], cls=plotly.utils.PlotlyJSONEncoder)
-
-
+    #end = datetime.datetime.now()
+    #print("\nGetting SYMBOL PnL tool: {}s\n".format((end - start).total_seconds()))
+    return json.dumps([return_val, ", ".join(datetime_pull), ", ".join(yesterday_datetime_pull)], cls=plotly.utils.PlotlyJSONEncoder)
 
 
 @analysis.route('/analysis/cn_live_vol_ajax')
