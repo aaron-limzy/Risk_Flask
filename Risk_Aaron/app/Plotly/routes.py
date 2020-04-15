@@ -129,7 +129,7 @@ def save_BGI_float():
 
 
     description = Markup("<b>Saving BGI Float Data.</b><br>"+
-                         "Saving it into aaron.BGI_Float_History<br>" +
+                         "Saving it into aaron.BGI_Float_History_Save<br>" +
                          "Save it by Country, by Symbol.<br>" +
                          "Country Float and Symbol Float will be using this page.<br>"+
                          "Table time is in Server [Live 1] Timing.<br>" +
@@ -142,7 +142,7 @@ def save_BGI_float():
                            description=description, replace_words=Markup(["Today"]))
 
 
-# Insert into aaron.BGI_Float_History
+# Insert into aaron.BGI_Float_History_Save
 # Will select, pull it out into Python, before inserting it into the table.
 # Tried doing Insert.. Select. But there was desdlock situation..
 @analysis.route('/save_BGI_float_Ajax', methods=['GET', 'POST'])
@@ -326,7 +326,7 @@ def save_BGI_float_Ajax(update_tool_time=1):
     result_array = ["({})".format(" , ".join(r)) for r in result_clean]
 
     # Want to insert into the Table.
-    insert_into_table = text("INSERT INTO aaron.BGI_Float_History (`country`, `symbol`, `floating_volume`, " +
+    insert_into_table = text("INSERT INTO aaron.BGI_Float_History_Save (`country`, `symbol`, `floating_volume`, " +
                              "`floating_revenue`, `net_floating_volume`, `closed_revenue_today`, `closed_vol_today`," +
                              "`datetime`) VALUES {}".format(" , ".join(result_array)))
     raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
@@ -334,7 +334,7 @@ def save_BGI_float_Ajax(update_tool_time=1):
 
     # Insert into the Checking tools.
     if (update_tool_time == 1):
-        Tool = "BGI_Float_History"
+        Tool = "BGI_Float_History_Save"
         sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`, `email_sent`) VALUES" + \
                      " ('{Tool}', now(), 0) ON DUPLICATE KEY UPDATE Updated_Time=now(), email_sent=VALUES(email_sent)".format(
                          Tool=Tool)
@@ -360,7 +360,7 @@ def BGI_Country_Float():
     description = Markup("<b>Floating PnL By Country.</b><br> Revenue = Profit + Swaps<br>" +
                          "_A Groups shows Client side PnL (<span style = 'background-color: #C7E679'>Client Side</span>).<br>" +
                          "All others are BGI Side (Flipped, BGI Side)<br><br>" +
-                         "Data taken from aaron.bgi_float_history table.<br><br>" +
+                         "Data taken from aaron.BGI_Float_History_Save table.<br><br>" +
                          "Tableau Data taken off same table. However, needs to click (<span style = 'background-color: yellow'>Refresh</span>) for data to be re-synced.")
 
 
@@ -648,8 +648,8 @@ def get_symbol_daily_pnl():
 # Want to delete from the table where min is not 1.
 # TODO: will need to improve this when MY gives the code
 def delete_from_floating_table():
-    print("Trying to delete from aaron.`bgi_float_history`")
-    insert_into_table = text("DELETE FROM aaron.`bgi_float_history` WHERE MINUTE(datetime) <> 1")
+    print("Trying to delete from aaron.`BGI_Float_History_Save`")
+    insert_into_table = text("DELETE FROM aaron.`BGI_Float_History_Save` WHERE MINUTE(datetime) <> 1")
     raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
 
 # Clear session data.
@@ -755,26 +755,26 @@ def BGI_Country_Float_ajax():
     sql_statement = """SELECT COUNTRY, SUM(ABS(floating_volume)) AS FLOAT_VOLUME, SUM(floating_revenue) AS FLOAT_REVENUE,
                              SUM(CLOSED_VOL_TODAY) AS CLOSED_VOL ,SUM(CLOSED_REVENUE_TODAY) AS CLOSED_REVENUE,
                             DATE_ADD(DATETIME,INTERVAL ({ServerTimeDiff_Query}) HOUR) AS DATETIME
-            FROM aaron.bgi_float_history
-            WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.bgi_float_history)
+            FROM aaron.BGI_Float_History_Save
+            WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.BGI_Float_History_Save)
             GROUP BY COUNTRY
             """.format(ServerTimeDiff_Query=server_time_diff_str)
 
     # sql_statement = """SELECT COUNTRY, SUM(ABS(VOLUME)) AS VOLUME, SUM(REVENUE) AS REVENUE, DATETIME
-    #     FROM aaron.bgi_float_history,(
+    #     FROM aaron.BGI_Float_History_Save,(
     #     SELECT DISTINCT(datetime) AS DT
-    #     FROM aaron.bgi_float_history
+    #     FROM aaron.BGI_Float_History_Save
     #     WHERE DATETIME >= (NOW() - INTERVAL 2 DAY)
     #     GROUP BY LEFT(DATETIME, 15)
     #     ) AS A
-    #     WHERE bgi_float_history.datetime = A.DT
+    #     WHERE BGI_Float_History_Save.datetime = A.DT
     #     GROUP BY COUNTRY, DATETIME
     #
     #     UNION
     #
     #     SELECT COUNTRY, SUM(ABS(VOLUME)) AS VOLUME, SUM(REVENUE) AS REVENUE, DATETIME
-    #                 FROM aaron.bgi_float_history
-    #                 WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.bgi_float_history)
+    #                 FROM aaron.BGI_Float_History_Save
+    #                 WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.BGI_Float_History_Save)
     #                 GROUP BY COUNTRY"""
 
     sql_query = text(sql_statement)
@@ -974,8 +974,8 @@ def BGI_Symbol_Float_ajax():
                             SUM(closed_vol_today) as "TODAY_VOL",
                             SUM(closed_revenue_today) as "TODAY_REVENUE",                            
                             DATE_ADD(DATETIME,INTERVAL ({ServerTimeDiff_Query}) HOUR) AS DATETIME
-            FROM aaron.bgi_float_history
-            WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.bgi_float_history)
+            FROM aaron.BGI_Float_History_Save
+            WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.BGI_Float_History_Save)
             AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "B")
             GROUP BY SYMBOL
             ORDER BY REVENUE DESC
