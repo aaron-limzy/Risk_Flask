@@ -8,6 +8,8 @@ from app.extensions import db, excel
 
 from app.Swaps.forms import UploadForm
 
+from app.Swaps.get_swaps_all import *
+
 from flask_table import create_table, Col
 
 import requests
@@ -176,6 +178,60 @@ def upload_excel():
                            form=form, Table_name="Swaps", header=header, description=description, title=title,
                            html=Markup(Array_To_HTML_Table(Table_Header=[str(i) for i in range(20)], Table_Data=[["{:.4f}".format(random.random()) for i in range(20)] for j in range(100)],
                                                            Table_Class=['table', 'table-striped', 'table-hover', 'table-bordered', 'table-light', 'table-sm'])))
+
+
+@swaps.route('/Swaps/Other_Brokers', methods=['GET', 'POST'])
+def Other_Brokers():
+
+    title = "Swap Compare"
+    header = "Swap Compare"
+
+
+
+    description = Markup("Swaps from other brokers.<br>" +
+                         "fxdd: fxdd (https://www.fxdd.com/mt/en/trading/offering)<br>" +
+                         "fdc: Forex.com (https://www.forex.com/en/trading/pricing-fees/rollover-rates/)<br>" +
+                         "tv: Trade-View(https://www.tradeviewforex.com/room/forex-resources/rollover-rates)<br>" +
+                         "gp: Global Prime (https://www.globalprime.com/trading-conditions/swaps-financing/)<br>" +
+                         "saxo: saxo (https://www.home.saxo/en-sg/rates-and-conditions/forex/trading-conditions#historic-swap-points)<br>" +
+                         "ebh: European Brokerage House (https://ebhforex.com/faq/rollover-policy/)<br>" +
+                         "fpm: fpmarkets (https://www.fpmarkets.com/swap-point)<br>")
+
+        # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Single_Table_No_Border.html", backgroud_Filename='css/Person_Mac.jpg', icon="",
+                           Table_name="Swap Compare ", title=title,
+                            ajax_url=url_for('swaps.Other_Brokers_Ajax', _external=True), header=header,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+
+
+
+@swaps.route('/Swaps/Other_Brokers_Ajax', methods=['GET', 'POST'])
+def Other_Brokers_Ajax():
+    df_other_broker_swaps = get_broker_swaps()
+
+
+    sql_query_line = """select Core_Symbol as Symbol
+    FROM aaron.swap_bgicoresymbol
+    ORDER BY Symbol"""
+
+    df_bgi_core_symbol = get_from_sql_or_file(sql_query_line, "app\\Swaps\\Upload_Swaps\\BGI_Core_Symbol_Only.xls", db)
+    df_other_broker_swaps = df_bgi_core_symbol.merge(df_other_broker_swaps, on="Symbol", how="left")
+    #print(df_bgi_core_symbol)
+    #print("Other Brokers")
+    #print(df_other_broker_swaps)
+    df_other_broker_swaps.fillna("-", inplace=True)
+
+    #return json.dumps(pd_dataframe_to_dict(df_fdc))
+
+    return json.dumps(pd_dataframe_to_dict(df_other_broker_swaps))
+    #return json.dumps([{"Testing": "12345"}])
+
+
+
+
+
 
 
 

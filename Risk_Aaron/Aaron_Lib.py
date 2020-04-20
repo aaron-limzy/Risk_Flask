@@ -328,3 +328,12 @@ def cfd_core_symbol(str_val):
     return str_val
 
 
+
+# Will take a pandas dataframe, and transforms it into an array of dicts.
+def pd_dataframe_to_dict(df_buff):
+
+    df_records = df_buff.to_records(index=False)
+    dataframe_col = list(df_buff.columns)
+    df_records = [list(a) for a in df_records]
+
+    return [dict(zip(dataframe_col,d)) for d in df_records]
