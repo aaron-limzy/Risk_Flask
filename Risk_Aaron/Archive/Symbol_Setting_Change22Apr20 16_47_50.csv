@@ -1,0 +1,79 @@
+Live,Symbol,Percentage,Initial_Margin,Maintenance,Hedge,Margin_Calculation,Profit_Calculation,Trade,Comment
+Lab,.USOil,0.333333,0,0,0,4,0,1,Original Settings.,
+Lab,.USOil,X,X,X,X,X,X,1,On Test.
+Lab,.USOil.d,1,1000,1000,0,2,0,2,Original Settings.,
+Lab,.USOil.d,X,X,X,X,X,X,1,On Test.
+Lab,.USOil.c,1,1000,1000,0,2,0,2,Original Settings.,
+Lab,.USOil.c,X,X,X,X,X,X,1,On Test.
+Lab,.USOil.v,1,1000,1000,0,2,0,2,Original Settings.,
+Lab,.USOil.v,X,X,X,X,X,X,1,On Test.
+Lab,.USOil`,1,1000,1000,0,2,0,2,Original Settings.,
+Lab,.USOil`,X,X,X,X,X,X,1,On Test.
+Live - 1,.USOil,0.333333,0,0,500,4,1,1,Original Settings.,
+Live - 1,.USOil,X,X,X,X,X,X,1,On Test.
+Live - 1,.USOilq,0.333333,0,0,0,4,1,1,Original Settings.,
+Live - 1,.USOilq,X,X,X,X,X,X,1,On Test.
+Live - 2,.USOil,0.333333,0,0,500,4,1,1,Original Settings.,
+Live - 2,.USOil,X,X,X,X,X,X,1,On Test.
+Live - 2,.USOilq,0.333333,0,0,0,4,1,1,Original Settings.,
+Live - 2,.USOilq,X,X,X,X,X,X,1,On Test.
+Live - 2,.USOil`,0.333333,0,0,0,4,1,1,Original Settings.,
+Live - 2,.USOil`,X,X,X,X,X,X,1,On Test.
+Live - 2,.USOil.x,0.333333,0,0,500,4,1,1,Original Settings.,
+Live - 2,.USOil.x,X,X,X,X,X,X,1,On Test.
+Live - 2,.USOilr,0.333333,1000,1000,0,2,1,2,Original Settings.,
+Live - 2,.USOilr,X,X,X,X,X,X,1,On Test.
+Live - 2,.USOilh,0.333333,0,0,500,4,1,1,Original Settings.,
+Live - 2,.USOilh,X,X,X,X,X,X,1,On Test.
+Live - 2,.USOiln,0.333333,0,0,500,4,1,1,Original Settings.,
+Live - 2,.USOiln,X,X,X,X,X,X,1,On Test.
+Live - 3,.USOil,0.333333,0,0,0,4,1,1,Original Settings.,
+Live - 3,.USOil,X,X,X,X,X,X,1,On Test.
+Live - 3,.USOil.d,0.333333,0,0,500,4,1,1,Original Settings.,
+Live - 3,.USOil.d,X,X,X,X,X,X,1,On Test.
+Live - 3,.USOil.c,1,0,0,0,4,1,1,Original Settings.,
+Live - 3,.USOil.c,X,X,X,X,X,X,1,On Test.
+Live - 3,.USOil.v,0.333333,0,0,0,4,1,1,Original Settings.,
+Live - 3,.USOil.v,X,X,X,X,X,X,1,On Test.
+Live - 3,.USOil`,0.333333,0,0,0,4,1,1,Original Settings.,
+Live - 3,.USOil`,X,X,X,X,X,X,1,On Test.
+Live - 5,.USOilq,0.1,0,0,0,4,1,1,Original Settings.,
+Live - 5,.USOilq,X,X,X,X,X,X,1,On Test.
+Live - 5,.USOil,0.1,0,0,0,4,1,1,Original Settings.,
+Live - 5,.USOil,X,X,X,X,X,X,1,On Test.
+Live - 5,.USOily,0.1,0,0,0,4,1,1,Original Settings.,
+Live - 5,.USOily,X,X,X,X,X,X,1,On Test.
+Live - 5,.USOil.c,0.1,0,0,0,4,1,1,Original Settings.,
+Live - 5,.USOil.c,X,X,X,X,X,X,1,On Test.
+Live - 5,.USOil.d,0.1,0,0,0,4,1,1,Original Settings.,
+Live - 5,.USOil.d,X,X,X,X,X,X,1,On Test.
+Live - 5,.USOil.x,0.333333,0,0,0,4,1,1,Original Settings.,
+Live - 5,.USOil.x,X,X,X,X,X,X,1,On Test.
+Live - 5,.USOil.z,0.333333,0,0,0,4,1,1,Original Settings.,
+Live - 5,.USOil.z,X,X,X,X,X,X,1,On Test.
+Live - 5,.USOil.s,1,0,0,0,4,1,1,Original Settings.,
+Live - 5,.USOil.s,X,X,X,X,X,X,1,On Test.
+Live - 5,.USOil.v,0.333333,0,0,0,4,1,1,Original Settings.,
+Live - 5,.USOil.v,X,X,X,X,X,X,1,On Test.
+Demo - 1,.USOil,0.333333,0,0,500,4,1,1,Original Settings.,
+Demo - 1,.USOil,X,X,X,X,X,X,1,On Test.
+Demo - 1,.USOily,0.333333,0,0,0,1,1,1,Original Settings.,
+Demo - 1,.USOily,X,X,X,X,X,X,1,On Test.
+Demo - 1,.USOilq,0.333333,0,0,0,4,1,1,Original Settings.,
+Demo - 1,.USOilq,X,X,X,X,X,X,1,On Test.
+Demo - 3,.USOil,0.333333,0,0,500,4,1,1,Original Settings.,
+Demo - 3,.USOil,X,X,X,X,X,X,1,On Test.
+Demo - 5,.USOil,1,0,0,0,4,1,1,Original Settings.,
+Demo - 5,.USOil,X,X,X,X,X,X,1,On Test.
+Demo - 5,.USOilq,1,0,0,0,4,1,1,Original Settings.,
+Demo - 5,.USOilq,X,X,X,X,X,X,1,On Test.
+Demo - 5,.USOily,0.1,0,0,0,4,1,1,Original Settings.,
+Demo - 5,.USOily,X,X,X,X,X,X,1,On Test.
+Demo - 5,.USOil.nx,0.1,0,0,0,4,1,1,Original Settings.,
+Demo - 5,.USOil.nx,X,X,X,X,X,X,1,On Test.
+Demo - 5,.USOil.cfh,0.1,0,0,0,4,1,1,Original Settings.,
+Demo - 5,.USOil.cfh,X,X,X,X,X,X,1,On Test.
+Demo - 5,.USOil.lp,0.1,0,0,0,4,1,1,Original Settings.,
+Demo - 5,.USOil.lp,X,X,X,X,X,X,1,On Test.
+Demo - 5,.USOil.a,0.1,0,0,0,4,1,1,Original Settings.,
+Demo - 5,.USOil.a,X,X,X,X,X,X,1,On Test.

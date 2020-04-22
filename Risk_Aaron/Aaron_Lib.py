@@ -337,3 +337,28 @@ def pd_dataframe_to_dict(df_buff):
     df_records = [list(a) for a in df_records]
 
     return [dict(zip(dataframe_col,d)) for d in df_records]
+
+
+# To insert SQL to another DB
+def SQL_Insert_Host(SQL_IP, SQL_User, SQL_Password, SQL_Database, SQL_Query_Str):
+
+    connection = pymysql.connect(host=SQL_IP, user=SQL_User, passwd=SQL_Password, db=SQL_Database)
+    connection.autocommit = True  # Set it to always commit.
+    Cursor = connection.cursor()
+    Cursor.execute(SQL_Query_Str)
+    connection.commit()
+
+
+
+def Query_SQL_Host(SQL_Query, SQL_ip, SQL_user, SQL_password, SQL_database):
+
+    connection = pymysql.connect(host=SQL_ip, user=SQL_user, passwd=SQL_password, db=SQL_database)
+    connection.autocommit = True        # Set it to always commit.
+    Cursor = connection.cursor()
+    Cursor.execute(SQL_Query)
+    results = Cursor.fetchall()     # Is in Tuple
+    Column_Details = Cursor.description # To get the column details, with length and etc...
+    Cursor.close() # Close the Cursor.
+    connection.close()
+
+    return [tuple_to_array(results),tuple_to_array(Column_Details)]

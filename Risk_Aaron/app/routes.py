@@ -1,5 +1,5 @@
 from app.extensions import  excel
-from flask import render_template, flash, redirect, url_for, request, send_from_directory, jsonify, g, Markup, Blueprint, abort, current_app
+from flask import render_template, flash, redirect, url_for, request, send_from_directory, jsonify, g, Markup, Blueprint, abort, current_app, session
 from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
 
@@ -531,6 +531,164 @@ def risk_auto_cut_ajax(update_tool_time=1):
     return json.dumps(return_val)
 
 
+
+
+
+
+
+
+
+
+
+
+# Want to check and close off account/trades.
+@main_app.route('/USOil_Ticks', methods=['GET', 'POST'])
+@login_required
+def USOil_Ticks():
+
+    title = "USOil Monitor"
+    header = "USOil Monitor"
+
+
+    description = Markup('Check ticks from 64.56 db.<br>Will need to check if USOil falls below 5.')
+
+        # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="USOil Ticks", \
+                           title=title, ajax_url=url_for('main_app.USOil_Ticks_ajax', _external=True), header=header, setinterval=20,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+@main_app.route('/USOil_Ticks_ajax', methods=['GET', 'POST'])
+@login_required
+def USOil_Ticks_ajax(update_tool_time=1):
+
+
+    update_date_time = ""
+    usoil_mid_price = 10    # We don't want to accidentally trigger this...
+    USOil_Price_Alert = 0.01   # The alert Price
+
+    sql_return = Query_SQL_Host("SELECT DATE_TIME, (bid+ask)*0.5 as Mid_Price FROM bgi_live2.`.usoilq_ticks` ORDER BY DATE_TIME DESC limit 1", "192.168.64.56", 'risk', 'Riskrisk321', 'bgi_live1')
+    #print(sql_return)
+
+    if len(sql_return) == 2 and len(sql_return[0]) > 0 and len(sql_return[0][0]) > 0:
+        usoil_res = sql_return[0][0]
+    if len(usoil_res) == 2:
+        update_date_time, usoil_mid_price = usoil_res
+
+    if usoil_mid_price <= USOil_Price_Alert:
+        print("USOil price fell below {}...".format(USOil_Price_Alert))
+        if "USOil_{}_Alert".format(USOil_Price_Alert) not in session:  # save in session that we have already sent out an email.
+            print("Need to react to this..")
+            # Want to check if the price has been activated.
+            sql_query = text("select result from aaron.aaron_misc_data where item = 'USOil_Price_{}_Activated'".format(USOil_Price_Alert))
+
+            raw_result = db.engine.execute(sql_query)
+            result_data = raw_result.fetchall()
+            print(result_data)
+            if len(result_data) > 0 and len(result_data[0]) > 0:
+                tool_ran_result = result_data[0][0]
+                session['USOil_{}_Alert'.format(USOil_Price_Alert)] = True
+                if tool_ran_result == 1:    # tool has been ran..
+                    pass
+                else:
+
+                    print("Running tool...")
+                    async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, "USOil has dropped below ${}".format(USOil_Price_Alert), TELE_CLIENT_ID)
+                    # Will run C here as well..
+                    c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only/Close_USOil_Trade_0.01.exe') + " Edit")
+                    print("c_run_return = {}".format(c_run_return))
+                    #c_run_return = 0
+
+                    (C_Return_Val, output, err) = c_run_return
+
+                    #EMAIL_LIST_BGI
+                    async_send_email(To_recipients=['aaron.lim@blackwellglobal.com'], cc_recipients=[],
+                                 Subject="USOil Below {} Dollars.".format(USOil_Price_Alert),
+                                 HTML_Text="""{Email_Header}Hi,<br><br>USOil Price has dropped below {USOil_Price_Alert} USD. <br> 
+                                             The following is the C output. <br><br>{c_output}<br><br>
+                                           <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
+                                     Email_Header = Email_Header, USOil_Price_Alert = USOil_Price_Alert, c_output=output, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                     Email_Footer=Email_Footer), Attachment_Name=[])
+
+                    # Update SQL
+
+                    sql_insert = """UPDATE aaron.aaron_misc_data SET result=1 where item = 'USOil_Price_{}_Activated'""".format(USOil_Price_Alert)
+                    sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+                    #
+                    # print(sql_insert)
+                    db.engine.execute(text(sql_insert))  # Insert into DB
+
+
+                    print("Tool ran: {tool_ran_result}".format(tool_ran_result=tool_ran_result))
+
+
+
+    # C_Return = dict()  # The returns from C++
+    # C_Return[0] = "User Changed to Read-Only, position forced closed";
+    # C_Return[-1] = "C++ ERROR: Params Wrong";
+    # C_Return[1] = "C++ ERROR: Login Param Error";
+    # C_Return[2] = "C++ ERROR: Server Param Error";
+    # C_Return[3] = "C++ ERROR: Login Number Error on MT4";
+    # C_Return[4] = "C++ ERROR: Equity Above Credit";
+    # C_Return[6] = "C++ ERROR: MT4 Update Error!";
+    # C_Return[7] = "C++ ERROR: MT4 Connection Error";
+    # C_Return[-100] = "User changed to Read-only, but SQL ERROR. ";
+
+    #To_SQL = []     # To save onto SQL
+
+
+
+
+
+    # raw_insert_sql = " ({live}, {login}, {equity}, {credit}, '{group}', now()) "    # Raw template for insert.
+    # sql_insert_w_values = ",".join([raw_insert_sql.format(live=d["LIVE"], login=d["LOGIN"], equity=d["EQUITY"], credit=d["CREDIT"], group=d["GROUP"]) for d in To_SQL]) # SQL insert with the values.
+    # sql_insert = "INSERT INTO  aaron.`risk_autocut_results` (LIVE, LOGIN, EQUITY, CREDIT, `GROUP`, DATE_TIME) VALUES {}".format(sql_insert_w_values)   # Add it to the header.
+    # #print("SQL Statement: {}".format(sql_insert))
+    # raw_insert_result = db.engine.execute(sql_insert)   # Insert into SQL
+
+        #print("total_result: {}".format(total_result))
+        #
+        # total_result_value = list(total_result.values())
+        # # print(total_result_value)
+        # table_data_html =  Array_To_HTML_Table(list(total_result_value[0].keys()),[list(d.values()) for d in total_result_value])
+        #
+        # async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
+        #              Subject="AutoCut: Equity Below Credit.",
+        #              HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below credit. \
+        #                         <br><br> {table_data_html} This is done to prevent client from trading on credit. \
+        #                        <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
+        #                  Email_Header = Email_Header, table_data_html = table_data_html, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        #                  Email_Footer=Email_Footer), Attachment_Name=[])
+        #
+        #
+        #
+        # return_val = list(total_result.values())
+
+    return_val = [{"RESULT": "USOil Price ({}) did't trigger any actions. Time: {}".format( usoil_mid_price , time_now())}]
+
+    # # Need to update Run time on SQL Update table.
+    if update_tool_time ==1:
+        async_update_Runtime(app=current_app._get_current_object(), Tool="USOil_Price_{}".format(USOil_Price_Alert))
+
+
+    return json.dumps(return_val)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Want to insert into table.
 # From Flask.
 @main_app.route('/Risk_Autocut_include', methods=['GET', 'POST'])
@@ -798,9 +956,9 @@ def CFH_Soap_Position_ajax(update_all=0):  # Optional Parameter, to update from 
     # TODO: Update Minitor Tools Table.
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
-    session = Session()
-    session.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!")
-    client = Client(wsdl_url, transport=Transport(session=session))
+    session_soap = Session()
+    session_soap.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!")
+    client = Client(wsdl_url, transport=Transport(session=session_soap))
 
     database_name = "aaron"
     table_name = "CFH_Live_Trades"
@@ -912,9 +1070,9 @@ def CFH_Soap_Symbol_ajax(update_all=0):  # Optional Parameter, to update from th
     # TODO: CFH_Symbol_Update_ajax Minotor Tools Table.
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
-    session = Session()
-    session.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!")
-    client = Client(wsdl_url, transport=Transport(session=session))
+    session_soap = Session()
+    session_soap.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!")
+    client = Client(wsdl_url, transport=Transport(session=session_soap))
 
     database_name = "aaron"
     table_name = "CFH_Symbol"
