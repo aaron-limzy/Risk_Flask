@@ -376,7 +376,8 @@ def Risk_auto_cut():
                          "<b>2)</b>For other clients, where GROUP` IN  <font color = 'red'>aaron.risk_autocut_group</font> and EQUITY < CREDIT and<br>" + \
                                 " LOGIN NOT IN  (<font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>" + \
                          "<b>3)</b> For Login in <font color = 'red'>aaron.Risk_autocut_exclude</font> and <font color = 'red'>Credit_limit != 0</font> and <br>" +\
-                                " LOGIN NOT IN ( <font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>")
+                                " LOGIN NOT IN ( <font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>" + \
+                         "<b>4)</b> Tool will not cut for <font color = 'red'>Equity > Credit</font> . For such, kindly look at Equity Protect.<br><br>")
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
