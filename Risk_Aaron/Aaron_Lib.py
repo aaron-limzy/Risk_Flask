@@ -248,8 +248,14 @@ def Check_Float(element):
 
 
 # To run C Programs
-def Run_C_Prog(Path):
-    p = subprocess.Popen(Path, stdout=subprocess.PIPE)
+def Run_C_Prog(Path, cwd=None):
+
+    path = Path  # Need as Buffer, to append the added cwd if needed
+
+    if cwd != None:  # We need to append the full (relative) path
+        path = cwd + "\\" + path
+
+    p = subprocess.Popen(path, stdout=subprocess.PIPE, cwd=cwd)
     (output, err) = p.communicate()  # Want to capture the COUT
     #print("output: {},  err: {}".format(output, err))
     C_Return_Val = ctypes.c_int32(p.returncode).value   # Convert to -ve/+ve.
