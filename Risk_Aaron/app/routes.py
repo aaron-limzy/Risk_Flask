@@ -589,7 +589,7 @@ def USOil_Ticks_ajax(update_tool_time=1):
     USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Settings_TEST.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
                                0.01 : {'path':'USOil_CloseTrades_Test', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
 
-    #usoil_mid_price = 0
+    usoil_mid_price = 0
     for USOil_Price_Alert_Actual in USOil_Price_Alert_Array:
 
 
