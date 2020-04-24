@@ -21,8 +21,8 @@ import pandas as pd
 
 from Aaron_Lib import *
 
-logging.basicConfig(level=logging.INFO)
-logging.getLogger('suds.client').setLevel(logging.INFO)
+#logging.basicConfig(level=logging.INFO)
+#logging.getLogger('suds.client').setLevel(logging.INFO)
 
 
 # From https://www.fxdd.com/mt/en/trading/offering
