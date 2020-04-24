@@ -584,12 +584,17 @@ def USOil_Ticks_ajax(update_tool_time=1):
         {"RESULT": "USOil Price ({}). SQL Update Time: {}. Time Now: {}".format(usoil_mid_price, update_date_time, time_now())}]
 
 
-        #Path="Edit_Symbol_Settings_TEST.exe Check", cwd=".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only'
 
-    USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Setting.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
-                               0.01 : {'path':'Close_USOil_Trade_0.01.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
+    # Run the tests.
+    USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Settings_TEST.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
+                               0.01 : {'path':'Close_USOil_Trade_Test.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
 
-    #usoil_mid_price = 0
+
+
+    # USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Setting.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
+    #                            0.01 : {'path':'Close_USOil_Trade_0.01.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
+
+    usoil_mid_price = 0
     for USOil_Price_Alert_Actual in USOil_Price_Alert_Array:
 
 
@@ -611,7 +616,8 @@ def USOil_Ticks_ajax(update_tool_time=1):
                 if len(result_data) > 0 and len(result_data[0]) > 0:
                     tool_ran_result = result_data[0][0]
                     session['USOil_{}_Alert'.format(USOil_Price_Alert)] = Get_time_String()
-                    if tool_ran_result == 1:    # tool has been ran..
+                    if tool_ran_result != '0':    # tool has been ran..
+                        print("SQL: Ran at {}".format(tool_ran_result))
                         pass
                     else:
 
@@ -631,20 +637,17 @@ def USOil_Ticks_ajax(update_tool_time=1):
                         output = output.decode()
                         output = output.replace("\r\n", "<br>") # Need to replace the C string of \n to HTML <br>
 
-
-
                         #EMAIL_LIST_BGI
                         async_send_email(To_recipients=['aaron.lim@blackwellglobal.com'], cc_recipients=[],
                                      Subject="USOil Below {} Dollars.".format(USOil_Price_Alert),
-                                     HTML_Text="""{Email_Header}Hi,<br><br>USOil Price has dropped below {USOil_Price_Alert} USD. <br> 
+                                     HTML_Text="""{Email_Header}Hi,<br><br>USOil Price is at {usoil_mid_price}, and it has dropped below {USOil_Price_Alert} USD. <br> 
                                                  The following is the C output. <br><br>{c_output}<br><br>
                                                <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
-                                         Email_Header = Email_Header, USOil_Price_Alert = USOil_Price_Alert, c_output=output, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                         Email_Header = Email_Header, USOil_Price_Alert = USOil_Price_Alert, usoil_mid_price = usoil_mid_price, c_output=output, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                                          Email_Footer=Email_Footer), Attachment_Name=[])
 
                         # Update SQL
-
-                        sql_insert = """UPDATE aaron.aaron_misc_data SET result=1 where item = 'USOil_Price_{}_Activated'""".format(USOil_Price_Alert)
+                        sql_insert = """UPDATE aaron.aaron_misc_data SET result= '{}' where item = 'USOil_Price_{}_Activated'""".format(Get_time_String(),USOil_Price_Alert)
                         sql_insert = sql_insert.replace("\t", "").replace("\n", "")
                         #
                         # print(sql_insert)
