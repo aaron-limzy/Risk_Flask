@@ -586,15 +586,15 @@ def USOil_Ticks_ajax(update_tool_time=1):
 
 
     # Run the tests.
-    USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Settings_TEST.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
-                               0.01 : {'path':'Close_USOil_Trade_Test.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
+    # USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Settings_TEST.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
+    #                            0.01 : {'path':'Close_USOil_Trade_Test.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
 
 
+    # Run the real prog
+    USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Setting.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
+                               0.01 : {'path':'Close_USOil_Trade_0.01.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
 
-    # USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Setting.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
-    #                            0.01 : {'path':'Close_USOil_Trade_0.01.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
-
-    usoil_mid_price = 0
+    #usoil_mid_price = 0
     for USOil_Price_Alert_Actual in USOil_Price_Alert_Array:
 
 
@@ -637,8 +637,8 @@ def USOil_Ticks_ajax(update_tool_time=1):
                         output = output.decode()
                         output = output.replace("\r\n", "<br>") # Need to replace the C string of \n to HTML <br>
 
-                        #EMAIL_LIST_BGI
-                        async_send_email(To_recipients=['aaron.lim@blackwellglobal.com'], cc_recipients=[],
+                        #
+                        async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
                                      Subject="USOil Below {} Dollars.".format(USOil_Price_Alert),
                                      HTML_Text="""{Email_Header}Hi,<br><br>USOil Price is at {usoil_mid_price}, and it has dropped below {USOil_Price_Alert} USD. <br> 
                                                  The following is the C output. <br><br>{c_output}<br><br>
