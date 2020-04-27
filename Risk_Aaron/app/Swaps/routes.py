@@ -195,7 +195,8 @@ def Other_Brokers():
                          "gp: Global Prime (https://www.globalprime.com/trading-conditions/swaps-financing/)<br>" +
                          "saxo: saxo (https://www.home.saxo/en-sg/rates-and-conditions/forex/trading-conditions#historic-swap-points)<br>" +
                          "ebh: European Brokerage House (https://ebhforex.com/faq/rollover-policy/)<br>" +
-                         "fpm: fpmarkets (https://www.fpmarkets.com/swap-point)<br>")
+                         "fpm: fpmarkets (https://www.fpmarkets.com/swap-point)<br>"+
+                         "cfh: FRom CFH back office. Will divide by the number of days of swaps (ie: not showing 3 days worth..)")
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table_No_Border.html", backgroud_Filename='css/Person_Mac.jpg', icon="",

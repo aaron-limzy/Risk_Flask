@@ -1,0 +1,170 @@
+Live,Symbol,Percentage,Initial_Margin,Maintenance,Hedge,Margin_Calculation,Profit_Calculation,Trade,Comment
+Lab,.USOil,1,2000,2000,0,2,1,1,Original Settings.,
+Lab,.USOil,1,2000,2000,X,2,X,2,Changes Done.
+Lab,.UKOil,1,2000,2000,500,2,1,1,Original Settings.,
+Lab,.UKOil,1,2000,2000,X,2,X,2,Changes Done.
+Lab,.USOil.d,1,2000,2000,0,2,0,1,Original Settings.,
+Lab,.USOil.d,1,2000,2000,X,2,X,2,Changes Done.
+Lab,.UKOil.d,1,2000,2000,500,2,1,1,Original Settings.,
+Lab,.UKOil.d,1,2000,2000,X,2,X,2,Changes Done.
+Lab,.USOil.c,1,2000,2000,0,2,0,1,Original Settings.,
+Lab,.USOil.c,1,2000,2000,X,2,X,2,Changes Done.
+Lab,.UKOil.c,1,2000,2000,0,2,1,1,Original Settings.,
+Lab,.UKOil.c,1,2000,2000,X,2,X,2,Changes Done.
+Lab,.UKOil.v,1,2000,2000,0,2,1,1,Original Settings.,
+Lab,.UKOil.v,1,2000,2000,X,2,X,2,Changes Done.
+Lab,.USOil.v,1,2000,2000,0,2,0,1,Original Settings.,
+Lab,.USOil.v,1,2000,2000,X,2,X,2,Changes Done.
+Lab,.USOil`,1,2000,2000,0,2,0,1,Original Settings.,
+Lab,.USOil`,1,2000,2000,X,2,X,2,Changes Done.
+Lab,.UKOil`,1,2000,2000,500,2,1,1,Original Settings.,
+Lab,.UKOil`,1,2000,2000,X,2,X,2,Changes Done.
+Live - 1,.USOil,1,2000,2000,500,2,1,2,Original Settings.,
+Live - 1,.USOil,1,2000,2000,X,2,X,2,Changes Done.
+Live - 1,.UKOil,1,2000,2000,500,2,1,2,Original Settings.,
+Live - 1,.UKOil,1,2000,2000,X,2,X,2,Changes Done.
+Live - 1,.USOilq,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 1,.USOilq,1,2000,2000,X,2,X,2,Changes Done.
+Live - 1,.UKOilq,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 1,.UKOilq,1,2000,2000,X,2,X,2,Changes Done.
+Live - 2,.USOil,1,2000,2000,500,2,1,2,Original Settings.,
+Live - 2,.USOil,1,2000,2000,X,2,X,2,Changes Done.
+Live - 2,.USOilq,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 2,.USOilq,1,2000,2000,X,2,X,2,Changes Done.
+Live - 2,.UKOil,1,2000,2000,500,2,1,2,Original Settings.,
+Live - 2,.UKOil,1,2000,2000,X,2,X,2,Changes Done.
+Live - 2,.UKOilq,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 2,.UKOilq,1,2000,2000,X,2,X,2,Changes Done.
+Live - 2,.USOil`,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 2,.USOil`,1,2000,2000,X,2,X,2,Changes Done.
+Live - 2,.UKOil`,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 2,.UKOil`,1,2000,2000,X,2,X,2,Changes Done.
+Live - 2,.USOil.x,1,2000,2000,500,2,1,2,Original Settings.,
+Live - 2,.USOil.x,1,2000,2000,X,2,X,2,Changes Done.
+Live - 2,.UKOil.x,1,2000,2000,500,2,1,2,Original Settings.,
+Live - 2,.UKOil.x,1,2000,2000,X,2,X,2,Changes Done.
+Live - 2,.USOilr,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 2,.USOilr,1,2000,2000,X,2,X,2,Changes Done.
+Live - 2,.USOilh,1,2000,2000,500,2,1,2,Original Settings.,
+Live - 2,.USOilh,1,2000,2000,X,2,X,2,Changes Done.
+Live - 2,.UKOilh,1,2000,2000,500,2,1,2,Original Settings.,
+Live - 2,.UKOilh,1,2000,2000,X,2,X,2,Changes Done.
+Live - 2,.USOiln,1,2000,2000,500,2,1,2,Original Settings.,
+Live - 2,.USOiln,1,2000,2000,X,2,X,2,Changes Done.
+Live - 2,.UKOiln,1,2000,2000,500,2,1,2,Original Settings.,
+Live - 2,.UKOiln,1,2000,2000,X,2,X,2,Changes Done.
+Live - 3,.STOXX50.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,.UK100.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,.USOil,1,2000,2000,0,2,1,1,Original Settings.,
+Live - 3,.USOil,1,2000,2000,X,2,X,2,Changes Done.
+Live - 3,.UKOil,1,2000,2000,500,2,1,1,Original Settings.,
+Live - 3,.UKOil,1,2000,2000,X,2,X,2,Changes Done.
+Live - 3,.USOil.d,1,2000,2000,500,2,1,1,Original Settings.,
+Live - 3,.USOil.d,1,2000,2000,X,2,X,2,Changes Done.
+Live - 3,.UKOil.d,1,2000,2000,500,2,1,1,Original Settings.,
+Live - 3,.UKOil.d,1,2000,2000,X,2,X,2,Changes Done.
+Live - 3,.ES35.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,.A50.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,.AUS200.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,.DE30.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,.HK50.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,.F40.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,.JP225.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,.US30.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,.US500.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,.US100.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,.USOil.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,.UKOil.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,USDX.c, , , , , , , ,Symbol ignored: *.c
+Live - 3,.UKOil.v,1,2000,2000,0,2,1,1,Original Settings.,
+Live - 3,.UKOil.v,1,2000,2000,X,2,X,2,Changes Done.
+Live - 3,.USOil.v,1,2000,2000,0,2,1,1,Original Settings.,
+Live - 3,.USOil.v,1,2000,2000,X,2,X,2,Changes Done.
+Live - 3,.USOil`,1,2000,2000,0,2,1,1,Original Settings.,
+Live - 3,.USOil`,1,2000,2000,X,2,X,2,Changes Done.
+Live - 3,.UKOil`,1,2000,2000,500,2,1,1,Original Settings.,
+Live - 3,.UKOil`,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.USOilq,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.USOilq,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.USOil,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.USOil,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.UKOil,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.UKOil,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.UKOilq,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.UKOilq,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.UKOily,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.UKOily,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.USOily,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.USOily,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.UKOil.c,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.UKOil.c,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.USOil.c,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.USOil.c,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.UKOil.d,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.UKOil.d,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.USOil.d,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.USOil.d,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.USOil.x,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.USOil.x,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.UKOil.x,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.UKOil.x,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.UKOil.z,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.UKOil.z,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.USOil.z,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.USOil.z,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.USOil.s,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.USOil.s,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.UKOil.s,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.UKOil.s,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.USOil.v,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.USOil.v,1,2000,2000,X,2,X,2,Changes Done.
+Live - 5,.UKOil.v,1,2000,2000,0,2,1,2,Original Settings.,
+Live - 5,.UKOil.v,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 1,.USOil,1,2000,2000,500,2,1,1,Original Settings.,
+Demo - 1,.USOil,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 1,.UKOil,1,2000,2000,500,2,1,1,Original Settings.,
+Demo - 1,.UKOil,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 1,.UKOily,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 1,.UKOily,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 1,.USOily,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 1,.USOily,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 1,.USOilq,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 1,.USOilq,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 1,.UKOilq,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 1,.UKOilq,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 1,.USOil.x,1,2000,2000,500,2,1,1,Original Settings.,
+Demo - 1,.USOil.x,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 1,.UKOil.x,1,2000,2000,500,2,1,1,Original Settings.,
+Demo - 1,.UKOil.x,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 3,.USOil,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 3,.USOil,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 3,.UKOil,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 3,.UKOil,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 5,.UKOil,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 5,.UKOil,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 5,.UKOilq,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 5,.UKOilq,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 5,.USOil,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 5,.USOil,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 5,.USOilq,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 5,.USOilq,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 5,.UKOily,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 5,.UKOily,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 5,.USOily,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 5,.USOily,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 5,.USOil.nx,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 5,.USOil.nx,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 5,.UKOil.nx,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 5,.UKOil.nx,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 5,.USOil.cfh,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 5,.USOil.cfh,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 5,.UKOil.cfh,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 5,.UKOil.cfh,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 5,.USOil.lp,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 5,.USOil.lp,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 5,.UKOil.lp,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 5,.UKOil.lp,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 5,.USOil.a,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 5,.USOil.a,1,2000,2000,X,2,X,2,Changes Done.
+Demo - 5,.UKOil.a,1,2000,2000,0,2,1,1,Original Settings.,
+Demo - 5,.UKOil.a,1,2000,2000,X,2,X,2,Changes Done.

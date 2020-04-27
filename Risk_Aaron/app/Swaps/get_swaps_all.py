@@ -475,10 +475,10 @@ def CFH_Soap_Swaps(backtrace_days_max=5, start_date="", divide_by_days=False, cf
     #                 if all(u in s for u in ["InstrumentSymbol", 'LongPosPips', 'ShortPosPips', 'FromValueDate', 'ToValueDate'])]
 
     fx_swaps = [{"Symbol": s['InstrumentSymbol'],
-                 "Long": -1 * round(float(s['LongPosPips']) if divide_by_days == False else float(s['LongPosPips']) / (
-                     (s['ToValueDate'] - s['FromValueDate']).days), 3),
-                 "Short": round(float(s['ShortPosPips']) if divide_by_days == False else float(s['ShortPosPips']) / (
-                     (s['ToValueDate'] - s['FromValueDate']).days), 3)
+                 "Long": -1 * round(float(s['LongPosPips']) if divide_by_days == False else float(s['LongPosPips']) /
+                 max( (s['ToValueDate'] - s['FromValueDate']).days, 1), 3),
+                 "Short": round(float(s['ShortPosPips']) if divide_by_days == False else float(s['ShortPosPips']) /
+                max( (s['ToValueDate'] - s['FromValueDate']).days, 1), 3),
                  } for s in cfh_fx_swaps if all(
         u in s for u in ["InstrumentSymbol", 'LongPosPips', 'ShortPosPips', 'FromValueDate', 'ToValueDate'])]
 
@@ -519,7 +519,11 @@ def get_broker_swaps():
     df_cfh = pd.DataFrame(CFH_Soap_Swaps(divide_by_days=True))
     df_cfh = df_cfh.rename(columns={"Long": "cfh Long", "Short": "cfh Short"})
 
-    swaps_array = [df_fxdd, df_fdc, df_saxo, df_tradeview, df_global_prime, df_ebhforex, df_fpmarkets, df_cfh]
+
+
+    #
+
+    swaps_array = [df_fxdd, df_fdc, df_saxo, df_tradeview, df_global_prime,df_ebhforex, df_fpmarkets, df_cfh]
     df_return = pd.DataFrame([], columns=["Symbol"])
     how = "outer"
     for s in swaps_array:
