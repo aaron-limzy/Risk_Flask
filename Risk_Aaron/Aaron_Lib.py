@@ -21,6 +21,10 @@ import telegram #pip install python-telegram-bot==12.0.0b1 --upgradepymysql
 
 import pymysql
 import socket
+import math
+import pymysql
+from sqlalchemy import create_engine, text
+
 
 SQL_IP = "192.168.64.73"
 SQL_User = "mt4"
@@ -368,3 +372,30 @@ def Query_SQL_Host(SQL_Query, SQL_ip, SQL_user, SQL_password, SQL_database):
     connection.close()
 
     return [tuple_to_array(results),tuple_to_array(Column_Details)]
+
+
+
+# Want to use the same code as Flask.
+# Will use sqlalchemy instead of py-sql
+def init_SQLALCHEMY():
+    #TODO: Link this with Flask's config. Else, there  might be trouble when moving SQL Bases.
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/aaron'
+    return create_engine(SQLALCHEMY_DATABASE_URI)
+
+
+#Want to take in values and header of SQL
+# Return an array of SQL statement ready for insert.
+def sql_multiple_insert(tablename="", column = "" ,values = [" "], footer = "", sql_max_insert=500):
+
+    sql_statement = []
+    for i in range(math.ceil(len(values) / sql_max_insert)):
+        sql_trades_insert = ""
+        # To construct the sql statement. header + values + footer.
+        sql_trades_insert = """INSERT INTO {tablename} {column} VALUES {sql_data} {footer} """.format(tablename=tablename,
+                column=column, sql_data= " , ".join(values[i * sql_max_insert:(i + 1) * sql_max_insert]),  footer=footer)
+
+        #sql_trades_insert = header +  + " , ".join(values[i * sql_max_insert:(i + 1) * sql_max_insert]) + footer
+        sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
+    sql_statement.append(sql_trades_insert)
+    return sql_statement
+

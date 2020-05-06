@@ -6,8 +6,11 @@ from werkzeug.urls import url_parse
 from app.forms import SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form
 from app.forms import LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude
 
+
 # Import function to call in case the page dosn't run.
 from app.Plotly.routes import save_BGI_float_Ajax
+from app.Scrape_Futures import *
+
 
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField
 from flask_table import create_table, Col
@@ -2127,6 +2130,40 @@ def Exclude_Equity_Below_Credit():
     return render_template("General_Form.html",
                            title=title, header=header,
                            form=form, description=description)
+
+
+
+# Want to show which clients got recently changed to read only.
+# Due to Equity < Balance.
+@main_app.route('/Futures/Scrape')
+@login_required
+def Scrape_futures():
+    description = Markup("Scraping Futures.<br>" +
+                         "Excel will be downloaded automatically.<br>"+
+                         "Excel Data will be the same as those on the tables. ")
+
+    # Template will take in an json dict and display a few tables, depending on how many is needed.
+    return render_template("Webworker_1_table_Boderless_excel.html",
+                           backgroud_Filename='css/Color-Pencil.jpg', \
+                           title="Futures Scrape",
+                           header="Scrape Futures", 
+                           ajax_url=url_for('main_app.Scrape_futures_ajax', _external=True),
+                           description=description, replace_words=Markup(["Today"]))
+
+@main_app.route('/Futures/Scrape_ajax',methods=['GET', 'POST'])
+@login_required
+def Scrape_futures_ajax():
+
+    # Get all data from the web
+    # Using the module "Scrape_Futures"
+    return_val = Get_Current_Futures_Margin(db=db, sendemail=False)
+
+    #return_val = [dict(zip(col, d)) for d in dict_of_df["US"]]
+    #return_val = {'SG': [{"a":1, "b":2,"c":3}, {"a":2, "b":3,"c":4}],'UK': [{"d":10, "e":9,"f":8}, {"d":7, "e":6,"f":5}], 'US': [{"d":10, "e":9,"f":8}, {"d":7, "e":6,"f":5}]}
+    #start_date = get_working_day_date(datetime.date.today(), weekdays_count=0)
+
+    return json.dumps(return_val)
+
 
 
 # Want to query SQL to pull and display all trades that might be the mismatched one.

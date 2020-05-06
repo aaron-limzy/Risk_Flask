@@ -82,12 +82,16 @@ def register_blueprints(server):
     from app.Swaps.routes import swaps
     from app.routes import main_app
     from app.Plotly.routes import analysis
+    from app.errors import bp as errors_bp
 
     # Want to see if we can init the Blueprint db
     main_app_db.init_app(server)
     with server.app_context():
         main_app_db.create_all()  # <--- Create blueprint db.
 
+
+
+    server.register_blueprint(errors_bp)
     server.register_blueprint(main_app)
     server.register_blueprint(swaps)
     server.register_blueprint(analysis)
@@ -121,7 +125,7 @@ def _protect_dashviews(dashapp):
 
 
 
-from app import routes, errors
+from app import routes
 
 
 

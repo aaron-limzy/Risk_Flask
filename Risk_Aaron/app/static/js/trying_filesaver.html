@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Downloading a file with file saver</title>
+</head>
+<body>
+	<input type="text" id="text" placeholder="Text"/>
+	<input type="text" id="name" placeholder="Name"/>
+	<button type="submit" onclick="Generate()">Download</button>
+	
+</body>
+<script lang="javascript" src="FileSaver.min.js"></script>
+<script>
+
+	function Generate() {
+		var name = document.getElementById("name").value;
+		var text = document.getElementById("text").value;
+		
+		var blob = new Blob([text], {type: "text/plain;charset=utf-8"});
+		saveAs(blob, name);
+	}
+	
+
+</script>
+
+
+</html>
