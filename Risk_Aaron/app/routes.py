@@ -90,6 +90,7 @@ else:
     EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
     EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "risk@blackwellglobal.com", "cs@bgifx.com"]
 
+EMAIL_AARON =  ["aaron.lim@blackwellglobal.com"]     # For test Groups.
 
 
 db = SQLAlchemy()  # <--- The db object belonging to the blueprint
@@ -511,7 +512,10 @@ def risk_auto_cut_ajax(update_tool_time=1):
         # print(total_result_value)
         table_data_html =  Array_To_HTML_Table(list(total_result_value[0].keys()),[list(d.values()) for d in total_result_value])
 
-        async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
+        # Want to set to test, if it's just test accounts.
+        email_list = EMAIL_AARON if all([d["GROUP"].lower().find("test") >= 0 for d in To_SQL]) else EMAIL_LIST_BGI
+
+        async_send_email(To_recipients=email_list, cc_recipients=[],
                      Subject="AutoCut: Equity Below Credit.",
                      HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below credit. \
                                 <br><br> {table_data_html} This is done to prevent client from trading on credit. \

@@ -23,74 +23,73 @@ def isfloat(str, value=False):
 
 def get_capital_futures(url, column_thatis_alphanum = 5):
 
-    try:
-        r  = requests.get(url)      # Catch the return
 
-        if r.status_code != 200:    # If request failed
-            return {}
+    r  = requests.get(url)      # Catch the return
 
-         # Get the text, and parse it into soup.
-        soup = BeautifulSoup(r.text , 'html.parser')
+    if r.status_code != 200:    # If request failed
+        return {}
+
+     # Get the text, and parse it into soup.
+    soup = BeautifulSoup(r.text , 'html.parser')
 
 
-        table = soup.find_all("table", recursive=True)
-        if len(table) == 0:
-            return {}
+    table = soup.find_all("table", recursive=True)
+    if len(table) == 0:
+        return {}
 
-        # They have a table in a table.
-        # We need to hunt for that.
-        table_in_table_soup = [t for t in table if len(t.find_all("table")) > 0]
+    # They have a table in a table.
+    # We need to hunt for that.
+    table_in_table_soup = [t for t in table if len(t.find_all("table")) > 0]
 
-        in_brackets_re = re.compile(r'\((.*?)\)')
-        exchange = ""   # Will need to find the exchange when it meets a tr with no table.
+    in_brackets_re = re.compile(r'\((.*?)\)')
+    exchange = ""   # Will need to find the exchange when it meets a tr with no table.
 
-        # looking for table in a table. Will need to isolate the tr that has table in it.
-        four_or_less = []   # For those unusable columns. Like.. Table headers.
-        usable_data = []    # For those useable ones.
+    # looking for table in a table. Will need to isolate the tr that has table in it.
+    four_or_less = []   # For those unusable columns. Like.. Table headers.
+    usable_data = []    # For those useable ones.
 
-        for tab in table_in_table_soup:
-            #for t in tab.children:
-            tr_in_table = tab.find_all("tr", recursive=False)
-            #print(len(tr_in_table))
-            ##print("============================================\n\n")
-            for tab_tr in tr_in_table:
-                tab_tr_table = tab_tr.find_all("table", recursive=True)
-                #print(len(tab_tr_table))
-                if len(tab_tr_table) > 0:
-                    # The data that we actually need..
-                    data_tr = tab_tr.find_all("tr", recursive=True)
-                    for dtr in data_tr:
-                        data_td = dtr.find_all("td", recursive=True)
+    for tab in table_in_table_soup:
+        #for t in tab.children:
+        tr_in_table = tab.find_all("tr", recursive=False)
+        #print(len(tr_in_table))
+        ##print("============================================\n\n")
+        for tab_tr in tr_in_table:
+            tab_tr_table = tab_tr.find_all("table", recursive=True)
+            #print(len(tab_tr_table))
+            if len(tab_tr_table) > 0:
+                # The data that we actually need..
+                data_tr = tab_tr.find_all("tr", recursive=True)
+                for dtr in data_tr:
+                    data_td = dtr.find_all("td", recursive=True)
 
-                        isalpha_counter = 0 # Will use to count how many alpha-numeric there are..
+                    isalpha_counter = 0 # Will use to count how many alpha-numeric there are..
 
-                        usable_data_buffer = [] # Will have to depend on the count to see if this will pass and get appended.
-                        usable_data_buffer.append(exchange) # Need to append the exchange first.
-                        for dtr in data_td:
+                    usable_data_buffer = [] # Will have to depend on the count to see if this will pass and get appended.
+                    usable_data_buffer.append(exchange) # Need to append the exchange first.
+                    for dtr in data_td:
 
-                            if dtr.text.strip().isascii() and (dtr.text.strip().isalnum() or isfloat(dtr.text.strip())):
-                                usable_data_buffer.append(isfloat(dtr.text.strip(),  value=True))  # We want to try and get the value if possible
-                                isalpha_counter += 1
+                        if dtr.text.strip().isascii() and (dtr.text.strip().isalnum() or isfloat(dtr.text.strip())):
+                            usable_data_buffer.append(isfloat(dtr.text.strip(),  value=True))  # We want to try and get the value if possible
+                            isalpha_counter += 1
 
-                        if isalpha_counter >= column_thatis_alphanum: # Has 5 or more. We can use this.
-                            usable_data.append(usable_data_buffer)  # We accept this.
-                        else:   # Those that don't make the cut. See if we need to troubleshoot. But mainly the chinese table header
-                            #print(isalpha_counter)
-                            #print(data_td)
-                            four_or_less.append(data_td)
+                    if isalpha_counter >= column_thatis_alphanum: # Has 5 or more. We can use this.
+                        usable_data.append(usable_data_buffer)  # We accept this.
+                    else:   # Those that don't make the cut. See if we need to troubleshoot. But mainly the chinese table header
+                        #print(isalpha_counter)
+                        #print(data_td)
+                        four_or_less.append(data_td)
+            else:
+                # Need to get the exchange.
+                tr_words_in_brackets = [i.group(1) for i in in_brackets_re.finditer(tab_tr.text)]
+                #print(tr_words_in_brackets)
+                if len(tr_words_in_brackets) > 0:
+                    exchange = tr_words_in_brackets[0]  # We will take the first one..
                 else:
-                    # Need to get the exchange.
-                    tr_words_in_brackets = [i.group(1) for i in in_brackets_re.finditer(tab_tr.text)]
-                    #print(tr_words_in_brackets)
-                    if len(tr_words_in_brackets) > 0:
-                        exchange = tr_words_in_brackets[0]  # We will take the first one..
-                    else:
-                        exchange = "Not Found"      # If the Exchange has not been found.
+                    exchange = "Not Found"      # If the Exchange has not been found.
 
 
-        return usable_data
-    except:
-        return []
+    return usable_data
+
 
 
 
@@ -98,108 +97,11 @@ def get_all_futures():
 
 
 
-    # # Singapore Exchange
-    url = "https://www.capitalfutures.com.tw/product/deposit_sp.asp?xy=2&xt=4"
-    sg_exchange = get_capital_futures(url)
-
-    # HK Exchange
-    url = "https://www.capitalfutures.com.tw/product/deposit-hk.asp?xy=2&xt=5"
-    hk_exchange = get_capital_futures(url)
-
     #US Exchange
     url = "https://www.capitalfutures.com.tw/product/deposit.asp?xy=2&xt=2"
     us_exchange = get_capital_futures(url)
 
-    # Japan exchange. Alittle tricky cause it's a shared row..
-    url = "https://www.capitalfutures.com.tw/product/deposit-jp.asp?xy=2&xt=3"
-    # Shared rows has only 2-3 alphanumeric strings. Since it's chinese.
-    jp_exchange = get_capital_futures(url, column_thatis_alphanum=4)
 
-    # not dealing with the TW Stocks for now.. Theyhave no Symbol names
-    url = "https://www.taifex.com.tw/cht/5/indexMarging"
-    tw_exchange = get_capital_futures_TW(url)
-
-    # Column that is needed.
-    tw_col = ["Exchange", "Symbol", "Original Margin", "Maintenance_Margin"]
-    col = ["Exchange", "Symbol", "Currency", "Original_Margin", "Maintenance_Margin"]
-
-    exchanges = {"SG": [dict(zip(col, d)) for d in sg_exchange],
-                 "HK": [dict(zip(col, d)) for d in hk_exchange],
-                 "US": [dict(zip(col, d)) for d in us_exchange],
-                 "JP": [dict(zip(col, d)) for d in jp_exchange],
-                 "TW": [dict(zip(tw_col, d)) for d in tw_exchange]
-                 }
-
-
-
-    return exchanges
-
-
-
-def get_capital_futures_TW(url, column_thatis_alphanum = 4):
-    try:
-        r  = requests.get(url)      # Catch the return
-
-        if r.status_code != 200:    # If request failed
-            return {}
-
-         # Get the text, and parse it into soup.
-        soup = BeautifulSoup(r.text , 'html.parser')
-
-
-        table = soup.find_all("table", recursive=True)
-        if len(table) == 0:
-            return {}
-
-        # Want to find all trs
-        tr_in_table_soup = [t for t in table if len(t.find_all("tr")) > 0]
-
-        exchange = "TW"   # Will need to find the exchange when it meets a tr with no table.
-
-        # looking for table in a table. Will need to isolate the tr that has table in it.
-        four_or_less = []   # For those unusable columns. Like.. Table headers.
-        usable_data = []    # For those useable ones.
-
-        for tab_tr in tr_in_table_soup:
-            tr_tr_table = tab_tr.find_all("tr", recursive=True)
-            #print(len(tab_tr_table))
-            if len(tr_tr_table) > 0:
-                #print(len(tr_tr_table))
-                for dtr in tr_tr_table:
-                    data_td = dtr.find_all("td", recursive=True)
-                    if len(data_td) < 4:
-                        continue
-                    #print(len(data_td))
-                    td_counter = 0 # Will use to count how many alpha-numeric there are..
-
-                    usable_data_buffer = [] # Will have to depend on the count to see if this will pass and get appended.
-                    usable_data_buffer.append(exchange) # Need to append the exchange first.
-                    #print(dtr.text.strip())
-                    for dtr in data_td:
-
-                        usable_data_buffer.append(isfloat(dtr.text.strip(),  value=True))  # We want to try and get the value if possible
-                        td_counter += 1
-
-                    if td_counter >= column_thatis_alphanum: # Has 'column_thatis_alphanum' or more. We can use this.
-                        usable_data.append(usable_data_buffer)  # We accept this.
-                    else:   # Those that don't make the cut. See if we need to troubleshoot. But mainly the chinese table header
-                        #print(isalpha_counter)
-                        #print(data_td)
-                        four_or_less.append(data_td)
-
-
-
-            tw_Wanted = {r'臺股期貨' : "TX", r'小型臺指' : "Mtx"}
-            # Extract out those that we need.
-            return_data = [u for u in usable_data if any([k in u for k,d in tw_Wanted.items()])]
-            # Change the Chinese Symbols to BGI related ones.
-            return_data = [ [d if d not in tw_Wanted else tw_Wanted[d] for d in r] for r in return_data]
-            # Want Only the 1st, 3rd and 4th column
-            return_data = [d[0:2] + d[3:] for d in return_data]
-
-        return return_data
-    except:
-        return []
 
 # To generate the column and insert params
 # Takes in an array of dict
@@ -334,4 +236,4 @@ def Get_Current_Futures_Margin(db=False, sendemail=True):
 
 # If we are not importing this, we want to run main()
 if __name__ == '__main__':
-    Get_Current_Futures_Margin()
+    get_all_futures()
