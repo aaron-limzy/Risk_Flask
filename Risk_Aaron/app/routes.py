@@ -503,6 +503,9 @@ def risk_auto_cut_ajax(update_tool_time=1):
             raw_insert_sql = " ({live}, {login}, {equity}, {credit}, '{group}', now()) "    # Raw template for insert.
             sql_insert_w_values = ",".join([raw_insert_sql.format(live=d["LIVE"], login=d["LOGIN"], equity=d["EQUITY"], credit=d["CREDIT"], group=d["GROUP"]) for d in To_SQL]) # SQL insert with the values.
             sql_insert = "INSERT INTO  aaron.`risk_autocut_results` (LIVE, LOGIN, EQUITY, CREDIT, `GROUP`, DATE_TIME) VALUES {}".format(sql_insert_w_values)   # Add it to the header.
+            sql_insert += " ON DUPLICATE KEY UPDATE `EQUITY`=VALUES(`EQUITY`), `CREDIT`=VALUES(`CREDIT`), `GROUP`=VALUES(`GROUP`)  "
+
+
             #print("SQL Statement: {}".format(sql_insert))
             raw_insert_result = db.engine.execute(sql_insert)   # Insert into SQL
 
