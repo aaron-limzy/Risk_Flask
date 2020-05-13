@@ -196,7 +196,14 @@ def Other_Brokers():
                          "saxo: saxo (https://www.home.saxo/en-sg/rates-and-conditions/forex/trading-conditions#historic-swap-points)<br>" +
                          "ebh: European Brokerage House (https://ebhforex.com/faq/rollover-policy/)<br>" +
                          "fpm: fpmarkets (https://www.fpmarkets.com/swap-point)<br>"+
-                         "cfh: FRom CFH back office. Will divide by the number of days of swaps (ie: not showing 3 days worth..)")
+                         "cfh: FRom CFH back office. Will divide by the number of days of swaps (ie: not showing 3 days worth..)<br>" +
+                        "For CFH Swaps, CFH dosn't use digits for CFD calculations. So we need to multiply it by the digits for CFD. <br>" +
+                        "CFD also has dividend included.<br>" +
+                        "CFH - For FX, their value are in Pips, but since we upload in points, we need to X10.<br>" +
+                        "<br> CFH Swaps has been inverted to reflect the same as MT4. Below are from the original instruction, if taken from their Back office.<br>" +
+                        "CFH -  if the swap rate is positive for the short side, BGI will receive swap. <br>" +
+                        "CFH - if positive for the long side, you will pay swap and vice versa.")
+
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table_No_Border.html", backgroud_Filename='css/Person_Mac.jpg', icon="",
@@ -210,7 +217,7 @@ def Other_Brokers():
 
 @swaps.route('/Swaps/Other_Brokers_Ajax', methods=['GET', 'POST'])
 def Other_Brokers_Ajax():
-    df_other_broker_swaps = get_broker_swaps()
+    df_other_broker_swaps = get_broker_swaps(db)
 
 
     sql_query_line = """select Core_Symbol as Symbol
@@ -231,7 +238,31 @@ def Other_Brokers_Ajax():
 
 
 
+# Want to get the digits changes and get the upload file to OZ
+@swaps.route('/Swaps/CFH_OZ_Upload')
+@login_required
+def cfh_oz_upload():
 
+    description = Markup("Taking Values off CFH Backoffice Via SOAP.<br>Digits compensation for OZ-CFH has been done.")
+    # Template will take in an json dict and display a few tables, depending on how many is needed.
+    return render_template("Webworker_1_table_Boderless_excel.html",
+                           backgroud_Filename='css/Color-Pencil.jpg', \
+                           title="CFH OZ Swaps",
+                           header="CFH OZ Swaps",
+                           excel_file_name="OZ_Swap_Upload.xlsx",
+                           ajax_url=url_for('swaps.cfh_oz_upload_Ajax', _external=True),
+                           description=description, replace_words=Markup(["Today"]))
+
+
+# The Ajax to get the OZ file.
+@swaps.route('/Swaps/CFH_OZ_Upload_Ajax', methods=['GET', 'POST'])
+def cfh_oz_upload_Ajax():
+
+    df_cfd_conversion = get_OZ_CFH_cfd_Digits()
+    cfh_oz_swaps = CFH_Soap_Swaps(backtrace_days_max=2, divide_by_days=False, cfd_conversion=False, df_cfd_conversion=df_cfd_conversion)
+
+    return json.dumps({"Swaps": cfh_oz_swaps})
+    #return json.dumps([{"Testing": "12345"}])
 
 
 

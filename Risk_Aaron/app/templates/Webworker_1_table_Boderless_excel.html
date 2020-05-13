@@ -460,7 +460,7 @@
             if (key=="To_Excel"){
               console.log(ret_obj[key]);
               wbout = write_excel(ret_obj[key])
-              saveAs(new Blob([s2ab(wbout)],{type:"application/octet-stream"}), 'Futures.xlsx');
+              saveAs(new Blob([s2ab(wbout)],{type:"application/octet-stream"}), '{{ excel_file_name }}' );
             }else{
               //console.log(`${key} : ${e.data[key]}`);
              $('#' + key).html(current_html + ret_obj[key]);

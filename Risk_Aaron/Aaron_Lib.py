@@ -292,6 +292,15 @@ def get_working_day_date(start_date, weekdays_count, weekdaylist = [0,1,2,3,4]):
 
     return return_date
 
+# Check if the string float.
+def isfloat(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
+
+
 # Get machine IP.
 def get_machine_ip_address():
 

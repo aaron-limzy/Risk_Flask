@@ -16,10 +16,13 @@ from zeep.transports import Transport
 from suds.client import Client
 import logging
 from zeep import Client
+from zeep import helpers
 
 import pandas as pd
 
 from Aaron_Lib import *
+
+from app.OZ_Rest_Class import *
 
 #logging.basicConfig(level=logging.INFO)
 #logging.getLogger('suds.client').setLevel(logging.INFO)
@@ -31,12 +34,6 @@ from Aaron_Lib import *
 # Price_URL_Standard = "https://www.fxdd.com/api/price-feed/standard"
 
 
-def isfloat(value):
-    try:
-        float(value)
-        return True
-    except ValueError:
-        return False
 
 
 def get_swaps_fxdd():
@@ -426,7 +423,13 @@ def get_from_sql_or_file(sql_query_line, file_name, db):
 # Optional Parameter, backtrace_days_max=0 if we want to enforce to get today's swaps
 # To enable count back of a few hour. (IF CFH uploads late, past midnight SGT)
 # Since we can upload triple swaps, we do not need to divide. Enable divide if we want to compare swaps.
-def CFH_Soap_Swaps(backtrace_days_max=5, start_date="", divide_by_days=False, cfd_convertion=False):
+# Backtrace_days_max=5 # How many days to backtrace, max.
+# start_date="" When do we want to start, if not today
+# divide_by_days=False If we want to divide by days, so that comparing is easier.
+# cfd_convertion=False to convert to BGI Symbols or not
+# cfd_conversion=pd.DataFrame([]) A pandas dataframe for the digits.
+
+def CFH_Soap_Swaps(backtrace_days_max=5, start_date="", divide_by_days=False, cfd_conversion=False, df_cfd_conversion=pd.DataFrame([])):
     # TODO: Update Minitor Tools Table.
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
@@ -434,19 +437,21 @@ def CFH_Soap_Swaps(backtrace_days_max=5, start_date="", divide_by_days=False, cf
     session_soap.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!")
     client = Client(wsdl_url, transport=Transport(session=session_soap))
 
-    # GetCFDCost(accountId: xsd:int, tradeDate: xsd:dateTime)
-    # GetTomNextSwapRates(accountId: xsd:int, tradeDate: xsd:dateTime)
-
-    # TODO: See if we need to run this every day to update the trades?
-
     # Want to get the Client number that BGI has with CFH.
     client_details = client.service.GetAccounts()
     client_num = client_details[0].AccountId if len(client_details) > 0 else -1
 
-    # cfd_swaps = client.service.GetCFDCost(client_num, "2020-04-22")
+    # Need to get the symbol decimals from CFH.
+    # Since their digits and ours might be different.
+    total_symbols_raw = client.service.GetInstruments()
+    # Cast it to a dict.
+    total_symbols = [{"InstrumentSymbol": sym["InstrumentSymbol"], "Decimals": sym["Decimals"]} for sym in total_symbols_raw if all([c in sym for c in ["InstrumentSymbol", "Decimals"]])]
+    total_symbols_raw = None # Free up some space.
+    df_cfh_decimal = pd.DataFrame(total_symbols)
+
 
     # Get the FX Cost.
-
+    # Also, PM, and USOil, UKOil, Since it's considered a commodity
     cfh_fx_swaps = None
     count = 0
     # Will want to know when to start the date for swaps.
@@ -457,40 +462,192 @@ def CFH_Soap_Swaps(backtrace_days_max=5, start_date="", divide_by_days=False, cf
         cfh_fx_swaps = client.service.GetTomNextSwapRates(client_num, swap_date)
         count = count + 1
 
-    # Want to append the Symbol, Long and Short.
-    # However, we want to be mindful about the triple swaps.
-    # Depends on the situation, we might need to divide, or not.
-    # If it is a holiday, s['ToValueDate'] == s['FromValueDate'], so need to do Max
+    # Want to do the conversion of BGI/OZ Digits, CFH Decimals.
+    if cfh_fx_swaps==None:  # No return. we will return an empty file.
 
-    # The rule here is that if the swap rate is positive for the short side, you will receive swap and vice versa
-    # If the swap rate is positive for the long side, you will pay swap and vice versa.
-    # Here is another example on our product page:http://www.cfhclearing.com/products/#fx_com_calc
+        df_cfh_fx = pd.DataFrame([])
+        fx_swaps =  df_cfh_fx.to_dict("records")
+    else:   # If there are returns, meaning CFH has uploaded swaps.
 
+        df_cfh_fx = pd.DataFrame([helpers.serialize_object(c ,dict) for c in cfh_fx_swaps]) # Convert from zeep to dict
+        df_cfh_fx = df_cfh_fx.merge(df_cfh_decimal) # Will join on InstrumentSymbol
+
+        if cfd_conversion == False:   # This is when we need OZ Symbols
+            df_cfh_fx["InstrumentSymbol"] = df_cfh_fx["InstrumentSymbol"].replace({"USOUSD": "vUSOil", "UKOUSD": "vUKOil"})
+            # We need to remove the "/"
+            df_cfd_conversion["Symbol"] = df_cfd_conversion.apply(lambda x: x['CoreSymbol'].replace("/",""), axis = 1)
+        else: # MT4 Symbols
+            df_cfh_fx["InstrumentSymbol"] = df_cfh_fx["InstrumentSymbol"].replace({"USOUSD": ".USOil", "UKOUSD": ".UKOil"})
+
+        df_cfh_fx = df_cfh_fx.merge(df_cfd_conversion, left_on="InstrumentSymbol", right_on="Symbol")
+
+        #df_cfh_fx[df_cfh_fx["Decimals"] != df_cfh_fx["Digits"]][["Symbol", "Digits", "Decimals"]]
+
+        # Pip is give. So multiply by 10
+        # Long side needs to be multiplied by -1
+        # The rule here is that if the swap rate is positive for the short side, you will receive swap and vice versa
+        # If the swap rate is positive for the long side, you will pay swap and vice versa.
+        # Here is another example on our product page:http://www.cfhclearing.com/products/#fx_com_calc
+        df_cfh_fx["LongPosPips"] = df_cfh_fx.apply(lambda x:  round(float(-10 * x["LongPosPips"] / (10 ** (x["Decimals"] - x["Digits"]))),4), axis=1)
+        df_cfh_fx["ShortPosPips"] = df_cfh_fx.apply(lambda x: round(float( 10 * x["ShortPosPips"] / (10 ** (x["Decimals"] - x["Digits"]))), 4),  axis=1)
+
+        # We want to be mindful about the triple swaps.
+        # Depends on the situation, we might need to divide, or not.
+        # If it is a holiday, s['ToValueDate'] == s['FromValueDate'], so need to do Max 1
+        if divide_by_days == True:  # If we want to divide by Days
+            df_cfh_fx["ShortPosPips"] = df_cfh_fx.apply(lambda x: round( x["ShortPosPips"] / max((x['ToValueDate'] - x['FromValueDate']).days, 1), 4), axis=1)
+            df_cfh_fx["ShortPosPips"] = df_cfh_fx.apply(lambda x: round( x["ShortPosPips"] / max((x['ToValueDate'] - x['FromValueDate']).days, 1), 4), axis=1)
+
+        # Select Which column is needed.
+        if cfd_conversion == False: # This is when we need OZ Symbols
+            df_cfh_fx["Symbol Group Path"] = "*"
+            df_cfh_fx=df_cfh_fx.rename(columns={"CoreSymbol" : "Core Symbol", "LongPosPips" : "Long Points", "ShortPosPips" : "Short Points"})
+            df_cfh_fx = df_cfh_fx[['Core Symbol', "Symbol Group Path", 'Long Points', 'Short Points']]
+        else:   # For MT4
+            df_cfh_fx = df_cfh_fx[[ 'InstrumentSymbol', 'LongPosPips', 'ShortPosPips']]
+            # Want to append the Symbol, Long and Short.
+            df_cfh_fx = df_cfh_fx.rename(
+                columns={'InstrumentSymbol': 'Symbol', 'LongPosPips': 'Long', 'ShortPosPips': 'Short'})
+
+
+        fx_swaps = df_cfh_fx.to_dict("records")
+
+
+
+    # Multiple of -1 on the long side to flip it.
     # fx_swaps = [{"Symbol": s['InstrumentSymbol'],
-    #              "Long": -1 * round(    float(s['LongPosPips']) if divide_by_days == False else  float(s['LongPosPips']) ((s['ToValueDate'] - s['FromValueDate']).days) \
-    #                             ,2), \
-    #              "Short": round(    float(s['ShortPosPips']) if divide_by_days == False else float(s['ShortPosPips']) / ((s['ToValueDate'] - s['FromValueDate']).days) \
-    #                             ,2) \
-    #              } for s in cfh_fx_swaps \
-    #                 if all(u in s for u in ["InstrumentSymbol", 'LongPosPips', 'ShortPosPips', 'FromValueDate', 'ToValueDate'])]
+    #              "Long": -1 * round(float(s['LongPosPips']) if divide_by_days == False else float(s['LongPosPips']) /
+    #              max( (s['ToValueDate'] - s['FromValueDate']).days, 1), 3),
+    #              "Short": round(float(s['ShortPosPips']) if divide_by_days == False else float(s['ShortPosPips']) /
+    #             max( (s['ToValueDate'] - s['FromValueDate']).days, 1), 3),
+    #              } for s in cfh_fx_swaps if all(
+    #     u in s for u in ["InstrumentSymbol", 'LongPosPips', 'ShortPosPips', 'FromValueDate', 'ToValueDate'])]
 
-    fx_swaps = [{"Symbol": s['InstrumentSymbol'],
-                 "Long": -1 * round(float(s['LongPosPips']) if divide_by_days == False else float(s['LongPosPips']) /
-                 max( (s['ToValueDate'] - s['FromValueDate']).days, 1), 3),
-                 "Short": round(float(s['ShortPosPips']) if divide_by_days == False else float(s['ShortPosPips']) /
-                max( (s['ToValueDate'] - s['FromValueDate']).days, 1), 3),
-                 } for s in cfh_fx_swaps if all(
-        u in s for u in ["InstrumentSymbol", 'LongPosPips', 'ShortPosPips', 'FromValueDate', 'ToValueDate'])]
 
-    # cfd_swaps = client.service.GetCFDCost(client_num, datetime(2020, 4, 22, 0, 0))
-    # if cfd_convertion == True: # If we need to do CFD conversion to BGI Symbol or not.
-    #     pass
-    return fx_swaps
+
+    ## ---------------------------------- CFDs ---------------------------
+    cfh_cfd_swaps = None
+    count = 0
+    # Will want to know when to start the date for swaps.
+    swap_date = datetime.datetime.now().date() if start_date == "" else start_date
+    while cfh_cfd_swaps == None and count < backtrace_days_max:  # At max go back 5 days. Just need to get the swaps no matter what.
+        # print((datetime.datetime.now() - datetime.timedelta(days=count)).date())
+        swap_date = swap_date - datetime.timedelta(days=count)
+        cfh_cfd_swaps = client.service.GetCFDCost(client_num, swap_date)
+        count = count + 1
+
+    # Want to transform the column names.
+    # And to include only those that is needed.
+    # Swap date in python. Monday : 0, Tuesday: 1...
+    cfd_col = {"InstrumentSymbol": "Symbol", "LongPosCost": "Long", "ShortPosCost": "Short", "GrossDividend": "Dividend"}
+    cfd_cost = [{bgi_col:c_swaps[col] for col, bgi_col in cfd_col.items()} for c_swaps in cfh_cfd_swaps if all([col in c_swaps for col in cfd_col])]
+
+    # Want to get Daily Swaps
+    # If it's friday, and we also want to divide...
+    if divide_by_days == True and swap_date.weekday() == 4:
+        for i in range(len(cfd_cost)):
+            cfd_cost[i]['Long'] = float(cfd_cost[i]['Long'] / 3)
+            cfd_cost[i]['Short'] = float(cfd_cost[i]['Short'] / 3)
+
+    # Clean up, to round to 4 decimal places.
+    for i in range(len(cfd_cost)):
+        # If the swap rate is positive for the long side, you will pay swap and vice versa.
+        # Also, to calculate in the dividend
+        cfd_cost[i]['Long'] = -1 * round(float(cfd_cost[i]['Long']), 4) +  round(float(cfd_cost[i]['Dividend']), 4)     # For long, we need to invert it.
+        cfd_cost[i]['Short'] = round(float(cfd_cost[i]['Short']), 4) -  round(float(cfd_cost[i]['Dividend']), 4)
+        #cfd_cost[i]['Dividend'] = round(float(cfd_cost[i]['Dividend']), 4)
+
+    # TODO: Need to understand what to do with the dividend.
+    for i in range(len(cfd_cost)):
+        cfd_cost[i].pop('Dividend')
+
+    cfd_cost_return = []
+    cfh_bgi_Symbols = {'200AUD': ".AUS200", 'CHN50USD': ".A50", 'F40EUR': ".F40",
+                       'D30EUR': ".DE30",  'E50EUR': ".STOXX50", 'H33HKD': ".HK33",
+                       '225JPY': ".JP225", 'E35EUR': ".ES35", '100GBP': ".UK100",
+                       'NASUSD': ".US100",  'SPXUSD': ".US500", 'U30USD': ".US30"}
+
+
+
+    # If we need to convert to BGI Symbols.
+    if cfd_conversion == True:
+        df_cfd = pd.DataFrame(cfd_cost)                                         # Put into df
+        df_cfd = df_cfd[df_cfd["Symbol"].isin(cfh_bgi_Symbols)]                 # Want only those that BGI has
+        df_cfd["Symbol"] = df_cfd["Symbol"].apply(lambda x: cfh_bgi_Symbols[x]  # Change Symbol to BGI Symbol
+            if x in cfh_bgi_Symbols else x)
+
+
+        # Return a Pandas Data Frame
+        #cfd_conversion = get_MT4_cfd_Digits()
+        df_cfd = df_cfd.merge(df_cfd_conversion)
+
+
+        # Digits Corrections.
+        df_cfd["Long"] = df_cfd.apply(lambda x:  round(x["Long"]  * 10 ** x["Digits"], 3), axis = 1)
+        df_cfd["Short"] = df_cfd.apply(lambda x: round(x["Short"] * 10 ** x["Digits"], 3), axis=1)
+        df_cfd = df_cfd[["Symbol", "Long", "Short"]]    # Only want specific columns
+        cfd_cost_return = df_cfd.to_dict("records")
+
+
+    else: # Just return those that OZ has..
+        #cfd_cost = [c for c in cfd_cost if "Symbol" in c and c["Symbol"] in cfh_bgi_Symbols]
+        df_cfd = pd.DataFrame(cfd_cost)
+        df_cfd = df_cfd.merge(df_cfd_conversion, left_on="Symbol", right_on="CoreSymbol")
+
+
+
+        # Does the digit corrections.
+        df_cfd["Long"] = df_cfd.apply(lambda x:  round(x["Long"]  * 10 ** x["Digits"], 3), axis = 1)
+        df_cfd["Short"] = df_cfd.apply(lambda x: round(x["Short"] * 10 ** x["Digits"], 3), axis=1)
+        df_cfd["Symbol Group Path"] = '*'   # For OZ uploads.
+
+        df_cfd.rename(columns={"CoreSymbol": "Core Symbol", "Long": "Long Points","Short": "Short Points"}, inplace=True)
+        df_cfd = df_cfd[["Core Symbol", "Symbol Group Path" ,"Long Points", "Short Points"]]  # Only want specific columns
+        cfd_cost_return = df_cfd.to_dict("records")
+
+    return fx_swaps + cfd_cost_return
+
+
+#df_cfd_conversion=get_MT4_cfd_Digits()
+# For CFH Digit Calculations.
+def get_MT4_cfd_Digits(db=False):
+    # Need to get from SQL, the digits for MT4.
+    # Because we need to multiply by the correct digits.
+    if db == False:
+        db = init_SQLALCHEMY()
+
+    sql_query_line = """select Symbol, Digits
+        From live1.mt4_symbols_update
+        where `SECURITY` like "CFD%Oil" or 
+            `SECURITY` in ("Group 5", "Exotic Pairs", "Gold", "Silver")
+        order by `Symbol`"""
+
+    # Return a Pandas Data Frame
+    cfd_conversion = get_from_sql_or_file(sql_query_line, "BGI_CFD_Digits.xls", db)
+    return cfd_conversion
+
+# For the Upload to OZ.
+#df_cfd_conversion=get_OZ_CFH_cfd_Digits()
+# Since OZ uses digits, but CFH dosn't, we need to do some converstion.
+def get_OZ_CFH_cfd_Digits():
+    # Margin Class
+    # Want to get margin Core symbol digits
+    margin_c = OZ_Rest_Class("Margin")
+    margin_symbol_setting = margin_c.get_core_symbol()
+
+    # Want to get those that are FOREX, METAL, or CFH indicies
+    cfd_conversion = [m for m in margin_symbol_setting['settings']['Symbols']
+                      if "SymbolGroupPath" in m and
+                      (m['SymbolGroupPath'].find("CFH") >= 0 or m['SymbolGroupPath'].find("METAL") >= 0
+                       or m['SymbolGroupPath'].find("FOREX") >= 0 or m['SymbolGroupPath'].find("ENERGIES") >= 0)]
+
+    df_cfh_indices = pd.DataFrame(cfd_conversion)
+    return df_cfh_indices[[ 'CoreSymbol', 'Digits']]
 
 
 # Will get other broker swaps with requests.
 # and join them together.
-def get_broker_swaps():
+def get_broker_swaps(db=False):
     df_fxdd = pd.DataFrame(get_swaps_fxdd())
     # df_fxdd['Long'] = df_fxdd['Long'].apply(lambda x: round(x, 2) if type(x) == "float" or  type(x) == "int" else x)
     # df_fxdd['Short'] = df_fxdd['Long'].apply(lambda x: round(x, 2) if type(x) == "float" or type(x) == "int" else x)
@@ -516,12 +673,11 @@ def get_broker_swaps():
     df_fpmarkets = pd.DataFrame(get_swaps_fpmarkets())
     df_fpmarkets = df_fpmarkets.rename(columns={"Long": "fpm Long", "Short": "fpm Short"})
 
-    df_cfh = pd.DataFrame(CFH_Soap_Swaps(divide_by_days=True))
+
+
+    df_cfh = pd.DataFrame(CFH_Soap_Swaps(divide_by_days=True, df_cfd_conversion=get_MT4_cfd_Digits(db), cfd_conversion=True))
     df_cfh = df_cfh.rename(columns={"Long": "cfh Long", "Short": "cfh Short"})
 
-
-
-    #
 
     swaps_array = [df_fxdd, df_fdc, df_saxo, df_tradeview, df_global_prime,df_ebhforex, df_fpmarkets, df_cfh]
     df_return = pd.DataFrame([], columns=["Symbol"])

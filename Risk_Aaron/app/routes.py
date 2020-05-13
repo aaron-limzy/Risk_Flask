@@ -2153,7 +2153,8 @@ def Scrape_futures():
     return render_template("Webworker_1_table_Boderless_excel.html",
                            backgroud_Filename='css/Color-Pencil.jpg', \
                            title="Futures Scrape",
-                           header="Scrape Futures", 
+                           header="Scrape Futures",
+                           excel_file_name = "Futures.xlsx",
                            ajax_url=url_for('main_app.Scrape_futures_ajax', _external=True),
                            description=description, replace_words=Markup(["Today"]))
 
