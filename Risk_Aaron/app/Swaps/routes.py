@@ -259,7 +259,7 @@ def cfh_oz_upload():
 def cfh_oz_upload_Ajax():
 
     df_cfd_conversion = get_OZ_CFH_cfd_Digits()
-    cfh_oz_swaps = CFH_Soap_Swaps(backtrace_days_max=2, divide_by_days=False, cfd_conversion=False, df_cfd_conversion=df_cfd_conversion)
+    cfh_oz_swaps = CFH_Soap_Swaps(backtrace_days_max=1, divide_by_days=False, cfd_conversion=False, df_cfd_conversion=df_cfd_conversion)
 
     return json.dumps({"Swaps": cfh_oz_swaps})
     #return json.dumps([{"Testing": "12345"}])
