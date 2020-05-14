@@ -434,7 +434,7 @@ def CFH_Soap_Swaps(backtrace_days_max=5, start_date="", divide_by_days=False, cf
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
     session_soap = Session()
-    session_soap.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!")
+    session_soap.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!!")
     client = Client(wsdl_url, transport=Transport(session=session_soap))
 
     # Want to get the Client number that BGI has with CFH.

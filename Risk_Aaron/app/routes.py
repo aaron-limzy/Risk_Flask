@@ -959,7 +959,7 @@ def CFH_Soap_Position_ajax(update_all=0):  # Optional Parameter, to update from 
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
     session_soap = Session()
-    session_soap.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!")
+    session_soap.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!!")
     client = Client(wsdl_url, transport=Transport(session=session_soap))
 
     database_name = "aaron"
@@ -1073,7 +1073,7 @@ def CFH_Soap_Symbol_ajax(update_all=0):  # Optional Parameter, to update from th
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
     session_soap = Session()
-    session_soap.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!")
+    session_soap.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!!")
     client = Client(wsdl_url, transport=Transport(session=session_soap))
 
     database_name = "aaron"
@@ -1409,6 +1409,14 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
         # Check for the past details.
         # Should be stored in Javascript, and returned back Via post.
         # Will contain all the Zeros as well.
+        # # Example below:
+        #{'send_email_flag': '1',  'MT4_LP_Position_save': '[{"SYMBOL":"GBPCAD","Vantage_lot":0,"CFH_Lots":0.01,"API_lot":0,"Offset_lot":0,"Lp_Net_Vol":0.01,
+        # "MT4_Net_Vol":0,"Discrepancy":0.01,"Mismatch_count":15},{"SYMBOL":"XAUUSD","Vantage_lot":0,"CFH_Lots":-10.26,"API_lot":0,"Offset_lot":0,"Lp_Net_Vol":-10.26,"MT4_Net_Vol":-10.26,
+        # "Discrepancy":0,"Mismatch_count":0},{"SYMBOL":"GBPUSD","Vantage_lot":0,"CFH_Lots":-0.07,"API_lot":0,"Offset_lot":0,"Lp_Net_Vol":-0.07,"MT4_Net_Vol":-0.07,"Discrepancy":0,"Mismatch_count":0},
+        # {"SYMBOL":"AUDNZD","Vantage_lot":0,"CFH_Lots":0.04,"API_lot":0,"Offset_lot":0,"Lp_Net_Vol":0.04,"MT4_Net_Vol":0.04,"Discrepancy":0,"Mismatch_count":0},{"SYMBOL":"CHFJPY","Vantage_lot":0,
+        # "CFH_Lots":0.02,"API_lot":0,"Offset_lot":0,"Lp_Net_Vol":0.02,"MT4_Net_Vol":0.02,"Discrepancy":0,"Mismatch_count":0},{"SYMBOL":"USDJPY","Vantage_lot":0,"CFH_Lots":-0.02,"API_lot":0,"Offset_lot":0,
+        # "Lp_Net_Vol":-0.02,"MT4_Net_Vol":-0.02,"Discrepancy":0,"Mismatch_count":0}]'}
+
         Past_Details = json.loads(post_data["MT4_LP_Position_save"]) if ("MT4_LP_Position_save" in post_data) \
                                                                            and (isinstance(post_data['MT4_LP_Position_save'], str)) \
                                                                            and is_json(post_data["MT4_LP_Position_save"]) \
