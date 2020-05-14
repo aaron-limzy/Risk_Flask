@@ -80,15 +80,14 @@ LP_MARGIN_ALERT_LEVEL = 20            # How much away from MC do we start making
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display the warnings.
 
 
-# TODO: or should we check if it's 64.73?
-if get_machine_ip_address() == '192.168.20.14': #Only On Aaron's computer
-
+if get_machine_ip_address() == '192.168.64.73': #Only On Server computer
+    EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
+    EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "risk@blackwellglobal.com", "cs@bgifx.com"]
+    print("On Server 64.73")
+else:
     EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
     EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com"]
     print("On Aaron's Computer")
-else:
-    EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
-    EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "risk@blackwellglobal.com", "cs@bgifx.com"]
 
 EMAIL_AARON =  ["aaron.lim@blackwellglobal.com"]     # For test Groups.
 
@@ -1381,24 +1380,47 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 
     ## Need to check if the post has data. Cause from other functions, the POST details will come thru as well.
     if request.method == 'POST' and len(request.form) > 0:    # If the request came in thru a POST. We will get the data first.
+        #print("Request A Book Matching method: POST")
 
         post_data = dict(request.form)  # Want to do a copy.
-        # print(post_data)
+        #print(post_data)
+
         # Check if we need to send Email
-        Send_Email_Flag =  int(post_data["send_email_flag"][0]) if ("send_email_flag" in post_data) \
-                                                                   and (isinstance(post_data['send_email_flag'], list)) else 0
+        Send_Email_Flag =  int(post_data["send_email_flag"]) if ("send_email_flag" in post_data) \
+                                                                   and (isinstance(post_data['send_email_flag'], str)
+                                                                        and isfloat(post_data['send_email_flag'])) else 0
+
+        # if "MT4_LP_Position_save" in post_data:
+        #     print("MT4_LP_Position_save in post_data")
+        # else:
+        #     print("MT4_LP_Position_save Not in post_data")
+        #
+        # if isinstance(post_data['MT4_LP_Position_save'], str):
+        #     print("post_data['MT4_LP_Position_save'] is str")
+        # else:
+        #     print("post_data['MT4_LP_Position_save'] is NOT str: {}".format(type(post_data['MT4_LP_Position_save'])))
+        #
+        #
+        # if is_json(post_data["MT4_LP_Position_save"]):
+        #     print('post_data["MT4_LP_Position_save"] is json')
+        # else:
+        #     print('post_data[" MT4_LP_Position_save"] is not json: {}'.format())
+
         # Check for the past details.
-        Past_Details = json.loads(post_data["MT4_LP_Position_save"][0]) if ("MT4_LP_Position_save" in post_data) \
-                                                                           and (isinstance(post_data['MT4_LP_Position_save'], list)) \
-                                                                           and is_json(post_data["MT4_LP_Position_save"][0]) \
+        # Should be stored in Javascript, and returned back Via post.
+        # Will contain all the Zeros as well.
+        Past_Details = json.loads(post_data["MT4_LP_Position_save"]) if ("MT4_LP_Position_save" in post_data) \
+                                                                           and (isinstance(post_data['MT4_LP_Position_save'], str)) \
+                                                                           and is_json(post_data["MT4_LP_Position_save"]) \
                                                                             else []
+        # If we want to send all the total position
         send_email_total = int(post_data["send_email_total"][0]) if ("send_email_total" in post_data) \
                                                                    and (isinstance(post_data['send_email_total'], list)) else 0
 
         # Variables to return.
         Play_Sound = 0                                  # To play sound if needed
 
-        # print(Past_Details)
+        #print("Past Details: {}".format(Past_Details))
         # To Calculate the past (Previous result) Mismatches
         Past_discrepancy = dict()
         for pd in Past_Details:
@@ -1425,7 +1447,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
         Current_discrepancy = [d["SYMBOL"] for d in Notify_Mismatch]        # Get all the Mimatch Symbols only
 
 
-        #print(Current_discrepancy)
+        #print("Current Discrepency: {}".format(Current_discrepancy))
 
         if (send_email_total == 1): # for sending the total position.
 
@@ -1528,7 +1550,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 
         # '[{"Vantage_Update_Time": "2019-09-17 16:54:20", "BGI_Margin_Update_Time": "2019-09-17 16:54:23"}]'
 
-
+    #print("Current Results: {}".format(curent_result))
     return_result = {"current_result":curent_result, "Play_Sound": Play_Sound}   # End of if/else. going to return.
 
     return json.dumps(return_result)
@@ -1574,6 +1596,9 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
         Lp_SO_Level = lp["stop_out (M/E)"] if "stop_out (M/E)" in lp else None
         Lp_Margin_Level = lp["Margin/Equity (%)"]  if "Margin/Equity (%)" in lp else None
 
+        # Want to induce an error
+        #Lp_Margin_Level = lp["Margin/Equity (%)"] + 105  if "Margin/Equity (%)" in lp else None
+
         loop_buffer["BALANCE"] = dict()
         loop_buffer["BALANCE"]["DEPOSIT"] = "$ {:,.2f}".format(float(lp["deposit"])) if "deposit" in lp else None
         loop_buffer["BALANCE"]["CREDIT"] = "$ {:,.2f}".format(float(lp["credit"])) if "credit" in lp else None
@@ -1613,28 +1638,31 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
 
     if request.method == 'POST':
         post_data = dict(request.form)
-        # print(post_data)
+        #print(post_data)
 
         # Get variables from POST.
-        Send_Email_Flag = int(post_data["send_email_flag"][0]) if ("send_email_flag" in post_data) \
-                               and (isinstance(post_data['send_email_flag'], list)) else 0
-        lp_attention_email_count = int(post_data["lp_attention_email_count"][0]) if ("lp_attention_email_count" in post_data) \
-                                and (isinstance(post_data['lp_attention_email_count'], list)) else 0
+        Send_Email_Flag = int(post_data["send_email_flag"]) if ("send_email_flag" in post_data) \
+                               and (isinstance(post_data['send_email_flag'], str)) else 0
 
-        lp_mc_email_count = int(post_data["lp_mc_email_count"][0]) if ("lp_mc_email_count" in post_data) \
-                                 and (isinstance(post_data['lp_mc_email_count'], list)) else 0
-        lp_time_issue_count = int(post_data["lp_time_issue_count"][0]) if ("lp_time_issue_count" in post_data) \
-                                 and (isinstance(post_data['lp_time_issue_count'], list)) else -1
-        lp_so_email_count = int(post_data["lp_so_email_count"][0]) if ("lp_so_email_count" in post_data) \
-                                and (isinstance(post_data['lp_so_email_count'], list)) else -1
+        lp_attention_email_count = int(post_data["lp_attention_email_count"]) if ("lp_attention_email_count" in post_data) \
+                                and (isinstance(post_data['lp_attention_email_count'], str)) else 0
+
+        lp_mc_email_count = int(post_data["lp_mc_email_count"]) if ("lp_mc_email_count" in post_data) \
+                                 and (isinstance(post_data['lp_mc_email_count'], str)) else 0
+
+
+        lp_time_issue_count = int(post_data["lp_time_issue_count"]) if ("lp_time_issue_count" in post_data) \
+                                 and (isinstance(post_data['lp_time_issue_count'], str)) else -1
+
+
+        lp_so_email_count = int(post_data["lp_so_email_count"]) if ("lp_so_email_count" in post_data) \
+                                and (isinstance(post_data['lp_so_email_count'], str)) else -1
+
 
 
         if Send_Email_Flag == 1:    # Want to update the runtime table to ensure that tool is running.
-
-            # sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`) VALUES" \
-            #              " ('LP Details Check', now()) ON DUPLICATE KEY UPDATE Updated_Time=now()"
             async_update_Runtime(app=current_app._get_current_object(), Tool="LP_Details_Check")
-            #raw_insert_result = db.engine.execute(sql_insert)
+
 
         Tele_Message = "*LP Details* \n"  # To compose Telegram outgoing message
 
@@ -1664,6 +1692,11 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
         else:   # Reset to 0.
             lp_time_issue_count = 0
 
+        #Margin_SO_Flag: 0, Send_Email_Flag: 1, lp_so_email_count: 0, Margin_MC_Flag: 2
+
+        #print("Margin_SO_Flag : {}, lp_so_email_count: {}, Send_Email_Flag:{}".format(Margin_SO_Flag, lp_so_email_count, Send_Email_Flag))
+        #print("Margin_MC_Flag : {}, lp_mc_email_count: {}, Send_Email_Flag:{}".format(Margin_MC_Flag, lp_mc_email_count, Send_Email_Flag))
+        #print("margin_attention_flag : {}, lp_attention_email_count: {}, Send_Email_Flag:{}".format(margin_attention_flag, lp_attention_email_count, Send_Email_Flag))
 
         # -------------------- To Check the Margin Levels, and to send email when needed. --------------------------
         if Margin_SO_Flag > 0:   # If there are margin issues. Want to send Alert Out.
@@ -1671,11 +1704,15 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
                 if Send_Email_Flag == 1:
                     async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
                     LP_position_Table = List_of_Dict_To_Horizontal_HTML_Table(LP_Position_Show_Table, ['Slow', 'Margin Call', 'Alert'])
+
+
                     async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
                                      Subject = "LP Account approaching SO.",
                                      HTML_Text="{}Hi,<br><br>LP Account margin reaching SO Levels. <br>{}<br>This Email was generated at: {} (SGT)<br><br>Thanks,<br>Aaron{}".
                                      format(Email_Header, LP_position_Table, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),Email_Footer),
                                      Attachment_Name=[])
+
+
             Play_Sound += 1  # No matter sending emails or not, we will need to play sound.
             # print("Play Sound: {}".format(Play_Sound))
             lp_so_email_count += 1
@@ -1685,11 +1722,14 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
             if lp_mc_email_count == 0:
                 if Send_Email_Flag == 1:
                     LP_position_Table = List_of_Dict_To_Horizontal_HTML_Table(LP_Position_Show_Table, ['Slow', 'Margin Call', 'Alert'])
+
                     async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
                                      Subject = "LP Account has passed MC Levels.",
                                      HTML_Text="{}Hi,<br><br>LP Account margin reaching SO Levels. <br>{}<br>This Email was generated at: {} (SGT)<br><br>Thanks,<br>Aaron{}".
                                      format(Email_Header, LP_position_Table, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),Email_Footer),
                                      Attachment_Name=[])
+
+
                     async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
                 Play_Sound += 1             # Play sound when MC. Once
             lp_mc_email_count += 1
@@ -1699,11 +1739,13 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
                 if Send_Email_Flag == 1:
                     async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
                     LP_position_Table = List_of_Dict_To_Horizontal_HTML_Table(LP_Position_Show_Table, ['Slow', 'Margin Call', 'Alert'])
+
                     async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
                                      Subject = "LP Account approaching MC.",
                                      HTML_Text="{}Hi,<br><br>LP Account margin reaching SO Levels. <br>{}<br>This Email was generated at: {} (SGT)<br><br>Thanks,<br>Aaron{}".
                                      format(Email_Header, LP_position_Table, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),Email_Footer),
                                      Attachment_Name=[])
+
                 Play_Sound += 1              # Play sound when Nearing MC. Once
             lp_attention_email_count += 1
             lp_so_email_count = 0

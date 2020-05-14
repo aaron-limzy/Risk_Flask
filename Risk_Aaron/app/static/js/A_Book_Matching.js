@@ -95,34 +95,36 @@ $(document).ready(function(){
         //Custom_Ajax_Call(Post_Data,"/ABook_Match_Trades_Position", "MT4_LP_Position", "MT4_LP_Position_Raw", "MT4_LP_Position_Error", "MT4/LP Position",0);
 
         $.ajax({
-            url:"/ABook_Match_Trades_Position",
-            data    : Post_Data,
-            type: 'POST',
-            dataType: "JSON",
-            timeout: 45*1000
-            ,success: function(data){
-                // Write to the table.
-//                $('#MT4_LP_Position' ).html(Draw_Table(Table_Zero_Out(data),"MT4/LP Position", "table table-hover table-sm table-responsive-sm basic_table",[]) + '<span class="right-text small-text">' + return_Time_String() + "</span>");
-//                MT4_LP_Position_save = data;
-            	if("current_result" in data){
-					// Write to the table.
-					$('#MT4_LP_Position' ).html(Draw_Table(Table_Zero_Out(data["current_result"]),"MT4/LP Position", "table table-hover table-sm table-responsive-sm basic_table",[]) + '<span class="right-text small-text">' + return_Time_String() + "</span>");
-					MT4_LP_Position_save = data["current_result"];
-            	}
-                if (("Play_Sound" in data) && (data["Play_Sound"] > 0)) {   // Play sound when there's a mismatch.
-                    play_sound_function();
-                }
+          url: "/ABook_Match_Trades_Position",
+          data: Post_Data,
+          type: 'POST',
+          dataType: "JSON",
+          timeout: 45 * 1000,
+          success: function(data) {
+            // Write to the table.
+            //                $('#MT4_LP_Position' ).html(Draw_Table(Table_Zero_Out(data),"MT4/LP Position", "table table-hover table-sm table-responsive-sm basic_table",[]) + '<span class="right-text small-text">' + return_Time_String() + "</span>");
+            //                MT4_LP_Position_save = data;
+            if ("current_result" in data) {
+              // Write to the table.
+              $('#MT4_LP_Position').html(Draw_Table(Table_Zero_Out(data["current_result"]), "MT4/LP Position", "table table-hover table-sm table-responsive-sm basic_table", []) + '<span class="right-text small-text">' + return_Time_String() + "</span>");
+              MT4_LP_Position_save = data["current_result"];
+            }
+            if (("Play_Sound" in data) && (data["Play_Sound"] > 0)) { // Play sound when there's a mismatch.
+              play_sound_function();
+            }
 
-            $('#MT4_LP_Position_Raw' ).html(JSON.stringify(data));
-          }, error: function(xhr,status,error){
-                Custom_Ajax_Error(xhr,status,error,"MT4_LP_Position_Error");
-          }, complete: function(xhr,status){
-                //SetInterval_MT4_LP = setInterval(MT4_LP_Position, 30*1000);
-                $( "#btn_refresh_page" ).removeClass( "btn-info" );
-                $( "#btn_refresh_page" ).addClass( "btn-warning" );
+            $('#MT4_LP_Position_Raw').html(JSON.stringify(data));
+          },
+          error: function(xhr, status, error) {
+            Custom_Ajax_Error(xhr, status, error, "MT4_LP_Position_Error");
+          },
+          complete: function(xhr, status) {
+            //SetInterval_MT4_LP = setInterval(MT4_LP_Position, 30*1000);
+            $("#btn_refresh_page").removeClass("btn-info");
+            $("#btn_refresh_page").addClass("btn-warning");
           }
-      });
-    }
+        });
+        }
 
     function LP_Details() {
 
