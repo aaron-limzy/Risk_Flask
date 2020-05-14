@@ -959,7 +959,7 @@ def CFH_Soap_Position_ajax(update_all=0):  # Optional Parameter, to update from 
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
     session_soap = Session()
-    session_soap.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!!")
+    session_soap.auth = HTTPBasicAuth("BG_Michael", current_app.config["CFH_BO_PASSWORD"])
     client = Client(wsdl_url, transport=Transport(session=session_soap))
 
     database_name = "aaron"
@@ -1073,7 +1073,7 @@ def CFH_Soap_Symbol_ajax(update_all=0):  # Optional Parameter, to update from th
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
     session_soap = Session()
-    session_soap.auth = HTTPBasicAuth("BG_Michael", "Bgil8888!!")
+    session_soap.auth = HTTPBasicAuth("BG_Michael", current_app.config["CFH_BO_PASSWORD"])
     client = Client(wsdl_url, transport=Transport(session=session_soap))
 
     database_name = "aaron"
