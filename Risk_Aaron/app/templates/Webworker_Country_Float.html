@@ -18,13 +18,6 @@
 
 <script src="{{ url_for('static', filename='js/sweetalert2.all.min.js') }}"></script>
 
-
-<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
-<!-- <script src="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css" crossorigin="anonymous"></script> -->
-
-
-
-
 <script type="javascript/worker" id="my_first_worker">
 
   var Increment_counter = 1;
@@ -196,7 +189,7 @@
       //console.log(responseData.length);
 
       // Post to main thread to update the DOM
-      self.postMessage({Table1: Draw_Table(responseData[0], "{{ Table_name }}" , "table table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }} , "tTable_1") + below_table});
+      self.postMessage({Table1: Draw_Table(responseData[0], "{{ Table_name }}" , "table table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }} ) + below_table});
       self.postMessage({Table1_Raw : JSON.stringify(responseData)});
       // self.postMessage({plot1 : responseData[1]});
       //self.postMessage({To_Save : responseData[2]});
@@ -280,16 +273,12 @@
 
 
     // Draws a horizontal table.
-    function Draw_Table(table_Data, Table_Caption, Table_Class, Alert_Words, Replace_words, table_id) {
+    function Draw_Table(table_Data, Table_Caption, Table_Class, Alert_Words, Replace_words) {
         var sString = '';
         //------------- Table Header -----------------------------
-        sString += '<table ';
-        if (table_id != undefined){
-            sString += 'id="' + table_id + '" "';
-        }
-        sString += 'class="' + Table_Class + '">';
+        sString += '<table class="' + Table_Class + '">';
         sString += '<caption>' + Table_Caption + '</caption>';
-        sString += '<thead><tr>';
+        sString += '<tr>';
 
         for (var x in table_Data) {
             //For table header.
@@ -302,7 +291,7 @@
         }
 
         //variable instanceof Array
-        sString += '</tr></thead>';
+        sString += '</tr>';
 
         //------------- Table Data -----------------------------
 
@@ -511,9 +500,6 @@
 
 
           }
-
-          $('#tTable_1').DataTable();
-
             //}
           //}
         }else{
@@ -579,6 +565,18 @@
 
 {% endif %}
 
+<!-- <div class="row">
+  <div class="col-sm chart" id="plot1"> </div>
+</div> -->
+<script type='text/javascript' src='http://202.88.105.5/javascripts/api/viz_v1.js'></script>
+<div class='tableauPlaceholder' style='width: 1600px; height: 950px;'><object class='tableauViz' width='1600' height='950' style='display:none;'>
+    <param name='host_url' value='http%3A%2F%2F202.88.105.5%2F' />
+    <param name='embed_code_version' value='3' />
+    <param name='site_root' value='' />
+    <param name='name' value='Aaron_Floating&#47;BGIFloating' />
+    <param name='tabs' value='yes' />
+    <param name='toolbar' value='yes' />
+    <param name='showAppBanner' value='false' /></object></div>
 {% if table %}
 <br>
 <h2>Uploaded Swap Values</h2>
