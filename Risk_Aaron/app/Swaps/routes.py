@@ -217,19 +217,23 @@ def Other_Brokers():
 
 @swaps.route('/Swaps/Other_Brokers_Ajax', methods=['GET', 'POST'])
 def Other_Brokers_Ajax():
+
+    # Get swaps from other brokers
     df_other_broker_swaps = get_broker_swaps(db)
 
-
+    # Want to get BGI Swaps to do a left join with.
     sql_query_line = """select Core_Symbol as Symbol
     FROM aaron.swap_bgicoresymbol
     ORDER BY Symbol"""
 
     df_bgi_core_symbol = get_from_sql_or_file(sql_query_line, "app\\Swaps\\Upload_Swaps\\BGI_Core_Symbol_Only.xls", db)
     df_other_broker_swaps = df_bgi_core_symbol.merge(df_other_broker_swaps, on="Symbol", how="left")
+
     #print(df_bgi_core_symbol)
     #print("Other Brokers")
     #print(df_other_broker_swaps)
     df_other_broker_swaps.fillna("-", inplace=True)
+    #print(df_other_broker_swaps)
 
     #return json.dumps(pd_dataframe_to_dict(df_fdc))
 

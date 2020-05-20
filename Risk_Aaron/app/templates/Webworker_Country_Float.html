@@ -18,6 +18,13 @@
 
 <script src="{{ url_for('static', filename='js/sweetalert2.all.min.js') }}"></script>
 
+<!-- For jquery's datatable. For interractive tables. -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
+
+
+
+
 <script type="javascript/worker" id="my_first_worker">
 
   var Increment_counter = 1;
@@ -189,7 +196,9 @@
       //console.log(responseData.length);
 
       // Post to main thread to update the DOM
-      self.postMessage({Table1: Draw_Table(responseData[0], "{{ Table_name }}" , "table table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }} ) + below_table});
+      //table table-hover table-sm table-responsive-sm basic_table bg-light
+      // datatable class at https://datatables.net/manual/styling/classes
+      self.postMessage({Data_table_Div1: Draw_Table(responseData[0], "{{ Table_name }}" , "compact row-border table table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div1_table" ) + below_table});
       self.postMessage({Table1_Raw : JSON.stringify(responseData)});
       // self.postMessage({plot1 : responseData[1]});
       //self.postMessage({To_Save : responseData[2]});
@@ -273,25 +282,29 @@
 
 
     // Draws a horizontal table.
-    function Draw_Table(table_Data, Table_Caption, Table_Class, Alert_Words, Replace_words) {
+    function Draw_Table(table_Data, Table_Caption, Table_Class, Alert_Words, Replace_words, table_id) {
         var sString = '';
         //------------- Table Header -----------------------------
-        sString += '<table class="' + Table_Class + '">';
+        sString += '<table ';
+        if (table_id!=undefined){
+            sString += 'id="' + table_id + '" ';
+        }
+        sString += 'class="' + Table_Class + '">';
         sString += '<caption>' + Table_Caption + '</caption>';
-        sString += '<tr>';
+        sString += '<thead><tr>';
 
         for (var x in table_Data) {
             //For table header.
             for (var xx in table_Data[x]) {
                 sString += '<th>';
-                sString += xx;
+                sString += xx.replace("_", " ");  // Replace _ with ' ' so that table can be smaller
                 sString += '</th>';
             }
             break;
         }
 
         //variable instanceof Array
-        sString += '</tr>';
+        sString += '</tr></thead>';
 
         //------------- Table Data -----------------------------
 
@@ -467,9 +480,33 @@
       //console.log(blobURL);
 
       var myWorker = new Worker(blobURL);
+
+
+
+      function refresh_datatable(div_id, data){
+        //'#' + key + '_table'
+        var table_id = div_id + "_table";
+        if ( $.fn.dataTable.isDataTable( table_id ) != true) { // If not a datatable
+          var order = [];
+          //console.log( table_id + ' is NOT data table' );
+
+        }else{
+          var table = $( table_id).DataTable();
+          var order = table.order();
+          //console.log( 'Column '+order+' is the ordering column' );
+        }
+        $(div_id).html(data);
+        table = $( table_id ).DataTable( {
+        paging: false,
+        searching: false,
+        "aaSorting": order // Don't want to sort initially
+        } );
+      }
+
       myWorker.onmessage = function(e){
         if (e.data instanceof Object){  // If it is an object, we loop thru and add it to the correct container/Div
           ret_obj = e.data;
+          //console.log(ret_obj);
           var consolidate = false;
           if ('consolidate' in ret_obj){  // If we want to consolidate all the errors.
             consolidate = true;
@@ -482,6 +519,10 @@
           //}
              var current_html = "";
              if (consolidate == true){  // If we need to consolidate the items.
+
+
+
+
                 var current_html = $('#' + key).html();   // To display the error. First, we need to store the HTML as we want to append.
                 current_html += "<br>-------------------------------------------------<br>";
                 //current_html += "Ajax Response: " + JSON.stringify(xhr) + "<br>";
@@ -492,7 +533,21 @@
              //console.log(`${key} : ${e.data[key]}`);
 
             if (key.search("plot") == -1){  // If there's no need to plot.
-              $('#' + key).html(current_html + ret_obj[key]);
+
+            // If it's a table, we want to convert it to a datatable
+            // Naming convention. If it's a div ment to store a datatable.
+            // We name it  Data_table_Div<number>, so that the table ID = '#' + key + '_table'
+              if (key.toLowerCase().search("data_table_div")>=0){    // All tables can be put to Datatables
+                // used to check if a table is a DataTable or not already.
+                // Datatables dosn't allow for re-init. So.. gotta check
+                console.log(key);
+                //'#' + key + '_table' will be the name of the table in the Div.
+                 refresh_datatable('#' + key, current_html + ret_obj[key]);
+
+
+              }else{
+                $('#' + key).html(current_html + ret_obj[key]);
+              }
             }else{
               console.log(ret_obj[key]);
               Plotly.newPlot(key, ret_obj[key]);
@@ -500,6 +555,26 @@
 
 
           }
+
+          // // used to check if a table is a DataTable or not already.
+          // // Datatables dosn't allow for re-init. So.. gotta check
+          // if ( $.fn.dataTable.isDataTable( '#tTable_1' ) != true) {
+          //   console.log( 'tTable_1 is NOT data table' );
+          //     table = $('#tTable_1').DataTable( {
+          //         paging: false,
+          //         searching: false,
+          //         "aaSorting": [] // Don't want to sort initially
+          //     } );
+          // }else{
+          //   var table = $('#tTable_1').DataTable();
+          //   var order = table.order();
+          //   console.log( 'Column '+order+' is the ordering column' );
+          // }
+
+
+
+
+
             //}
           //}
         }else{
@@ -541,7 +616,7 @@
 </h1>
 
 <div class="row">
-  <div class="col-lg-12 col-md-12 col-sm-12" id="Table1">
+  <div class="col-lg-12 col-md-12 col-sm-12" id="Data_table_Div1">
     Genrating Data. Please Wait..
   </div>
 

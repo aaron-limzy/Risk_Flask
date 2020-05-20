@@ -15,6 +15,11 @@
 {{ super() }}
 <script src="{{ url_for('static', filename='js/sweetalert2.all.min.js') }}"></script>
 
+<!-- For jquery's datatable. For interractive tables. -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
+
+
 <script type="javascript/worker" id="my_first_worker">
 
   var Increment_counter = 1;
@@ -166,7 +171,7 @@
       Increment_counter = 1;  // Restart the Counter.
 
       // Post to main thread to update the DOM
-      self.postMessage({Table1: Draw_Table(responseData, "{{ Table_name }}" , "table table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }} ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
+      self.postMessage({Data_table_Div1: Draw_Table(responseData, "{{ Table_name }}" , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div1_table" ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
       self.postMessage({Table1_Raw : JSON.stringify(responseData)});
 
 
@@ -242,98 +247,118 @@
     }
 
 
-
-    // Draws a horizontal table.
-    function Draw_Table(table_Data, Table_Caption, Table_Class, Alert_Words, Replace_words) {
-        var sString = '';
-        //------------- Table Header -----------------------------
-        sString += '<table class="' + Table_Class + '">';
-        sString += '<caption>' + Table_Caption + '</caption>';
-        sString += '<tr>';
-
-        for (var x in table_Data) {
-            //For table header.
-            for (var xx in table_Data[x]) {
-                sString += '<th>';
-                sString += xx;
-                sString += '</th>';
+        // Draws a horizontal table.
+        function Draw_Table(table_Data, Table_Caption, Table_Class, Alert_Words, Replace_words, table_id) {
+            var sString = '';
+            //------------- Table Header -----------------------------
+            sString += '<table ';
+            if (table_id!=undefined){
+                sString += 'id="' + table_id + '" ';
             }
-            break;
-        }
+            sString += 'class="' + Table_Class + '">';
+            sString += '<caption>' + Table_Caption + '</caption>';
+            sString += '<thead><tr>';
 
-        //variable instanceof Array
-        sString += '</tr>';
+            for (var x in table_Data) {
+                //For table header.
+                for (var xx in table_Data[x]) {
+                    sString += '<th>';
+                    sString += xx.replace("_", " ");  // Replace _ with ' ' so that table can be smaller
+                    sString += '</th>';
+                }
+                break;
+            }
 
-        //------------- Table Data -----------------------------
+            //variable instanceof Array
+            sString += '</tr></thead>';
 
-        for (var x in table_Data) {
-            //For each row
+            //------------- Table Data -----------------------------
 
-            sString += '<tr>';
+            for (var x in table_Data) {
+                //For each row
 
-            for (var xx in table_Data[x]) {
-                //For each data
-                var string_buffer = "";
-                string_buffer += table_Data[x][xx];
+                sString += '<tr>';
 
-                var Alert_Word_found = 0;
-                for (var aw in Alert_Words) {	// Loop thru the list of alert words
-                    // Loop thru the array
-                    if (string_buffer.search(Alert_Words[aw]) >= 0) {
+                for (var xx in table_Data[x]) {
+                    //For each data
+                    var string_buffer = "";
+                    string_buffer += table_Data[x][xx];
+
+
+
+                    var Alert_Word_found = 0;
+                    for (var aw in Alert_Words) {	// Loop thru the list of alert words
+                        // Loop thru the array
+                        if (string_buffer.search(Alert_Words[aw]) >= 0) {
+                            Alert_Word_found = 1;
+                            break;
+                        }
+                    }
+
+                    var Relace_Word_found = 0;
+                    for (var rw in Replace_words) {	// Loop thru the list of Replace words
+                        // Loop thru the array
+                        if (string_buffer.search(Replace_words[aw]) >= 0) {
+                            Relace_Word_found = 1;
+                            string_buffer = table_Data[x][xx].replace(Replace_words[aw], "")
+                            break;
+                        }
+                    }
+
+
+                    Table_Column = xx;	// Get the Column Name
+                    if ((xx.search("Discrepancy") >= 0) && (table_Data[x][xx] != 0)){	// If its the discrepancy Column/Row, we want to Flag out any that isn't 0.
                         Alert_Word_found = 1;
-                        break;
                     }
-                }
 
-                var Relace_Word_found = 0;
-                for (var rw in Replace_words) {	// Loop thru the list of Replace words
-                    // Loop thru the array
-                    if (string_buffer.search(Replace_words[aw]) >= 0) {
-                        Relace_Word_found = 1;
-                        string_buffer = table_Data[x][xx].replace(Replace_words[aw], "")
-                        break;
+                     if ((xx.search("Mismatch_count") >= 0) && (table_Data[x][xx] >= 10)){	// If its the Mismatch_count Column/Row, we want to Flag out any larger then 10
+                        Alert_Word_found = 1;
                     }
+
+
+                    if (Alert_Word_found == 1) {
+                        // If there is an error, change the color of the cell
+                        sString += '<td class="alert_cell">';
+                        //sString+= '<td>';
+                    } else if (Relace_Word_found == 1) {
+                        //If replace words was found, we want to give it a class
+                        sString += '<td class="table_highlight">';
+                        //sString+= '<td>';
+                    } else {
+                        sString += '<td>';
+                    }
+
+                    if (table_Data[x][xx]instanceof Array == true || table_Data[x][xx]instanceof Object == true) {
+                        //sString += "Is Array..." ;
+
+                        sString += Draw_Vertical_Table(table_Data[x][xx], "", "table_orange ", Replace_words);
+                    } else  if (typeof(table_Data[x][xx]) === 'number'){  // If it's a number. we want to write it with a comma for easy reading.
+
+                      // If we need -ve to be red in color.
+                      // if (table_Data[x][xx] < 0){
+                      //   sString += "<font color='red'>" +  numberWithCommas(table_Data[x][xx]) + "</font>";
+                      // }else{
+                      //   sString += numberWithCommas(table_Data[x][xx]);
+                      // }
+                      sString += numberWithCommas(table_Data[x][xx]);
+
+                    }else
+                    {
+
+                        sString += string_buffer;
+                    }
+                    sString += "</td>";
+
                 }
-
-
-                Table_Column = xx;	// Get the Column Name
-                if ((xx.search("Discrepancy") >= 0) && (table_Data[x][xx] != 0)){	// If its the discrepancy Column/Row, we want to Flag out any that isn't 0.
-                    Alert_Word_found = 1;
-                }
-
-                 if ((xx.search("Mismatch_count") >= 0) && (table_Data[x][xx] >= 10)){	// If its the Mismatch_count Column/Row, we want to Flag out any larger then 10
-                    Alert_Word_found = 1;
-                }
-
-
-                if (Alert_Word_found == 1) {
-                    // If there is an error, change the color of the cell
-                    sString += '<td class="alert_cell">';
-                    //sString+= '<td>';
-                } else if (Relace_Word_found == 1) {
-                    //If replace words was found, we want to give it a class
-                    sString += '<td class="table_highlight">';
-                    //sString+= '<td>';
-                } else {
-                    sString += '<td>';
-                }
-
-                if (table_Data[x][xx]instanceof Array == true || table_Data[x][xx]instanceof Object == true) {
-                    //sString += "Is Array..." ;
-
-                    sString += Draw_Vertical_Table(table_Data[x][xx], "", "table_orange ", Replace_words);
-                } else {
-
-                    sString += string_buffer;
-                }
-                sString += "</td>";
-
+                sString += '</tr>';
             }
-            sString += '</tr>';
-        }
-        sString += '</table>';
-        return sString;
-      }
+            sString += '</table>';
+            return sString;
+          }
+
+    function numberWithCommas(x) {
+      return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+    }
 
 
     function Check_Time_Offset(){
@@ -423,6 +448,26 @@
       var blobURL = URL.createObjectURL(blob);
       //console.log(blobURL);
 
+      function refresh_datatable(div_id, data){
+        //'#' + key + '_table'
+        var table_id = div_id + "_table";
+        if ( $.fn.dataTable.isDataTable( table_id ) != true) { // If not a datatable
+          var order = [];
+          //console.log( table_id + ' is NOT data table' );
+
+        }else{
+          var table = $( table_id).DataTable();
+          var order = table.order();
+          //console.log( 'Column '+order+' is the ordering column' );
+        }
+        $(div_id).html(data);
+        table = $( table_id ).DataTable( {
+        paging: false,
+        searching: true,
+        "aaSorting": order // Don't want to sort initially
+        } );
+      }
+
       var myWorker = new Worker(blobURL);
       myWorker.onmessage = function(e){
         if (e.data instanceof Object){  // If it is an object, we loop thru and add it to the correct container/Div
@@ -447,7 +492,24 @@
                 //$('#' + error_card_id ).html(current_html);  // Put it back into the Card.
              }
              //console.log(`${key} : ${e.data[key]}`);
-            $('#' + key).html(current_html + ret_obj[key]);
+
+             // If it's a table, we want to convert it to a datatable
+             // Naming convention. If it's a div ment to store a datatable.
+           // We name it  Data_table_Div<number>, so that the table ID = '#' + key + '_table'
+             if (key.toLowerCase().search("data_table_div")>=0){    // All tables can be put to Datatables
+               // used to check if a table is a DataTable or not already.
+               // Datatables dosn't allow for re-init. So.. gotta check
+               console.log(key);
+               //'#' + key + '_table' will be the name of the table in the Div.
+                refresh_datatable('#' + key, current_html + ret_obj[key]);
+
+
+             }else{
+               $('#' + key).html(current_html + ret_obj[key]);
+             }
+
+
+            //$('#' + key).html(current_html + ret_obj[key]);
           }
             //}
           //}
@@ -484,8 +546,8 @@
 </h1>
 
 <div class="row">
-  <div class="col-lg-12 col-md-12 col-sm-12" id="Table1">
-    <div class ="bg-warning"> Genrating Data. Please Wait.. </div>
+  <div class="col-lg-12 col-md-12 col-sm-12" id="Data_table_Div1">
+    <div class ="bg-dark"><img class="rounded mx-auto d-block" src="{{ url_for('static', filename='css/please_wait_2.gif') }}"> </div>
   </div>
   <br>
   {% if description %}

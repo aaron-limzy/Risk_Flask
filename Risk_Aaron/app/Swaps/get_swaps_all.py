@@ -686,6 +686,7 @@ def get_broker_swaps(db=False):
         if "Symbol" in s and len(s) > 0:
             df_return = df_return.merge(s, on="Symbol", how=how)
 
+    # Want to re-arrange the columns
     all_df_col = df_return.columns.tolist()
     Symbol_array = [a for a in all_df_col if a.find("Symbol") >= 0]
     Swap_long_array = [a for a in all_df_col if a.find("Long") >= 0]
