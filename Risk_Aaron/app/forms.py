@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField, IntegerField, DecimalField, RadioField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField, IntegerField, DecimalField, RadioField, SelectField
 from wtforms.validators import DataRequired, ValidationError, Email, EqualTo, Length, NumberRange, InputRequired, AnyOf
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 from flask_uploads import UploadSet, IMAGES, configure_uploads
@@ -64,8 +64,8 @@ class CreateUserForm(FlaskForm):
     email =  StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('New Password', [InputRequired(), EqualTo('confirm', message='Passwords must match')])
     confirm  = PasswordField('Repeat Password')
-    submit = SubmitField('Create User')
-
+    role = SelectField("Role", choices=[("Risk", "Risk"), ("Risk_TW", "Risk_TW"), ("Finance", "Finance"), ("Dealing", "Dealing"), ("Others", "Others")])
+    submit = SubmitField('Submit')
 
 
 # Want to add into SQL for change group, when there are no open trades.

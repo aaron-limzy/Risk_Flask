@@ -33,10 +33,17 @@ def create_app():
 
 def register_extensions(server):
     from app.extensions import db, login, bootstrap, excel, excel_format
+    from flask_login import current_user
 
     db.init_app(server)
     login.init_app(server)
     login.login_view = 'main_app.login'
+
+    # If user not logged in, we want to enfore a login, else, We want to tell them they need rights.
+    # login.login_message = u"Please log in to access this page." if not current_user.is_authenticated \
+    #                             else "Kindly contact Risk Team for rights."
+
+
 
     bootstrap.init_app(server)
     excel.init_excel(server)
