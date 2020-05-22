@@ -30,7 +30,7 @@ import asyncio
 import psutil   # Want to get Computer CPU Details/Usage/Memory
 
 
-from flask_login import current_user, login_user, logout_user, login_required
+from flask_user import current_user, login_user, logout_user, login_required
 from app.models import User, load_user, flask_users
 from sqlalchemy import text
 from flask_sqlalchemy import SQLAlchemy

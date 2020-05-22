@@ -4,7 +4,8 @@ from config import Config
 
 from flask_uploads import IMAGES, configure_uploads
 
-from flask_login import LoginManager, UserMixin, login_required
+from flask_user import UserManager, login_required
+
 from flask.helpers import get_root_path
 
 from werkzeug.security import generate_password_hash
@@ -32,11 +33,14 @@ def create_app():
 # login = LoginManager(server)
 
 def register_extensions(server):
-    from app.extensions import db, login, bootstrap, excel, excel_format
-
+    from app.extensions import db, bootstrap, user_manager, excel, excel_format
+    from app.models import flask_users
     db.init_app(server)
-    login.init_app(server)
-    login.login_view = 'main_app.login'
+
+    user_manager = UserManager(server, db, flask_users)
+    user_manager.login_view = 'main_app.login'
+    #login.init_app(server)
+    #login.login_view = 'main_app.login'
 
     bootstrap.init_app(server)
     excel.init_excel(server)
@@ -93,8 +97,9 @@ def register_blueprints(server):
 
     server.register_blueprint(errors_bp)
     server.register_blueprint(main_app)
-    server.register_blueprint(swaps)
-    server.register_blueprint(analysis)
+
+    #server.register_blueprint(swaps)
+    #server.register_blueprint(analysis)
 
 
 def register_dashapps(app):

@@ -5,16 +5,19 @@
 {% block styles %}
 {{ super() }}
 <style>
-  body { background: #eee url({{ url_for('static', filename='css/tic-tac-toe.png') }}); }
+  body {
+    background: #eee url({{ url_for('static', filename='css/tic-tac-toe.png') }});
+  }
 </style>
 {% endblock %}
 
 {% block scripts %}
 {{ super() }}
+
 <script src="{{ url_for('static', filename='js/sweetalert2.all.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/A_Book_Matching.js') }}?v=1.1.176"></script>
-{% endblock %}
 
+{% endblock %}
 
 {% block app_content %}
 
@@ -22,31 +25,30 @@
   {% if header %}
   {{ header }}
   {% else %}
-  Risk
+Risk
   {% endif %}
-  <br>
-  <span id="page_time"></span>
+<br>
+<span id="page_time"></span>
 
 </h1>
 <div>
   <hr>
 </div>
-
 <div class="row">
-  <div class="col-lg-12 col-md-12 col-sm-12" id="MT4_LP_Position">
+<div class="col-lg-12 col-md-12 col-sm-12" id="MT4_LP_Position">
     MT4/LP Position.
-  </div>
-  <div class="col-lg-12 col-md-12 col-sm-12">
-      Discrepancy: If Positive (+ve), LP has more volume. If Negative (-ve), LP has lesser volume.
-  </div>
-  <br>
-  <div class="col-lg-12 col-md-12 col-sm-12" id="LP_Details">
+</div>
+<div class="col-lg-12 col-md-12 col-sm-12">
+    Discrepancy: If Positive (+ve), LP has more volume. If Negative (-ve), LP has lesser volume.
+</div>
+<br>
+<div class="col-lg-12 col-md-12 col-sm-12" id="LP_Details">
     LP_Details
-  </div>
-  <div class="col-lg-12 col-md-12 col-sm-12" id="LP_Margin_Update">
+</div>
+<div class="col-lg-12 col-md-12 col-sm-12" id="LP_Margin_Update">
     LP/Margin Update
-  </div>
-  <br>
+</div>
+<br>
 </div>
 <br>
 
@@ -88,7 +90,7 @@
     <span id="LP_Details_Raw"></span>
   </div>
   <div class="card card-body">
-    <b>LP Details AJAX Error:</b>  <br>
+    <b>LP Details AJAX Error:</b> <br>
     <span id="LP_Details_Error"> </span>
   </div>
 </div>
@@ -100,7 +102,7 @@
     <span id="LP_Margin_Update_Raw"></span>
   </div>
   <div class="card card-body">
-    <b>LP Details AJAX Error:</b>  <br>
+    <b>LP Details AJAX Error:</b> <br>
     <span id="LP_Margin_Update_Error"> </span>
   </div>
 </div>

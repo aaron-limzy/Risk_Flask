@@ -1,7 +1,8 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
-from flask_login import LoginManager, UserMixin, login_required, AnonymousUserMixin
-from app.extensions import login, db
+
+from flask_user import  UserMixin, login_required
+from app.extensions import db
 
 class User(UserMixin):
 
@@ -14,17 +15,19 @@ class User(UserMixin):
     email = ""
     admin_rights = 0
     password_hash = "asdf"
+    role = ""
 
     #password_hash = db.Column(db.String(128))
 
     def __repr__(self):
         return '<User {}>'.format(self.id)
 
-    def __init__(self, username, email, password_hash, admin_rights):
+    def __init__(self, username, email, password_hash, admin_rights, role):
         self.id = username.lower()  # Want to make sure username is in lower case.
         self.email = email
         self.admin_rights = admin_rights
         self.password_hash = password_hash
+        self.role = role
 
 
     def set_password(self, password):
@@ -43,7 +46,6 @@ class User(UserMixin):
     #     return cls.user_database.get(id)
 
 
-@login.user_loader
 def load_user(username):
     #print("Load User {}".format(username))
     sql_return_obj = db.engine.execute("select * from aaron.flask_login where username='{}'".format(username))
@@ -57,25 +59,29 @@ def load_user(username):
         return User(username=user_info["username"],     # Make the user and return it.
                     email=user_info["email"],
                     password_hash=user_info["password_hash"],
-                    admin_rights=user_info["admin_rights"])
+                    admin_rights=user_info["admin_rights"],
+                    role=user_info["role"])
 
 
 
 class flask_users(db.Model, UserMixin):
 
+    __tablename__ = 'aaron.flask_login'
     username = db.Column(db.String(15), primary_key=True, unique=True)
     email = db.Column(db.String(255), unique=True)
     admin_rights = db.Column(db.Integer)
     password_hash = db.Column(db.String(255))
+    role = db.Column(db.String(255))
 
     def __repr__(self):
         return '<User {}>'.format(self.username)
 
-    def __init__(self, username, email, password_hash, admin_rights):
+    def __init__(self, username, email, password_hash, admin_rights, role):
         self.username = username
         self.email = email
         self.admin_rights = admin_rights
         self.password_hash = password_hash
+        self.role = role
 
 
     def set_password(self, password):
