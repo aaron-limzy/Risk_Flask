@@ -3,38 +3,24 @@ from flask import render_template, flash, redirect, url_for, request, send_from_
 from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
 
-from app.forms import SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form
-from app.forms import LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude
-
+from app.forms import  AddOffSet, MT5_Modify_Trades_Form
+from app.forms import  noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude
 
 # Import function to call in case the page dosn't run.
 from app.Plotly.routes import save_BGI_float_Ajax
 from app.Scrape_Futures import *
 
-
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField
 from flask_table import create_table, Col
 
-import pyexcel
 import urllib3
 import decimal
-import datetime
 
-import os
-import pandas as pd
-import numpy as np
 import requests
-import json
-import math
-import asyncio
 import psutil   # Want to get Computer CPU Details/Usage/Memory
 
-
 from flask_login import current_user, login_user, logout_user, login_required
-from app.models import User, load_user, flask_users
-from sqlalchemy import text
+
 from flask_sqlalchemy import SQLAlchemy
-from Aaron_Lib import *
 
 from aiopyfix.client_example import CFH_Position_n_Info
 
@@ -43,6 +29,20 @@ from requests import Session
 from zeep.transports import Transport
 
 from zeep import Client
+
+
+
+from sqlalchemy import text
+import json
+import math
+import asyncio
+import os
+import pandas as pd
+import numpy as np
+import datetime
+import pyexcel
+
+from Aaron_Lib import *
 
 import logging
 #logging.basicConfig(level=logging.INFO)
@@ -102,66 +102,6 @@ def index():
     # return render_template("index.html", header="index page", description="Hello")
     return render_template("index.html", header="Risk Tool.", description="Welcome {}".format(current_user.id))
 
-@main_app.route('/login', methods=['GET', 'POST'])       # Login Page. If user is login-ed, will re-direct to index.
-def login():
-
-    if current_user.is_authenticated:
-        return redirect(url_for('main_app.index'))
-    # else:
-        # print("User is not authenticated. ")
-
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = load_user(username=form.username.data.lower())
-        if user is None or not user.check_password(form.password.data): # If Login error
-            flash('Invalid username or password')
-            return redirect(url_for('main_app.login'))
-        else:
-            flash('Login successful')
-            login_user(user, remember=form.remember_me.data)
-
-            next_page = request.args.get('next')
-            if not next_page or url_parse(next_page).netloc != '':
-                next_page = url_for('main_app.index')
-            return redirect(next_page)
-
-    return render_template('General_Form.html', title='Sign In',header="Sign In", form=form)
-
-
-@main_app.route('/admin/create_user', methods=['GET', 'POST'])       # Login Page. If user is login-ed, will re-direct to index.
-@login_required
-@roles_required()
-def Create_User():
-
-    form = CreateUserForm()
-    if form.validate_on_submit():
-
-        username = form.username.data.lower()
-        email = form.email.data
-        password = form.password.data
-        role = form.role.data
-        admin_rights = 0
-
-        # Check if the user has been created before.
-        # If the Login ID is taken
-        user = flask_users.query.filter_by(username=username).first()
-        if user is not None:
-            flash("User {} is taken. Kindly choose another username.".format(username))  # Put a message out that there is some error.
-        else:
-            sql_insert = "INSERT INTO  aaron.`flask_login` (`username`, `email`, `password_hash`, `admin_rights`, role) VALUES" \
-                " ('{}','{}','{}','{}', '{}')".format(username, email, User.hash_password(password=password), admin_rights, role)
-            print(sql_insert)
-            raw_insert_result = db.engine.execute(sql_insert)
-            flash("User {} has been created.".format(username))  # Put a message out that there is some error.
-
-    return render_template('General_Form.html', title='Create User', header="Create User", form=form)
-
-
-@main_app.route('/logout', methods=['GET', 'POST'])  # Will logout the user.
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('main_app.login'))
 
 
 @main_app.route('/Dividend')
@@ -190,7 +130,6 @@ def color_negative_red(value):
 
 
 @main_app.route('/add_offset', methods=['GET', 'POST'])      # Want to add an offset to the ABook page.
-@login_required
 @roles_required()
 def add_off_set():
     form = AddOffSet()
@@ -221,7 +160,6 @@ def add_off_set():
 # Want to change user group should they have no trades.
 # ie: From B to A or A to B.
 @main_app.route('/noopentrades_changegroup', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def noopentrades_changegroup():
     # TODO: Need to check insert return.
@@ -251,7 +189,6 @@ def noopentrades_changegroup():
 
 
 @main_app.route('/noopentrades_changegroup_ajax', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def noopentrades_changegroup_ajax(update_tool_time=1):
     # TODO: Check if user exist first.
@@ -361,7 +298,6 @@ def noopentrades_changegroup_ajax(update_tool_time=1):
 
 # Want to check and close off account/trades.
 @main_app.route('/Risk_auto_cut', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def Risk_auto_cut():
 
@@ -393,7 +329,6 @@ def Risk_auto_cut():
 
 
 @main_app.route('/risk_auto_cut_ajax', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def risk_auto_cut_ajax(update_tool_time=1):
     # TODO: Check if user exist first.
@@ -557,7 +492,6 @@ def risk_auto_cut_ajax(update_tool_time=1):
 
 # Want to check and close off account/trades.
 @main_app.route('/USOil_Price_Alerts', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def USOil_Ticks():
 
@@ -574,7 +508,6 @@ def USOil_Ticks():
 
 
 @main_app.route('/USOil_Price_Ticks_ajax', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def USOil_Ticks_ajax(update_tool_time=1):
 
@@ -685,7 +618,6 @@ def USOil_Ticks_ajax(update_tool_time=1):
 # Want to insert into table.
 # From Flask.
 @main_app.route('/Risk_Autocut_include', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def Include_Risk_Autocut():
     title = Markup("Include Risk Auto Cut")
@@ -723,7 +655,6 @@ def Include_Risk_Autocut():
 # Want to insert into table.
 # From Flask.
 @main_app.route('/Risk_Autocut_exclude', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def Exclude_Risk_Autocut():
     title = Markup("Exclude Risk Auto Cut")
@@ -761,7 +692,6 @@ def Exclude_Risk_Autocut():
 # Want to insert into table.
 # From Flask.
 @main_app.route('/Risk_Autocut_Include_Group', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def Include_Risk_Autocut_Group():
     title = Markup("Include<br>Client Group into<br>Risk Auto Cut")
@@ -793,7 +723,6 @@ def Include_Risk_Autocut_Group():
 
 # Want to check and close off account/trades.
 @main_app.route('/Equity_Protect', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def Equity_protect():
 
@@ -825,7 +754,6 @@ def Equity_protect():
 
 # Cut position when equity falls below a certain level
 @main_app.route('/Equity_protect_ajax', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def Equity_protect_Cut_ajax(update_tool_time=1):
 
@@ -937,7 +865,6 @@ def Equity_protect_Cut_ajax(update_tool_time=1):
 
 # Want to check and close off account/trades.
 @main_app.route('/CFH_Live_Position', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def CFH_Soap_Position():
 
@@ -950,7 +877,6 @@ def CFH_Soap_Position():
                            description=description, replace_words=Markup(["Today"]))
 
 @main_app.route('/CFH_Live_Position_ajax', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def CFH_Soap_Position_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
     # TODO: Update Minitor Tools Table.
@@ -1053,7 +979,6 @@ def CFH_Soap_Position_ajax(update_all=0):  # Optional Parameter, to update from 
 
 # Want to check and close off account/trades.
 @main_app.route('/CFH_Symbol_Update', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def CFH_Soap_Symbol():
 
@@ -1066,7 +991,6 @@ def CFH_Soap_Symbol():
                            description=description, replace_words=Markup(["Today"]))
 
 @main_app.route('/CFH_Symbol_Update_ajax', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def CFH_Soap_Symbol_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
     # TODO: CFH_Symbol_Update_ajax Minotor Tools Table.
@@ -1186,7 +1110,6 @@ def Check_Float(element):
 
 
 @main_app.route('/is_prime')
-@login_required
 @roles_required()
 def is_prime_query_AccDetails():    # Query Is Prime
 
@@ -1195,7 +1118,6 @@ def is_prime_query_AccDetails():    # Query Is Prime
 
 
 @main_app.route('/is_prime_return_json', methods=['GET', 'POST'])    # Query Is Prime, Returns a Json.
-@login_required
 @roles_required()
 def is_prime_query_AccDetails_json():
     API_URL_BASE = 'https://api.isprimefx.com/api/'
@@ -1251,7 +1173,6 @@ def is_prime_query_AccDetails_json():
 
 
 @main_app.route('/MT5_Modify_Trade', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def Modify_MT5_Trades():    # To upload the Files, or post which trades to delete on MT5
     form = MT5_Modify_Trades_Form()
@@ -1278,46 +1199,39 @@ def Modify_MT5_Trades():    # To upload the Files, or post which trades to delet
 
 
 @main_app.route('/Get_Live1_MT4User')
-@login_required
 @roles_required(["Risk", "Admin", "Finance", "Risk_TW"])
 def Live1_MT4_Users():
     return Live_MT4_Users(1)
 
 @main_app.route('/Get_Live2_MT4User')
-@login_required
 @roles_required(["Risk", "Admin", "Finance", "Risk_TW"])
 def Live2_MT4_Users():
     return Live_MT4_Users(2)
 
 @main_app.route('/Get_Live3_MT4User')
-@login_required
 @roles_required(["Risk", "Admin", "Finance", "Risk_TW"])
 def Live3_MT4_Users():
     return Live_MT4_Users(3)
 
 @main_app.route('/Get_Live5_MT4User')
-@login_required
 @roles_required(["Risk", "Admin", "Finance","Risk_TW"])
 def Live5_MT4_Users():
     return Live_MT4_Users(5)
 
 
 @main_app.route('/sent_file/Risk_Download')
-@login_required
 @roles_required(["Risk", "Admin", "Finance", "Risk_TW"])
 def Risk_Download_Page():    # To upload the Files, or post which trades to delete on MT5
     return render_template("Risk_Download_Page.html",header=" ",title="Risk Download Page")
 
 
 @main_app.route('/ABook_Match_Trades')
-@login_required
 @roles_required(["Risk", "Admin", "Dealing", "Risk_TW"])
 def ABook_Matching():
     return render_template("A_Book_Matching.html",header="A Book Matching", title="LP/MT4 Position")
 
 
 @main_app.route('/ABook_Match_Trades_Position', methods=['GET', 'POST'])
-@login_required
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
 def ABook_Matching_Position_Vol():    # To upload the Files, or post which trades to delete on MT5
 
@@ -1574,7 +1488,6 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 
 
 @main_app.route('/ABook_LP_Details', methods=['GET', 'POST'])
-@login_required
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
 def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. Will alert if email is set to send.
                             # Checks Margin against MC/SO values, with some buffer as alert.
@@ -1782,7 +1695,6 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
 
 
 @main_app.route('/LP_Margin_UpdateTime', methods=['GET', 'POST'])
-@login_required
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
 def LP_Margin_UpdateTime():     # To query for LP/Margin Update time to check that it's being updated.
     # TODO: To add in sutible alert should this stop updating and such.
@@ -1824,7 +1736,6 @@ def try_string_to_datetime(sstr):
 
 
 @main_app.route('/CFH/Details')
-@login_required
 @roles_required()
 def cfh_details():
     #TODO: Add this into a blue print.
@@ -1838,7 +1749,6 @@ def cfh_details():
 
 
 @main_app.route('/CFH/Details_ajax', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def chf_fix_details_ajax(update_tool_time=1):     # Return the Bloomberg dividend table in Json.
 
@@ -1944,7 +1854,6 @@ def chf_fix_details_ajax(update_tool_time=1):     # Return the Bloomberg dividen
 # Want to show which clients got recently changed to read only.
 # Due to Equity < Balance.
 @main_app.route('/Changed_readonly')
-@login_required
 @roles_required()
 def Changed_readonly():
     description = Markup("Showing Clients that has been changed to read only in the last 2 working days.")
@@ -1954,7 +1863,6 @@ def Changed_readonly():
 
 
 @main_app.route('/Changed_readonly_ajax', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def Changed_readonly_ajax():
 
@@ -1979,7 +1887,6 @@ def Changed_readonly_ajax():
 
 
 @main_app.route('/Monitor_Risk_Tools')
-@login_required
 @roles_required()
 def Monitor_Risk_Tools():
     description = Markup("Monitor Risk tools.")
@@ -1991,7 +1898,6 @@ def Monitor_Risk_Tools():
 # To monitor the Risk Tools, and run them if needed.
 # Will need to update it when there are new tools.
 @main_app.route('/Monitor_Risk_Tools_ajax', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def Monitor_Risk_Tools_ajax():
 
@@ -2097,7 +2003,6 @@ def Monitor_Risk_Tools_ajax():
 
 
 @main_app.route('/Usage')
-@login_required
 @roles_required()
 def Computer_Usage():
     description = Markup("Reflects the Server Usage.<br>")
@@ -2108,7 +2013,6 @@ def Computer_Usage():
 
 
 @main_app.route('/Usage_ajax', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def Computer_Usage_Ajax():
     # gives a single float value
@@ -2127,7 +2031,6 @@ def Computer_Usage_Ajax():
 
 
 @main_app.route('/Convert_rate')
-@login_required
 @roles_required()
 def BGI_Convert_Rate():
     description = Markup("BGI Convert Rate.<br>")
@@ -2138,7 +2041,6 @@ def BGI_Convert_Rate():
 
 
 @main_app.route('/Convert_rate_ajax', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def BGI_Convert_Rate_Ajax():
 
@@ -2178,7 +2080,6 @@ def BGI_Convert_Rate_Ajax():
 # Want to insert into table.
 # From Flask.
 @main_app.route('/Balance_equity_exclude', methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def Exclude_Equity_Below_Credit():
     title = Markup("Exclude<br>Balance Below Credit")
@@ -2215,7 +2116,6 @@ def Exclude_Equity_Below_Credit():
 # Want to show which clients got recently changed to read only.
 # Due to Equity < Balance.
 @main_app.route('/Futures/Scrape')
-@login_required
 @roles_required()
 def Scrape_futures():
     description = Markup("Scraping Futures.<br>" +
@@ -2232,7 +2132,6 @@ def Scrape_futures():
                            description=description, replace_words=Markup(["Today"]))
 
 @main_app.route('/Futures/Scrape_ajax',methods=['GET', 'POST'])
-@login_required
 @roles_required()
 def Scrape_futures_ajax():
 

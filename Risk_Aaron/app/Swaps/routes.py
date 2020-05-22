@@ -16,11 +16,12 @@ import requests
 
 import pyexcel
 from werkzeug.utils import secure_filename
+from app.decorators import roles_required
 
 swaps = Blueprint('swaps', __name__)
 
 @swaps.route('/Swaps/BGI_Swaps')
-@login_required
+@roles_required()
 def BGI_Swaps():
     description = Markup("Swap values uploaded onto MT4/MT5. <br>\
    Swaps would be charged on the roll over to the next day.<br> \
@@ -34,7 +35,7 @@ def BGI_Swaps():
 
 
 @swaps.route('/Swaps/BGI_Swaps_ajax', methods=['GET', 'POST'])
-@login_required
+@roles_required()
 def BGI_Swaps_ajax():     # Return the Bloomberg dividend table in Json.
 
     start_date = get_working_day_date(datetime.date.today(), -5)
@@ -73,7 +74,7 @@ def BGI_Swaps_ajax():     # Return the Bloomberg dividend table in Json.
 
 
 @swaps.route('/Bloomberg_Dividend')
-@login_required
+@roles_required()
 def Bloomberg_Dividend():
     description = Markup("Dividend Values in the table above are 1-day early, when the values are uploaded as swaps onto MT4. <br>\
     Dividend would be given out/charged the next working day.")
@@ -84,7 +85,7 @@ def Bloomberg_Dividend():
 
 
 @swaps.route('/Bloomberg_Dividend_ajax', methods=['GET', 'POST'])
-@login_required
+@roles_required()
 def Bloomberg_Dividend_ajax():     # Return the Bloomberg dividend table in Json.
 
     start_date = get_working_day_date(datetime.date.today(), -3)
@@ -244,7 +245,7 @@ def Other_Brokers_Ajax():
 
 # Want to get the digits changes and get the upload file to OZ
 @swaps.route('/Swaps/CFH_OZ_Upload')
-@login_required
+@roles_required()
 def cfh_oz_upload():
 
     description = Markup("Taking Values off CFH Backoffice Via SOAP.<br>Digits compensation for OZ-CFH has been done.")

@@ -14,6 +14,8 @@ import pandas as pd
 import numpy as np
 import json
 
+from app.decorators import roles_required
+
 import emoji
 import flag
 
@@ -117,7 +119,7 @@ def get_country_df(sql_statement):
 
 
 @analysis.route('/Save_BGI_Float', methods=['GET', 'POST'])
-@login_required
+@roles_required()
 def save_BGI_float():
 
     title = "Save BGI Float"
@@ -146,6 +148,7 @@ def save_BGI_float():
 # Will select, pull it out into Python, before inserting it into the table.
 # Tried doing Insert.. Select. But there was desdlock situation..
 @analysis.route('/save_BGI_float_Ajax', methods=['GET', 'POST'])
+@roles_required()
 def save_BGI_float_Ajax(update_tool_time=1):
 
     #start = datetime.datetime.now()
@@ -347,7 +350,7 @@ def save_BGI_float_Ajax(update_tool_time=1):
 
 
 @analysis.route('/BGI_Country_Float', methods=['GET', 'POST'])
-@login_required
+@roles_required()
 def BGI_Country_Float():
 
     title = "Country Float"
@@ -655,6 +658,7 @@ def delete_from_floating_table():
 # Clear session data.
 # Called when refreshing cookies.
 @analysis.route('/Clear_session_ajax', methods=['GET', 'POST'])
+@roles_required()
 def Clear_session_ajax():
     #list_of_pop = ["live1_sgt_time_diff", "live1_sgt_time_update", "yesterday_pnl_by_country", "yesterday_pnl_by_symbol"]
 
@@ -895,7 +899,7 @@ def BGI_Country_Float_ajax():
 
 
 @analysis.route('/BGI_Symbol_Float', methods=['GET', 'POST'])
-@login_required
+@roles_required()
 def BGI_Symbol_Float():
 
     title = "Symbol Float"
@@ -923,6 +927,7 @@ def BGI_Symbol_Float():
 
 # Get BGI Float by Symbol
 @analysis.route('/BGI_Symbol_Float_ajax', methods=['GET', 'POST'])
+@roles_required()
 def BGI_Symbol_Float_ajax():
 
     #start = datetime.datetime.now()
@@ -1070,7 +1075,7 @@ def BGI_Symbol_Float_ajax():
 
 
 @analysis.route('/analysis/cn_live_vol_ajax')
-@login_required
+@roles_required()
 # Gets the cn df, and uses it to plot the various charts.
 def cn_live_vol_ajax():
 
@@ -1092,7 +1097,7 @@ def cn_live_vol_ajax():
 
 
 @analysis.route('/analysis/tw_live_vol_ajax')
-@login_required
+@roles_required()
 # Gets the cn df, and uses it to plot the various charts.
 def tw_live_vol_ajax():
     return get_country_charts(country="TW", df= get_tw_df())
@@ -1232,7 +1237,7 @@ def plot_open_position_revenue(df, chart_title):
     return fig
 
 @analysis.route('/analysis/plotly_index')
-@login_required
+@roles_required()
 def cn_index():
 
     return render_template('index_plotly.html', title="Float Country")

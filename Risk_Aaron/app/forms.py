@@ -52,20 +52,7 @@ class AddOffSet(FlaskForm):
 
 
 
-class LoginForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    remember_me = BooleanField('Remember Me')
-    submit = SubmitField('Sign In')
 
-# For Creating User Form. Need them to submit password twice.
-class CreateUserForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
-    email =  StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('New Password', [InputRequired(), EqualTo('confirm', message='Passwords must match')])
-    confirm  = PasswordField('Repeat Password')
-    role = SelectField("Role", choices=[("Risk", "Risk"), ("Risk_TW", "Risk_TW"), ("Finance", "Finance"), ("Dealing", "Dealing"), ("Others", "Others")])
-    submit = SubmitField('Submit')
 
 
 # Want to add into SQL for change group, when there are no open trades.

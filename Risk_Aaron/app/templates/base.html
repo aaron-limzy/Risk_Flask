@@ -199,7 +199,7 @@
               <li class="dropdown-divider"></li>
               <li><a class="dropdown-item" href="{{ url_for('main_app.Risk_Download_Page') }}">Risk Download Page</a></li>
               <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="{{ url_for('main_app.Create_User') }}">Create Users</a>
+              <a class="dropdown-item" href="{{ url_for('login.Create_User') }}">Create Users</a>
           </li>
         </ul>
         </li>
@@ -334,9 +334,9 @@
         {% endif %}
         <li class="nav-item">
           {% if current_user.is_anonymous %}
-          <a href="{{ url_for('main_app.login') }}" class="nav-link">Login</a>
+          <a href="{{ url_for('login.login') }}" class="nav-link">Login</a>
           {% else %}
-          <a href="{{ url_for('main_app.logout') }}" class="nav-link">Logout</a>
+          <a href="{{ url_for('login.logout') }}" class="nav-link">Logout</a>
           {% endif %}
 
         </li>

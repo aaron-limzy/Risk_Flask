@@ -37,13 +37,11 @@ def register_extensions(server):
 
     db.init_app(server)
     login.init_app(server)
-    login.login_view = 'main_app.login'
+    login.login_view = 'login_bp.login'
 
     # If user not logged in, we want to enfore a login, else, We want to tell them they need rights.
     # login.login_message = u"Please log in to access this page." if not current_user.is_authenticated \
     #                             else "Kindly contact Risk Team for rights."
-
-
 
     bootstrap.init_app(server)
     excel.init_excel(server)
@@ -90,6 +88,7 @@ def register_blueprints(server):
     from app.routes import main_app
     from app.Plotly.routes import analysis
     from app.errors import bp as errors_bp
+    from app.Login.routes import login_bp
 
     # Want to see if we can init the Blueprint db
     main_app_db.init_app(server)
@@ -99,9 +98,11 @@ def register_blueprints(server):
 
 
     server.register_blueprint(errors_bp)
+    server.register_blueprint(login_bp, url_prefix='/User')
     server.register_blueprint(main_app)
     server.register_blueprint(swaps)
     server.register_blueprint(analysis)
+
 
 
 def register_dashapps(app):
