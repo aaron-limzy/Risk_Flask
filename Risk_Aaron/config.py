@@ -58,13 +58,6 @@ class Config(object):
     MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS') is not None
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-
-    # For testing of Flask-User.
-    # Will need to move this later.
-    MAIL_USE_SSL = True
-    MAIL_DEFAULT_SENDER = '"MyApp" <noreply@example.com>'
-
-
     ADMINS = ['aaron.lim@blackwellglobal.com']
     CFH_BO_PASSWORD = "Bgil8888!!"
     #WTF_CSRF_TIME_LIMIT= None
