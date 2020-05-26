@@ -340,14 +340,24 @@
             {% endif %}
 
         {% endif %}
-        <li class="nav-item">
-          {% if current_user.is_anonymous %}
-          <a href="{{ url_for('login.login') }}" class="nav-link">Login</a>
-          {% else %}
-          <a href="{{ url_for('login.logout') }}" class="nav-link">Logout</a>
-          {% endif %}
 
-        </li>
+          {% if current_user.is_anonymous %}
+          <li class="nav-item">
+            <a href="{{ url_for('login.login') }}" class="nav-link">Login</a>
+          </li>
+          {% else %}
+
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown9" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                User 🙍‍♂️🙍‍♀️
+              </a>
+              <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown9">
+                <li><a href="{{ url_for('login.logout') }}"  class="dropdown-item">Logout 👋</a></li>
+                <li><a href="{{ url_for('login.Edit_Details') }}"  class="dropdown-item">Edit Details </a></li>
+              </ul>
+            </li>
+          </li>
+          {% endif %}
 
         </ul>
       </div>
