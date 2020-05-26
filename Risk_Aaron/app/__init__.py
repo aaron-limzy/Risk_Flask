@@ -37,7 +37,7 @@ def register_extensions(server):
 
     db.init_app(server)
     login.init_app(server)
-    login.login_view = 'login_bp.login'
+    login.login_view = 'login.login'
 
     # If user not logged in, we want to enfore a login, else, We want to tell them they need rights.
     # login.login_message = u"Please log in to access this page." if not current_user.is_authenticated \

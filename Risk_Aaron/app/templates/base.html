@@ -75,7 +75,6 @@
           <!-- -~~~~~~~~~~~~~~~~~ Only if Logged in User ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
 
           {% if not current_user.is_anonymous %}
-          {% if current_user.admin_rights==1 %}
 
           <!-- Level one dropdown -->
           <li class="nav-item dropdown">
@@ -84,162 +83,172 @@
             </a>
 
             <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-              <li><a class="dropdown-item" href="{{ url_for('main_app.ABook_Matching') + "?send_email_flag=0" }}">MT4/LP ⭐</a></li>
-              <li><a class="dropdown-item" href="{{ url_for('main_app.add_off_set') }}">A Book Offset ➕</a></li>
+
+
+              {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Dealing"] %}
+                <li><a class="dropdown-item" href="{{ url_for('main_app.ABook_Matching') + "?send_email_flag=0" }}">MT4/LP ⭐</a></li>
+                <li><a class="dropdown-item" href="{{ url_for('main_app.add_off_set') }}">A Book Offset ➕</a></li>
+                <div class="dropdown-divider"></div>
+              {% endif %}
+
+              {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+                <li class="nav-item dropleft">
+                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown1" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <b>Risk</b> running tools
+                  </a>
+                  <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown1">
+
+                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Get_Margin_Trades%20-%20V1.6%20-%20Vantage/">REST Vantage Margin Trades ⭐</a></li>
+                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Get_Margin_Trades%20BGI%20-%20V1.3/">REST BGI Margin Trades ⭐</a></li>
+
+
+                    <div class="dropdown-divider"></div>
+
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Risk_auto_cut') }}">Risk Auto Cut ⭐</a></li>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Include_Risk_Autocut') }}">Risk Auto Cut [Add Login]] ➕</a></li>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Include_Risk_Autocut_Group') }}">Risk Auto Cut [Add Group] ➕</a></li>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Exclude_Risk_Autocut') }}">Risk Auto Cut Exclude ➕</a></li>
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.noopentrades_changegroup') }}">Change Group ⭐</br>(No Open Trades)</a></li>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Equity_protect') }}">Equity Protect ⭐</a></li>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Computer_Usage') }}">Server Usage ⭐</a></a></a></li>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Monitor_Risk_Tools') }}">Monitor Risk Tools ⭐</a></li>
+
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.cfh_details') }}">CFH FIX Details ⭐</a></li>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.CFH_Soap_Position') }}">CFH Soap Position</a></li>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.CFH_Soap_Symbol') }}">CFH Soap Symbol</a></li>
+
+
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.USOil_Ticks') }}">USOil Alert 🛢</a></li>
+
+                    <div class="dropdown-divider"></div>
+
+                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/Track_Account_Open_Trades_V1/">MonitorOpen Trades ⭐</a></li>
+                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/Daily_Change_Spread_V1.9/">Daily Change Spread ⭐</a></li>
+                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Risk_AutoCut_V3.2//">Risk Auto Cut</a></li>
+                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/Change_User_Group_V1%20.1/">Change User Group</a></li>
+
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/ReadOnly_Equity_Below_Credit_V1.2/">Equity below Credit ⭐</a></li>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Exclude_Equity_Below_Credit') }}">Equity below Credit Exclude ➕</a></li>
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item bg_a_lighter_green" href="https://202.88.105.6:4433/All/Daily_Change_Spread_V1.91/">Daily Change Spread [External]</a></li>
+                    <li><a class="dropdown-item bg_a_lighter_green" href="https://202.88.105.6:4433/All/Change_Spread_manual/">HK Spread Change [External]</a></li>
+                    <li><a class="dropdown-item bg_a_lighter_green" href="https://202.88.105.6:4433/All/NFP_Change_Spread_V1.4/">NFP Spread Change [External] </a></li>
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/NFP_Change_Spread_V1.4/">NFP Spread Change</a></li>
+                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/ABook_Match_Trades%20-%20V2.7/?Send_Email_Toggle=0">LP/MT4 Position</a></li>
+
+                  </ul>
+                </li>
+            {% endif %}
+
+            {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+                <li class="nav-item dropleft">
+                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Analytics
+                  </a>
+                  <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
+                    <li><a class="dropdown-item" href="{{ url_for('analysis.BGI_Symbol_Float') }}">Symbol Floating 🎶 </a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('analysis.BGI_Country_Float') }}">Country Floating 🌎</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('analysis.save_BGI_float') }}">Save Floating 💾</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('analysis.Clear_session_ajax') }}">Clear Site Cookies</a></li>
+                  </ul>
+                </li>
+            {% endif %}
+            {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+                <li class="nav-item dropleft">
+                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Google Sheets
+                  </a>
+                  <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
+                    <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/1wBifOwaghe3lRsxRTRUMkTBEvLN8pmUWlHuGTuoXfFY/edit#gid=1332723419">Risk/Marketting Holiday Timing</a></li>
+                    <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/18XuEl5m2NNItX5R5Qjsy_Qc9MZSZMuIYvYyQMqtY9Fc/edit?usp=sharing">MT4 Trading Timing ⌚</a></li>
+                    <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/1q9rK6i5kkbBM-xBg__aLX09AJExm26ffxwEtdq5c1YI/edit?usp=sharing">MT5 Trading Timing ⌚</a></li>
+                    <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/1taagIeZKA21f_u8qf3CXT3_hxvUCFGMpbxe01qX873o/edit#gid=0">Misc Data</a></li>
+                    <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/12U-6eBDk3b_6VJnfAW6zP6rEKnJcKP_hRmcmoPKUtgA/edit?usp=sharing">Risk Demo Login 🔑</a></li>
+                    <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/1sw-KXU0oKk7un4qHPLIAIg4sUa6rgWMMosJcpH7wmFk/edit?usp=sharing">Cambodia Swaps</a></li>
+                  </ul>
+                </li>
+            {% endif %}
+            {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+                <li class="nav-item dropleft">
+                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Misc
+                  </a>
+                  <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
+                    <li><a class="dropdown-item" href="{{ url_for('main_app.Scrape_futures') }}">Futures Scrap</a></li>
+                  </ul>
+                </li>
+              {% endif %}
+              {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+                <li class="nav-item dropleft">
+                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown4" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    BGI Data
+                  </a>
+                  <ul class="dropdown-menu" aria-labelledby="navbarDropdown4">
+                    <li><a class="dropdown-item" href="{{ url_for('swaps.BGI_Swaps') }}">BGI Swaps</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('swaps.Other_Brokers') }}">Swaps Compare</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('main_app.Changed_readonly') }}">Changed Read Only</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('swaps.Bloomberg_Dividend') }}">Bloomberg Dividend</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('main_app.BGI_Convert_Rate') }}">BGI FX Convert Rates</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('swaps.cfh_oz_upload') }}">CFH OZ Upload</a></li>
+                  </ul>
+                </li>
+              {% endif %}
+              {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Finance"] %}
+                <li class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{{ url_for('main_app.Risk_Download_Page') }}">Risk Download Page</a></li>
+              {% endif %}
+
+              {% if current_user.role in ["Admin"] %}
               <div class="dropdown-divider"></div>
-
-
-              <li class="nav-item dropleft">
-                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown1" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  <b>Risk</b> running tools
-                </a>
-                <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown1">
-
-                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Get_Margin_Trades%20-%20V1.6%20-%20Vantage/">REST Vantage Margin Trades ⭐</a></li>
-                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Get_Margin_Trades%20BGI%20-%20V1.3/">REST BGI Margin Trades ⭐</a></li>
-
-
-                  <div class="dropdown-divider"></div>
-
-                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Risk_auto_cut') }}">Risk Auto Cut ⭐</a></li>
-                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Include_Risk_Autocut') }}">Risk Auto Cut [Add Login]] ➕</a></li>
-                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Include_Risk_Autocut_Group') }}">Risk Auto Cut [Add Group] ➕</a></li>
-                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Exclude_Risk_Autocut') }}">Risk Auto Cut Exclude ➕</a></li>
-                  <div class="dropdown-divider"></div>
-                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.noopentrades_changegroup') }}">Change Group ⭐</br>(No Open Trades)</a></li>
-                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Equity_protect') }}">Equity Protect ⭐</a></li>
-                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Computer_Usage') }}">Server Usage ⭐</a></a></a></li>
-                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Monitor_Risk_Tools') }}">Monitor Risk Tools ⭐</a></li>
-
-                  <div class="dropdown-divider"></div>
-                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.cfh_details') }}">CFH FIX Details ⭐</a></li>
-                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.CFH_Soap_Position') }}">CFH Soap Position</a></li>
-                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.CFH_Soap_Symbol') }}">CFH Soap Symbol</a></li>
-
-
-                  <div class="dropdown-divider"></div>
-                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.USOil_Ticks') }}">USOil Alert 🛢</a></li>
-
-                  <div class="dropdown-divider"></div>
-
-                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/Track_Account_Open_Trades_V1/">MonitorOpen Trades ⭐</a></li>
-                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/Daily_Change_Spread_V1.9/">Daily Change Spread ⭐</a></li>
-                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Risk_AutoCut_V3.2//">Risk Auto Cut</a></li>
-                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/Change_User_Group_V1%20.1/">Change User Group</a></li>
-
-                  <div class="dropdown-divider"></div>
-                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/ReadOnly_Equity_Below_Credit_V1.2/">Equity below Credit ⭐</a></li>
-                  <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Exclude_Equity_Below_Credit') }}">Equity below Credit Exclude ➕</a></li>
-                  <div class="dropdown-divider"></div>
-                  <li><a class="dropdown-item bg_a_lighter_green" href="https://202.88.105.6:4433/All/Daily_Change_Spread_V1.91/">Daily Change Spread [External]</a></li>
-                  <li><a class="dropdown-item bg_a_lighter_green" href="https://202.88.105.6:4433/All/Change_Spread_manual/">HK Spread Change [External]</a></li>
-                  <li><a class="dropdown-item bg_a_lighter_green" href="https://202.88.105.6:4433/All/NFP_Change_Spread_V1.4/">NFP Spread Change [External] </a></li>
-                  <div class="dropdown-divider"></div>
-                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/NFP_Change_Spread_V1.4/">NFP Spread Change</a></li>
-                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/ABook_Match_Trades%20-%20V2.7/?Send_Email_Toggle=0">LP/MT4 Position</a></li>
-
-                </ul>
-              </li>
-
-              <li class="nav-item dropleft">
-                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  Analytics
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
-                  <li><a class="dropdown-item" href="{{ url_for('analysis.BGI_Symbol_Float') }}">Symbol Floating 🎶 </a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('analysis.BGI_Country_Float') }}">Country Floating 🌎</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('analysis.save_BGI_float') }}">Save Floating 💾</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('analysis.Clear_session_ajax') }}">Clear Site Cookies</a></li>
-                </ul>
-              </li>
-
-              <li class="nav-item dropleft">
-                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  Google Sheets
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
-                  <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/1wBifOwaghe3lRsxRTRUMkTBEvLN8pmUWlHuGTuoXfFY/edit#gid=1332723419">Risk/Marketting Holiday Timing</a></li>
-                  <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/18XuEl5m2NNItX5R5Qjsy_Qc9MZSZMuIYvYyQMqtY9Fc/edit?usp=sharing">MT4 Trading Timing ⌚</a></li>
-                  <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/1q9rK6i5kkbBM-xBg__aLX09AJExm26ffxwEtdq5c1YI/edit?usp=sharing">MT5 Trading Timing ⌚</a></li>
-                  <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/1taagIeZKA21f_u8qf3CXT3_hxvUCFGMpbxe01qX873o/edit#gid=0">Misc Data</a></li>
-                  <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/12U-6eBDk3b_6VJnfAW6zP6rEKnJcKP_hRmcmoPKUtgA/edit?usp=sharing">Risk Demo Login 🔑</a></li>
-                  <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/1sw-KXU0oKk7un4qHPLIAIg4sUa6rgWMMosJcpH7wmFk/edit?usp=sharing">Cambodia Swaps</a></li>
-                </ul>
-              </li>
-
-              <li class="nav-item dropleft">
-                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  Misc
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
-                  <li><a class="dropdown-item" href="{{ url_for('main_app.Scrape_futures') }}">Futures Scrap</a></li>
-                </ul>
-
-
-
-
-
-              <li class="nav-item dropleft">
-                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown4" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  BGI Data
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdown4">
-                  <li><a class="dropdown-item" href="{{ url_for('swaps.BGI_Swaps') }}">BGI Swaps</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('swaps.Other_Brokers') }}">Swaps Compare</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('main_app.Changed_readonly') }}">Changed Read Only</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('swaps.Bloomberg_Dividend') }}">Bloomberg Dividend</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('main_app.BGI_Convert_Rate') }}">BGI FX Convert Rates</a></li>
-                  <li><a class="dropdown-item" href="{{ url_for('swaps.cfh_oz_upload') }}">CFH OZ Upload</a></li>
-
-
-
-
-                </ul>
-              </li>
-              <li class="dropdown-divider"></li>
-              <li><a class="dropdown-item" href="{{ url_for('main_app.Risk_Download_Page') }}">Risk Download Page</a></li>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="{{ url_for('login.Create_User') }}">Create Users</a>
-          </li>
+              <li><a class="dropdown-item" href="{{ url_for('login.Create_User') }}">Create Users</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('login.Admin_Edit_User') }}">Admin Edit Users</a></li>
+              {% endif %}
         </ul>
-        </li>
+      </li> <!-- End of Aaron Tab -->
 
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            M.Y 🌹
-          </a>
-          <div class="dropdown-menu dropdown-menu-right">
-            <a class="dropdown-item" href="http://192.168.20.117:81/www/main.html">Main</a>
-            <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index.php">Total PnL</a>
-            <a class="dropdown-item" href="http://192.168.64.73/www/PNL_FLOATshow_2/by_country/tableFLOATshowing2.html">Country Float</a>
-            <a class="dropdown-item" href="http://192.168.64.73/www/PNL_FLOATshow_2/by_symbol/tableFLOATsymbol0.html">Symbol Float</a>
-            <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index_signal_CN.php">Signal:CN
-              Daily</a>
-            <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index_signal.php">Signal: PNL Total
-              Daily</a>
-            <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index_weekly.php">Signal: PnL Week</a>
+        {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              M.Y 🌹
+            </a>
+            <div class="dropdown-menu dropdown-menu-right">
+              <a class="dropdown-item" href="http://192.168.20.117:81/www/main.html">Main</a>
+              <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index.php">Total PnL</a>
+              <a class="dropdown-item" href="http://192.168.64.73/www/PNL_FLOATshow_2/by_country/tableFLOATshowing2.html">Country Float</a>
+              <a class="dropdown-item" href="http://192.168.64.73/www/PNL_FLOATshow_2/by_symbol/tableFLOATsymbol0.html">Symbol Float</a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index_signal_CN.php">Signal:CN
+                Daily</a>
+              <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index_signal.php">Signal: PNL Total
+                Daily</a>
+              <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index_weekly.php">Signal: PnL Week</a>
 
-            <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="http://192.168.64.73/www/mt5_esunny/mt5_daily_pnl_floating.php">MT5
-              Crypto Save</a>
-            <a class="dropdown-item" href="http://202.88.105.3/www/PNL_FLOATshow/tableFLOATsymbol0_Tangsapwatthana_all.html">Tangsapwatthana
-              BY Symbol</a>
-            <a class="dropdown-item" href="http://192.168.64.73/www/Others/index_lw_comment_check.php">LW Comment Check</a>
-            <a class="dropdown-item" href="http://192.168.20.117:81/www/check/index_mt4_lp_check.php">Check
-              Mismatch</a>
+              <div class="dropdown-divider"></div>
+              <a class="dropdown-item" href="http://192.168.64.73/www/mt5_esunny/mt5_daily_pnl_floating.php">MT5
+                Crypto Save</a>
+              <a class="dropdown-item" href="http://202.88.105.3/www/PNL_FLOATshow/tableFLOATsymbol0_Tangsapwatthana_all.html">Tangsapwatthana
+                BY Symbol</a>
+              <a class="dropdown-item" href="http://192.168.64.73/www/Others/index_lw_comment_check.php">LW Comment Check</a>
+              <a class="dropdown-item" href="http://192.168.20.117:81/www/check/index_mt4_lp_check.php">Check
+                Mismatch</a>
 
-            <a class="dropdown-item" href="http://192.168.64.73/www/pro_bal_20/index_reg.php">P/B (REGDATE) > 20%</a>
-            <a class="dropdown-item" href="http://192.168.64.73/www/30s%201m/live123%201m.html">Mt4 trades within 1 min</a>
-            <a class="dropdown-item" href="http://192.168.64.73/www/pro_bal_20/avg_open_close_time_B1.php">Avg_time 3600s</a>
-            <a class="dropdown-item" href="http://192.168.64.73/www/Others/index_lw_comment_check.php">leanwork comment check</a>
-            <a class="dropdown-item" href="http://192.168.64.73/www/Others/index_YJH_MARKDOWN.php">YJH markdown</a>
-
-
-          </div>
-        </li>
+              <a class="dropdown-item" href="http://192.168.64.73/www/pro_bal_20/index_reg.php">P/B (REGDATE) > 20%</a>
+              <a class="dropdown-item" href="http://192.168.64.73/www/30s%201m/live123%201m.html">Mt4 trades within 1 min</a>
+              <a class="dropdown-item" href="http://192.168.64.73/www/pro_bal_20/avg_open_close_time_B1.php">Avg_time 3600s</a>
+              <a class="dropdown-item" href="http://192.168.64.73/www/Others/index_lw_comment_check.php">leanwork comment check</a>
+              <a class="dropdown-item" href="http://192.168.64.73/www/Others/index_YJH_MARKDOWN.php">YJH markdown</a>
 
 
+            </div>
+          </li>
+        {% endif %}
+
+        {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             SQ ✌
@@ -252,85 +261,84 @@
 
           </div>
         </li>
-
-
-        <!-- Level one dropdown -->
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown8" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            External Links 🎈
-          </a>
-
-          <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown8">
-
-            <li class="nav-item dropleft">
-              <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown10" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <b>OZ</b> Web</b>
-              </a>
-              <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown10">
-                <li><a class="dropdown-item" href="https://38.76.4.235:44300/Account/Login?ReturnUrl=%2F">BGI NY4 Margin Hub</a></li>
-                <li><a class="dropdown-item" href="https://38.76.4.235:44301/">BGI NY4 Retail Hub</a></li>
-                <div class="dropdown-divider"></div>
-                <li><a class="dropdown-item" href="https://38.76.4.67:44300/Account/Login?ReturnUrl=%2F">Vantage BGI Trading Hub</a></li>
-                <div class="dropdown-divider"></div>
-                <li><a class="dropdown-item" href="https://169.45.220.20:44300">BGI Demo Margin Trading Hub</a></li>
-                <div class="dropdown-divider"></div>
-                <li><a class="dropdown-item" href="https://arms3.onezero.com/login">ARMS 💪</a></li>
-                <div class="dropdown-divider"></div>
-                <li><a class="dropdown-item" href="https://192.168.64.30:44300">Risk OZ Lab</a></li>
-
-                <li><a class="dropdown-item" href="https://support.onezero.com/s/rest-api">OneZero REST Api Docs 📃</a></li>
-
-              </ul>
-            </li>
-            <li class="nav-item dropleft">
-              <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <b>CFH</b> Web
-              </a>
-              <ul class="dropdown-menu" aria-labelledby="navbarDropdown2">
-                <li><a class="dropdown-item" href="http://www.cfhclearing.com/products/">CHF Product List</a></li>
-                <li><a class="dropdown-item" href="https://trade.cfhclearing.com/Pages/Login.aspx?ReturnUrl=%2f">CFH Clear Pro Web</a></li>
-                <li><a class="dropdown-item" href="https://backoffice.cfhclearing.com">CFH Back Office</a></li>
-              </ul>
-            </li>
-
-            <li class="nav-item dropleft">
-              <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown11" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                <b>Swaps</b> [External Broker]
-              </a>
-              <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown11">
-                <li><a class="dropdown-item" href="https://www.fxdd.com/mt/en/trading/offering">Fxdd Swaps</a></li>
-                <li><a class="dropdown-item" href="https://www.forex.com/en/trading/pricing-fees/rollover-rates/">FOREX.com Swaps</a></li>
-                <li><a class="dropdown-item" href="https://www.fpmarkets.com/swap-point">FPmarkets Swaps</a></li>
-                <li><a class="dropdown-item" href="https://www.tradeviewforex.com/room/forex-resources/rollover-rates">Tradeview forex Swaps</a></li>
-                <li><a class="dropdown-item" href="https://ebhforex.com/faq/rollover-policy/">EBH Swaps</a></li>
-                <li><a class="dropdown-item" href="https://www.home.saxo/en-sg/rates-and-conditions/forex/trading-conditions#historic-swap-points">Saxo Swaps</a></li>
-                <li><a class="dropdown-item" href="https://www.globalprime.com/trading-conditions/swaps-financing/">Global PRIME</a></li>
-
-              </ul>
-            </li>
-            <li><a class="dropdown-item" href="http://202.88.105.5/">BGI Tableau Server</a></li>
-
-
-            <li class="nav-item dropdown">
-            <li><a class="dropdown-item" href="https://www.dailyfx.com/economic-calendar">Daily FX Calandar</a></li>
-            <li><a class="dropdown-item" href="https://www.poundsterlingforecast.com/">Pound Sterling Forcast</a></li>
-            <li><a class="dropdown-item" href="https://global.markets.com/holiday-schedule/">Global Markets Trading Holiday</a></li>
-            <li><a class="dropdown-item" href="https://tw.rter.info/bank/BKTWTWTP/">USDTWD Web Scrape</a></li>
-            <li><a class="dropdown-item" href="https://www.capitalfutures.com.tw/product/deposit.asp?xy=2&xt=2">Futures contract sizes</a></li>
-            <li><a class="dropdown-item" href="https://community.ig.com/blogs">IG Community Blog</a></li>
-
-
-
-
-            <div class="dropdown-divider"></div>
-            <li><a class="dropdown-item" href="https://support.metaquotes.net/en/users/login?returnUrl=%2Fen">Meta Support</a></li>
-            </ul>
-            </li>
-            </li>
-
-
-
         {% endif %}
+
+        {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+          <!-- Level one dropdown -->
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown8" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              External Links 🎈
+            </a>
+
+            <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown8">
+
+              <li class="nav-item dropleft">
+                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown10" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <b>OZ</b> Web</b>
+                </a>
+                <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown10">
+                  <li><a class="dropdown-item" href="https://38.76.4.235:44300/Account/Login?ReturnUrl=%2F">BGI NY4 Margin Hub</a></li>
+                  <li><a class="dropdown-item" href="https://38.76.4.235:44301/">BGI NY4 Retail Hub</a></li>
+                  <div class="dropdown-divider"></div>
+                  <li><a class="dropdown-item" href="https://38.76.4.67:44300/Account/Login?ReturnUrl=%2F">Vantage BGI Trading Hub</a></li>
+                  <div class="dropdown-divider"></div>
+                  <li><a class="dropdown-item" href="https://169.45.220.20:44300">BGI Demo Margin Trading Hub</a></li>
+                  <div class="dropdown-divider"></div>
+                  <li><a class="dropdown-item" href="https://arms3.onezero.com/login">ARMS 💪</a></li>
+                  <div class="dropdown-divider"></div>
+                  <li><a class="dropdown-item" href="https://192.168.64.30:44300">Risk OZ Lab</a></li>
+
+                  <li><a class="dropdown-item" href="https://support.onezero.com/s/rest-api">OneZero REST Api Docs 📃</a></li>
+
+                </ul>
+              </li>
+              <li class="nav-item dropleft">
+                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <b>CFH</b> Web
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="navbarDropdown2">
+                  <li><a class="dropdown-item" href="http://www.cfhclearing.com/products/">CHF Product List</a></li>
+                  <li><a class="dropdown-item" href="https://trade.cfhclearing.com/Pages/Login.aspx?ReturnUrl=%2f">CFH Clear Pro Web</a></li>
+                  <li><a class="dropdown-item" href="https://backoffice.cfhclearing.com">CFH Back Office</a></li>
+                </ul>
+              </li>
+
+              <li class="nav-item dropleft">
+                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown11" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <b>Swaps</b> [External Broker]
+                </a>
+                <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown11">
+                  <li><a class="dropdown-item" href="https://www.fxdd.com/mt/en/trading/offering">Fxdd Swaps</a></li>
+                  <li><a class="dropdown-item" href="https://www.forex.com/en/trading/pricing-fees/rollover-rates/">FOREX.com Swaps</a></li>
+                  <li><a class="dropdown-item" href="https://www.fpmarkets.com/swap-point">FPmarkets Swaps</a></li>
+                  <li><a class="dropdown-item" href="https://www.tradeviewforex.com/room/forex-resources/rollover-rates">Tradeview forex Swaps</a></li>
+                  <li><a class="dropdown-item" href="https://ebhforex.com/faq/rollover-policy/">EBH Swaps</a></li>
+                  <li><a class="dropdown-item" href="https://www.home.saxo/en-sg/rates-and-conditions/forex/trading-conditions#historic-swap-points">Saxo Swaps</a></li>
+                  <li><a class="dropdown-item" href="https://www.globalprime.com/trading-conditions/swaps-financing/">Global PRIME</a></li>
+
+                </ul>
+              </li>
+              <li><a class="dropdown-item" href="http://202.88.105.5/">BGI Tableau Server</a></li>
+
+
+              <li class="nav-item dropdown">
+              <li><a class="dropdown-item" href="https://www.dailyfx.com/economic-calendar">Daily FX Calandar</a></li>
+              <li><a class="dropdown-item" href="https://www.poundsterlingforecast.com/">Pound Sterling Forcast</a></li>
+              <li><a class="dropdown-item" href="https://global.markets.com/holiday-schedule/">Global Markets Trading Holiday</a></li>
+              <li><a class="dropdown-item" href="https://tw.rter.info/bank/BKTWTWTP/">USDTWD Web Scrape</a></li>
+              <li><a class="dropdown-item" href="https://www.capitalfutures.com.tw/product/deposit.asp?xy=2&xt=2">Futures contract sizes</a></li>
+              <li><a class="dropdown-item" href="https://community.ig.com/blogs">IG Community Blog</a></li>
+
+
+
+
+              <div class="dropdown-divider"></div>
+              <li><a class="dropdown-item" href="https://support.metaquotes.net/en/users/login?returnUrl=%2Fen">Meta Support</a></li>
+              </ul>
+              </li>
+              </li>
+            {% endif %}
+
         {% endif %}
         <li class="nav-item">
           {% if current_user.is_anonymous %}

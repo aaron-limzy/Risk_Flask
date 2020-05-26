@@ -2,7 +2,7 @@
 from flask import render_template, flash, redirect, url_for, request, Blueprint
 from werkzeug.urls import url_parse
 
-from app.Login.login_forms import CreateUserForm, LoginForm, EditDetailsForm
+from app.Login.login_forms import CreateUserForm, LoginForm, EditDetailsForm, Admin_EditDetailsForm
 
 from flask_login import current_user, login_user, logout_user, login_required
 from app.Login.login_models import User, load_user, flask_users
@@ -10,7 +10,7 @@ from app.Login.login_models import User, load_user, flask_users
 
 from flask_sqlalchemy import SQLAlchemy
 
-from app.decorators import roles_required
+from app.decorators import roles_required, role_authentication
 
 #db = SQLAlchemy()  # <--- The db object belonging to the blueprint
 from app.extensions import db
@@ -69,6 +69,20 @@ def Create_User():
             print(sql_insert)
             raw_insert_result = db.engine.execute(sql_insert)
             flash("User {} has been created.".format(username))  # Put a message out that there is some error.
+    else:
+        # Want to select all the roles from the SQL DB. Need to select DISTINCT
+        sql_query = """select DISTINCT(role) FROM aaron.flask_login"""
+        raw_result = db.engine.execute(sql_query)
+
+        result_data = raw_result.fetchall() # -> [('Admin',), ('Risk_TW',), ('Dealing',), ('Finance',), ('Risk',)]
+        roles = [r[0] for r in result_data] # -> ['Admin', 'Risk_TW', 'Dealing', 'Finance', 'Risk']
+
+        role_list = [(r, r) for r in roles]
+        # passing group_list to the form
+        form.role.choices = role_list
+        result_col = raw_result.keys()
+        # print(roles)
+        # print(result_col)
 
     return render_template('General_Form.html', title='Create User', header="Create User", form=form)
 
@@ -78,7 +92,6 @@ def Create_User():
 def logout():
     logout_user()
     return redirect(url_for('login.login'))
-
 
 
 
@@ -100,3 +113,47 @@ def Edit_Details():
         flash("'{}' details has been Updated.".format(current_user.username))  # Put a message out that there is some error.
 
     return render_template('General_Form.html', title='User Edit Details', header="Edit Details", form=form)
+
+
+@login_bp.route('/Admin_Edit_user', methods=['GET', 'POST'])       # Login Page. If user is login-ed, will re-direct to index.
+@roles_required(['Admin'])
+def Admin_Edit_User():
+
+    form = Admin_EditDetailsForm()
+
+    if form.validate_on_submit():
+
+        username = form.username.data.lower()
+        password = form.password.data
+
+        user = flask_users.query.filter_by(username=username).first()
+        if user is None:    # Need to check if the user exist in the first place.
+            flash("User {} does not exist.".format(username))  # Put a message out that there is some error.
+        else:
+            sql_insert = "UPDATE  aaron.`flask_login` set `password_hash` = '{pass_hash}' where `username` = '{username}'".format(
+                username=username, pass_hash=User.hash_password(password=password))
+            print(sql_insert)
+            raw_insert_result = db.engine.execute(sql_insert)
+            flash("User {} password has been updated.".format(username))  # Put a message out that there is some error.
+    else:
+        # Want to select all the roles from the SQL DB. Need to select DISTINCT
+        sql_query = """select DISTINCT(username) FROM aaron.flask_login"""
+        raw_result = db.engine.execute(sql_query)
+
+        result_data = raw_result.fetchall() # -> [('Admin',), ('Risk_TW',), ('Dealing',), ('Finance',), ('Risk',)]
+        roles = [r[0] for r in result_data] # -> ['Admin', 'Risk_TW', 'Dealing', 'Finance', 'Risk']
+
+        role_list = [(r, r) for r in roles]
+        # passing group_list to the form
+        form.username.choices = role_list
+
+        # form.role.default = "Risk"
+        # form.process()  # calling process() afterwards
+
+    return render_template('General_Form.html', title='Create User', header="Create User", form=form)
+
+
+@login_bp.context_processor
+def context_processor():
+    # Want to pass in the function to check roles of user.
+    return dict(role_authentication=role_authentication)

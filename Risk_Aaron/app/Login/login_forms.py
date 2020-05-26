@@ -10,9 +10,9 @@ class CreateUserForm(FlaskForm):
     email =  StringField('Email', validators=[DataRequired(), Email()])
     password = PasswordField('New Password', [InputRequired(), EqualTo('confirm', message='Passwords must match')])
     confirm  = PasswordField('Repeat Password')
-    role = SelectField("Role", choices=[("Risk", "Risk"), ("Risk_TW", "Risk_TW"), ("Finance", "Finance"), ("Dealing", "Dealing"), ("Others", "Others")])
+    #role = SelectField("Role", choices=[("Risk", "Risk"), ("Risk_TW", "Risk_TW"), ("Finance", "Finance"), ("Dealing", "Dealing"), ("Others", "Others")])
+    role = SelectField("Role", validate_choice=False)
     submit = SubmitField('Submit')
-
 
 
 class LoginForm(FlaskForm):
@@ -25,6 +25,13 @@ class LoginForm(FlaskForm):
 # For Letting user change password
 class EditDetailsForm(FlaskForm):
     email =  StringField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('New Password', [InputRequired(), EqualTo('confirm', message='Passwords must match')])
+    confirm  = PasswordField('Repeat Password')
+    submit = SubmitField('Submit')
+
+# For Letting user change password
+class Admin_EditDetailsForm(FlaskForm):
+    username = SelectField("Username", validate_choice=False)
     password = PasswordField('New Password', [InputRequired(), EqualTo('confirm', message='Passwords must match')])
     confirm  = PasswordField('Repeat Password')
     submit = SubmitField('Submit')
