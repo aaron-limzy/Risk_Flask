@@ -150,7 +150,7 @@ def Admin_Edit_User():
         # form.role.default = "Risk"
         # form.process()  # calling process() afterwards
 
-    return render_template('General_Form.html', title='Create User', header="Create User", form=form)
+    return render_template('General_Form.html', title='Admin Edit User', header="Admin Edit User", form=form)
 
 
 @login_bp.context_processor
