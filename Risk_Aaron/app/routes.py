@@ -3,8 +3,8 @@ from flask import render_template, flash, redirect, url_for, request, send_from_
 from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
 
-from app.forms import  AddOffSet, MT5_Modify_Trades_Form
-from app.forms import  noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude
+from app.forms import  AddOffSet, MT5_Modify_Trades_Form, Delete_Monitor_Account_Table
+from app.forms import  noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude, Monitor_Account_Trade, Monitor_Account_Remove
 
 # Import function to call in case the page dosn't run.
 from app.Plotly.routes import save_BGI_float_Ajax
@@ -478,15 +478,6 @@ def risk_auto_cut_ajax(update_tool_time=1):
 
 
     return json.dumps(return_val)
-
-
-
-
-
-
-
-
-
 
 
 
@@ -2113,6 +2104,9 @@ def Exclude_Equity_Below_Credit():
 
 
 
+
+
+
 # Want to show which clients got recently changed to read only.
 # Due to Equity < Balance.
 @main_app.route('/Futures/Scrape')
@@ -2131,6 +2125,9 @@ def Scrape_futures():
                            ajax_url=url_for('main_app.Scrape_futures_ajax', _external=True),
                            description=description, replace_words=Markup(["Today"]))
 
+
+
+
 @main_app.route('/Futures/Scrape_ajax',methods=['GET', 'POST'])
 @roles_required()
 def Scrape_futures_ajax():
@@ -2144,6 +2141,210 @@ def Scrape_futures_ajax():
     #start_date = get_working_day_date(datetime.date.today(), weekdays_count=0)
 
     return json.dumps(return_val)
+
+
+
+
+# Want to check and close off account/trades.
+@main_app.route('/Monitor_Account_Trades/Settings', methods=['GET', 'POST'])
+@roles_required()
+def Monitor_Account_Trades_Settings():
+
+    # aaron.monitor_accout
+    # aaron.monitor_account_trades
+
+    title = Markup("Monitor Account Trades Settings")
+    header = "Accounts for Monitor"
+    description = Markup("<b>To be notified when certain accounts have open trades.</b>")
+
+    form = Monitor_Account_Trade()
+
+    if request.method == 'POST' and form.validate_on_submit():
+        Live = form.Live.data
+        Account = form.Account.data
+        Email_Risk = 1 if form.Email_Risk.data else 0 # Data should return True or False.
+        Telegram_User = form.Telegram_User.data
+
+        # If it's not for all, we want to select the user.
+        tele_name_condition = " WHERE T.Tele_Name = '{}' ".format(Telegram_User) if Telegram_User != "All" else " "
+
+        sql_insert =  """INSERT INTO aaron.monitor_account (`Live`, `Account`, `Tele_name`, `Email_Risk`, `Entry_Time`, `Disable_time`)
+         select A.Live, A.Account, T.Tele_name, A.Email_Risk,  now() as `Entry_Time` , A.Disable_time
+        FROM (select '{Live}' as `Live`, '{Account}' as `Account`, '{Email_Risk}' as `Email_Risk`,
+        '1970-01-01 00:00:00' as `Disable_time`) as A, aaron.telegram_id as T {tele_name_condition} 
+        ON DUPLICATE KEY UPDATE `Entry_Time`=VALUES(`Entry_Time`), `Email_Risk`=VALUES(`Email_Risk`) """.format(
+            Live=Live,Account=Account,Email_Risk=Email_Risk, tele_name_condition=tele_name_condition)
+
+
+        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+
+        print(sql_insert)
+        db.engine.execute(text(sql_insert))  # Insert into DB
+
+        flash("Live {}, Account: {} Successfully added.".format(Live, Account))
+        #print(sql_insert)
+        #print("Live: {}, Account: {}, Email_Risk: {}, Telegram_User: {}".format(Live, Account, Email_Risk, Telegram_User))
+
+
+    # Want to select all the Telegram user ID
+    sql_query = """select DISTINCT(Tele_Name) FROM aaron.telegram_id"""
+    raw_result = db.engine.execute(sql_query)
+
+    result_data = raw_result.fetchall()
+    names = [r[0] for r in result_data]
+    name_list = [("All", "All")] + [(r, r) for r in names]  # Want to add in "All" Options
+
+    # passing group_list to the form
+    form.Telegram_User.choices = name_list
+
+
+    # Want to select all the accounts that we are monitoring.
+    # Flask Table, that has Delete button that allows us to delete with 1 click.
+    sql_query = """select Live, Account, Tele_name, Email_risk, Entry_time FROM aaron.Monitor_Account where Disable_time = '1970-01-01 00:00:00' ORDER BY Live, Account"""
+    raw_result = db.engine.execute(sql_query)
+
+    result_data = raw_result.fetchall()
+    result_col = raw_result.keys()
+    if len(result_data) == 0:   # There is no data.
+        collate = [{"Result": "There are currently no Accounts being monitored"}]
+        table = create_table_fun(collate, additional_class=["basic_table", "table", "table-striped", "table-bordered", "table-hover", "table-sm"])
+    else:
+        # Live Account, Tele_name from the DB that is not disabled yet...
+        account_tele_names = [dict(zip(result_col, r)) for r in result_data]
+
+        table = Delete_Monitor_Account_Table(account_tele_names)
+        table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
+
+
+
+    # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
+    # backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut",  replace_words=Markup(["Today"])
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("General_Form.html",
+                           title=title, header=header,
+                           form=form, description=description, table=table,
+                           backgroud_Filename='css/Glasses_3.jpeg')
+
+
+# To remove the account from being monitored.
+@main_app.route('/Remove_Monitor_Account/<Live>/<Account>/<Tele_name>', methods=['GET', 'POST'])
+def edit(Live="", Account="", Tele_name=""):
+    #print("Live: {}, Account: {}, Tele_name: {}".format(Live, Account, Tele_name))
+
+    #TODO: Asyc this.
+
+    # Write the SQL Statement and Update to disable the Account monitoring.
+    sql_update_statement = """UPDATE aaron.Monitor_Account SET Disable_time=NOW() where Disable_time = '1970-01-01 00:00:00' 
+        AND Live={Live} AND Account={Account} 
+            AND Tele_name='{Tele_name}'""".format(Live=Live,Account=Account,Tele_name=Tele_name)
+    sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
+    print(sql_update_statement)
+    sql_update_statement=text(sql_update_statement)
+    result = db.engine.execute(sql_update_statement)
+
+
+
+    # Also, Need to clear off any Current Monitoring Trades.
+    sql_update_statement = """UPDATE aaron.monitor_account_trades SET Trade_Close_Notify=1 
+            WHERE Live={Live} AND Account={Account} 
+                AND Tele_name='{Tele_name}'""".format(Live=Live,Account=Account,Tele_name=Tele_name)
+    sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
+    print(sql_update_statement)
+    sql_update_statement=text(sql_update_statement)
+    result = db.engine.execute(sql_update_statement)
+
+
+    flash("Live:{Live}, Account: {Account}, Telegram User: {Tele_name} has been removed from Account Monitoring".format(Live=Live,Account=Account,Tele_name=Tele_name))
+    return redirect(url_for('main_app.Monitor_Account_Trades_Settings'))
+
+
+@main_app.route('/Monitor_Account_Trades')
+@roles_required()
+def Monitor_Account_Trades():
+    description = Markup("Monitor Account Trades.<br>")
+    header = "To track accounts, to see if trades are opened/closed."
+
+    return render_template("Webworker_Single_Table.html",  backgroud_Filename='css/Glasses_3.jpeg', Table_name="Account Trades", \
+                           title="Monitor Account Trades", ajax_url=url_for('main_app.Monitor_Account_Trades_Ajax', _external=True), header=header, setinterval=10,
+                           description=description, replace_words=Markup(["None"]))
+
+
+
+@main_app.route('/Monitor_Account_Trades_ajax', methods=['GET', 'POST'])
+@roles_required()
+def Monitor_Account_Trades_Ajax():
+
+
+    # Get the Trades that are newly opened, or just closed.
+    sql_query_array = []
+
+    per_live_sql = """SELECT '{Live}' as `LIVE`, T.LOGIN, T.TICKET, T.CMD, T.SYMBOL, T.VOLUME, T.OPEN_TIME,T.CLOSE_TIME, 
+        T.OPEN_PRICE, T.PROFIT, T.SWAPS, M.Tele_name as `TELE_NAME`,TID.Tele_ID as `TELE_ID`, M.Email_risk as `EMAIL_RISK`
+    FROM `monitor_account` as M, live{Live}.mt4_trades as T, aaron.telegram_id as TID
+    WHERE M.Account = T.LOGIN AND T.CMD < 2 AND  TID.Tele_name = M.Tele_name AND
+    M.Live = {Live} AND M.Disable_time = '1970-01-1 00:00:00'  AND CLOSE_TIME = '1970-01-01 00:00:00' AND 
+    T.TICKET NOT IN (SELECT TICKET FROM aaron.monitor_account_trades as MT WHERE MT.Trade_Close_Notify = 0 AND MT.Live = {Live})
+    UNION
+    SELECT '{Live}' as `LIVE`, T.LOGIN, T.TICKET, T.CMD, T.SYMBOL, T.VOLUME, T.OPEN_TIME,T.CLOSE_TIME, 
+        T.OPEN_PRICE, T.PROFIT, T.SWAPS, M.Tele_name as `TELE_NAME`,TID.Tele_ID as `TELE_ID`, M.Email_risk as `EMAIL_RISK`
+    FROM `monitor_account` as M, live{Live}.mt4_trades as T, aaron.monitor_account_trades as MT, aaron.telegram_id as TID
+    WHERE M.Account = T.LOGIN AND T.CMD < 2 AND  MT.Tele_name = M.Tele_name AND TID.Tele_name = MT.Tele_name AND M.Live = {Live} AND 
+    M.Disable_time = '1970-01-1 00:00:00'  AND CLOSE_TIME != '1970-01-01 00:00:00' 
+    AND MT.Account = T.LOGIN AND MT.Live = {Live} AND MT.Ticket = T.TICKET AND MT.Trade_Close_Notify = 0
+    """
+
+    # To write each Individual Live in.
+    for Live in [1, 2, 3, 5]:
+        sql_query_array.append(per_live_sql.format(Live=Live))
+
+    sql_query = text(" UNION ".join(sql_query_array))
+
+    sql_record = query_SQL_return_record(sql_query)
+    df_trades = pd.DataFrame(sql_record)
+
+
+    # Need to insert into SQL.
+
+
+    direction = ["BUY", "SELL"]
+    # Want to find out which are unique.
+    for tele_id in df_trades["TELE_ID"].unique():
+        df_unique_teleID = df_trades[df_trades["TELE_ID"] == tele_id]
+
+        df_open_trades = df_unique_teleID[df_unique_teleID["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]
+        open_trades_str = ""
+        if len(df_open_trades) > 0:
+
+            # Want to get the open trades into a line of string.
+            open_trades = df_open_trades.apply(
+                lambda x: "Live {Live}, Login {Login} {Direction:>4} {Lots:.2f} Lots of {Symbol}".format(
+                    Live=x["LIVE"], Login=x["LOGIN"], Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
+                    Symbol=x["SYMBOL"]), axis=1)
+
+            open_trades_str = "<b>Open Trade/s</b>\n" + "\n".join(open_trades.values) + "\n\n"
+
+        # Get all the closed Trades.
+        close_trades_str = ""
+        df_close_trades = df_unique_teleID[df_unique_teleID["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')]
+        if len(df_close_trades) > 0:
+            # Want to get the open trades into a line of string.
+            close_trades = df_close_trades.apply(
+                lambda x: "Live {Live}, Login {Login} {Direction:>4} {Lots:.2f} Lots of {Symbol} with {Profit} profit".format(
+                    Live=x["LIVE"], Login=x["LOGIN"], Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
+                    Symbol=x["SYMBOL"], Profit=x["PROFIT"]), axis=1)
+
+            close_trades_str = "<b>Closed Trade/s</b>\n" + "\n".join(close_trades.values)
+
+        total_tele_mesage="<b>Account Monitoring<b>\n\n" + open_trades_str + close_trades_str
+
+        print(total_tele_mesage)
+
+    # Make the dates printable. 
+    df_trades["OPEN_TIME"] = df_trades["OPEN_TIME"].apply(lambda x: "{}".format(x))
+    df_trades["CLOSE_TIME"] = df_trades["CLOSE_TIME"].apply(lambda x: "{}".format(x))
+
+    return json.dumps(df_trades.to_dict('record'))
+
 
 
 
@@ -2389,10 +2590,11 @@ def Live_MT4_Users(live):    # To upload the Files, or post which trades to dele
     return excel.make_response_from_array(list([result_col]) + list(df_users.values), 'csv', file_name="Live{}_Users.csv".format(live))
 
 
-def create_table_fun(table_data):
+def create_table_fun(table_data, additional_class=[]):
 
     T = create_table()
-    table = T(table_data, classes=["table", "table-striped", "table-bordered", "table-hover", "table-sm"])
+    table_class = additional_class + ["table", "table-striped", "table-bordered", "table-hover", "table-sm"]
+    table = T(table_data, classes=table_class)
     if (len(table_data) > 0) and isinstance(table_data[0], dict):
         for c in table_data[0]:
             if c != "\n":

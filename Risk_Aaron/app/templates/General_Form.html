@@ -5,7 +5,14 @@
 {{ super() }}
 <style>
   body {
-    background: #eee url({{ url_for('static', filename='css/cactus.jpg') }})
+
+    {% if backgroud_Filename %}
+      background: #eee url({{ url_for('static', filename=backgroud_Filename) }});
+      background-size: cover;
+    {% else %}
+      background: #eee url({{ url_for('static', filename='css/cactus.jpg') }})
+    {% endif %}
+
   }
   }
 
@@ -38,17 +45,18 @@
   </div>
 </div>
 <div class="container general_form">
-
+  {% if form %}
   <div class="row">
     <div class="col">
       {{ wtf.quick_form(form, extra_classes ="", button_map={'submit': 'btn-lg btn-success'}) }}
     </div>
   </div>
-
+{% endif %}
 <br>
 
   {% if table %}
   {{table}}
+  <br>
   {% endif %}
 
   </div>

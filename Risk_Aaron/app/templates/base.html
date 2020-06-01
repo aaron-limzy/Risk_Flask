@@ -141,6 +141,12 @@
                     <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/NFP_Change_Spread_V1.4/">NFP Spread Change</a></li>
                     <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/ABook_Match_Trades%20-%20V2.7/?Send_Email_Toggle=0">LP/MT4 Position</a></li>
 
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Monitor_Account_Trades_Settings') }}">Monitor Account Settings ➕</a></li>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Monitor_Account_Trades') }}">Monitor Account ⭐</a></li>
+
+                    
+
                   </ul>
                 </li>
             {% endif %}
@@ -371,7 +377,7 @@
     {% if messages %}
     <br>
     {% for message in messages %}
-    <div class="alert alert-info" role="alert">{{ message }}</div>
+    <div class="alert alert-info text-center" role="alert">{{ message }}</div>
     {% endfor %}
     {% endif %}
     {% endwith %}

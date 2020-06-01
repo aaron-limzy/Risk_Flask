@@ -1,9 +1,14 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField, IntegerField, DecimalField, RadioField, SelectField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField, IntegerField, DecimalField, RadioField, SelectField, SelectMultipleField
 from wtforms.validators import DataRequired, ValidationError, Email, EqualTo, Length, NumberRange, InputRequired, AnyOf
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 from flask_uploads import UploadSet, IMAGES, configure_uploads
 from app.extensions import excel_format
+
+
+from flask_table import Table, Col, LinkCol, ButtonCol
+
+import json
 from app.models import *
 
 # Configure the image uploading via Flask-Uploads
@@ -52,9 +57,6 @@ class AddOffSet(FlaskForm):
 
 
 
-
-
-
 # Want to add into SQL for change group, when there are no open trades.
 class noTrade_ChangeGroup_Form(FlaskForm):
     Live = IntegerField('Live', validators=[DataRequired(), AnyOf(values=[1,2,3,5], message="Only Live 1,2,3 and 5")])
@@ -82,3 +84,29 @@ class Live_Group(FlaskForm):
     Live = IntegerField('Live', validators=[DataRequired(), AnyOf(values=[1,2,3,5], message="Only Live 1,2,3 and 5")], description = "1,2,3 or 5.")
     Client_Group = StringField('Client Group', validators=[DataRequired(message="Group name Required")], description = "Client Group to include in Risk Auto Cut.")
     submit = SubmitField('Submit')
+
+class Monitor_Account_Trade(FlaskForm):
+    Live = IntegerField('Live', validators=[DataRequired(), AnyOf(values=[1,2,3,5], message="Only Live 1,2,3 and 5")], description = "1,2,3 or 5.")
+    Account = IntegerField('Account', validators=[DataRequired(message="Only numbers are allowed")], description = "Client Login.")
+    Telegram_User  = SelectField("Telegram User", validate_choice=False)
+    Email_Risk = BooleanField('Email Risk', description = "If an email needs to be sent.", default=False)
+    submit = SubmitField('Submit')
+
+class Monitor_Account_Remove(FlaskForm):
+    Monitor_Account  = SelectMultipleField("Monitor Accounts")
+    submit = SubmitField('Submit')
+
+
+# Variable name has to be the Dict name.
+# Has to provide a list of Dicts.
+class Delete_Monitor_Account_Table(Table):
+    Live = Col('Live')
+    Tele_name = Col('Telegram Name')
+    Account = Col('Account')
+    Entry_time = Col('Entry_Time')
+    Email_risk = Col('Email Risk')
+    #Delete = LinkCol('Remove', endpoint="main_app.edit", url_kwargs=dict(Live='Live', Account='Account'))
+    Delete_Button = ButtonCol('Delete User', endpoint="main_app.edit",
+                              url_kwargs=dict(Live='Live', Account='Account', Tele_name='Tele_name'),
+                              button_attrs={"Class" : "btn btn-secondary"})
+    #Account='Account', Tele_name='Tele_name'
