@@ -2268,7 +2268,7 @@ def Monitor_Account_Trades():
     header = "To track accounts, to see if trades are opened/closed."
 
     return render_template("Webworker_Single_Table_No_Border.html",  backgroud_Filename='css/Glasses_3.jpeg', Table_name="Account Trades", \
-                           title="Monitor Account Trades", ajax_url=url_for('main_app.Monitor_Account_Trades_Ajax', _external=True), header=header, setinterval=20,
+                           title="Monitor Account Trades", ajax_url=url_for('main_app.Monitor_Account_Trades_Ajax', _external=True), header=header, setinterval=10,
                            description=description, replace_words=Markup(["None"]))
 
 
