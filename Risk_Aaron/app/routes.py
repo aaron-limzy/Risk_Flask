@@ -70,6 +70,7 @@ TIME_UPDATE_SLOW_MIN = 10
 
 TELE_ID_MTLP_MISMATCH = "736426328:AAH90fQZfcovGB8iP617yOslnql5dFyu-M0"		# For Mismatch and LP Margin
 TELE_ID_USDTWF_MISMATCH = "776609726:AAHVrhEffiJ4yWTn1nw0ZBcYttkyY0tuN0s"        # For USDTWF
+TELE_ID_MONITOR = "1055969880:AAHcXIDWlQqrFGU319wYoldv9FJuu4srx_E"      # For BGI Monitor
 TELE_CLIENT_ID = ["486797751"]        # Aaron's Telegram ID.
 
 LP_MARGIN_ALERT_LEVEL = 20            # How much away from MC do we start making noise.
@@ -2261,11 +2262,13 @@ def edit(Live="", Account="", Tele_name=""):
 @main_app.route('/Monitor_Account_Trades')
 @roles_required()
 def Monitor_Account_Trades():
-    description = Markup("Monitor Account Trades.<br>")
+    description = Markup("Monitor Account Trades.<br>- Unable to detect trades that are opened and closed within the interval.<br>" + \
+                         "Uses SQL table (64.73) <span style='color:red'>aaron.monitor_account</span> for the Live/Account number.<br>" + \
+                         "Uses SQL table (64.73) <span style='color:red'>aaron.monitor_account_trades</span> for the trades that are being tracked.<br>")
     header = "To track accounts, to see if trades are opened/closed."
 
-    return render_template("Webworker_Single_Table.html",  backgroud_Filename='css/Glasses_3.jpeg', Table_name="Account Trades", \
-                           title="Monitor Account Trades", ajax_url=url_for('main_app.Monitor_Account_Trades_Ajax', _external=True), header=header, setinterval=10,
+    return render_template("Webworker_Single_Table_No_Border.html",  backgroud_Filename='css/Glasses_3.jpeg', Table_name="Account Trades", \
+                           title="Monitor Account Trades", ajax_url=url_for('main_app.Monitor_Account_Trades_Ajax', _external=True), header=header, setinterval=20,
                            description=description, replace_words=Markup(["None"]))
 
 
@@ -2279,14 +2282,15 @@ def Monitor_Account_Trades_Ajax():
     sql_query_array = []
 
     per_live_sql = """SELECT '{Live}' as `LIVE`, T.LOGIN, T.TICKET, T.CMD, T.SYMBOL, T.VOLUME, T.OPEN_TIME,T.CLOSE_TIME, 
-        T.OPEN_PRICE, T.PROFIT, T.SWAPS, M.Tele_name as `TELE_NAME`,TID.Tele_ID as `TELE_ID`, M.Email_risk as `EMAIL_RISK`
+        T.OPEN_PRICE, T.CLOSE_PRICE, T.PROFIT, T.SWAPS, M.Tele_name as `TELE_NAME`,TID.Tele_ID as `TELE_ID`, M.Email_risk as `EMAIL_RISK`
     FROM `monitor_account` as M, live{Live}.mt4_trades as T, aaron.telegram_id as TID
     WHERE M.Account = T.LOGIN AND T.CMD < 2 AND  TID.Tele_name = M.Tele_name AND
     M.Live = {Live} AND M.Disable_time = '1970-01-1 00:00:00'  AND CLOSE_TIME = '1970-01-01 00:00:00' AND 
-    T.TICKET NOT IN (SELECT TICKET FROM aaron.monitor_account_trades as MT WHERE MT.Trade_Close_Notify = 0 AND MT.Live = {Live})
+    T.TICKET NOT IN 
+        (SELECT TICKET FROM aaron.monitor_account_trades as MT WHERE MT.Trade_Close_Notify = 0 AND MT.Live = {Live} AND  M.Tele_name = MT.Tele_name)
     UNION
     SELECT '{Live}' as `LIVE`, T.LOGIN, T.TICKET, T.CMD, T.SYMBOL, T.VOLUME, T.OPEN_TIME,T.CLOSE_TIME, 
-        T.OPEN_PRICE, T.PROFIT, T.SWAPS, M.Tele_name as `TELE_NAME`,TID.Tele_ID as `TELE_ID`, M.Email_risk as `EMAIL_RISK`
+        T.OPEN_PRICE, T.CLOSE_PRICE, T.PROFIT, T.SWAPS, M.Tele_name as `TELE_NAME`,TID.Tele_ID as `TELE_ID`, M.Email_risk as `EMAIL_RISK`
     FROM `monitor_account` as M, live{Live}.mt4_trades as T, aaron.monitor_account_trades as MT, aaron.telegram_id as TID
     WHERE M.Account = T.LOGIN AND T.CMD < 2 AND  MT.Tele_name = M.Tele_name AND TID.Tele_name = MT.Tele_name AND M.Live = {Live} AND 
     M.Disable_time = '1970-01-1 00:00:00'  AND CLOSE_TIME != '1970-01-01 00:00:00' 
@@ -2303,49 +2307,116 @@ def Monitor_Account_Trades_Ajax():
     df_trades = pd.DataFrame(sql_record)
 
 
-    # Need to insert into SQL.
 
 
-    direction = ["BUY", "SELL"]
-    # Want to find out which are unique.
-    for tele_id in df_trades["TELE_ID"].unique():
-        df_unique_teleID = df_trades[df_trades["TELE_ID"] == tele_id]
-
-        df_open_trades = df_unique_teleID[df_unique_teleID["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]
-        open_trades_str = ""
-        if len(df_open_trades) > 0:
-
-            # Want to get the open trades into a line of string.
-            open_trades = df_open_trades.apply(
-                lambda x: "Live {Live}, Login {Login} {Direction:>4} {Lots:.2f} Lots of {Symbol}".format(
-                    Live=x["LIVE"], Login=x["LOGIN"], Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
-                    Symbol=x["SYMBOL"]), axis=1)
-
-            open_trades_str = "<b>Open Trade/s</b>\n" + "\n".join(open_trades.values) + "\n\n"
-
-        # Get all the closed Trades.
-        close_trades_str = ""
-        df_close_trades = df_unique_teleID[df_unique_teleID["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')]
-        if len(df_close_trades) > 0:
-            # Want to get the open trades into a line of string.
-            close_trades = df_close_trades.apply(
-                lambda x: "Live {Live}, Login {Login} {Direction:>4} {Lots:.2f} Lots of {Symbol} with {Profit} profit".format(
-                    Live=x["LIVE"], Login=x["LOGIN"], Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
-                    Symbol=x["SYMBOL"], Profit=x["PROFIT"]), axis=1)
-
-            close_trades_str = "<b>Closed Trade/s</b>\n" + "\n".join(close_trades.values)
-
-        total_tele_mesage="<b>Account Monitoring<b>\n\n" + open_trades_str + close_trades_str
-
-        print(total_tele_mesage)
-
-    # Make the dates printable. 
-    df_trades["OPEN_TIME"] = df_trades["OPEN_TIME"].apply(lambda x: "{}".format(x))
-    df_trades["CLOSE_TIME"] = df_trades["CLOSE_TIME"].apply(lambda x: "{}".format(x))
-
-    return json.dumps(df_trades.to_dict('record'))
+    if len(df_trades) == 0:
+        return_dict=[{"Results":"There has been no trade movements in the accounts."}]
+    else:
 
 
+
+        # Need to insert into SQL.
+        df_all_open_trades = df_trades[df_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]
+        all_open_trade_values = df_all_open_trades.apply(lambda x: " ('{Live}', '{Login}', '{Ticket}', '0', '{Tele_name}') ".format(
+            Live=x["LIVE"], Login=x['LOGIN'], Ticket=x["TICKET"], Tele_name=x["TELE_NAME"]), axis=1)
+
+
+        df_all_close_trades = df_trades[df_trades["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')]
+        all_close_trade_values = df_all_close_trades.apply(lambda x: " ('{Live}', '{Login}', '{Ticket}', '1', '{Tele_name}') ".format(
+            Live=x["LIVE"], Login=x['LOGIN'], Ticket=x["TICKET"], Tele_name=x["TELE_NAME"]), axis=1)
+
+        async_sql_insert(app=current_app._get_current_object(), header="""INSERT INTO aaron.monitor_account_trades (`live`,`account`, `ticket`, `trade_close_notify`, `tele_name`) VALUES """,
+                         values=list(all_open_trade_values.values) + list(all_close_trade_values.values),
+                         footer=" ON DUPLICATE KEY UPDATE `Trade_Close_Notify`=VALUES(`Trade_Close_Notify`) ",
+                         sql_max_insert=20)
+
+
+        direction = ["B", "S"]
+        direction_full = ["BUY", "SELL"]
+        # Want to find out which are unique.
+        for tele_id in df_trades["TELE_ID"].unique():
+            df_unique_teleID = df_trades[df_trades["TELE_ID"] == tele_id]
+
+            df_open_trades = df_unique_teleID[df_unique_teleID["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]
+            open_trades_str = ""
+            if len(df_open_trades) > 0:
+                open_trades = df_open_trades.apply(
+                    lambda x: "{Live:^1}|{Login:^8}|{Direction:<1}|{Lots:2.2f}|{Symbol:^9}|{Open_price:^7}".format(
+                        Live=x["LIVE"], Login=x["LOGIN"], Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
+                        Symbol=x["SYMBOL"], Open_price=x["OPEN_PRICE"]), axis=1)
+
+                open_trades_str = "<u><b>Open Trade/s</b></u>\n" + \
+                                  "<pre>{:^1}|{:<7}|{:<1}|{:^5}|{:^7}|{:^7}</pre>\n".format("L", "LOGIN","C", "LOT", "SYMBOL", "OPEN $") +  \
+                                    "\n".join(open_trades.values) + "\n\n"
+
+            # Get all the closed Trades.
+            # needs to be different because we compare close time. And close trades will need to show profoit.
+            close_trades_str = ""
+            df_close_trades = df_unique_teleID[df_unique_teleID["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')]
+            if len(df_close_trades) > 0:
+                # Want to get the open trades into a line of string.
+                close_trades = df_close_trades.apply(
+                    lambda x: "{Live:1}|{Login:^8}|{Direction:<1}|{Lots:.2f}|{Symbol:^9}|{Close_price:^7}|${Profit}".format(
+                        Live=x["LIVE"], Login=x["LOGIN"], Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
+                        Symbol=x["SYMBOL"], Profit=x["PROFIT"], Close_price=x["CLOSE_PRICE"]), axis=1)
+
+                close_trades_str = "<u><b>Closed Trade/s</b></u>\n" + \
+                              "<pre>{:^1}|{:<7}|{:<1}|{:^3}|{:^7}|{:^7}|{:^6}</pre>\n".format("L",
+                                        "LOGIN", "C", "LOT", "SYMBOL", "CLOSE $", "PnL") + "\n".join(close_trades.values) + "\n"
+
+            total_tele_mesage = "<b>Account Monitoring</b>\n\n" +  open_trades_str + close_trades_str + "\nTool that monitors newly open/closed trades for selected accounts."
+
+            # Need to send the Tele Messages.
+            #async_Post_To_Telegram("1055969880:AAHcXIDWlQqrFGU319wYoldv9FJuu4srx_E", total_tele_mesage, ["486797751"], Parse_mode=telegram.ParseMode.HTML)
+            async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, total_tele_mesage, [tele_id],  Parse_mode=telegram.ParseMode.HTML)
+
+
+        # If we need to email Risk.
+        df_Email_Risk = df_trades[df_trades["EMAIL_RISK"] == 1]
+        if len(df_Email_Risk) > 0:
+            email_html_str = "{}Hi,<br><br>Account/s in account monitoring tool has had some open/closed trades.<br>Kindly see the details below.<br><br>".format(Email_Header)
+            # Want Lots, Not Volume. Need to Multiply by 0.01, or divide by 100
+            df_Email_Risk["LOTS"] = df_Email_Risk["VOLUME"].apply(lambda x: "{:.2f}".format(float(x) * 0.01))
+            # Want only those that are needed.
+            df_Email_Risk = df_Email_Risk[["LIVE", "LOGIN", "TICKET", "SYMBOL", "CMD", "LOTS", "OPEN_TIME","OPEN_PRICE",
+                                           "CLOSE_TIME", "CLOSE_PRICE", "SWAPS", "PROFIT"]]
+
+            # Want to remove duplicate, since some tele users are different. Would cause duplicaion when joining in SQL
+            df_Email_Risk = df_Email_Risk.drop_duplicates()
+            df_Email_Risk["CMD"] = df_Email_Risk["CMD"].apply(lambda x: "{}".format(direction_full[int(x)]))
+
+
+            df_open_trades = df_Email_Risk[df_Email_Risk["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]
+            if len(df_open_trades) > 0: # If there are open trades to show.
+                df_open_trades = df_open_trades.drop(columns=["CLOSE_TIME", "CLOSE_PRICE"])  # No need for open trades
+                email_html_str += "<b><u>Open Trades</u></b><br>{}".format(List_of_Dict_To_Horizontal_HTML_Table(df_open_trades.to_dict("Record")))
+
+            df_close_trades = df_Email_Risk[df_Email_Risk["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')]
+            if len(df_close_trades) > 0:
+                email_html_str += "<b><u>Closed Trades</u></b><br>{}".format(
+                    List_of_Dict_To_Horizontal_HTML_Table(df_close_trades.to_dict("Record")))
+
+            email_html_str += "<br>Thanks,<br>Aaron{}".format(Email_Footer)
+
+            async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[], Subject="Account Trade Monitoring", HTML_Text=email_html_str, Attachment_Name=[])
+
+            # print(total_tele_mesage)
+
+
+        # Make the dates printable.
+        df_trades["OPEN_TIME"] = df_trades["OPEN_TIME"].apply(lambda x: "{}".format(x))
+        df_trades["CLOSE_TIME"] = df_trades["CLOSE_TIME"].apply(lambda x: "{}".format(x))
+        df_trades["PROFIT"] = df_trades["PROFIT"].apply(lambda x: "{:.2f}".format(x))
+        df_trades["CMD"] = df_trades["CMD"].apply(lambda x: "{}".format(direction[int(x)]))
+        df_trades["LOTS"] = df_trades["VOLUME"].apply(lambda x: "{:.2f}".format(float(x)*0.01))
+        # Re-arrange to show.
+        return_dict = df_trades[["LIVE", "LOGIN", "TICKET" ,"SYMBOL", "CMD", "LOTS", "OPEN_TIME", "OPEN_PRICE",
+                                   "CLOSE_TIME", "CLOSE_PRICE", "SWAPS", "PROFIT", "TELE_NAME", "TELE_ID"]].to_dict('record')
+
+    # Update SQL that this has ran.
+    async_update_Runtime(app=current_app._get_current_object(), Tool="Monitor_Account_Trades")
+
+    return json.dumps(return_dict)
 
 
 # Want to query SQL to pull and display all trades that might be the mismatched one.

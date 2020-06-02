@@ -408,3 +408,16 @@ def sql_multiple_insert(tablename="", column = "" ,values = [" "], footer = "", 
     sql_statement.append(sql_trades_insert)
     return sql_statement
 
+
+# a = """<b>Account Monitoring</b>
+#
+# <u><b>Open Trade/s</b></u>
+# <code>L|LOGIN  |C| LOT | SYMBOL  |OPEN PRICE</code>
+# 2|2040    |B|0.01| XAUUSD! |1736.36|
+# 2|2040    |S|0.01| XAUUSD! |1735.1 |
+#
+# <b>Closed Trade/s</b>
+# <pre>L|LOGIN|C| LOT | SYMBOL  |CLOSE PRICE|PROFIT</pre>
+# 2|<code>2040    </code>|B|0.01| XAUUSD! |1738.01|2.41
+# """
+# Post_To_Telegram("736426328:AAH90fQZfcovGB8iP617yOslnql5dFyu-M0", a,  ["486797751"], Parse_mode=telegram.ParseMode.HTML)

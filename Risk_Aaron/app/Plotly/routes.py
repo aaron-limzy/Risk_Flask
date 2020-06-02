@@ -651,9 +651,10 @@ def get_symbol_daily_pnl():
 # Want to delete from the table where min is not 1.
 # TODO: will need to improve this when MY gives the code
 def delete_from_floating_table():
-    print("Trying to delete from aaron.`BGI_Float_History_Save`")
-    insert_into_table = text("DELETE FROM aaron.`BGI_Float_History_Save` WHERE MINUTE(datetime) <> 1")
-    raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
+    if get_machine_ip_address() == '192.168.64.73': # This keeps getting stuck. Only implement on 64.73 server.
+        print("Trying to delete from aaron.`BGI_Float_History_Save`")
+        insert_into_table = text("DELETE FROM aaron.`BGI_Float_History_Save` WHERE MINUTE(datetime) <> 1")
+        raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
 
 # Clear session data.
 # Called when refreshing cookies.
