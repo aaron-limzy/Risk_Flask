@@ -3,7 +3,7 @@ from flask import render_template, flash, redirect, url_for, request, send_from_
 from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
 
-from app.forms import  AddOffSet, MT5_Modify_Trades_Form, Delete_Monitor_Account_Table
+from app.forms import  AddOffSet, MT5_Modify_Trades_Form, Delete_Monitor_Account_Table, Delete_Risk_Autocut_Include_Table
 from app.forms import  noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude, Monitor_Account_Trade, Monitor_Account_Remove
 
 # Import function to call in case the page dosn't run.
@@ -329,6 +329,11 @@ def Risk_auto_cut():
                            description=description, replace_words=Markup(["Today"]))
 
 
+
+
+
+
+
 @main_app.route('/risk_auto_cut_ajax', methods=['GET', 'POST'])
 @roles_required()
 def risk_auto_cut_ajax(update_tool_time=1):
@@ -616,13 +621,12 @@ def Include_Risk_Autocut():
     header = title
     description = Markup(
         """<b>To Include into the running tool of Risk Auto Cut</b>
-        <br>Will add account into aaron.risk_autocut_include.<br>
+        <br>Will add account into <span style="color:green">aaron.risk_autocut_include</span>.<br>
         To include client from being autocut.<br>
         If Equity_Limit = 0, will cut normally when Equity < credit""")
 
     form = equity_Protect_Cut()
-    #print("Method: {}".format(request.method))
-    #print("validate_on_submit: {}".format(form.validate_on_submit()))
+
     form.validate_on_submit()
     if request.method == 'POST' and form.validate_on_submit():
         Live = form.Live.data  # Get the Data.
@@ -637,10 +641,69 @@ def Include_Risk_Autocut():
         db.engine.execute(text(sql_insert))  # Insert into DB
         flash("Live: {live}, Login: {login} Equity limit: {equity_limit} has been added to aaron.`risk_autocut_Include`.".format(live=Live, login=Login, equity_limit=Equity_Limit))
 
+
+
+    # Want to select all the accounts that are included in the Risk Auto Cut.
+    # Flask Table, that has Delete button that allows us to delete with 1 click.
+
+    raw_sql = """SELECT '{Live}' as Live, U.Login, R.Equity_limit, `Group`, `Enable`, `Enable_readonly`, Balance, Credit, Equity
+    FROM `risk_autocut_include` as R, live{Live}.mt4_users as U
+    where R.LIVE = '{Live}' and R.LOGIN = U.Login """
+    sql_query_array = [raw_sql.format(Live=l) for l in [1,2,3,5]]   # Want to loop thru all the LIVE server
+
+    sql_query = " UNION ".join(sql_query_array) + " ORDER BY Live, Login " # UNION the query all together.
+    collate = query_SQL_return_record(text(sql_query))
+
+
+    if len(collate) == 0:   # There is no data.
+        empty_table = [{"Result": "There are currently no single account included in the autocut. There might still be Groups tho."}]
+        table = create_table_fun(empty_table, additional_class=["basic_table", "table", "table-striped",
+                                                                "table-bordered", "table-hover", "table-sm"])
+    else:
+        # Live Account and other information of users that are in the Risk AutoCut Group.
+        df_data = pd.DataFrame(collate)
+        df_data["Equity_limit"] = df_data["Equity_limit"].apply(lambda x: "{:,.0f}".format(x))
+        df_data["Balance"] = df_data["Balance"].apply(lambda x: "{:,.2f}".format(x))
+        df_data["Credit"] = df_data["Credit"].apply(lambda x: "{:,.2f}".format(x))
+        df_data["Equity"] = df_data["Equity"].apply(lambda x: "{:,.2f}".format(x))
+        table = Delete_Risk_Autocut_Include_Table(df_data.to_dict("record"))
+        table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
+
+
     # TODO: Add Form to add login/Live/limit into the include table.
     return render_template("General_Form.html",
-                           title=title, header=header,
+                           title=title, header=header, table=table,
                            form=form, description=description)
+
+
+# To remove the account from being monitored.
+@main_app.route('/Remove_Risk_Autocut_User/<Live>/<Login>', methods=['GET', 'POST'])
+def Delete_Risk_Autocut_Include_Button_Endpoint(Live="", Login=""):
+    #print("Live: {}, Account: {}, Tele_name: {}".format(Live, Account, Tele_name))
+    #
+    # #TODO: Asyc this.
+    #
+    # # Write the SQL Statement and Update to disable the Account monitoring.
+    sql_update_statement = """DELETE FROM aaron.risk_autocut_include WHERE Live='{Live}' AND Login='{Login}'""".format(Live=Live, Login=Login)
+    sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
+    # print(sql_update_statement)
+    sql_update_statement=text(sql_update_statement)
+    result = db.engine.execute(sql_update_statement)
+    #
+    #
+    #
+    # # Also, Need to clear off any Current Monitoring Trades.
+    # sql_update_statement = """UPDATE aaron.monitor_account_trades SET Trade_Close_Notify=1
+    #         WHERE Live={Live} AND Account={Account}
+    #             AND Tele_name='{Tele_name}'""".format(Live=Live,Account=Account,Tele_name=Tele_name)
+    # sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
+    # print(sql_update_statement)
+    # sql_update_statement=text(sql_update_statement)
+    # result = db.engine.execute(sql_update_statement)
+    #
+    #
+    # flash("Live:{Live}, Account: {Account}, Telegram User: {Tele_name} has been removed from Account Monitoring".format(Live=Live,Account=Account,Tele_name=Tele_name))
+    return redirect(url_for('main_app.Include_Risk_Autocut'))
 
 
 
@@ -2229,7 +2292,7 @@ def Monitor_Account_Trades_Settings():
 
 # To remove the account from being monitored.
 @main_app.route('/Remove_Monitor_Account/<Live>/<Account>/<Tele_name>', methods=['GET', 'POST'])
-def edit(Live="", Account="", Tele_name=""):
+def Delete_Monitor_Account_Button_Endpoint(Live="", Account="", Tele_name=""):
     #print("Live: {}, Account: {}, Tele_name: {}".format(Live, Account, Tele_name))
 
     #TODO: Asyc this.
@@ -2306,15 +2369,9 @@ def Monitor_Account_Trades_Ajax():
     sql_record = query_SQL_return_record(sql_query)
     df_trades = pd.DataFrame(sql_record)
 
-
-
-
     if len(df_trades) == 0:
         return_dict=[{"Results":"There has been no trade movements in the accounts."}]
     else:
-
-
-
         # Need to insert into SQL.
         df_all_open_trades = df_trades[df_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]
         all_open_trade_values = df_all_open_trades.apply(lambda x: " ('{Live}', '{Login}', '{Ticket}', '0', '{Tele_name}') ".format(

@@ -26,6 +26,9 @@ import pymysql
 from sqlalchemy import create_engine, text
 
 
+# API Guide to Telegram.
+# https://core.telegram.org/bots/api
+
 SQL_IP = "192.168.64.73"
 SQL_User = "mt4"
 SQL_Password = "1qaz2wsx"
