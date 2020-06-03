@@ -7,7 +7,9 @@
 <style>
   body { background: #eee url({{ url_for('static', filename=backgroud_Filename) }});
   background-repeat: no-repeat;
-  background-size: cover;}
+  {% if not backgroud_Cover %}
+  background-size: cover;
+  {% endif %}}
 </style>
 {% endblock %}
 

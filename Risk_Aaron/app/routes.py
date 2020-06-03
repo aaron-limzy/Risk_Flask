@@ -3,8 +3,11 @@ from flask import render_template, flash, redirect, url_for, request, send_from_
 from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
 
-from app.forms import  AddOffSet, MT5_Modify_Trades_Form, Delete_Monitor_Account_Table, Delete_Risk_Autocut_Include_Table
-from app.forms import  noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude, Monitor_Account_Trade, Monitor_Account_Remove
+from app.forms import AddOffSet, MT5_Modify_Trades_Form
+from app.forms import noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude, Monitor_Account_Trade, Monitor_Account_Remove
+
+from app.table import Delete_Monitor_Account_Table, Delete_Risk_Autocut_Include_Table, Delete_Risk_Autocut_Group_Table, Delete_Risk_Autocut_Exclude_Table
+
 
 # Import function to call in case the page dosn't run.
 from app.Plotly.routes import save_BGI_float_Ajax
@@ -330,10 +333,6 @@ def Risk_auto_cut():
 
 
 
-
-
-
-
 @main_app.route('/risk_auto_cut_ajax', methods=['GET', 'POST'])
 @roles_required()
 def risk_auto_cut_ajax(update_tool_time=1):
@@ -487,143 +486,21 @@ def risk_auto_cut_ajax(update_tool_time=1):
 
 
 
-# Want to check and close off account/trades.
-@main_app.route('/USOil_Price_Alerts', methods=['GET', 'POST'])
-@roles_required()
-def USOil_Ticks():
-
-    title = "USOil Monitor"
-    header = "USOil Monitor"
-
-
-    description = Markup('Check ticks from 64.56 db.<br>Will need to check if USOil falls below 5.')
-
-        # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Oil_Rig_2.jpg', Table_name="USOil Ticks", \
-                           title=title, ajax_url=url_for('main_app.USOil_Ticks_ajax', _external=True), header=header, setinterval=20,
-                           description=description, replace_words=Markup(["Today"]))
-
-
-@main_app.route('/USOil_Price_Ticks_ajax', methods=['GET', 'POST'])
-@roles_required()
-def USOil_Ticks_ajax(update_tool_time=1):
-
-
-    # No need to run if it ran before.
-    if all(["USOil_{}_Alert".format(u) in session for u in [5,0]]):
-        return_val = [{"RESULT": "USOil_0_Alert ran at {}, USOil_5_Alert ran at {}".format(session['USOil_0_Alert'], session['USOil_5_Alert'])}]
-        return json.dumps(return_val)
-
-    update_date_time = "No return from SQL Ticks 64.56"
-    usoil_mid_price = 10    # We don't want to accidentally trigger this...
-    # Query tick DB for USOil Ticks
-    sql_return = Query_SQL_Host("SELECT LOCAL_DATE_TIME, bid FROM bgi_live3.`.usoil.d_ticks` ORDER BY DATE_TIME DESC limit 1", "192.168.64.56", 'risk', 'Riskrisk321', 'bgi_live1')
-    #print(sql_return)
-
-    if len(sql_return) == 2 and len(sql_return[0]) > 0 and len(sql_return[0][0]) > 0:
-        usoil_res = sql_return[0][0]
-    if len(usoil_res) == 2:
-        update_date_time, usoil_mid_price = usoil_res
-
-    #default return val.
-    return_val = [
-        {"RESULT": "USOil Price ({}). SQL Update Time: {}. Time Now: {}".format(usoil_mid_price, update_date_time, time_now())}]
-
-
-
-    # Run the tests.
-    # USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Settings_TEST.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
-    #                            0.01 : {'path':'Close_USOil_Trade_Test.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
-
-
-    # Run the real prog
-    USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Setting.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
-                               0.01 : {'path':'Close_USOil_Trade_0.01.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
-
-    #usoil_mid_price = 0
-    for USOil_Price_Alert_Actual in USOil_Price_Alert_Array:
-
-
-        USOil_Price_Alert = round(USOil_Price_Alert_Actual)   # The alert Price. Want to do a rounding since 0.01 is hard to match
-
-
-
-        if usoil_mid_price <= USOil_Price_Alert_Actual:     # If the price fell below that.
-            print("USOil price fell below {}...".format(USOil_Price_Alert))
-            if "USOil_{}_Alert".format(USOil_Price_Alert) not in session:  # save in session that we have already sent out an email.
-                print("Need to react to this..")
-
-                # Want to check from SQL if the price has been activated.
-                sql_query = text("select result from aaron.aaron_misc_data where item = 'USOil_Price_{}_Activated'".format(USOil_Price_Alert))
-
-                raw_result = db.engine.execute(sql_query)
-                result_data = raw_result.fetchall()
-                print(result_data)
-                if len(result_data) > 0 and len(result_data[0]) > 0:
-                    tool_ran_result = result_data[0][0]
-                    session['USOil_{}_Alert'.format(USOil_Price_Alert)] = Get_time_String()
-                    if tool_ran_result != '0':    # tool has been ran..
-                        print("SQL: Ran at {}".format(tool_ran_result))
-                        pass
-                    else:
-
-                        #print("Running tool...")
-                        async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, "USOil has dropped below ${}".format(USOil_Price_Alert), TELE_CLIENT_ID)
-                        # Will run C here as well..
-
-                        c_run_return = Run_C_Prog(Path=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['path'],
-                                                  cwd=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['cwd'])
-
-                        # #c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only/Close_USOil_Trade_0.01.exe') + " Edit")
-                        #print("c_run_return = {}".format(c_run_return))
-                        #c_run_return = 0
-
-                        # Catch C return.
-                        (C_Return_Val, output, err) = c_run_return
-                        output = output.decode()
-                        output = output.replace("\r\n", "<br>") # Need to replace the C string of \n to HTML <br>
-
-                        #
-                        async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
-                                     Subject="USOil Below {} Dollars.".format(USOil_Price_Alert),
-                                     HTML_Text="""{Email_Header}Hi,<br><br>USOil Price is at {usoil_mid_price}, and it has dropped below {USOil_Price_Alert} USD. <br> 
-                                                 The following is the C output. <br><br>{c_output}<br><br>
-                                               <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
-                                         Email_Header = Email_Header, USOil_Price_Alert = USOil_Price_Alert, usoil_mid_price = usoil_mid_price, c_output=output, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                                         Email_Footer=Email_Footer), Attachment_Name=[])
-
-                        # Update SQL
-                        sql_insert = """UPDATE aaron.aaron_misc_data SET result= '{}' where item = 'USOil_Price_{}_Activated'""".format(Get_time_String(),USOil_Price_Alert)
-                        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
-                        #
-                        # print(sql_insert)
-                        db.engine.execute(text(sql_insert))  # Insert into DB
-
-
-                        print("Tool ran: {tool_ran_result}".format(tool_ran_result=tool_ran_result))
-
-
-
-
-    # # Need to update Run time on SQL Update table.
-    if update_tool_time ==1:
-        async_update_Runtime(app=current_app._get_current_object(), Tool="USOil_Price_alert")
-
-
-    return json.dumps(return_val)
-
 # Want to insert into table.
 # From Flask.
 @main_app.route('/Risk_Autocut_include', methods=['GET', 'POST'])
 @roles_required()
 def Include_Risk_Autocut():
-    title = Markup("Include Risk Auto Cut")
-    header = title
+
+    title = Markup("Include into<br>Risk Auto Cut [Client]")
+    header = "Risk Auto Cut [Include Client]"
+
     description = Markup(
-        """<b>To Include into the running tool of Risk Auto Cut</b>
-        <br>Will add account into <span style="color:green">aaron.risk_autocut_include</span>.<br>
-        To include client from being autocut.<br>
-        If Equity_Limit = 0, will cut normally when Equity < credit""")
+        """<b>To Include/delete from the running tool of Risk Auto Cut</b>
+        <br>Will add/delete account into <span style="color:green"><b>aaron.risk_autocut_include</b></span>.<br>
+        To include/remove client from being autocut.<br>
+        If Equity_Limit = 0, will cut normally when <u>Equity < credit</u><br>
+        Else, it will cut when <u>Equity < Equity_Limit</u>""")
 
     form = equity_Protect_Cut()
 
@@ -643,12 +520,16 @@ def Include_Risk_Autocut():
 
 
 
-    # Want to select all the accounts that are included in the Risk Auto Cut.
-    # Flask Table, that has Delete button that allows us to delete with 1 click.
+    # Need to do a left join. To fully pull out the risk_autocut_include Logins.
+    # Some Logins might not even be on the server.
 
-    raw_sql = """SELECT '{Live}' as Live, U.Login, R.Equity_limit, `Group`, `Enable`, `Enable_readonly`, Balance, Credit, Equity
-    FROM `risk_autocut_include` as R, live{Live}.mt4_users as U
-    where R.LIVE = '{Live}' and R.LOGIN = U.Login """
+    raw_sql = """SELECT R.Live, R.Login, R.Equity_limit, 
+        COALESCE(`Group`,"-") as `Group`, COALESCE(`Enable`,"-") as `Enable`, COALESCE(`Enable_readonly`,"-") as `Enable_readonly`,
+        COALESCE(ROUND(`Balance`,2),"-") as `Balance`, COALESCE(ROUND(`Credit`,2),"-") as `Credit`, COALESCE(ROUND(`Equity`,2),"-") as `Equity`
+        FROM aaron.`risk_autocut_include` as R
+            LEFT JOIN  live{Live}.mt4_users as U ON U.LOGIN = R.LOGIN
+       where R.LIVE = {Live} """
+
     sql_query_array = [raw_sql.format(Live=l) for l in [1,2,3,5]]   # Want to loop thru all the LIVE server
 
     sql_query = " UNION ".join(sql_query_array) + " ORDER BY Live, Login " # UNION the query all together.
@@ -662,49 +543,33 @@ def Include_Risk_Autocut():
     else:
         # Live Account and other information of users that are in the Risk AutoCut Group.
         df_data = pd.DataFrame(collate)
-        df_data["Equity_limit"] = df_data["Equity_limit"].apply(lambda x: "{:,.0f}".format(x))
-        df_data["Balance"] = df_data["Balance"].apply(lambda x: "{:,.2f}".format(x))
-        df_data["Credit"] = df_data["Credit"].apply(lambda x: "{:,.2f}".format(x))
-        df_data["Equity"] = df_data["Equity"].apply(lambda x: "{:,.2f}".format(x))
+        df_data["Equity_limit"] = df_data["Equity_limit"].apply(lambda x: "{:,.0f}".format(x) if type(x) == np.float64 else "{}".format(x))
+        df_data["Balance"] = df_data["Balance"].apply(lambda x: "{:,.2f}".format(x) if type(x) == np.float64 else "{}".format(x))
+        df_data["Credit"] = df_data["Credit"].apply(lambda x: "{:,.2f}".format(x) if type(x) == np.float64 else "{}".format(x))
+        df_data["Equity"] = df_data["Equity"].apply(lambda x: "{:,.2f}".format(x) if type(x) == np.float64 else "{}".format(x))
+
         table = Delete_Risk_Autocut_Include_Table(df_data.to_dict("record"))
         table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
 
 
-    # TODO: Add Form to add login/Live/limit into the include table.
-    return render_template("General_Form.html",
-                           title=title, header=header, table=table,
-                           form=form, description=description)
+    #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
+    return render_template("General_Form.html", title=title, header=header, table=table, form=form,
+                           description=description, backgroud_Filename='css/Scissors.jpg', backgroud_Cover=True)
 
 
-# To remove the account from being monitored.
+# To remove the account from Risk Autocut.
 @main_app.route('/Remove_Risk_Autocut_User/<Live>/<Login>', methods=['GET', 'POST'])
+@roles_required()
 def Delete_Risk_Autocut_Include_Button_Endpoint(Live="", Login=""):
-    #print("Live: {}, Account: {}, Tele_name: {}".format(Live, Account, Tele_name))
-    #
-    # #TODO: Asyc this.
-    #
+
     # # Write the SQL Statement and Update to disable the Account monitoring.
     sql_update_statement = """DELETE FROM aaron.risk_autocut_include WHERE Live='{Live}' AND Login='{Login}'""".format(Live=Live, Login=Login)
     sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
     # print(sql_update_statement)
     sql_update_statement=text(sql_update_statement)
     result = db.engine.execute(sql_update_statement)
-    #
-    #
-    #
-    # # Also, Need to clear off any Current Monitoring Trades.
-    # sql_update_statement = """UPDATE aaron.monitor_account_trades SET Trade_Close_Notify=1
-    #         WHERE Live={Live} AND Account={Account}
-    #             AND Tele_name='{Tele_name}'""".format(Live=Live,Account=Account,Tele_name=Tele_name)
-    # sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
-    # print(sql_update_statement)
-    # sql_update_statement=text(sql_update_statement)
-    # result = db.engine.execute(sql_update_statement)
-    #
-    #
-    # flash("Live:{Live}, Account: {Account}, Telegram User: {Tele_name} has been removed from Account Monitoring".format(Live=Live,Account=Account,Tele_name=Tele_name))
+    flash("Live:{Live}, Login: {Login} has been removed from Risk Autocut".format(Live=Live,Login=Login))
     return redirect(url_for('main_app.Include_Risk_Autocut'))
-
 
 
 # Want to insert into table.
@@ -712,16 +577,13 @@ def Delete_Risk_Autocut_Include_Button_Endpoint(Live="", Login=""):
 @main_app.route('/Risk_Autocut_exclude', methods=['GET', 'POST'])
 @roles_required()
 def Exclude_Risk_Autocut():
-    title = Markup("Exclude Risk Auto Cut")
-    header = title
-    description = Markup(
-        """<b>To Exclude into the running tool of Risk Auto Cut</b>
-        <br>Will add account into aaron.risk_autocut_Exclude.<br>
+    title = "Exclude Risk Auto Cut"
+    header = Markup("Exclude<br>Risk Auto Cut [Client]")
+    description = Markup( """<b>To Exclude into the running tool of Risk Auto Cut</b>
+        <br>Will add account into <span style="color:green"><b>aaron.risk_autocut_Exclude</b></span>.<br>
         To Exclude client from being autocut.""")
 
     form = risk_AutoCut_Exclude()
-    #print("Method: {}".format(request.method))
-    #print("validate_on_submit: {}".format(form.validate_on_submit()))
     form.validate_on_submit()
     if request.method == 'POST' and form.validate_on_submit():
         Live = form.Live.data  # Get the Data.
@@ -730,33 +592,65 @@ def Exclude_Risk_Autocut():
         sql_insert = """INSERT INTO  aaron.`risk_autocut_exclude` (`Live`, `Login`) VALUES
             ('{Live}','{Account}') ON DUPLICATE KEY UPDATE Login=VALUES(Login)  """.format(Live=Live, Account=Login)
         sql_insert = sql_insert.replace("\t", "").replace("\n", "")
-
-        print(sql_insert)
         db.engine.execute(text(sql_insert))  # Insert into DB
         flash("Live: {live}, Login: {login} has been added to aaron.`risk_autocut_exclude`.".format(live=Live, login=Login))
 
-    # TODO: Add Form to add login/Live/limit into the include table.
-    return render_template("General_Form.html",
-                           title=title, header=header,
-                           form=form, description=description)
+    # Need to do a left join. To fully pull out the risk_autocut_include Logins.
+    # Some Logins might not even be on the server.
+    raw_sql = """SELECT R.Live, R.`Login`, 
+            COALESCE(`Group`,"-") as `Group`, COALESCE(`Enable`,"-") as `Enable`, COALESCE(`Enable_readonly`,"-") as `Enable_readonly`,
+            COALESCE(`Balance`,"-") as `Balance`, COALESCE(`Credit`,"-") as `Credit`, COALESCE(ROUND(`Equity`,2),"-") as `Equity`
+            FROM `risk_autocut_exclude` as R
+            LEFT JOIN live{Live}.mt4_users as U ON U.LOGIN = R.LOGIN
+            WHERE R.LIVE = '{Live}' """
+
+    sql_query_array = [raw_sql.format(Live=l) for l in [1,2,3,5]]   # Want to loop thru all the LIVE server
+    sql_query = " UNION ".join(sql_query_array) + " ORDER BY Live, Login " # UNION the query all together.
+    collate = query_SQL_return_record(text(sql_query))
+
+
+    if len(collate) == 0:   # There is no data.
+        empty_table = [{"Result": "There are currently no single account excluded from the autocut."}]
+        table = create_table_fun(empty_table, additional_class=["basic_table", "table", "table-striped",
+                                                                "table-bordered", "table-hover", "table-sm"])
+    else:
+        # Live Account and other information that would be going into the table.
+        df_data = pd.DataFrame(collate)
+
+        table = Delete_Risk_Autocut_Exclude_Table(df_data.to_dict("record"))
+        table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
+
+    #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
+    return render_template("General_Form.html", title=title, header=header, table=table, form=form,
+                           description=description, backgroud_Filename='css/Scissors.jpg', backgroud_Cover=True)
+
+
+# To remove the account from being excluded.
+@main_app.route('/Remove_Risk_Autocut_Exclude/<Live>/<Login>', methods=['GET', 'POST'])
+@roles_required()
+def Delete_Risk_Autocut_Exclude_Button_Endpoint(Live="", Login=""):
+
+    # # Write the SQL Statement and Update to disable the Account monitoring.
+    sql_update_statement = """DELETE FROM aaron.risk_autocut_exclude WHERE `Live`='{Live}' AND `Login`='{Login}' """.format(Live=Live, Login=Login)
+    sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
+    print(sql_update_statement)
+    sql_update_statement=text(sql_update_statement)
+    result = db.engine.execute(sql_update_statement)
+    flash(Markup("Live: <b>{Live}</b>, Login: <b>{Login}</b> has been removed from Risk Autocut Exclude.<br>{Login} will no longer be excluded".format(Live=Live,Login=Login)))
+    return redirect(url_for('main_app.Exclude_Risk_Autocut'))
 
 
 
-
-
-# Want to insert into table.
-# From Flask.
 @main_app.route('/Risk_Autocut_Include_Group', methods=['GET', 'POST'])
 @roles_required()
 def Include_Risk_Autocut_Group():
-    title = Markup("Include<br>Client Group into<br>Risk Auto Cut")
-    header = title
-    description = Markup(
-        "<b>To Include the Client Group into the running tool of Risk Auto Cut</b><br>")
+    title =  "Risk Auto Cut [Group]"
+    header = Markup("Risk Auto Cut [Group]")
+    description = Markup("""<b>To Include the Client <span style="color:green"><b>Group</b></span> into the running tool of Risk Auto Cut</b><br>
+                         Note that  <span style="color:green"><b><u>%TW% are automatically</u></b></span> included into the search.""")
 
     form = Live_Group()
-    #print("Method: {}".format(request.method))
-    #print("validate_on_submit: {}".format(form.validate_on_submit()))
+
     form.validate_on_submit()
     if request.method == 'POST' and form.validate_on_submit():
         Live = form.Live.data  # Get the Data.
@@ -766,14 +660,59 @@ def Include_Risk_Autocut_Group():
             ('{Live}','{Group}')""".format(Live=Live, Group=Client_Group)
         sql_insert = sql_insert.replace("\t", "").replace("\n", "")
 
-        print(sql_insert)
         db.engine.execute(text(sql_insert))  # Insert into DB
         flash("Live: {live}, Group: {Group} has been added to aaron.`risk_autocut_group`.".format(live=Live, Group=Client_Group))
 
-    # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("General_Form.html",
-                           title=title, header=header,
-                           form=form, description=description)
+
+
+    # Need to do a left join. To fully pull out the risk_autocut_group Groups.
+    # Some Groups might not have any Logins.
+    raw_sql =""" SELECT R.Live, R.`Group`, COALESCE(count(U.LOGIN), 0) as `Num_users`, 
+            COALESCE(ROUND(SUM(U.Balance),2), 0) as `Sum_balance`, COALESCE(ROUND(SUM(U.Credit),2), 0) as `Sum_credit`
+            FROM aaron.`risk_autocut_group` as R
+            LEFT JOIN live{Live}.mt4_users AS U ON U.`Group` = R.`Group`
+            WHERE R.Live='{Live}'
+            GROUP BY `Group` """
+
+    sql_query_array = [raw_sql.format(Live=l) for l in [1,2,3,5]]   # Want to loop thru all the LIVE server
+
+    sql_query = " UNION ".join(sql_query_array) + " ORDER BY  Live, `Num_users`, `Group` " # UNION the query all together.
+    collate = query_SQL_return_record(text(sql_query))
+
+    if len(collate) == 0:   # There is no data.
+        empty_table = [{"Result": "There are currently Groups included in the autocut. There might still be Groups tho."}]
+        table = create_table_fun(empty_table, additional_class=["basic_table", "table", "table-striped",
+                                                                "table-bordered", "table-hover", "table-sm"])
+    else:
+        # Live Account and other information of users that are in the Risk AutoCut Group.
+        df_data = pd.DataFrame(collate)
+        # df_data["Sum_balance"] = df_data["Sum_balance"].apply(lambda x: "{:,.2f}".format(x))
+        # df_data["Sum_credit"] = df_data["Sum_credit"].apply(lambda x: "{:,.2f}".format(x))
+        # df_data["Num_users"] = df_data["Num_users"].apply(lambda x: "{:,.0f}".format(x))
+        table = Delete_Risk_Autocut_Group_Table(df_data.to_dict("record"))
+        table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
+
+
+    #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
+    return render_template("General_Form.html", title=title, header=header, table=table, form=form,
+                           description=description, backgroud_Filename='css/Scissors.jpg', backgroud_Cover=True)
+
+
+# To remove the account from Risk Autocut.
+@main_app.route('/Remove_Risk_Autocut_Group/<Live>/<Group>', methods=['GET', 'POST'])
+@roles_required()
+def Delete_Risk_Autocut_Group_Button_Endpoint(Live="", Group=""):
+
+    # # Write the SQL Statement and Update to disable the Account monitoring.
+    sql_update_statement = """DELETE FROM aaron.risk_autocut_group WHERE `Live`='{Live}' AND `Group`='{Group}' """.format(Live=Live, Group=Group)
+    sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
+    print(sql_update_statement)
+    sql_update_statement=text(sql_update_statement)
+    result = db.engine.execute(sql_update_statement)
+    flash(Markup("Live: <b>{Live}</b>, Group: <b>{Group}</b> has been removed from Risk Autocut Group".format(Live=Live,Group=Group)))
+    return redirect(url_for('main_app.Include_Risk_Autocut_Group'))
+
+
 
 
 # Want to check and close off account/trades.
@@ -914,7 +853,135 @@ def Equity_protect_Cut_ajax(update_tool_time=1):
 
 
     return json.dumps(return_val)
-    #return json.dumps("Hello World")
+
+
+
+
+
+# Want to check and close off account/trades.
+@main_app.route('/USOil_Price_Alerts', methods=['GET', 'POST'])
+@roles_required()
+def USOil_Ticks():
+
+    title = "USOil Monitor"
+    header = "USOil Monitor"
+
+
+    description = Markup('Check ticks from 64.56 db.<br>Will need to check if USOil falls below 5.')
+
+        # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Oil_Rig_2.jpg', Table_name="USOil Ticks", \
+                           title=title, ajax_url=url_for('main_app.USOil_Ticks_ajax', _external=True), header=header, setinterval=20,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+@main_app.route('/USOil_Price_Ticks_ajax', methods=['GET', 'POST'])
+@roles_required()
+def USOil_Ticks_ajax(update_tool_time=1):
+
+
+    # No need to run if it ran before.
+    if all(["USOil_{}_Alert".format(u) in session for u in [5,0]]):
+        return_val = [{"RESULT": "USOil_0_Alert ran at {}, USOil_5_Alert ran at {}".format(session['USOil_0_Alert'], session['USOil_5_Alert'])}]
+        return json.dumps(return_val)
+
+    update_date_time = "No return from SQL Ticks 64.56"
+    usoil_mid_price = 10    # We don't want to accidentally trigger this...
+    # Query tick DB for USOil Ticks
+    sql_return = Query_SQL_Host("SELECT LOCAL_DATE_TIME, bid FROM bgi_live3.`.usoil.d_ticks` ORDER BY DATE_TIME DESC limit 1", "192.168.64.56", 'risk', 'Riskrisk321', 'bgi_live1')
+    #print(sql_return)
+
+    if len(sql_return) == 2 and len(sql_return[0]) > 0 and len(sql_return[0][0]) > 0:
+        usoil_res = sql_return[0][0]
+    if len(usoil_res) == 2:
+        update_date_time, usoil_mid_price = usoil_res
+
+    #default return val.
+    return_val = [
+        {"RESULT": "USOil Price ({}). SQL Update Time: {}. Time Now: {}".format(usoil_mid_price, update_date_time, time_now())}]
+
+
+
+    # Run the tests.
+    # USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Settings_TEST.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
+    #                            0.01 : {'path':'Close_USOil_Trade_Test.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
+
+
+    # Run the real prog
+    USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Setting.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
+                               0.01 : {'path':'Close_USOil_Trade_0.01.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
+
+    #usoil_mid_price = 0
+    for USOil_Price_Alert_Actual in USOil_Price_Alert_Array:
+
+
+        USOil_Price_Alert = round(USOil_Price_Alert_Actual)   # The alert Price. Want to do a rounding since 0.01 is hard to match
+
+
+
+        if usoil_mid_price <= USOil_Price_Alert_Actual:     # If the price fell below that.
+            print("USOil price fell below {}...".format(USOil_Price_Alert))
+            if "USOil_{}_Alert".format(USOil_Price_Alert) not in session:  # save in session that we have already sent out an email.
+                print("Need to react to this..")
+
+                # Want to check from SQL if the price has been activated.
+                sql_query = text("select result from aaron.aaron_misc_data where item = 'USOil_Price_{}_Activated'".format(USOil_Price_Alert))
+
+                raw_result = db.engine.execute(sql_query)
+                result_data = raw_result.fetchall()
+                print(result_data)
+                if len(result_data) > 0 and len(result_data[0]) > 0:
+                    tool_ran_result = result_data[0][0]
+                    session['USOil_{}_Alert'.format(USOil_Price_Alert)] = Get_time_String()
+                    if tool_ran_result != '0':    # tool has been ran..
+                        print("SQL: Ran at {}".format(tool_ran_result))
+                        pass
+                    else:
+
+                        #print("Running tool...")
+                        async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, "USOil has dropped below ${}".format(USOil_Price_Alert), TELE_CLIENT_ID)
+                        # Will run C here as well..
+
+                        c_run_return = Run_C_Prog(Path=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['path'],
+                                                  cwd=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['cwd'])
+
+                        # #c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only/Close_USOil_Trade_0.01.exe') + " Edit")
+                        #print("c_run_return = {}".format(c_run_return))
+                        #c_run_return = 0
+
+                        # Catch C return.
+                        (C_Return_Val, output, err) = c_run_return
+                        output = output.decode()
+                        output = output.replace("\r\n", "<br>") # Need to replace the C string of \n to HTML <br>
+
+                        #
+                        async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
+                                     Subject="USOil Below {} Dollars.".format(USOil_Price_Alert),
+                                     HTML_Text="""{Email_Header}Hi,<br><br>USOil Price is at {usoil_mid_price}, and it has dropped below {USOil_Price_Alert} USD. <br> 
+                                                 The following is the C output. <br><br>{c_output}<br><br>
+                                               <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
+                                         Email_Header = Email_Header, USOil_Price_Alert = USOil_Price_Alert, usoil_mid_price = usoil_mid_price, c_output=output, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                         Email_Footer=Email_Footer), Attachment_Name=[])
+
+                        # Update SQL
+                        sql_insert = """UPDATE aaron.aaron_misc_data SET result= '{}' where item = 'USOil_Price_{}_Activated'""".format(Get_time_String(),USOil_Price_Alert)
+                        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+                        #
+                        # print(sql_insert)
+                        db.engine.execute(text(sql_insert))  # Insert into DB
+
+
+                        print("Tool ran: {tool_ran_result}".format(tool_ran_result=tool_ran_result))
+
+
+
+
+    # # Need to update Run time on SQL Update table.
+    if update_tool_time ==1:
+        async_update_Runtime(app=current_app._get_current_object(), Tool="USOil_Price_alert")
+
+
+    return json.dumps(return_val)
 
 
 
@@ -2292,6 +2359,7 @@ def Monitor_Account_Trades_Settings():
 
 # To remove the account from being monitored.
 @main_app.route('/Remove_Monitor_Account/<Live>/<Account>/<Tele_name>', methods=['GET', 'POST'])
+@roles_required()
 def Delete_Monitor_Account_Button_Endpoint(Live="", Account="", Tele_name=""):
     #print("Live: {}, Account: {}, Tele_name: {}".format(Live, Account, Tele_name))
 

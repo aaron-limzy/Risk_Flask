@@ -8,7 +8,9 @@
 
     {% if backgroud_Filename %}
       background: #eee url({{ url_for('static', filename=backgroud_Filename) }});
-      background-size: cover;
+      {% if not backgroud_Cover %}
+        background-size: cover;
+      {% endif %}
     {% else %}
       background: #eee url({{ url_for('static', filename='css/cactus.jpg') }})
     {% endif %}
