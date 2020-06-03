@@ -580,7 +580,7 @@ def Exclude_Risk_Autocut():
     title = "Exclude Risk Auto Cut"
     header = Markup("Exclude<br>Risk Auto Cut [Client]")
     description = Markup( """<b>To Exclude into the running tool of Risk Auto Cut</b>
-        <br>Will add account into <span style="color:green"><b>aaron.risk_autocut_Exclude</b></span>.<br>
+        <br>Will add account into <span style="color:green"><b><u>aaron.risk_autocut_Exclude</u></b></span>.<br>
         To Exclude client from being autocut.""")
 
     form = risk_AutoCut_Exclude()
