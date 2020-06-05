@@ -379,9 +379,9 @@ def risk_auto_cut_ajax(update_tool_time=1):
 
     Live_server = [1,2,3,5]
 
-    # Want to temp kill this tool for awhile. Will be re-writing it. 
-    return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
-    return return_val
+    # Want to temp kill this tool for awhile. Will be re-writing it.
+    # return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
+    # return return_val
 
     # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
@@ -389,18 +389,14 @@ def risk_auto_cut_ajax(update_tool_time=1):
 
     # To check the Lucky Draw Login. All TW clients for login not in aaron.risk_autocut_exclude
     # Also done a check to cause hedging clients to SO
-    tw_raw_sql_statement = """ SELECT LOGIN, '3' as LIVE, mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT
+    tw_sql_statement = """ SELECT LOGIN, '3' as LIVE, mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT, '-' as EQUITY_LIMIT
             FROM live3.mt4_users WHERE `GROUP` LIKE '%TW%' AND EQUITY < CREDIT AND 
         ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0 and
         LOGIN not in (select login from aaron.risk_autocut_exclude where LIVE = 3) and 
         LOGIN not in (select login from aaron.risk_autocut_include where LIVE = 3 and EQUITY_LIMIT <> 0) """
-    #
-    # raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
-    # sql_result1 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
-
 
     # For the client's whose groups are in aaron.risk_autocut_group, and login not in aaron.risk_autocut_exclude
-    raw_sql_statement = """ SELECT DISTINCT mt4_trades.LOGIN,'{Live}' AS LIVE,  mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT
+    group_n_login_raw_sql_statement = """ SELECT DISTINCT mt4_trades.LOGIN,'{Live}' AS LIVE,  mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT, '-' as EQUITY_LIMIT
     FROM live{Live}.mt4_trades, live{Live}.mt4_users WHERE
     mt4_trades.LOGIN = mt4_users.LOGIN AND 
         ( mt4_users.`GROUP` IN (SELECT `GROUP` FROM aaron.risk_autocut_group WHERE LIVE = '{Live}') 
@@ -412,32 +408,33 @@ def risk_auto_cut_ajax(update_tool_time=1):
     EQUITY < CREDIT AND 
     mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_exclude WHERE `LIVE` = '{Live}') AND
     mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_include WHERE `LIVE` = '{Live}' and EQUITY_LIMIT <> 0) """
-
-    raw_sql_statement = " UNION ".join([raw_sql_statement.format(Live=n) for n in Live_server])  # construct the SQL Statment
-    raw_sql_statement += " UNION " + tw_raw_sql_statement
-
-    raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
-    sql_result2 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
+    #
+    group_n_login_sql_statement = " UNION ".join([group_n_login_raw_sql_statement.format(Live=n) for n in Live_server])  # construct the SQL Statment
+    # raw_sql_statement += " UNION " + tw_raw_sql_statement
+    #
+    # raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
+    # sql_result2 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
 
 
 
     # For the client's who are in aaron.risk_autocut_include and Credit_limit != 0
-    raw_sql_statement = """SELECT DISTINCT T.LOGIN, {Live} AS LIVE,  U.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT, R.EQUITY_LIMIT as EQUITY_LIMIT
+    login_special_raw_sql_statement = """SELECT DISTINCT T.LOGIN, {Live} AS LIVE,  U.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT, R.EQUITY_LIMIT as EQUITY_LIMIT
     FROM live{Live}.mt4_users as U, aaron.risk_autocut_include as R, live{Live}.mt4_trades as T
     WHERE R.LIVE = {Live} and R.EQUITY_LIMIT != 0 and
     R.LOGIN = U.LOGIN and U.EQUITY < R.EQUITY_LIMIT and
     U.LOGIN = T.LOGIN and T.CLOSE_TIME = '1970-01-01 00:00:00' AND
     U.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_exclude WHERE `LIVE` = '{Live}')"""
 
-    raw_sql_statement = " UNION ".join([raw_sql_statement.format(Live=n) for n in Live_server])  # construct the SQL Statment
+    login_special_sql_statement = " UNION ".join([login_special_raw_sql_statement.format(Live=n) for n in Live_server])  # construct the SQL Statment
+    raw_sql_statement = "{} UNION {} UNION {}".format(tw_sql_statement, group_n_login_sql_statement, login_special_sql_statement)
     raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
     sql_result3 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
 
     #sql_result3 = []
 
     total_result = dict()
-    # sql_result1 has been removed. Union to make SQL statement run faster.
-    sql_results = [sql_result2, sql_result3]
+    # sql_result1, sql_result2 has been removed. Union to make SQL statement run faster.
+    sql_results = [sql_result3]
     for s in sql_results:   # We want only unique values.
         for ss in s:
             live = ss["LIVE"] if "LIVE" in ss else None
@@ -461,13 +458,12 @@ def risk_auto_cut_ajax(update_tool_time=1):
     for k,d in total_result.items():
         live = d['LIVE'] if "LIVE" in d else None
         login = d['LOGIN'] if "LOGIN" in d else None
-        equity_limit = d['EQUITY_LIMIT'] if "EQUITY_LIMIT" in d else 0
+        equity_limit = d['EQUITY_LIMIT'] if "EQUITY_LIMIT" in d and  d['EQUITY_LIMIT'] != "-" else 0
         if equity_limit == 0:   # Adding this in to beautify the Table.
             total_result[k]["EQUITY_LIMIT"] = "-"
         if not None in [live, login]:   # If both are not None.
 
             # # print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
-
 
             c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Auto_Cut.exe') + " {live} {login} {equity_limit}".format( \
             live=live, login=login,equity_limit=equity_limit))
@@ -502,8 +498,8 @@ def risk_auto_cut_ajax(update_tool_time=1):
 
         # Want to set to test, if it's just test accounts.
         email_list = EMAIL_AARON if all([d["GROUP"].lower().find("test") >= 0 for d in To_SQL]) else EMAIL_LIST_BGI
-
-        async_send_email(To_recipients=email_list, cc_recipients=[],
+        #email_list
+        async_send_email(To_recipients=EMAIL_AARON, cc_recipients=[],
                      Subject="AutoCut: Equity Below Credit.",
                      HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below credit. \
                                 <br><br> {table_data_html} This is done to prevent client from trading on credit. \
