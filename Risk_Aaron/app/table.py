@@ -61,3 +61,13 @@ class Delete_Risk_Autocut_Exclude_Table(Table):
     Delete_Button = ButtonCol('Delete', endpoint="main_app.Delete_Risk_Autocut_Exclude_Button_Endpoint",
                               url_kwargs=dict(Live='Live', Login='Login'),
                               button_attrs={"Class": "btn btn-secondary"})
+
+
+# Variable name has to be the Dict name.
+# Has to provide a list of Dicts.
+class Delete_Risk_ABook_Offset_Table(Table):
+    Symbol = Col('SYMBOL')
+    Lots = Col('LOTS (BG)')
+    Delete_Button = ButtonCol('Delete All Offset', endpoint="main_app.Delete_Risk_ABook_Offset_Button_Endpoint",
+                              url_kwargs=dict(Symbol='Symbol'),
+                              button_attrs={"Class": "btn btn-secondary"})

@@ -7,7 +7,7 @@ from app.forms import AddOffSet, MT5_Modify_Trades_Form
 from app.forms import noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude, Monitor_Account_Trade, Monitor_Account_Remove
 
 from app.table import Delete_Monitor_Account_Table, Delete_Risk_Autocut_Include_Table, Delete_Risk_Autocut_Group_Table, Delete_Risk_Autocut_Exclude_Table
-
+from app.table import Delete_Risk_ABook_Offset_Table
 
 # Import function to call in case the page dosn't run.
 from app.Plotly.routes import save_BGI_float_Ajax
@@ -136,6 +136,11 @@ def color_negative_red(value):
 @main_app.route('/add_offset', methods=['GET', 'POST'])      # Want to add an offset to the ABook page.
 @roles_required()
 def add_off_set():
+
+    title = "Add offset"
+    header="Adding A-Book Offset"
+    description = "Adding to the off set table, to manage our position for A book end for tally sake."
+
     form = AddOffSet()
     if request.method == 'POST' and form.validate_on_submit():
         symbol = form.Symbol.data       # Get the Data.
@@ -147,18 +152,46 @@ def add_off_set():
             " ('{}','{}','{}','{}',NOW(),'{}' )".format(symbol, ticket, offset, comment, lp)
         # print(sql_insert)
         db.engine.execute(sql_insert)   # Insert into DB
-        flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
+        flash(Markup("<b>{symbol}>/b>, <b>{offset} Lots</b> has been updated in A Book offset.".format(symbol=symbol, offset=offset)))
 
-    raw_result = db.engine.execute("SELECT SYMBOL, SUM(LOTS) as 'BGI Lots' FROM test.`offset_live_trades` GROUP BY SYMBOL ORDER BY `BGI Lots` DESC")
-    result_data = raw_result.fetchall()
-    result_col = raw_result.keys()
-    collate = [dict(zip(result_col, a)) for a in result_data]
-    table = create_table_fun(collate)
-    title = "Add offset"
-    header="Adding A-Book Offset"
-    description = "Adding to the off set table, to manage our position for A book end for tally sake."
+
+    # For FLASK-TABLE to work. We need to get the names from SQL right.
+    #Also, we want to get the Symbols to upper for better display. That's all. ha ha
+    sql_query = "SELECT UPPER(SYMBOL) as `Symbol`, SUM(LOTS) as 'Lots' FROM test.`offset_live_trades` GROUP BY SYMBOL ORDER BY `Lots` DESC"
+    collate = query_SQL_return_record(text(sql_query))
+    if len(collate) == 0:   # There is no data.
+        empty_table = [{"Result": "There are currently no single account excluded from the autocut."}]
+        table = create_table_fun(empty_table, additional_class=["basic_table", "table", "table-striped",
+                                                                "table-bordered", "table-hover", "table-sm"])
+    else:
+        # Live Account and other information that would be going into the table.
+        df_data = pd.DataFrame(collate)
+        table = Delete_Risk_ABook_Offset_Table(df_data.to_dict("record"))
+        table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
+
 
     return render_template("General_Form.html", form=form, table=table, title=title, header=header,description=description)
+
+# To remove thhe offset from the A-Book matching
+@main_app.route('/Remove_ABook_Offset/<Symbol>', methods=['GET', 'POST'])
+@roles_required()
+def Delete_Risk_ABook_Offset_Button_Endpoint(Symbol=""):
+
+    # # # Write the SQL Statement to write the values into SQL to clear the offset, By Symbols.
+    # # # It will write -1 * consolidated value into SQL.
+    sql_insert_statement = """INSERT INTO test.`offset_live_trades` (`SYMBOL`, `TICKET`, `LOTS`, `COMMENT`, `DATETIME`, `LP`) 
+    SELECT SYMBOL, "000" as TICKET, -1 *SUM(LOTS) as `LOTS`, "Clear Offset" as `COMMENT`, 
+    NOW() AS `DATETIME`, "CLEAR off set" as `LP` 
+    FROM test.`offset_live_trades`
+    WHERE SYMBOL='{Symbol}'
+    GROUP BY SYMBOL""".format(Symbol=Symbol)
+
+    sql_update_statement = sql_insert_statement.replace("\n", "").replace("\t", "")
+    # # print(sql_update_statement)
+    sql_update_statement = text(sql_update_statement)
+    result = db.engine.execute(sql_update_statement)
+    flash(Markup("<b>{Symbol}</b> offset has been cleared".format(Symbol=Symbol.upper())))
+    return redirect(url_for('main_app.add_off_set'))
 
 
 # Want to change user group should they have no trades.
@@ -167,7 +200,6 @@ def add_off_set():
 @roles_required()
 def noopentrades_changegroup():
     # TODO: Need to check insert return.
-
 
     form = noTrade_ChangeGroup_Form()
 
@@ -313,7 +345,7 @@ def Risk_auto_cut():
     # For Login in aaron.Risk_autocut and Credit_limit != 0
 
 
-    description = Markup('Running only on <font color = "red"> Live 1 and Live 3</font>.<br>'   + \
+    description = Markup('Running on <font color = "red">ALL</font> Live 1, Live 2, Live 3 and Live 5.<br>'   + \
                          "Will <b>close all client's position</b> and <b>change client to read-only</b>.<br>" + \
                          "Sql Table ( <font color = 'red'>aaron.risk_autocut_exclude</font>) for client excluded from the autocut.<br>" + \
                          "Sql Table ( <font color = 'red'>aaron.risk_autocut_include</font>) for client with special requests.<br><br>" + \
@@ -326,9 +358,11 @@ def Risk_auto_cut():
                                 " LOGIN NOT IN ( <font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>" + \
                          "<b>4)</b> Tool will not cut for <font color = 'red'>Equity > Credit</font> . For such, kindly look at Equity Protect.<br><br>")
 
+
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
-                           title=title, ajax_url=url_for('main_app.risk_auto_cut_ajax', _external=True), header=header, setinterval=10,
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Scissors.jpg', Table_name="Risk Auto Cut", \
+                           title=title, ajax_url=url_for('main_app.risk_auto_cut_ajax', _external=True), no_backgroud_Cover=True, \
+                           header=header, setinterval=10, \
                            description=description, replace_words=Markup(["Today"]))
 
 
@@ -345,24 +379,28 @@ def risk_auto_cut_ajax(update_tool_time=1):
 
     Live_server = [1,2,3,5]
 
+    # Want to temp kill this tool for awhile. Will be re-writing it. 
+    return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
+    return return_val
+
     # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
     # For Login in aaron.Risk_autocut and Credit_limit != 0
 
     # To check the Lucky Draw Login. All TW clients for login not in aaron.risk_autocut_exclude
     # Also done a check to cause hedging clients to SO
-    raw_sql_statement = """SELECT LOGIN, '3' as LIVE, mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT
+    tw_raw_sql_statement = """ SELECT LOGIN, '3' as LIVE, mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT
             FROM live3.mt4_users WHERE `GROUP` LIKE '%TW%' AND EQUITY < CREDIT AND 
         ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0 and
         LOGIN not in (select login from aaron.risk_autocut_exclude where LIVE = 3) and 
-        LOGIN not in (select login from aaron.risk_autocut_include where LIVE = 3 and EQUITY_LIMIT <> 0)"""
-
-    raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
-    sql_result1 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
+        LOGIN not in (select login from aaron.risk_autocut_include where LIVE = 3 and EQUITY_LIMIT <> 0) """
+    #
+    # raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
+    # sql_result1 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
 
 
     # For the client's whose groups are in aaron.risk_autocut_group, and login not in aaron.risk_autocut_exclude
-    raw_sql_statement = """SELECT DISTINCT mt4_trades.LOGIN,'{Live}' AS LIVE,  mt4_users. `GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT
+    raw_sql_statement = """ SELECT DISTINCT mt4_trades.LOGIN,'{Live}' AS LIVE,  mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT
     FROM live{Live}.mt4_trades, live{Live}.mt4_users WHERE
     mt4_trades.LOGIN = mt4_users.LOGIN AND 
         ( mt4_users.`GROUP` IN (SELECT `GROUP` FROM aaron.risk_autocut_group WHERE LIVE = '{Live}') 
@@ -373,9 +411,11 @@ def risk_auto_cut_ajax(update_tool_time=1):
     CMD < 6 AND 
     EQUITY < CREDIT AND 
     mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_exclude WHERE `LIVE` = '{Live}') AND
-    mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_include WHERE `LIVE` = '{Live}' and EQUITY_LIMIT <> 0)"""
+    mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_include WHERE `LIVE` = '{Live}' and EQUITY_LIMIT <> 0) """
 
     raw_sql_statement = " UNION ".join([raw_sql_statement.format(Live=n) for n in Live_server])  # construct the SQL Statment
+    raw_sql_statement += " UNION " + tw_raw_sql_statement
+
     raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
     sql_result2 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
 
@@ -396,7 +436,8 @@ def risk_auto_cut_ajax(update_tool_time=1):
     #sql_result3 = []
 
     total_result = dict()
-    sql_results = [sql_result1, sql_result2, sql_result3]
+    # sql_result1 has been removed. Union to make SQL statement run faster.
+    sql_results = [sql_result2, sql_result3]
     for s in sql_results:   # We want only unique values.
         for ss in s:
             live = ss["LIVE"] if "LIVE" in ss else None
@@ -492,8 +533,8 @@ def risk_auto_cut_ajax(update_tool_time=1):
 @roles_required()
 def Include_Risk_Autocut():
 
-    title = Markup("Include into<br>Risk Auto Cut [Client]")
-    header = "Risk Auto Cut [Include Client]"
+    title = "Risk Auto Cut [Include Client]"
+    header =  Markup("Include into<br>Risk Auto Cut [Client]")
 
     description = Markup(
         """<b>To Include/delete from the running tool of Risk Auto Cut</b>
@@ -554,7 +595,7 @@ def Include_Risk_Autocut():
 
     #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
     return render_template("General_Form.html", title=title, header=header, table=table, form=form,
-                           description=description, backgroud_Filename='css/Scissors.jpg', backgroud_Cover=True)
+                           description=description, backgroud_Filename='css/Scissors.jpg', no_backgroud_Cover=True)
 
 
 # To remove the account from Risk Autocut.
@@ -622,7 +663,7 @@ def Exclude_Risk_Autocut():
 
     #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
     return render_template("General_Form.html", title=title, header=header, table=table, form=form,
-                           description=description, backgroud_Filename='css/Scissors.jpg', backgroud_Cover=True)
+                           description=description, backgroud_Filename='css/Scissors.jpg', no_backgroud_Cover=True)
 
 
 # To remove the account from being excluded.
@@ -695,7 +736,7 @@ def Include_Risk_Autocut_Group():
 
     #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
     return render_template("General_Form.html", title=title, header=header, table=table, form=form,
-                           description=description, backgroud_Filename='css/Scissors.jpg', backgroud_Cover=True)
+                           description=description, backgroud_Filename='css/Scissors.jpg', no_backgroud_Cover=True)
 
 
 # To remove the account from Risk Autocut.

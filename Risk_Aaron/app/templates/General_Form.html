@@ -8,7 +8,7 @@
 
     {% if backgroud_Filename %}
       background: #eee url({{ url_for('static', filename=backgroud_Filename) }});
-      {% if not backgroud_Cover %}
+      {% if not no_backgroud_Cover %}
         background-size: cover;
       {% endif %}
     {% else %}
