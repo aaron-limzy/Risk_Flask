@@ -1397,7 +1397,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
     mismatch_count = [10,15]
     #mismatch_count_1 = 1   # Notify when mismatch has lasted 1st time.
     #mismatch_count_2 = 15   # Second notify when mismatched has lasted a second timessss
-    cfh_soap_query_count = [5]   # Want to fully quiery and update from CFH when mismatches reaches this.
+    # cfh_soap_query_count = [5]   # Want to fully quiery and update from CFH when mismatches reaches this.
 
     sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(CFH_Position,0) AS CFH_Lots ,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+ COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
         ,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy 
@@ -1557,12 +1557,12 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 
 
 
-
-                # If there are mismatches, first thing to do is to update CFH. All trades.
-                # Some older trades might have been closed.
-                if any([d["Mismatch_count"] in cfh_soap_query_count for d in Notify_Mismatch]):
-                    chf_fix_details_ajax()  # Want to update CFH Live Trades.
-                    #TODO: Update Vantage Live trades too, if possible.
+                #
+                # # If there are mismatches, first thing to do is to update CFH. All trades.
+                # # Some older trades might have been closed.
+                # if any([d["Mismatch_count"] in cfh_soap_query_count for d in Notify_Mismatch]):
+                #     chf_fix_details_ajax()  # Want to update CFH Live Trades.
+                #     #TODO: Update Vantage Live trades too, if possible.
 
                     #CFH_Live_Position_ajax(update_all=1)    # Want to update all trades from CFH
                     #print("Mismatch. Will Send SOAP to refresh all trades.")
