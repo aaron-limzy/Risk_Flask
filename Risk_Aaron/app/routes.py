@@ -2,6 +2,7 @@ from app import app, db, excel
 from flask import render_template, flash, redirect, url_for, request, send_from_directory, jsonify, g, Markup
 from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
+<<<<<<< Updated upstream
 from app.forms import UploadForm, SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form, LoginForm, CreateUserForm, noTrade_ChangeGroup_Form
 from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField
 import pyexcel
@@ -11,15 +12,47 @@ import decimal
 import datetime
 import os
 import os
+=======
+
+from app.forms import SymbolSwap, SymbolTotal, SymbolTotalTest, AddOffSet, MT5_Modify_Trades_Form, File_Form
+from app.forms import LoginForm, CreateUserForm, noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude
+
+
+# Import function to call in case the page dosn't run.
+from app.Plotly.routes import save_BGI_float_Ajax
+from app.Scrape_Futures import *
+
+
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField
+from flask_table import create_table, Col
+
+import pyexcel
+import urllib3
+import decimal
+import datetime
+
+>>>>>>> Stashed changes
 import os
 import pandas as pd
 import numpy as np
 import requests
 import json
+<<<<<<< Updated upstream
 
 from flask_login import current_user, login_user, logout_user, login_required
 from app.models import User, load_user, flask_users
 from sqlalchemy import text
+=======
+import math
+import asyncio
+import psutil   # Want to get Computer CPU Details/Usage/Memory
+
+
+from flask_login import current_user, login_user, logout_user, login_required
+from app.models import User, load_user, flask_users
+from sqlalchemy import text
+from flask_sqlalchemy import SQLAlchemy
+>>>>>>> Stashed changes
 from Aaron_Lib import *
 
 from aiopyfix.client_example import CFH_Position_n_Info
@@ -41,12 +74,31 @@ logging.getLogger('suds.wsdl').setLevel(logging.DEBUG)
 
 
 
+<<<<<<< Updated upstream
 from .decorators import async
 from io import StringIO
 
 
 TIME_UPDATE_SLOW_MIN = 10
 EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
+=======
+import pandas as pd
+import numpy as np
+import json
+
+from .decorators import async_fun
+from io import StringIO
+
+
+#simple_page = Blueprint('simple_page', __name__, template_folder='templates')
+
+
+TIME_UPDATE_SLOW_MIN = 10
+
+
+
+
+>>>>>>> Stashed changes
 TELE_ID_MTLP_MISMATCH = "736426328:AAH90fQZfcovGB8iP617yOslnql5dFyu-M0"		# For Mismatch and LP Margin
 TELE_ID_USDTWF_MISMATCH = "776609726:AAHVrhEffiJ4yWTn1nw0ZBcYttkyY0tuN0s"        # For USDTWF
 TELE_CLIENT_ID = ["486797751"]        # Aaron's Telegram ID.
@@ -114,6 +166,62 @@ def Create_User():
 
     return render_template('General_Form.html', title='Create User',header="Create User", form=form)
 
+@main_app.route('/login', methods=['GET', 'POST'])       # Login Page. If user is login-ed, will re-direct to index.
+def login():
+
+    if current_user.is_authenticated:
+        return redirect(url_for('main_app.index'))
+    # else:
+        # print("User is not authenticated. ")
+
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = load_user(username=form.username.data.lower())
+        if user is None or not user.check_password(form.password.data): # If Login error
+            flash('Invalid username or password')
+            return redirect(url_for('main_app.login'))
+        else:
+            flash('Login successful')
+            login_user(user, remember=form.remember_me.data)
+
+            next_page = request.args.get('next')
+            if not next_page or url_parse(next_page).netloc != '':
+                next_page = url_for('main_app.index')
+            return redirect(next_page)
+
+    return render_template('General_Form.html', title='Sign In',header="Sign In", form=form)
+
+
+@main_app.route('/admin/create_user', methods=['GET', 'POST'])       # Login Page. If user is login-ed, will re-direct to index.
+@login_required
+def Create_User():
+
+    form = CreateUserForm()
+    if form.validate_on_submit():
+
+        username = form.username.data.lower()
+        email = form.email.data
+        password = form.password.data
+        admin_rights = 0
+
+        user = flask_users.query.filter_by(username=username).first()
+        if user is not None:
+            flash("User {} is taken. Kindly choose another username.".format(username))  # Put a message out that there is some error.
+        else:
+            sql_insert = "INSERT INTO  aaron.`flask_login` (`username`, `email`, `password_hash`, `admin_rights`) VALUES" \
+                " ('{}','{}','{}','{}')".format(username, email, User.hash_password(password=password), admin_rights)
+            print(sql_insert)
+            raw_insert_result = db.engine.execute(sql_insert)
+            flash("User {} has been created.".format(username))  # Put a message out that there is some error.
+
+    return render_template('General_Form.html', title='Create User',header="Create User", form=form)
+
+
+@main_app.route('/logout', methods=['GET', 'POST'])  # Will logout the user.
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('main_app.login'))
 
 @app.route('/logout', methods=['GET', 'POST'])  # Will logout the user.
 @login_required
@@ -122,7 +230,11 @@ def logout():
     return redirect(url_for('login'))
 
 
+<<<<<<< Updated upstream
 @app.route('/Dividend')
+=======
+@main_app.route('/Dividend')
+>>>>>>> Stashed changes
 def Dividend():
     return render_template("base.html")
 
@@ -576,8 +688,12 @@ def color_negative_red(value):
 
 
 
+<<<<<<< Updated upstream
 
 @app.route('/add_offset', methods=['GET', 'POST'])      # Want to add an offset to the ABook page.
+=======
+@main_app.route('/add_offset', methods=['GET', 'POST'])      # Want to add an offset to the ABook page.
+>>>>>>> Stashed changes
 @login_required
 def add_off_set():
     form = AddOffSet()
@@ -608,7 +724,11 @@ def add_off_set():
 
 # Want to change user group should they have no trades.
 # ie: From B to A or A to B.
+<<<<<<< Updated upstream
 @app.route('/noopentrades_changegroup', methods=['GET', 'POST'])
+=======
+@main_app.route('/noopentrades_changegroup', methods=['GET', 'POST'])
+>>>>>>> Stashed changes
 @login_required
 def noopentrades_changegroup():
     # TODO: Need to check insert return.
@@ -637,9 +757,15 @@ def noopentrades_changegroup():
     return render_template("Change_USer_Group.html", form=form,title=title, header=header, description=Markup(description))
 
 
+<<<<<<< Updated upstream
 @app.route('/noopentrades_changegroup_ajax', methods=['GET', 'POST'])
 @login_required
 def noopentrades_changegroup_ajax():
+=======
+@main_app.route('/noopentrades_changegroup_ajax', methods=['GET', 'POST'])
+@login_required
+def noopentrades_changegroup_ajax(update_tool_time=1):
+>>>>>>> Stashed changes
     # TODO: Check if user exist first.
 
     live_to_run = [1,2, 3, 5]  # Only want to run this on Live 1 and 3.
@@ -745,7 +871,11 @@ def noopentrades_changegroup_ajax():
 
 
 # Want to check and close off account/trades.
+<<<<<<< Updated upstream
 @app.route('/Risk_auto_cut', methods=['GET', 'POST'])
+=======
+@main_app.route('/Risk_auto_cut', methods=['GET', 'POST'])
+>>>>>>> Stashed changes
 @login_required
 def Risk_auto_cut():
 
@@ -754,6 +884,7 @@ def Risk_auto_cut():
     description = Markup("Running only on Live 1 and Live 3.<br>Will close all client's position and change client to read-only.<br>Sql Table (aaron.risk_autocut_exclude) for client with special requests.")
 
 
+<<<<<<< Updated upstream
     # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Standard_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
                            title=title, ajax_url=url_for("risk_auto_cut_ajax"), header=header, setinterval=10,
@@ -764,6 +895,35 @@ def Risk_auto_cut():
 @app.route('/risk_auto_cut_ajax', methods=['GET', 'POST'])
 @login_required
 def risk_auto_cut_ajax():
+=======
+    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+    # For Login in aaron.Risk_autocut and Credit_limit != 0
+
+
+    description = Markup('Running only on <font color = "red"> Live 1 and Live 3</font>.<br>'   + \
+                         "Will <b>close all client's position</b> and <b>change client to read-only</b>.<br>" + \
+                         "Sql Table ( <font color = 'red'>aaron.risk_autocut_exclude</font>) for client excluded from the autocut.<br>" + \
+                         "Sql Table ( <font color = 'red'>aaron.risk_autocut_include</font>) for client with special requests.<br><br>" + \
+                         "<b>1)</b> For <font color = 'red'>%TW%</font> Clients : <br>EQUITY < CREDIT AND <br>((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND" + \
+                                "<br>`ENABLE` = 1 AND ENABLE_READONLY = 0<br>and " + \
+                                " LOGIN NOT IN ( <font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>" + \
+                         "<b>2)</b>For other clients, where GROUP` IN  <font color = 'red'>aaron.risk_autocut_group</font> and EQUITY < CREDIT and<br>" + \
+                                " LOGIN NOT IN  (<font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>" + \
+                         "<b>3)</b> For Login in <font color = 'red'>aaron.Risk_autocut_exclude</font> and <font color = 'red'>Credit_limit != 0</font> and <br>" +\
+                                " LOGIN NOT IN ( <font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>" + \
+                         "<b>4)</b> Tool will not cut for <font color = 'red'>Equity > Credit</font> . For such, kindly look at Equity Protect.<br><br>")
+
+        # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Charts.jpg', Table_name="Risk Auto Cut", \
+                           title=title, ajax_url=url_for('main_app.risk_auto_cut_ajax', _external=True), header=header, setinterval=10,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+@main_app.route('/risk_auto_cut_ajax', methods=['GET', 'POST'])
+@login_required
+def risk_auto_cut_ajax(update_tool_time=1):
+>>>>>>> Stashed changes
     # TODO: Check if user exist first.
 
     # Using External Table
@@ -772,11 +932,25 @@ def risk_auto_cut_ajax():
 
     Live_server = [1,2,3,5]
 
+<<<<<<< Updated upstream
     # To check the Lucky Draw Login. All TW clients for login not in aaron.risk_autocut_exclude
     raw_sql_statement = """SELECT LOGIN, '3' as LIVE, mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT
             FROM live3.mt4_users WHERE `GROUP` LIKE '%TW%' AND EQUITY < CREDIT AND 
         ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0 and
         LOGIN not in (select login from aaron.risk_autocut_exclude where LIVE = 3)"""
+=======
+    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+    # For Login in aaron.Risk_autocut and Credit_limit != 0
+
+    # To check the Lucky Draw Login. All TW clients for login not in aaron.risk_autocut_exclude
+    # Also done a check to cause hedging clients to SO
+    raw_sql_statement = """SELECT LOGIN, '3' as LIVE, mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT
+            FROM live3.mt4_users WHERE `GROUP` LIKE '%TW%' AND EQUITY < CREDIT AND 
+        ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0 and
+        LOGIN not in (select login from aaron.risk_autocut_exclude where LIVE = 3) and 
+        LOGIN not in (select login from aaron.risk_autocut_include where LIVE = 3 and EQUITY_LIMIT <> 0)"""
+>>>>>>> Stashed changes
 
     raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
     sql_result1 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
@@ -791,7 +965,12 @@ def risk_auto_cut_ajax():
     CLOSE_TIME = '1970-01-01 00:00:00' AND 
     CMD < 6 AND 
     EQUITY < CREDIT AND 
+<<<<<<< Updated upstream
     mt4_trades.LOGIN NOT IN(SELECT LOGIN FROM aaron.risk_autocut_exclude WHERE `LIVE` = '{Live}')  """
+=======
+    mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_exclude WHERE `LIVE` = '{Live}') AND
+    mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_include WHERE `LIVE` = '{Live}' and EQUITY_LIMIT <> 0)"""
+>>>>>>> Stashed changes
 
     raw_sql_statement = " UNION ".join([raw_sql_statement.format(Live=n) for n in Live_server])  # construct the SQL Statment
     raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
@@ -799,9 +978,15 @@ def risk_auto_cut_ajax():
 
 
 
+<<<<<<< Updated upstream
     # For the client's who are in aaron.Risk_autocut_exclude and Credit_limit != 0
     raw_sql_statement = """SELECT DISTINCT T.LOGIN, {Live} AS LIVE,  U.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT, R.EQUITY_LIMIT as EQUITY_LIMIT
     FROM live{Live}.mt4_users as U, aaron.risk_autocut_exclude as R, live{Live}.mt4_trades as T
+=======
+    # For the client's who are in aaron.risk_autocut_include and Credit_limit != 0
+    raw_sql_statement = """SELECT DISTINCT T.LOGIN, {Live} AS LIVE,  U.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT, R.EQUITY_LIMIT as EQUITY_LIMIT
+    FROM live{Live}.mt4_users as U, aaron.risk_autocut_include as R, live{Live}.mt4_trades as T
+>>>>>>> Stashed changes
     WHERE R.LIVE = {Live} and R.EQUITY_LIMIT != 0 and
     R.LOGIN = U.LOGIN and U.EQUITY < R.EQUITY_LIMIT and  
     U.LOGIN = T.LOGIN and T.CLOSE_TIME = '1970-01-01 00:00:00' """
@@ -872,7 +1057,14 @@ def risk_auto_cut_ajax():
         # print(total_result_value)
         table_data_html =  Array_To_HTML_Table(list(total_result_value[0].keys()),[list(d.values()) for d in total_result_value])
 
+<<<<<<< Updated upstream
         async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
+=======
+        # Want to set to test, if it's just test accounts.
+        email_list = EMAIL_AARON if all([d["GROUP"].lower().find("test") >= 0 for d in To_SQL]) else EMAIL_LIST_BGI
+
+        async_send_email(To_recipients=email_list, cc_recipients=[],
+>>>>>>> Stashed changes
                      Subject="AutoCut: Equity Below Credit.",
                      HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below credit. \
                                 <br><br> {table_data_html} This is done to prevent client from trading on credit. \
@@ -888,17 +1080,429 @@ def risk_auto_cut_ajax():
         return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
 
     # # Need to update Run time on SQL Update table.
+<<<<<<< Updated upstream
     async_Update_Runtime("Risk_Auto_Cut")
+
+
+    return json.dumps(return_val)
+=======
+    if update_tool_time ==1:
+        async_update_Runtime(app=current_app._get_current_object(), Tool="Risk_Auto_Cut")
 
 
     return json.dumps(return_val)
 
 
 
+
+
+
+
+
+
+
+
+
 # Want to check and close off account/trades.
+@main_app.route('/USOil_Price_Alerts', methods=['GET', 'POST'])
+@login_required
+def USOil_Ticks():
+
+    title = "USOil Monitor"
+    header = "USOil Monitor"
+
+
+    description = Markup('Check ticks from 64.56 db.<br>Will need to check if USOil falls below 5.')
+
+        # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Oil_Rig_2.jpg', Table_name="USOil Ticks", \
+                           title=title, ajax_url=url_for('main_app.USOil_Ticks_ajax', _external=True), header=header, setinterval=20,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+@main_app.route('/USOil_Price_Ticks_ajax', methods=['GET', 'POST'])
+@login_required
+def USOil_Ticks_ajax(update_tool_time=1):
+
+
+    # No need to run if it ran before.
+    if all(["USOil_{}_Alert".format(u) in session for u in [5,0]]):
+        return_val = [{"RESULT": "USOil_0_Alert ran at {}, USOil_5_Alert ran at {}".format(session['USOil_0_Alert'], session['USOil_5_Alert'])}]
+        return json.dumps(return_val)
+
+    update_date_time = "No return from SQL Ticks 64.56"
+    usoil_mid_price = 10    # We don't want to accidentally trigger this...
+    # Query tick DB for USOil Ticks
+    sql_return = Query_SQL_Host("SELECT LOCAL_DATE_TIME, bid FROM bgi_live3.`.usoil.d_ticks` ORDER BY DATE_TIME DESC limit 1", "192.168.64.56", 'risk', 'Riskrisk321', 'bgi_live1')
+    #print(sql_return)
+
+    if len(sql_return) == 2 and len(sql_return[0]) > 0 and len(sql_return[0][0]) > 0:
+        usoil_res = sql_return[0][0]
+    if len(usoil_res) == 2:
+        update_date_time, usoil_mid_price = usoil_res
+
+    #default return val.
+    return_val = [
+        {"RESULT": "USOil Price ({}). SQL Update Time: {}. Time Now: {}".format(usoil_mid_price, update_date_time, time_now())}]
+
+
+
+    # Run the tests.
+    # USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Settings_TEST.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
+    #                            0.01 : {'path':'Close_USOil_Trade_Test.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
+
+
+    # Run the real prog
+    USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Setting.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
+                               0.01 : {'path':'Close_USOil_Trade_0.01.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
+
+    #usoil_mid_price = 0
+    for USOil_Price_Alert_Actual in USOil_Price_Alert_Array:
+
+
+        USOil_Price_Alert = round(USOil_Price_Alert_Actual)   # The alert Price. Want to do a rounding since 0.01 is hard to match
+
+
+
+        if usoil_mid_price <= USOil_Price_Alert_Actual:     # If the price fell below that.
+            print("USOil price fell below {}...".format(USOil_Price_Alert))
+            if "USOil_{}_Alert".format(USOil_Price_Alert) not in session:  # save in session that we have already sent out an email.
+                print("Need to react to this..")
+
+                # Want to check from SQL if the price has been activated.
+                sql_query = text("select result from aaron.aaron_misc_data where item = 'USOil_Price_{}_Activated'".format(USOil_Price_Alert))
+
+                raw_result = db.engine.execute(sql_query)
+                result_data = raw_result.fetchall()
+                print(result_data)
+                if len(result_data) > 0 and len(result_data[0]) > 0:
+                    tool_ran_result = result_data[0][0]
+                    session['USOil_{}_Alert'.format(USOil_Price_Alert)] = Get_time_String()
+                    if tool_ran_result != '0':    # tool has been ran..
+                        print("SQL: Ran at {}".format(tool_ran_result))
+                        pass
+                    else:
+
+                        #print("Running tool...")
+                        async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, "USOil has dropped below ${}".format(USOil_Price_Alert), TELE_CLIENT_ID)
+                        # Will run C here as well..
+
+                        c_run_return = Run_C_Prog(Path=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['path'],
+                                                  cwd=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['cwd'])
+
+                        # #c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only/Close_USOil_Trade_0.01.exe') + " Edit")
+                        #print("c_run_return = {}".format(c_run_return))
+                        #c_run_return = 0
+
+                        # Catch C return.
+                        (C_Return_Val, output, err) = c_run_return
+                        output = output.decode()
+                        output = output.replace("\r\n", "<br>") # Need to replace the C string of \n to HTML <br>
+
+                        #
+                        async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
+                                     Subject="USOil Below {} Dollars.".format(USOil_Price_Alert),
+                                     HTML_Text="""{Email_Header}Hi,<br><br>USOil Price is at {usoil_mid_price}, and it has dropped below {USOil_Price_Alert} USD. <br> 
+                                                 The following is the C output. <br><br>{c_output}<br><br>
+                                               <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
+                                         Email_Header = Email_Header, USOil_Price_Alert = USOil_Price_Alert, usoil_mid_price = usoil_mid_price, c_output=output, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                         Email_Footer=Email_Footer), Attachment_Name=[])
+
+                        # Update SQL
+                        sql_insert = """UPDATE aaron.aaron_misc_data SET result= '{}' where item = 'USOil_Price_{}_Activated'""".format(Get_time_String(),USOil_Price_Alert)
+                        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+                        #
+                        # print(sql_insert)
+                        db.engine.execute(text(sql_insert))  # Insert into DB
+
+
+                        print("Tool ran: {tool_ran_result}".format(tool_ran_result=tool_ran_result))
+
+
+
+
+    # # Need to update Run time on SQL Update table.
+    if update_tool_time ==1:
+        async_update_Runtime(app=current_app._get_current_object(), Tool="USOil_Price_alert")
+
+
+    return json.dumps(return_val)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Want to insert into table.
+# From Flask.
+@main_app.route('/Risk_Autocut_include', methods=['GET', 'POST'])
+@login_required
+def Include_Risk_Autocut():
+    title = Markup("Include Risk Auto Cut")
+    header = title
+    description = Markup(
+        """<b>To Include into the running tool of Risk Auto Cut</b>
+        <br>Will add account into aaron.risk_autocut_include.<br>
+        To include client from being autocut.<br>
+        If Equity_Limit = 0, will cut normally when Equity < credit""")
+
+    form = equity_Protect_Cut()
+    #print("Method: {}".format(request.method))
+    #print("validate_on_submit: {}".format(form.validate_on_submit()))
+    form.validate_on_submit()
+    if request.method == 'POST' and form.validate_on_submit():
+        Live = form.Live.data  # Get the Data.
+        Login = form.Login.data
+        Equity_Limit = form.Equity_Limit.data
+
+        sql_insert = """INSERT INTO  aaron.`risk_autocut_Include` (`Live`, `Login`, `Equity_Limit`) VALUES
+            ('{Live}','{Account}','{Equity}') ON DUPLICATE KEY UPDATE `Equity_Limit`=VALUES(`Equity_Limit`) """.format(Live=Live, Account=Login, Equity=Equity_Limit)
+        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+
+        print(sql_insert)
+        db.engine.execute(text(sql_insert))  # Insert into DB
+        flash("Live: {live}, Login: {login} Equity limit: {equity_limit} has been added to aaron.`risk_autocut_Include`.".format(live=Live, login=Login, equity_limit=Equity_Limit))
+
+    # TODO: Add Form to add login/Live/limit into the include table.
+    return render_template("General_Form.html",
+                           title=title, header=header,
+                           form=form, description=description)
+
+
+
+# Want to insert into table.
+# From Flask.
+@main_app.route('/Risk_Autocut_exclude', methods=['GET', 'POST'])
+@login_required
+def Exclude_Risk_Autocut():
+    title = Markup("Exclude Risk Auto Cut")
+    header = title
+    description = Markup(
+        """<b>To Exclude into the running tool of Risk Auto Cut</b>
+        <br>Will add account into aaron.risk_autocut_Exclude.<br>
+        To Exclude client from being autocut.""")
+
+    form = risk_AutoCut_Exclude()
+    #print("Method: {}".format(request.method))
+    #print("validate_on_submit: {}".format(form.validate_on_submit()))
+    form.validate_on_submit()
+    if request.method == 'POST' and form.validate_on_submit():
+        Live = form.Live.data  # Get the Data.
+        Login = form.Login.data
+
+        sql_insert = """INSERT INTO  aaron.`risk_autocut_exclude` (`Live`, `Login`) VALUES
+            ('{Live}','{Account}') ON DUPLICATE KEY UPDATE Login=VALUES(Login)  """.format(Live=Live, Account=Login)
+        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+
+        print(sql_insert)
+        db.engine.execute(text(sql_insert))  # Insert into DB
+        flash("Live: {live}, Login: {login} has been added to aaron.`risk_autocut_exclude`.".format(live=Live, login=Login))
+
+    # TODO: Add Form to add login/Live/limit into the include table.
+    return render_template("General_Form.html",
+                           title=title, header=header,
+                           form=form, description=description)
+
+
+
+
+
+# Want to insert into table.
+# From Flask.
+@main_app.route('/Risk_Autocut_Include_Group', methods=['GET', 'POST'])
+@login_required
+def Include_Risk_Autocut_Group():
+    title = Markup("Include<br>Client Group into<br>Risk Auto Cut")
+    header = title
+    description = Markup(
+        "<b>To Include the Client Group into the running tool of Risk Auto Cut</b><br>")
+
+    form = Live_Group()
+    #print("Method: {}".format(request.method))
+    #print("validate_on_submit: {}".format(form.validate_on_submit()))
+    form.validate_on_submit()
+    if request.method == 'POST' and form.validate_on_submit():
+        Live = form.Live.data  # Get the Data.
+        Client_Group = form.Client_Group.data
+
+        sql_insert = """INSERT INTO  aaron.`risk_autocut_group` (`Live`, `GROUP`) VALUES
+            ('{Live}','{Group}')""".format(Live=Live, Group=Client_Group)
+        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+
+        print(sql_insert)
+        db.engine.execute(text(sql_insert))  # Insert into DB
+        flash("Live: {live}, Group: {Group} has been added to aaron.`risk_autocut_group`.".format(live=Live, Group=Client_Group))
+
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("General_Form.html",
+                           title=title, header=header,
+                           form=form, description=description)
+
+
+# Want to check and close off account/trades.
+@main_app.route('/Equity_Protect', methods=['GET', 'POST'])
+@login_required
+def Equity_protect():
+
+    title = "Equity Protect"
+    header = "Equity Protect"
+    description = Markup("Equity Protect Cut.<br>Will Cut position if Equity below a certain level.<br>" + \
+                         "Need to look into the table aaron.risk_equity_protect_cut.")
+    form = equity_Protect_Cut()
+    if request.method == 'POST' and form.validate_on_submit():
+        Live = form.Live.data       # Get the Data.
+        Login = form.Login.data
+        Equity_Limit = form.Equity_Limit.data
+
+
+        sql_insert = """INSERT INTO  aaron.`risk_equity_protect_cut` (`Live`, `Account`, `Equity`) VALUES
+            ('{Live}','{Account}','{Equity}') ON DUPLICATE KEY UPDATE Equity=VALUES(Equity)""".format(Live=Live, Account=Login, Equity=Equity_Limit)
+        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+
+        print(sql_insert)
+        db.engine.execute(text(sql_insert))   # Insert into DB
+        flash("Live: {Live}, Account: {Account}, Equity: {Equity} updated in aaron.`risk_equity_protect_cut`.".format(Live=Live, Account=Login, Equity=Equity_Limit))
+
+
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut", \
+                           title=title, ajax_url=url_for('main_app.Equity_protect_Cut_ajax',_external=True), header=header,
+                           form=form,setinterval = 20,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+# Cut position when equity falls below a certain level
+@main_app.route('/Equity_protect_ajax', methods=['GET', 'POST'])
+#@login_required
+def Equity_protect_Cut_ajax(update_tool_time=1):
+
+    # # #time.sleep(5)
+    # # return_val = [{"Result": "No Client to change. {}".format(time_now())}]
+    # return_val = [{"LIVE":1,"LOGIN":"2040😂","BALANCE":-120.18,"EQUITY":123.341,"GROUP":"0_Test_Risk","EQUITY_CUT":10000,"RUN_RESULTS":"ALL_DONE"}]
+    # # # return json.dumps("[Hello")
+    # return json.dumps(return_val)
+
+    #TODO: Send to Risk only, for a test account.
+
+    # TODO: Check if user exist first.
+    raw_sql_statement = """SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT 
+    FROM live1.mt4_users,aaron.risk_equity_protect_cut 
+    WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '1' AND 
+    mt4_users.EQUITY < risk_equity_protect_cut.Equity AND mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0
+    UNION
+    SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT 
+    FROM live2.mt4_users,aaron.risk_equity_protect_cut 
+    WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '2' AND mt4_users.EQUITY < risk_equity_protect_cut.Equity AND 
+    mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0
+    UNION
+    SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT 
+    FROM live3.mt4_users,aaron.risk_equity_protect_cut 
+    WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '3' AND mt4_users.EQUITY < risk_equity_protect_cut.Equity AND 
+    mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0
+    UNION
+    SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT 
+    FROM live5.mt4_users,aaron.risk_equity_protect_cut 
+    WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '5' AND mt4_users.EQUITY < risk_equity_protect_cut.Equity AND 
+    mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0"""
+
+    sql_result = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
+    if update_tool_time == 1:
+        async_update_Runtime(app=current_app._get_current_object(), Tool="Equity_protect")
+
+
+    if len(sql_result) > 0:
+        return_val = sql_result
+    else:   # Nothing to do. Will return.
+        return_val = [{"Result" : "No Client to change. {}".format(time_now())}]
+        #return json.dumps("[Hello")
+        return json.dumps(return_val)
+
+    c_return = {}
+    c_return[0] = "ALL_DONE"
+    c_return[1] = "LOGIN_NUM_ERROR"
+    c_return[2] = "SERVER_NUM_ERROR"
+    c_return[3] = "LOGIN_NUM_ERROR"
+    c_return[4] = "EQUITY_ABOVE_LIMIT"
+    c_return[5] = "OPEN_POSITION"
+    c_return[6] = "MT4_UPDATE_ERROR"
+    c_return[7] = "MT4_CONNECTION_ERROR"
+    c_return[8] = "EQUITY_WITHIN_EQUITY_LIMIT"
+    c_return[9] = "SQL RETURN ERROR."  # Not in C return. Added my Python
+
+    success_change = []
+    failed_change = []
+
+    for i in range(len(sql_result)):
+        live = sql_result[i]["LIVE"] if "LIVE" in sql_result[i] else -1
+        login = sql_result[i]["LOGIN"] if "LOGIN" in sql_result[i] else -1
+        equity_cut = sql_result[i]["EQUITY_CUT"] if "EQUITY_CUT" in sql_result[i] else -1
+
+        if not any([live==-1, login==-1, equity_cut==-1]):      # Need to ensure we have the correct input
+            c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Equity_Protect.exe') + " {live} {login} {equity_cut}".format( \
+               live=live, login=login,equity_cut=equity_cut))
+            sql_result[i]["RUN_RESULTS"] = c_return[c_run_return[0]] if c_run_return[0] in c_return else "Unknown error: {}".format(c_run_return)
+
+
+            if c_run_return[0] == 0: # Successfully changed.
+                success_change.append(sql_result[i])
+            else:
+                failed_change.append(sql_result[i])
+            #c_run_return = [0,1]
+        else:
+            sql_result[i]["RUN_RESULTS"] = "SQL Return Error."
+            failed_change.append(sql_result[i])
+
+    if len(success_change) > 0:
+        table_data_html = Array_To_HTML_Table(list(success_change[0].keys()),
+                                              [list(d.values()) for d in success_change])
+        async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
+                     Subject="Equity Protection cut.",
+                     HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below limit.. \
+                                <br><br> {table_data_html} This is done to protect client equity. \
+                               <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
+                         Email_Header = Email_Header, table_data_html = table_data_html, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                         Email_Footer=Email_Footer), Attachment_Name=[])
+
+    if len(failed_change) > 0:
+        table_data_html = Array_To_HTML_Table(list(failed_change[0].keys()),
+                                              [list(d.values()) for d in failed_change])
+
+        async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
+                         Subject="Error: Equity Protection cut.",
+                         HTML_Text="{Email_Header}Hi,<br><br>The following client/s have equity below limit, but was unable to close due to errors. \
+                                        <br><br> {table_data_html}\
+                                       <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
+                             Email_Header=Email_Header, table_data_html=table_data_html,
+                             datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                             Email_Footer=Email_Footer), Attachment_Name=[])
+
+
+    return json.dumps(return_val)
+    #return json.dumps("Hello World")
+>>>>>>> Stashed changes
+
+
+
+# Want to check and close off account/trades.
+<<<<<<< Updated upstream
 @app.route('/CFH_Live_Position', methods=['GET', 'POST'])
 @login_required
 def CFH_Live_Position():
+=======
+@main_app.route('/CFH_Live_Position', methods=['GET', 'POST'])
+@login_required
+def CFH_Soap_Position():
+>>>>>>> Stashed changes
 
     title = "CFH_Live_Position"
     header = "CFH_Live_Position"
@@ -908,9 +1512,15 @@ def CFH_Live_Position():
                            title=title, ajax_url=url_for("CFH_Live_Position_ajax"), header=header, setinterval=60*60*12,
                            description=description, replace_words=Markup(["Today"]))
 
+<<<<<<< Updated upstream
 @app.route('/CFH_Live_Position_ajax', methods=['GET', 'POST'])
 @login_required
 def CFH_Live_Position_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
+=======
+@main_app.route('/CFH_Live_Position_ajax', methods=['GET', 'POST'])
+@login_required
+def CFH_Soap_Position_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
+>>>>>>> Stashed changes
     # TODO: Update Minitor Tools Table.
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
@@ -992,9 +1602,15 @@ def CFH_Live_Position_ajax(update_all=0):  # Optional Parameter, to update from 
 
 
 # Want to check and close off account/trades.
+<<<<<<< Updated upstream
 @app.route('/CFH_Symbol_Update', methods=['GET', 'POST'])
 @login_required
 def CFH_Symbol_Update():
+=======
+@main_app.route('/CFH_Symbol_Update', methods=['GET', 'POST'])
+@login_required
+def CFH_Soap_Symbol():
+>>>>>>> Stashed changes
 
     title = "CFH Symbol Update"
     header = "CFH Symbol Update"
@@ -1004,9 +1620,15 @@ def CFH_Symbol_Update():
                            title=title, ajax_url=url_for("CFH_Symbol_Update_ajax"), header=header,
                            description=description, replace_words=Markup(["Today"]))
 
+<<<<<<< Updated upstream
 @app.route('/CFH_Symbol_Update_ajax', methods=['GET', 'POST'])
 @login_required
 def CFH_Symbol_Update_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
+=======
+@main_app.route('/CFH_Symbol_Update_ajax', methods=['GET', 'POST'])
+@login_required
+def CFH_Soap_Symbol_ajax(update_all=0):  # Optional Parameter, to update from the start should there be a need to.
+>>>>>>> Stashed changes
     # TODO: CFH_Symbol_Update_ajax Minotor Tools Table.
 
     wsdl_url = "https://ws.cfhclearing.com:8094/ClientUserDataAccess?wsdl"
@@ -1140,7 +1762,11 @@ def Check_Float(element):
 
 
 
+<<<<<<< Updated upstream
 @app.route('/is_prime')
+=======
+@main_app.route('/is_prime')
+>>>>>>> Stashed changes
 @login_required
 def is_prime_query_AccDetails():    # Query Is Prime
 
@@ -1148,7 +1774,11 @@ def is_prime_query_AccDetails():    # Query Is Prime
     return render_template("Is_prime_html.html",header="IS Prime Account Details")
 
 
+<<<<<<< Updated upstream
 @app.route('/is_prime_return_json', methods=['GET', 'POST'])    # Query Is Prime, Returns a Json.
+=======
+@main_app.route('/is_prime_return_json', methods=['GET', 'POST'])    # Query Is Prime, Returns a Json.
+>>>>>>> Stashed changes
 @login_required
 def is_prime_query_AccDetails_json():
     API_URL_BASE = 'https://api.isprimefx.com/api/'
@@ -1203,7 +1833,11 @@ def is_prime_query_AccDetails_json():
     return json.dumps(account_dict)
 
 
+<<<<<<< Updated upstream
 @app.route('/MT5_Modify_Trade', methods=['GET', 'POST'])
+=======
+@main_app.route('/MT5_Modify_Trade', methods=['GET', 'POST'])
+>>>>>>> Stashed changes
 @login_required
 def Modify_MT5_Trades():    # To upload the Files, or post which trades to delete on MT5
     form = MT5_Modify_Trades_Form()
@@ -1229,6 +1863,7 @@ def Modify_MT5_Trades():    # To upload the Files, or post which trades to delet
     return render_template("MT5_Modify_Trades.html", form=form, header="MT5 Modify Trades", description="MT5 Modify Trades")
 
 
+<<<<<<< Updated upstream
 
 @app.route('/Get_Live3_MT4User')
 @login_required
@@ -1241,21 +1876,60 @@ def Live3_MT4_Users():    # To upload the Files, or post which trades to delete 
     df_users["REGDATE"] = df_users["REGDATE"].apply(lambda x: x.strftime("%Y-%m-%d %H:%M:%S"))
     return excel.make_response_from_array(list([result_col]) + list(df_users.values), 'csv', file_name="Live3_Users.csv")
 
+=======
+@main_app.route('/Get_Live1_MT4User')
+@login_required
+def Live1_MT4_Users():
+    return Live_MT4_Users(1)
+
+@main_app.route('/Get_Live2_MT4User')
+@login_required
+def Live2_MT4_Users():
+    return Live_MT4_Users(2)
+
+@main_app.route('/Get_Live3_MT4User')
+@login_required
+def Live3_MT4_Users():
+    return Live_MT4_Users(3)
+
+@main_app.route('/Get_Live5_MT4User')
+@login_required
+def Live5_MT4_Users():
+    return Live_MT4_Users(5)
+>>>>>>> Stashed changes
 
 @app.route('/sent_file/Risk_Download')
 @login_required
 def Live3_MT4_Users_web():    # To upload the Files, or post which trades to delete on MT5
     return render_template("Show_Table.html",header="Send file...",title="Risk Download Page")
 
+<<<<<<< Updated upstream
+=======
+@main_app.route('/sent_file/Risk_Download')
+@login_required
+def Risk_Download_Page():    # To upload the Files, or post which trades to delete on MT5
+    return render_template("Risk_Download_Page.html",header=" ",title="Risk Download Page")
+>>>>>>> Stashed changes
 
 @app.route('/ABook_Match_Trades')
+@login_required
+def ABook_Matching():    # To upload the Files, or post which trades to delete on MT5
+
+<<<<<<< Updated upstream
+    return render_template("A_Book_Matching.html",header="A Book Matching", title="LP/MT4 Position")
+
+
+@app.route('/ABook_Match_Trades_Position', methods=['GET', 'POST'])
+=======
+@main_app.route('/ABook_Match_Trades')
 @login_required
 def ABook_Matching():    # To upload the Files, or post which trades to delete on MT5
 
     return render_template("A_Book_Matching.html",header="A Book Matching", title="LP/MT4 Position")
 
 
-@app.route('/ABook_Match_Trades_Position', methods=['GET', 'POST'])
+@main_app.route('/ABook_Match_Trades_Position', methods=['GET', 'POST'])
+>>>>>>> Stashed changes
 @login_required
 def ABook_Matching_Position_Vol():    # To upload the Files, or post which trades to delete on MT5
 
@@ -1448,7 +2122,11 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
     return json.dumps(return_result)
 
 
+<<<<<<< Updated upstream
 @app.route('/ABook_LP_Details', methods=['GET', 'POST'])
+=======
+@main_app.route('/ABook_LP_Details', methods=['GET', 'POST'])
+>>>>>>> Stashed changes
 @login_required
 def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. Will alert if email is set to send.
                             # Checks Margin against MC/SO values, with some buffer as alert.
@@ -1634,7 +2312,11 @@ def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. 
 
 
 
+<<<<<<< Updated upstream
 @app.route('/LP_Margin_UpdateTime', methods=['GET', 'POST'])
+=======
+@main_app.route('/LP_Margin_UpdateTime', methods=['GET', 'POST'])
+>>>>>>> Stashed changes
 @login_required
 def LP_Margin_UpdateTime():     # To query for LP/Margin Update time to check that it's being updated.
     # TODO: To add in sutible alert should this stop updating and such.
@@ -1715,7 +2397,11 @@ def Bloomberg_Dividend_ajax():     # Return the Bloomberg dividend table in Json
     return json.dumps(return_data)
 
 
+<<<<<<< Updated upstream
 @app.route('/CFH/Details')
+=======
+@main_app.route('/CFH/Details')
+>>>>>>> Stashed changes
 @login_required
 def cfh_details():
     #TODO: Add this into a blue print.
@@ -1728,9 +2414,15 @@ def cfh_details():
 
 
 
+<<<<<<< Updated upstream
 @app.route('/CFH/Details_ajax', methods=['GET', 'POST'])
 @login_required
 def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
+=======
+@main_app.route('/CFH/Details_ajax', methods=['GET', 'POST'])
+@login_required
+def chf_fix_details_ajax(update_tool_time=1):     # Return the Bloomberg dividend table in Json.
+>>>>>>> Stashed changes
 
     datetime_now = datetime.datetime.utcnow()
     datetime_now.weekday() # 0 - monday
@@ -1793,6 +2485,7 @@ def chf_details_ajax():     # Return the Bloomberg dividend table in Json.
     return json.dumps(return_data)
 
 
+<<<<<<< Updated upstream
 @app.route('/BGI_Swaps')
 @login_required
 def BGI_Swaps():
@@ -1808,6 +2501,94 @@ def BGI_Swaps():
 @app.route('/BGI_Swaps_ajax', methods=['GET', 'POST'])
 @login_required
 def BGI_Swaps_ajax():     # Return the Bloomberg dividend table in Json.
+=======
+
+
+# @main_app.route('/MT4_Commission')
+# @login_required
+# def MT4_Commission():
+#     description = Markup("Swap values uploaded onto MT4/MT5. <br>\
+#    Swaps would be charged on the roll over to the next day.<br> \
+#     Three day swaps would be charged for FX on weds and CFDs on fri. ")
+#     return render_template("Standard_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="BGI_Swaps", \
+#                            title="BGISwaps", ajax_url=url_for('main_app.Mt4_Commission_ajax'),
+#                            description=description, replace_words=Markup([]))
+#
+#
+# @main_app.route('/Mt4_Commission_ajax', methods=['GET', 'POST'])
+# @login_required
+# def Mt4_Commission_ajax():     # Return the Bloomberg dividend table in Json.
+#
+#     # start_date = get_working_day_date(datetime.date.today(), -1, 5)
+#     sql_query = text("""select mt4_groups.`GROUP`, mt4_securities.`NAME`, mt4_groups.CURRENCY, mt4_groups.DEFAULT_LEVERAGE, mt4_groups.MARGIN_CALL, mt4_groups.MARGIN_STOPOUT, mt4_secgroups.`SHOW`, mt4_secgroups.TRADE, mt4_secgroups.SPREAD_DIFF,
+#         mt4_secgroups.COMM_BASE, mt4_secgroups.COMM_TYPE, mt4_secgroups.COMM_LOTS, mt4_secgroups.COMM_AGENT, mt4_secgroups.COMM_AGENT_TYPE, mt4_secgroups.COMM_AGENT_LOTS  from
+#         live5.mt4_groups, live5.mt4_secgroups, live5.mt4_securities
+#         where mt4_groups.SECGROUPS = mt4_secgroups.SECGROUPS and mt4_secgroups.TYPE = mt4_securities.TYPE and
+#         mt4_secgroups.`SHOW` = 1 and mt4_groups.`ENABLE` = 1
+#         GROUP BY `GROUP`, mt4_securities.`NAME`""")
+#
+#     raw_result = db.engine.execute(sql_query)
+#     result_data = raw_result.fetchall()
+#     result_col = raw_result.keys()
+#     return_result = [dict(zip(result_col, d)) for d in result_data]
+#
+#     return json.dumps(return_result)
+
+
+# Want to show which clients got recently changed to read only.
+# Due to Equity < Balance.
+@main_app.route('/Changed_readonly')
+@login_required
+def Changed_readonly():
+    description = Markup("Showing Clients that has been changed to read only in the last 2 working days.")
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Mac_Coffee.jpg', Table_name="Changed Read Only", \
+                           title="Read Only Clients", ajax_url=url_for('main_app.Changed_readonly_ajax', _external=True),
+                           description=description, replace_words=Markup(["Today"]))
+
+
+@main_app.route('/Changed_readonly_ajax', methods=['GET', 'POST'])
+@login_required
+def Changed_readonly_ajax():
+
+    # Which Date to start with. We want to count back 1 day. 
+    start_date = get_working_day_date(datetime.date.today(), weekdays_count= -2)
+    sql_query = text("Select * from test.changed_read_only WHERE `date` >= '{}' order by Date DESC".format(start_date.strftime("%Y-%m-%d")))
+    raw_result = db.engine.execute(sql_query)
+    result_data = raw_result.fetchall()     # Return Result
+
+    result_dict = []
+    if len(result_data) > 0:
+        # dict of the results
+        result_col = raw_result.keys()
+        # Clean up the data. Date.
+        result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
+        result_dict = [dict(zip(result_col,d)) for d in result_data_clean]
+    else:
+        result_dict.append({'Result': 'No Clients has been changed since <b>{}</b> MT4 Server Time.'.format(start_date.strftime("%Y-%m-%d"))})
+
+    return json.dumps(result_dict)
+
+
+
+@main_app.route('/Monitor_Risk_Tools')
+@login_required
+def Monitor_Risk_Tools():
+    description = Markup("Monitor Risk tools.")
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/clock_left.jpg', Table_name="Risk tools", \
+                           title="Risk Tools", ajax_url=url_for('main_app.Monitor_Risk_Tools_ajax', _external=True), setinterval=60,
+                           description=description, replace_words=Markup(["Time Slow"]))
+
+
+# To monitor the Risk Tools, and run them if needed.
+# Will need to update it when there are new tools.
+@main_app.route('/Monitor_Risk_Tools_ajax', methods=['GET', 'POST'])
+@login_required
+def Monitor_Risk_Tools_ajax():
+
+    if cfh_fix_timing() == False:  # Want to check if CFH Fix still running.
+        return_data = [{"Comment": "Out of CFH Fix timing. From UTC Sunday 2215 to Friday 2215"}]
+        return json.dumps(return_data)
+>>>>>>> Stashed changes
 
     start_date = get_working_day_date(datetime.date.today(), -1, 5)
     sql_query = text("SELECT * FROM test.`bgi_swaps` where date >= '{}' ORDER BY Core_Symbol, Date".format(start_date.strftime("%Y-%m-%d")))
@@ -1817,10 +2598,32 @@ def BGI_Swaps_ajax():     # Return the Bloomberg dividend table in Json.
     return_result = [dict(zip(result_col, d)) for d in result_data]
 
 
+<<<<<<< Updated upstream
 
     # Want to get unuqie dates, and sort them.
     unique_date = list(set([d['Date'] for d in return_result if 'Date' in d]))
     unique_date.sort()
+=======
+@main_app.route('/Usage')
+@login_required
+def Computer_Usage():
+    description = Markup("Reflects the Server Usage.<br>")
+    header = "Server Usage Details."
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/mac_keyboard_side.jpg', Table_name="Server Computer Usage", \
+                           title="Server Usage", ajax_url=url_for('main_app.Computer_Usage_Ajax', _external=True), header=header, setinterval=30,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+@main_app.route('/Usage_ajax', methods=['GET', 'POST'])
+@login_required
+def Computer_Usage_Ajax():
+    # gives a single float value
+    cpu_per = psutil.cpu_percent()
+    # gives an object with many fields
+    psutil.virtual_memory()
+    # you can convert that object to a dictionary
+    mem_usage = dict(psutil.virtual_memory()._asdict())
+>>>>>>> Stashed changes
 
     # Want to get unuqie Symbol, and sort them.
     unique_symbol = list(set([d['Core_Symbol'] for d in return_result if 'Core_Symbol' in d]))
@@ -1843,6 +2646,7 @@ def BGI_Swaps_ajax():     # Return the Bloomberg dividend table in Json.
 
     return json.dumps(swap_total)
 
+<<<<<<< Updated upstream
 @app.route('/MT4_Commission')
 @login_required
 def MT4_Commission():
@@ -1857,6 +2661,21 @@ def MT4_Commission():
 @app.route('/Mt4_Commission_ajax', methods=['GET', 'POST'])
 @login_required
 def Mt4_Commission_ajax():     # Return the Bloomberg dividend table in Json.
+=======
+@main_app.route('/Convert_rate')
+@login_required
+def BGI_Convert_Rate():
+    description = Markup("BGI Convert Rate.<br>")
+    header = "BGI_Convert Rate."
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/autumn.jpg', Table_name="BGI Convert Rate", \
+                           title="BGI Convert Rate", ajax_url=url_for('main_app.BGI_Convert_Rate_Ajax', _external=True), header=header,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+@main_app.route('/Convert_rate_ajax', methods=['GET', 'POST'])
+@login_required
+def BGI_Convert_Rate_Ajax():
+>>>>>>> Stashed changes
 
     # start_date = get_working_day_date(datetime.date.today(), -1, 5)
     sql_query = text("""select mt4_groups.`GROUP`, mt4_securities.`NAME`, mt4_groups.CURRENCY, mt4_groups.DEFAULT_LEVERAGE, mt4_groups.MARGIN_CALL, mt4_groups.MARGIN_STOPOUT, mt4_secgroups.`SHOW`, mt4_secgroups.TRADE, mt4_secgroups.SPREAD_DIFF, 
@@ -1869,13 +2688,76 @@ def Mt4_Commission_ajax():     # Return the Bloomberg dividend table in Json.
     raw_result = db.engine.execute(sql_query)
     result_data = raw_result.fetchall()
     result_col = raw_result.keys()
+<<<<<<< Updated upstream
     return_result = [dict(zip(result_col, d)) for d in result_data]
 
     return json.dumps(return_result)
+=======
+    # Clean up the data. Date.
+    result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
+
+    return_val=[]
+    for r in result_data_clean:
+        if not isinstance(r[0], str) or len(r) != 3 or r[2] == 0:
+            continue
+        #print(r)
+        #print( r[0].find("USD"))
+        if r[0].find("USD") == 3:
+            r[0] = r[0][:3] # Want the front 3 letters
+            r[2] = round(r[2], 4)
+            return_val.append(r)
+        elif r[0].find("USD") == 0:
+
+            r[0] = r[0][3:] # Want the back 3 letters
+            r[2] = 1/r[2]   # Need to reciprocal the amount
+            r[2] = round(r[2], 4)
+            return_val.append(r)
+
+    result_dict = [dict(zip(result_col,d)) for d in return_val]
+
+    return json.dumps(result_dict)
+
+
+# Want to insert into table.
+# From Flask.
+@main_app.route('/Balance_equity_exclude', methods=['GET', 'POST'])
+@login_required
+def Exclude_Equity_Below_Credit():
+    title = Markup("Exclude<br>Balance Below Credit")
+    header = title
+    description = Markup(
+        "<b>To Exclude from the running tool of Balance_Below_Credit</b><br>Will add account into live1.balance_equity_exclude.<br>To allow client to trade on Credit")
+
+    form = equity_Protect_Cut()
+    print("Method: {}".format(request.method))
+    print("validate_on_submit: {}".format(form.validate_on_submit()))
+    form.validate_on_submit()
+    if request.method == 'POST' and form.validate_on_submit():
+        Live = form.Live.data  # Get the Data.
+        Login = form.Login.data
+        Equity_Limit = form.Equity_Limit.data
+
+        sql_insert = """INSERT INTO  live1.`balance_equity_exclude` (`Live`, `Login`, `Equity_Limit`) VALUES
+            ('{Live}','{Account}','{Equity}') ON DUPLICATE KEY UPDATE `Equity_Limit`=VALUES(`Equity_Limit`) """.format(Live=Live, Account=Login, Equity=Equity_Limit)
+        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+
+        print(sql_insert)
+        db.engine.execute(text(sql_insert))  # Insert into DB
+        flash("Live: {live}, Login: {login} Equity limit: {equity_limit} has been added to live1.`balance_equity_exclude`.".format(live=Live, login=Login, equity_limit=Equity_Limit))
+
+    # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
+    # backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut",  replace_words=Markup(["Today"])
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("General_Form.html",
+                           title=title, header=header,
+                           form=form, description=description)
+
+>>>>>>> Stashed changes
 
 
 # Want to show which clients got recently changed to read only.
 # Due to Equity < Balance.
+<<<<<<< Updated upstream
 @app.route('/Changed_readonly')
 @login_required
 def Changed_readonly():
@@ -1893,6 +2775,110 @@ def Changed_readonly_ajax():
     # Which Date to start with. We want to count back 1 day. 
     start_date = get_working_day_date(datetime.date.today(), -1, 1)
     sql_query = text("Select * from test.changed_read_only WHERE `date` >= '{}' order by Date DESC".format(start_date.strftime("%Y-%m-%d")))
+=======
+@main_app.route('/Futures/Scrape')
+@login_required
+def Scrape_futures():
+    description = Markup("Scraping Futures.<br>" +
+                         "Excel will be downloaded automatically.<br>"+
+                         "Excel Data will be the same as those on the tables. ")
+
+    # Template will take in an json dict and display a few tables, depending on how many is needed.
+    return render_template("Webworker_1_table_Boderless_excel.html",
+                           backgroud_Filename='css/Color-Pencil.jpg', \
+                           title="Futures Scrape",
+                           header="Scrape Futures",
+                           excel_file_name = "Futures.xlsx",
+                           ajax_url=url_for('main_app.Scrape_futures_ajax', _external=True),
+                           description=description, replace_words=Markup(["Today"]))
+
+@main_app.route('/Futures/Scrape_ajax',methods=['GET', 'POST'])
+@login_required
+def Scrape_futures_ajax():
+
+    # Get all data from the web
+    # Using the module "Scrape_Futures"
+    return_val = Get_Current_Futures_Margin(db=db, sendemail=False)
+
+    #return_val = [dict(zip(col, d)) for d in dict_of_df["US"]]
+    #return_val = {'SG': [{"a":1, "b":2,"c":3}, {"a":2, "b":3,"c":4}],'UK': [{"d":10, "e":9,"f":8}, {"d":7, "e":6,"f":5}], 'US': [{"d":10, "e":9,"f":8}, {"d":7, "e":6,"f":5}]}
+    #start_date = get_working_day_date(datetime.date.today(), weekdays_count=0)
+
+    return json.dumps(return_val)
+
+
+
+# Want to query SQL to pull and display all trades that might be the mismatched one.
+def Mismatch_trades_mt4(symbol = [], hours=7, mins=16):
+
+
+    live_server = [1,2,3,5]
+
+
+    if len(symbol) > 0:
+        symbol_list =  " AND (" + " OR ".join(["SYMBOL LIKE '%{}%'".format(s) for s in symbol]) + ")"
+    else:
+        symbol_list = ""
+
+    # flexi time that we want to query the DB
+    time_gmt_query = (datetime.datetime.now()-datetime.timedelta(hours=hours, minutes=mins)).strftime("%Y-%m-%d %H:%M:00")
+
+
+    raw_query = """SELECT '{live}' as LIVE, LOGIN, TICKET, SYMBOL, CMD, VOLUME, OPEN_TIME, CLOSE_TIME, OPEN_PRICE, CLOSE_PRICE, `GROUP`, `COMMENT`  
+    FROM live{live}.mt4_trades WHERE (OPEN_TIME >= '{time_query}' or CLOSE_TIME >= '{time_query}')
+    and CMD < 6 and `GROUP` in (select * from live{live}.a_group) {symbol_list}"""
+    raw_query = raw_query.replace("\n", "")
+
+    mt4_query = " UNION ".join([raw_query.format(live=l, time_query = time_gmt_query, symbol_list=symbol_list) for l in live_server])
+
+    sql_query = text(mt4_query)
+
+    raw_result = db.engine.execute(sql_query)
+    result_data = raw_result.fetchall()     # Return Result
+    # dict of the results
+    result_col = raw_result.keys()
+    # Clean up the data. Date.
+    result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
+
+    return [result_col,result_data_clean]
+
+
+
+# Want to query SQL to pull and display all trades that might be the mismatched one.
+# symbol = ['USDJPY', 'EURUSD', 'USDSGD', 'XAUUSD']
+def Mismatch_trades_bridge(symbol=[], hours=8, mins=16):
+
+    if len(symbol) > 0: # If CFD, we want to replace . with %
+        symbol_list =  " AND (" + " OR ".join(["SYMBOL LIKE '%{}%'".format(s.replace(".","%")) for s in symbol]) + ")"
+    else:
+        symbol_list = ""
+
+    # GMT time that we can use to query Shiqi SQL
+    time_start = datetime.datetime.now() - datetime.timedelta(hours=abs(hours), minutes=abs(mins))
+    time_gmt_list = []
+
+    date_now = datetime.datetime.now()
+    while (time_start < date_now):
+        time_gmt = time_start.strftime("%Y%m%d-%H") + "%"
+        if time_gmt not in time_gmt_list:
+            time_gmt_list.append(time_gmt)
+        time_start = time_start +  datetime.timedelta(minutes=1)
+
+
+    # SQ's DB tablenames.
+    sq_tables = ["demo1", "demo2_new", "demo3_new"]
+
+    time_str_condition = " OR ".join([" TRADETIME like '{}' ".format(t) for t in time_gmt_list])
+
+    raw_query_bridge = """SELECT '{db}' as `DATABASE`, TRADETIME, REQUESTED_VOL, FILLED_VOL, SYMBOL, CMD, WAREHOUSE, LOGIN, `GROUP`, TICKET, TRADE_ID, ORDERNO FROM shiqi.{db}
+    where WAREHOUSE = 'A' AND ({time_str_condition}) {symbol_list} """
+
+    raw_query_bridge=raw_query_bridge.replace("\n", "")
+    query_bridge_SQL = " UNION ".join([raw_query_bridge.format(db=db,time_str_condition=time_str_condition,symbol_list=symbol_list) for db in sq_tables])
+
+    sql_query = text(query_bridge_SQL)
+
+>>>>>>> Stashed changes
     raw_result = db.engine.execute(sql_query)
     result_data = raw_result.fetchall()     # Return Result
     # dict of the results
