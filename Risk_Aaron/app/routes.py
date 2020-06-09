@@ -380,8 +380,9 @@ def risk_auto_cut_ajax(update_tool_time=1):
     Live_server = [1,2,3,5]
 
     # Want to temp kill this tool for awhile. Will be re-writing it.
-    # return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
-    # return return_val
+    print(current_user.id)
+    return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
+    return json.dumps(return_val)
 
     # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
@@ -466,7 +467,7 @@ def risk_auto_cut_ajax(update_tool_time=1):
             # # print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
 
             c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Auto_Cut.exe') + " {live} {login} {equity_limit}".format( \
-            live=live, login=login,equity_limit=equity_limit))
+            live=live, login=login,equity_limit=equity_limit), cwd=url_for('static', filename='Exec'))
             #print("c_run_return = {}".format(c_run_return))
             # c_run_return = 0
 
@@ -1894,87 +1895,86 @@ def try_string_to_datetime(sstr):
 
 
 
-@main_app.route('/CFH/Details')
-@roles_required()
-def cfh_details():
-    #TODO: Add this into a blue print.
-    #loop = asyncio.new_event_loop()
-
-    description = Markup("Pull CFH Details.")
-    return render_template("Standard_Multi_Table.html", backgroud_Filename='css/Mac_table_user.jpeg', Table_name=["CFH Account Details", "CFH Live Position"], \
-                           title="CFH Details", ajax_url=url_for('main_app.chf_fix_details_ajax'),setinterval=30,
-                           description=description, replace_words=Markup(["Today"]))
-
-
-
-@main_app.route('/CFH/Details_ajax', methods=['GET', 'POST'])
-@roles_required()
-def chf_fix_details_ajax(update_tool_time=1):     # Return the Bloomberg dividend table in Json.
-
-    datetime_now = datetime.datetime.utcnow()
-    datetime_now.weekday() # 0 - monday
+# @main_app.route('/CFH/Details')
+# @roles_required()
+# def cfh_details():
+#     #TODO: Add this into a blue print.
+#     #loop = asyncio.new_event_loop()
+#
+#     description = Markup("Pull CFH Details.")
+#     return render_template("Standard_Multi_Table.html", backgroud_Filename='css/Mac_table_user.jpeg', Table_name=["CFH Account Details", "CFH Live Position"], \
+#                            title="CFH Details", ajax_url=url_for('main_app.chf_fix_details_ajax'),setinterval=30,
+#                            description=description, replace_words=Markup(["Today"]))
 
 
-    if cfh_fix_timing() == False:  # Want to check if CFH Fix still running.
-        return_data = [[{"Comment": "Out of CFH Fix timing. From UTC Sunday 2215 to Friday 2215"}],
-                       [{"Comment": "Out of CFH Fix timing. From UTC Sunday 2215 to Friday 2215"}]]
-        return json.dumps(return_data)
-
-
-    # Get the Position and Info from CFH FIX.
-    [account_info, account_position] = CFH_Position_n_Info()
-
-    if len(account_info) == 0 : # If there are no return.
-        return_data = [[{"Error": "No Return Value"}], [{"Error": "No Return Value"}]]
-        return json.dumps(return_data)
-
-    fix_position_sql_update(account_position)   # Will append the position to SQL. Will Zero out any others.
-    cfh_account_position = [{"Symbol": k, "Position" : d} for k, d in account_position.items()]
-
-
-    # Now, to calculate the Balance and such. Will put into SQL as well.
-    lp = "CFH"
-    deposit = (float(account_info["Balance"]) if "Balance" in account_info else 0) + \
-                (float(account_info["ClosedPL"]) if "ClosedPL" in account_info else 0)
-
-    pnl = float(account_info["OpenPL"]) if "OpenPL" in account_info else 0
-
-    equity = (float(account_info["Balance"]) if "Balance" in account_info else 0) +\
-             (float(account_info["ClosedPL"]) if "ClosedPL" in account_info else 0) + \
-             (float(account_info["OpenPL"]) if "OpenPL" in account_info else 0) + \
-             (float(account_info["CreditLimit"]) if "CreditLimit" in account_info else 0)
-
-    credit = float(account_info["SecurityDeposit"]) if "SecurityDeposit" in account_info else 0
-    #credit =  account_info['CreditLimit']  if 'CreditLimit' in account_info else 0
-    account_info['equity'] = equity
-
-
-    total_margin = account_info['MarginRequirement'] if 'MarginRequirement' in account_info else 0
-    free_margin = account_info['AvailableForMarginTrading'] if 'AvailableForMarginTrading' in account_info else 0
-
-
-    database = "aaron"
-    db_table = "lp_summary"
-    #db_table = "lp_summary_copy"
-    sql_insert = """INSERT INTO {database}.{db_table} (lp, deposit, pnl, equity, total_margin, free_margin, 
-            credit, updated_time) VALUES ('{lp}', '{deposit}', '{pnl}', '{equity}', '{total_margin}', 
-            '{free_margin}', '{credit}', now()) ON DUPLICATE KEY UPDATE deposit=VALUES(deposit), pnl=VALUES(pnl), 
-            total_margin=VALUES(total_margin), equity=VALUES(equity), credit=VALUES(credit),
-            free_margin=VALUES(free_margin), Updated_Time=VALUES(Updated_Time) """.format(database=database,
-                                    db_table=db_table, lp=lp, deposit=deposit, pnl=pnl, equity=equity,
-                                    total_margin="{:.2f}".format(float(total_margin)),
-                                    free_margin="{:.2f}".format(float(free_margin)), credit=credit)
-
-    # ASYNC send to SQL.
-    async_sql_insert(app=current_app._get_current_object(),header = "", values = [sql_insert], footer="")
-
-    if update_tool_time == 1:
-        async_update_Runtime(app=current_app._get_current_object(), Tool="CFH_FIX_Position")
-
-
-    return_data = [[account_info], cfh_account_position]
-
-    return json.dumps(return_data)
+#
+# @main_app.route('/CFH/Details_ajax', methods=['GET', 'POST'])
+# @roles_required()
+# def chf_fix_details_ajax(update_tool_time=1):     # Return the Bloomberg dividend table in Json.
+#
+#     datetime_now = datetime.datetime.utcnow()
+#     datetime_now.weekday() # 0 - monday
+#
+#
+#     if cfh_fix_timing() == False:  # Want to check if CFH Fix still running.
+#         return_data = [[{"Comment": "Out of CFH Fix timing. From UTC Sunday 2215 to Friday 2215"}],
+#                        [{"Comment": "Out of CFH Fix timing. From UTC Sunday 2215 to Friday 2215"}]]
+#         return json.dumps(return_data)
+#
+#
+#     # Get the Position and Info from CFH FIX.
+#     [account_info, account_position] = CFH_Position_n_Info()
+#
+#     if len(account_info) == 0 : # If there are no return.
+#         return_data = [[{"Error": "No Return Value"}], [{"Error": "No Return Value"}]]
+#         return json.dumps(return_data)
+#
+#     fix_position_sql_update(account_position)   # Will append the position to SQL. Will Zero out any others.
+#     cfh_account_position = [{"Symbol": k, "Position" : d} for k, d in account_position.items()]
+#
+#
+#     # Now, to calculate the Balance and such. Will put into SQL as well.
+#     lp = "CFH"
+#     deposit = (float(account_info["Balance"]) if "Balance" in account_info else 0) + \
+#                 (float(account_info["ClosedPL"]) if "ClosedPL" in account_info else 0)
+#
+#     pnl = float(account_info["OpenPL"]) if "OpenPL" in account_info else 0
+#
+#     equity = (float(account_info["Balance"]) if "Balance" in account_info else 0) +\
+#              (float(account_info["ClosedPL"]) if "ClosedPL" in account_info else 0) + \
+#              (float(account_info["OpenPL"]) if "OpenPL" in account_info else 0) + \
+#              (float(account_info["CreditLimit"]) if "CreditLimit" in account_info else 0)
+#
+#     credit = float(account_info["SecurityDeposit"]) if "SecurityDeposit" in account_info else 0
+#     #credit =  account_info['CreditLimit']  if 'CreditLimit' in account_info else 0
+#     account_info['equity'] = equity
+#
+#
+#     total_margin = account_info['MarginRequirement'] if 'MarginRequirement' in account_info else 0
+#     free_margin = account_info['AvailableForMarginTrading'] if 'AvailableForMarginTrading' in account_info else 0
+#
+#
+#     database = "aaron"
+#     db_table = "lp_summary"
+#     #db_table = "lp_summary_copy"
+#     sql_insert = """INSERT INTO {database}.{db_table} (lp, deposit, pnl, equity, total_margin, free_margin,
+#             credit, updated_time) VALUES ('{lp}', '{deposit}', '{pnl}', '{equity}', '{total_margin}',
+#             '{free_margin}', '{credit}', now()) ON DUPLICATE KEY UPDATE deposit=VALUES(deposit), pnl=VALUES(pnl),
+#             total_margin=VALUES(total_margin), equity=VALUES(equity), credit=VALUES(credit),
+#             free_margin=VALUES(free_margin), Updated_Time=VALUES(Updated_Time) """.format(database=database,
+#                                     db_table=db_table, lp=lp, deposit=deposit, pnl=pnl, equity=equity,
+#                                     total_margin="{:.2f}".format(float(total_margin)),
+#                                     free_margin="{:.2f}".format(float(free_margin)), credit=credit)
+#
+#     # ASYNC send to SQL.
+#     async_sql_insert(app=current_app._get_current_object(),header = "", values = [sql_insert], footer="")
+#
+#     if update_tool_time == 1:
+#         async_update_Runtime(app=current_app._get_current_object(), Tool="CFH_FIX_Position")
+#
+#     return_data = [[account_info], cfh_account_position]
+#
+#     return json.dumps(return_data)
 
 
 
@@ -2733,38 +2733,38 @@ def async_sql_insert(app, header="", values = [" "], footer = "", sql_max_insert
 
 
 
-
-# Function to update the SQL position from the CFH FIX.
-# CFH_Position = {"EURUSD": 100000, "GBPUSD": 2300, ...}
-def fix_position_sql_update(CFH_Position):
-
-    # First, we want to update the position, as well as the updated time.
-    fix_position_database = "aaron"
-    fix_position_table = "cfh_live_position_fix"
-
-    # Want to construct the statement for the insert into the  DB.table.
-    # For the values that are non-zero
-    fix_position_header = """INSERT INTO {fix_position_database}.{fix_position_table} (`Symbol`, `position`, `Updated_time`) VALUES """.format(
-        fix_position_database=fix_position_database, fix_position_table=fix_position_table)
-    fix_position_values = ["('{}', '{}', now()) ".format(k,d) for k,d in CFH_Position.items()]
-    fix_position_footer = """ ON DUPLICATE KEY UPDATE position=VALUES(position), Updated_time=VALUES(Updated_time)"""
-
-    # Async update SQL to save runtime
-    async_sql_insert(app=current_app._get_current_object(),header=fix_position_header, values = fix_position_values, footer=fix_position_footer)
-
-    if len(CFH_Position) == 0:
-        CFH_Position[""] = ""
-
-
-    # Want to Update to Zero, for those position that are not opened now.
-    Update_to_zero = """UPDATE {fix_position_database}.{fix_position_table} set position = 0, Updated_time = now() where Symbol not in ({open_symbol})""".format(
-        fix_position_database=fix_position_database, fix_position_table= fix_position_table,
-        open_symbol = " , ".join(['"{}"'.format(k) for k in CFH_Position]))
-
-    # Async update SQL. No header and footer as we will construct the whole statement here.
-    async_sql_insert(app=current_app._get_current_object(),header="", values=[Update_to_zero], footer="")
-
-    return
+#
+# # Function to update the SQL position from the CFH FIX.
+# # CFH_Position = {"EURUSD": 100000, "GBPUSD": 2300, ...}
+# def fix_position_sql_update(CFH_Position):
+#
+#     # First, we want to update the position, as well as the updated time.
+#     fix_position_database = "aaron"
+#     fix_position_table = "cfh_live_position_fix"
+#
+#     # Want to construct the statement for the insert into the  DB.table.
+#     # For the values that are non-zero
+#     fix_position_header = """INSERT INTO {fix_position_database}.{fix_position_table} (`Symbol`, `position`, `Updated_time`) VALUES """.format(
+#         fix_position_database=fix_position_database, fix_position_table=fix_position_table)
+#     fix_position_values = ["('{}', '{}', now()) ".format(k,d) for k,d in CFH_Position.items()]
+#     fix_position_footer = """ ON DUPLICATE KEY UPDATE position=VALUES(position), Updated_time=VALUES(Updated_time)"""
+#
+#     # Async update SQL to save runtime
+#     async_sql_insert(app=current_app._get_current_object(),header=fix_position_header, values = fix_position_values, footer=fix_position_footer)
+#
+#     if len(CFH_Position) == 0:
+#         CFH_Position[""] = ""
+#
+#
+#     # Want to Update to Zero, for those position that are not opened now.
+#     Update_to_zero = """UPDATE {fix_position_database}.{fix_position_table} set position = 0, Updated_time = now() where Symbol not in ({open_symbol})""".format(
+#         fix_position_database=fix_position_database, fix_position_table= fix_position_table,
+#         open_symbol = " , ".join(['"{}"'.format(k) for k in CFH_Position]))
+#
+#     # Async update SQL. No header and footer as we will construct the whole statement here.
+#     async_sql_insert(app=current_app._get_current_object(),header="", values=[Update_to_zero], footer="")
+#
+#     return
 
 
 
