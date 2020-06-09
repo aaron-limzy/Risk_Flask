@@ -2076,14 +2076,13 @@ def Monitor_Risk_Tools_ajax():
     datetime_now = datetime.datetime.now()      # Get the time now.
 
     #'CFH_Live_Trades': CFH_Soap_Position_ajax,
-    #"MT4/LP A Book Check"       : ABook_Matching_Position_Vol,
-    #"LP_Details_Check": ABook_LP_Details,
-
-    function_to_call = {'CFH_FIX_Position'          : chf_fix_details_ajax,
-                        'ChangeGroup_NoOpenTrades'  : noopentrades_changegroup_ajax,
-                        "Equity_protect"            : Equity_protect_Cut_ajax,
+    #'CFH_FIX_Position'          : chf_fix_details_ajax,
+    #"Equity_protect"            : Equity_protect_Cut_ajax,
+    function_to_call = {'ChangeGroup_NoOpenTrades'  : noopentrades_changegroup_ajax,
                         "Risk_Auto_Cut"             : risk_auto_cut_ajax,
-                        "bgi_float_history_save"         : save_BGI_float_Ajax
+                        "bgi_float_history_save"         : save_BGI_float_Ajax,
+                        "MT4/LP A Book Check": ABook_Matching_Position_Vol,
+                        "LP_Details_Check": ABook_LP_Details
                         }
 
     #all_function_return = [d() for k,d in function_to_call.items()]
