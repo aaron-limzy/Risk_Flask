@@ -380,9 +380,10 @@ def risk_auto_cut_ajax(update_tool_time=1):
     Live_server = [1,2,3,5]
 
     # Want to temp kill this tool for awhile. Will be re-writing it.
-    print(current_user.id)
-    return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
-    return json.dumps(return_val)
+    #print(current_user.id)
+    # print("{}".format( url_for('static', filename='Exec/')))
+    # return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
+    # return json.dumps(return_val)
 
     # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
@@ -465,9 +466,9 @@ def risk_auto_cut_ajax(update_tool_time=1):
         if not None in [live, login]:   # If both are not None.
 
             # # print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
+            c_run_return = Run_C_Prog("Risk_Auto_Cut_New.exe " + " {live} {login} {equity_limit}".format( live=live,
+                login=login, equity_limit=equity_limit), cwd=".\\app" + url_for('static', filename='Exec/'))
 
-            c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Auto_Cut.exe') + " {live} {login} {equity_limit}".format( \
-            live=live, login=login,equity_limit=equity_limit), cwd=url_for('static', filename='Exec'))
             #print("c_run_return = {}".format(c_run_return))
             # c_run_return = 0
 
@@ -477,6 +478,8 @@ def risk_auto_cut_ajax(update_tool_time=1):
             #     print(c_run_return)
 
             total_result[k]["RESULT"] = C_Return[c_run_return[0]] if c_run_return[0] in C_Return else "Unknown Error"
+            if equity_limit != 0:    # Want to state that it's doing a equity protection.
+                total_result[k]["RESULT"] += "<br><span style='color:green'>[Equity Protection]</span>"
 
     return_val = dict()  # Return value to be used
     if len(total_result) > 0:   # Want to send out an email should any changes have been made.
@@ -500,7 +503,7 @@ def risk_auto_cut_ajax(update_tool_time=1):
         # Want to set to test, if it's just test accounts.
         email_list = EMAIL_AARON if all([d["GROUP"].lower().find("test") >= 0 for d in To_SQL]) else EMAIL_LIST_BGI
         #email_list
-        async_send_email(To_recipients=EMAIL_AARON, cc_recipients=[],
+        async_send_email(To_recipients=email_list, cc_recipients=[],
                      Subject="AutoCut: Equity Below Credit.",
                      HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below credit. \
                                 <br><br> {table_data_html} This is done to prevent client from trading on credit. \
