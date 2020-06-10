@@ -83,15 +83,16 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display
 if get_machine_ip_address() == '192.168.64.73': #Only On Server computer
     EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
     EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "risk@blackwellglobal.com", "cs@bgifx.com"]
-    EMAIL_LIST_RISKTW = ["aaron.lim@blackwellglobal.com". "fei.shao@blackwellglobal.com", "nicole.cheng@blackwellglobal.com"]
     print("On Server 64.73")
 else:
     EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
     EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com"]
+
     print("On Aaron's Computer")
 
 EMAIL_AARON =  ["aaron.lim@blackwellglobal.com"]     # For test Groups.
-
+EMAIL_LIST_RISKTW = ["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com",
+                     "nicole.cheng@blackwellglobal.com"]
 
 db = SQLAlchemy()  # <--- The db object belonging to the blueprint
 
