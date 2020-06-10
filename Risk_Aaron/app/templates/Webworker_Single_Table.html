@@ -514,10 +514,11 @@
 
 {% if table %}
 <br>
+<!-- <h2>Uploaded Swap Values</h2> -->
 <h2>Uploaded Swap Values</h2>
 <div class="container">
 
-{{ table  }}
+{{ table }}
 
 </div>
 <br>
@@ -525,6 +526,20 @@
 
 
 
+<!-- If we have a variable that we want to loop thru to output.  -->
+<!-- Will be iterable if it's a python list -->
+{% if varibles is defined %}
+{% if varibles is mapping %}
+<br>
+{% for key, value in varibles.items() %}
+  <div class="container">
+  <h2 class="text-center bg-light">{{ key }}</h2>
+  {{ value }}
+  </div>
+{% endfor %}
+<br>
+{% endif %}
+{% endif %}
 
 </div>
   <br>

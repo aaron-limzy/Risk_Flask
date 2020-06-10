@@ -339,6 +339,7 @@ def noopentrades_changegroup_ajax(update_tool_time=1):
 @roles_required()
 def Risk_auto_cut():
 
+    start = datetime.datetime.now()
     title = "Risk Auto Cut"
     header = "Risk Auto Cut"
 
@@ -361,11 +362,20 @@ def Risk_auto_cut():
                          "<b>4)</b> Tool will not cut for <font color = 'red'>Equity > Credit</font> . For such, kindly look at Equity Protect.<br><br>")
 
 
+    client_include_tab = Delete_Risk_Autocut_Include_Table_fun()
+    client_group_include_tab = Delete_Risk_Autocut_Group_Table_fun()
+    client_exclude = Delete_Risk_Autocut_Exclude_Table_fun()
+    
+    print("Generating of tables at risk auto cut took:{}s".format((datetime.datetime.now()-start).total_seconds()))
+
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Risk_Auto_Cut.jpg', Table_name="Risk Auto Cut", \
-                           title=title, ajax_url=url_for('main_app.risk_auto_cut_ajax', _external=True), no_backgroud_Cover=False, \
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Scissors.jpg', Table_name="Risk Auto Cut", \
+                           title=title, ajax_url=url_for('main_app.risk_auto_cut_ajax', _external=True), no_backgroud_Cover=True, \
                            header=header, setinterval=10, \
-                           description=description, replace_words=Markup(["Today"]))
+                           description=description, replace_words=Markup(["Today"]), \
+                           varibles={"Client Include": client_include_tab,
+                                     "Client Group Include": client_group_include_tab,
+                                     "Client Exclude": client_exclude})
 
 
 
@@ -562,11 +572,18 @@ def Include_Risk_Autocut():
         db.engine.execute(text(sql_insert))  # Insert into DB
         flash("Live: {live}, Login: {login} Equity limit: {equity_limit} has been added to aaron.`risk_autocut_Include`.".format(live=Live, login=Login, equity_limit=Equity_Limit))
 
+    table = Delete_Risk_Autocut_Include_Table_fun()
+
+    #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
+    return render_template("General_Form.html", title=title, header=header, table=table, form=form,
+                           description=description, backgroud_Filename='css/Scissors.jpg', no_backgroud_Cover=True)
 
 
+
+# Want to return the table that will be showing the list of client included in the risk auto cut.
+def Delete_Risk_Autocut_Include_Table_fun():
     # Need to do a left join. To fully pull out the risk_autocut_include Logins.
     # Some Logins might not even be on the server.
-
     raw_sql = """SELECT R.Live, R.Login, R.Equity_limit, 
         COALESCE(`Group`,"-") as `Group`, COALESCE(`Enable`,"-") as `Enable`, COALESCE(`Enable_readonly`,"-") as `Enable_readonly`,
         COALESCE(ROUND(`Balance`,2),"-") as `Balance`, COALESCE(ROUND(`Credit`,2),"-") as `Credit`, COALESCE(ROUND(`Equity`,2),"-") as `Equity`
@@ -594,11 +611,7 @@ def Include_Risk_Autocut():
 
         table = Delete_Risk_Autocut_Include_Table(df_data.to_dict("record"))
         table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
-
-
-    #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
-    return render_template("General_Form.html", title=title, header=header, table=table, form=form,
-                           description=description, backgroud_Filename='css/Scissors.jpg', no_backgroud_Cover=True)
+    return table
 
 
 # To remove the account from Risk Autocut.
@@ -639,6 +652,17 @@ def Exclude_Risk_Autocut():
         db.engine.execute(text(sql_insert))  # Insert into DB
         flash("Live: {live}, Login: {login} has been added to aaron.`risk_autocut_exclude`.".format(live=Live, login=Login))
 
+    table = Delete_Risk_Autocut_Exclude_Table_fun()
+
+    #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
+    return render_template("General_Form.html", title=title, header=header, table=table, form=form,
+                           description=description, backgroud_Filename='css/Scissors.jpg', no_backgroud_Cover=True)
+
+
+
+# Will Query SQL and return the table needed for this.
+# To generate the table needed to delete the excluded clients.
+def Delete_Risk_Autocut_Exclude_Table_fun():
     # Need to do a left join. To fully pull out the risk_autocut_include Logins.
     # Some Logins might not even be on the server.
     raw_sql = """SELECT R.Live, R.`Login`, 
@@ -664,9 +688,7 @@ def Exclude_Risk_Autocut():
         table = Delete_Risk_Autocut_Exclude_Table(df_data.to_dict("record"))
         table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
 
-    #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
-    return render_template("General_Form.html", title=title, header=header, table=table, form=form,
-                           description=description, backgroud_Filename='css/Scissors.jpg', no_backgroud_Cover=True)
+    return table
 
 
 # To remove the account from being excluded.
@@ -707,7 +729,15 @@ def Include_Risk_Autocut_Group():
         db.engine.execute(text(sql_insert))  # Insert into DB
         flash("Live: {live}, Group: {Group} has been added to aaron.`risk_autocut_group`.".format(live=Live, Group=Client_Group))
 
+    table = Delete_Risk_Autocut_Group_Table_fun()
 
+    #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
+    return render_template("General_Form.html", title=title, header=header, table=table, form=form,
+                           description=description, backgroud_Filename='css/Scissors.jpg', no_backgroud_Cover=True)
+
+# Generate table from Querying SQL
+# To add and remove GROUPS from Risk Auto Cut
+def Delete_Risk_Autocut_Group_Table_fun():
 
     # Need to do a left join. To fully pull out the risk_autocut_group Groups.
     # Some Groups might not have any Logins.
@@ -735,12 +765,7 @@ def Include_Risk_Autocut_Group():
         # df_data["Num_users"] = df_data["Num_users"].apply(lambda x: "{:,.0f}".format(x))
         table = Delete_Risk_Autocut_Group_Table(df_data.to_dict("record"))
         table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
-
-
-    #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
-    return render_template("General_Form.html", title=title, header=header, table=table, form=form,
-                           description=description, backgroud_Filename='css/Scissors.jpg', no_backgroud_Cover=True)
-
+    return table
 
 # To remove the account from Risk Autocut.
 @main_app.route('/Remove_Risk_Autocut_Group/<Live>/<Group>', methods=['GET', 'POST'])
@@ -758,146 +783,146 @@ def Delete_Risk_Autocut_Group_Button_Endpoint(Live="", Group=""):
 
 
 
-
-# Want to check and close off account/trades.
-@main_app.route('/Equity_Protect', methods=['GET', 'POST'])
-@roles_required()
-def Equity_protect():
-
-    title = "Equity Protect"
-    header = "Equity Protect"
-    description = Markup("Equity Protect Cut.<br>Will Cut position if Equity below a certain level.<br>" + \
-                         "Need to look into the table aaron.risk_equity_protect_cut.")
-    form = equity_Protect_Cut()
-    if request.method == 'POST' and form.validate_on_submit():
-        Live = form.Live.data       # Get the Data.
-        Login = form.Login.data
-        Equity_Limit = form.Equity_Limit.data
-
-
-        sql_insert = """INSERT INTO  aaron.`risk_equity_protect_cut` (`Live`, `Account`, `Equity`) VALUES
-            ('{Live}','{Account}','{Equity}') ON DUPLICATE KEY UPDATE Equity=VALUES(Equity)""".format(Live=Live, Account=Login, Equity=Equity_Limit)
-        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
-
-        print(sql_insert)
-        db.engine.execute(text(sql_insert))   # Insert into DB
-        flash("Live: {Live}, Account: {Account}, Equity: {Equity} updated in aaron.`risk_equity_protect_cut`.".format(Live=Live, Account=Login, Equity=Equity_Limit))
-
-
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Risk_Auto_Cut.jpg', Table_name="Equity Protect Cut", \
-                           title=title, ajax_url=url_for('main_app.Equity_protect_Cut_ajax',_external=True), header=header,
-                           form=form,setinterval = 20,
-                           description=description, replace_words=Markup(["Today"]))
-
-
-# Cut position when equity falls below a certain level
-@main_app.route('/Equity_protect_ajax', methods=['GET', 'POST'])
-@roles_required()
-def Equity_protect_Cut_ajax(update_tool_time=1):
-
-    # # #time.sleep(5)
-    # # return_val = [{"Result": "No Client to change. {}".format(time_now())}]
-    # return_val = [{"LIVE":1,"LOGIN":"2040😂","BALANCE":-120.18,"EQUITY":123.341,"GROUP":"0_Test_Risk","EQUITY_CUT":10000,"RUN_RESULTS":"ALL_DONE"}]
-    # # # return json.dumps("[Hello")
-    # return json.dumps(return_val)
-
-    #TODO: Send to Risk only, for a test account.
-
-    # TODO: Check if user exist first.
-    raw_sql_statement = """SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT 
-    FROM live1.mt4_users,aaron.risk_equity_protect_cut 
-    WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '1' AND 
-    mt4_users.EQUITY < risk_equity_protect_cut.Equity AND mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0
-    UNION
-    SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT 
-    FROM live2.mt4_users,aaron.risk_equity_protect_cut 
-    WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '2' AND mt4_users.EQUITY < risk_equity_protect_cut.Equity AND 
-    mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0
-    UNION
-    SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT 
-    FROM live3.mt4_users,aaron.risk_equity_protect_cut 
-    WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '3' AND mt4_users.EQUITY < risk_equity_protect_cut.Equity AND 
-    mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0
-    UNION
-    SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT 
-    FROM live5.mt4_users,aaron.risk_equity_protect_cut 
-    WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '5' AND mt4_users.EQUITY < risk_equity_protect_cut.Equity AND 
-    mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0"""
-
-    sql_result = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
-    if update_tool_time == 1:
-        async_update_Runtime(app=current_app._get_current_object(), Tool="Equity_protect")
-
-
-    if len(sql_result) > 0:
-        return_val = sql_result
-    else:   # Nothing to do. Will return.
-        return_val = [{"Result" : "No Client to change. {}".format(time_now())}]
-        #return json.dumps("[Hello")
-        return json.dumps(return_val)
-
-    c_return = {}
-    c_return[0] = "ALL_DONE"
-    c_return[1] = "LOGIN_NUM_ERROR"
-    c_return[2] = "SERVER_NUM_ERROR"
-    c_return[3] = "LOGIN_NUM_ERROR"
-    c_return[4] = "EQUITY_ABOVE_LIMIT"
-    c_return[5] = "OPEN_POSITION"
-    c_return[6] = "MT4_UPDATE_ERROR"
-    c_return[7] = "MT4_CONNECTION_ERROR"
-    c_return[8] = "EQUITY_WITHIN_EQUITY_LIMIT"
-    c_return[9] = "SQL RETURN ERROR."  # Not in C return. Added my Python
-
-    success_change = []
-    failed_change = []
-
-    for i in range(len(sql_result)):
-        live = sql_result[i]["LIVE"] if "LIVE" in sql_result[i] else -1
-        login = sql_result[i]["LOGIN"] if "LOGIN" in sql_result[i] else -1
-        equity_cut = sql_result[i]["EQUITY_CUT"] if "EQUITY_CUT" in sql_result[i] else -1
-
-        if not any([live==-1, login==-1, equity_cut==-1]):      # Need to ensure we have the correct input
-            c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Equity_Protect.exe') + " {live} {login} {equity_cut}".format( \
-               live=live, login=login,equity_cut=equity_cut))
-            sql_result[i]["RUN_RESULTS"] = c_return[c_run_return[0]] if c_run_return[0] in c_return else "Unknown error: {}".format(c_run_return)
-
-
-            if c_run_return[0] == 0: # Successfully changed.
-                success_change.append(sql_result[i])
-            else:
-                failed_change.append(sql_result[i])
-            #c_run_return = [0,1]
-        else:
-            sql_result[i]["RUN_RESULTS"] = "SQL Return Error."
-            failed_change.append(sql_result[i])
-
-    if len(success_change) > 0:
-        table_data_html = Array_To_HTML_Table(list(success_change[0].keys()),
-                                              [list(d.values()) for d in success_change])
-        async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
-                     Subject="Equity Protection cut.",
-                     HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below limit.. \
-                                <br><br> {table_data_html} This is done to protect client equity. \
-                               <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
-                         Email_Header = Email_Header, table_data_html = table_data_html, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                         Email_Footer=Email_Footer), Attachment_Name=[])
-
-    if len(failed_change) > 0:
-        table_data_html = Array_To_HTML_Table(list(failed_change[0].keys()),
-                                              [list(d.values()) for d in failed_change])
-
-        async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
-                         Subject="Error: Equity Protection cut.",
-                         HTML_Text="{Email_Header}Hi,<br><br>The following client/s have equity below limit, but was unable to close due to errors. \
-                                        <br><br> {table_data_html}\
-                                       <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
-                             Email_Header=Email_Header, table_data_html=table_data_html,
-                             datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                             Email_Footer=Email_Footer), Attachment_Name=[])
-
-
-    return json.dumps(return_val)
-
+#
+# # Want to check and close off account/trades.
+# @main_app.route('/Equity_Protect', methods=['GET', 'POST'])
+# @roles_required()
+# def Equity_protect():
+#
+#     title = "Equity Protect"
+#     header = "Equity Protect"
+#     description = Markup("Equity Protect Cut.<br>Will Cut position if Equity below a certain level.<br>" + \
+#                          "Need to look into the table aaron.risk_equity_protect_cut.")
+#     form = equity_Protect_Cut()
+#     if request.method == 'POST' and form.validate_on_submit():
+#         Live = form.Live.data       # Get the Data.
+#         Login = form.Login.data
+#         Equity_Limit = form.Equity_Limit.data
+#
+#
+#         sql_insert = """INSERT INTO  aaron.`risk_equity_protect_cut` (`Live`, `Account`, `Equity`) VALUES
+#             ('{Live}','{Account}','{Equity}') ON DUPLICATE KEY UPDATE Equity=VALUES(Equity)""".format(Live=Live, Account=Login, Equity=Equity_Limit)
+#         sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+#
+#         print(sql_insert)
+#         db.engine.execute(text(sql_insert))   # Insert into DB
+#         flash("Live: {Live}, Account: {Account}, Equity: {Equity} updated in aaron.`risk_equity_protect_cut`.".format(Live=Live, Account=Login, Equity=Equity_Limit))
+#
+#
+#     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Risk_Auto_Cut.jpg', Table_name="Equity Protect Cut", \
+#                            title=title, ajax_url=url_for('main_app.Equity_protect_Cut_ajax',_external=True), header=header,
+#                            form=form,setinterval = 20,
+#                            description=description, replace_words=Markup(["Today"]))
+#
+#
+# # Cut position when equity falls below a certain level
+# @main_app.route('/Equity_protect_ajax', methods=['GET', 'POST'])
+# @roles_required()
+# def Equity_protect_Cut_ajax(update_tool_time=1):
+#
+#     # # #time.sleep(5)
+#     # # return_val = [{"Result": "No Client to change. {}".format(time_now())}]
+#     # return_val = [{"LIVE":1,"LOGIN":"2040😂","BALANCE":-120.18,"EQUITY":123.341,"GROUP":"0_Test_Risk","EQUITY_CUT":10000,"RUN_RESULTS":"ALL_DONE"}]
+#     # # # return json.dumps("[Hello")
+#     # return json.dumps(return_val)
+#
+#     #TODO: Send to Risk only, for a test account.
+#
+#     # TODO: Check if user exist first.
+#     raw_sql_statement = """SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT
+#     FROM live1.mt4_users,aaron.risk_equity_protect_cut
+#     WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '1' AND
+#     mt4_users.EQUITY < risk_equity_protect_cut.Equity AND mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0
+#     UNION
+#     SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT
+#     FROM live2.mt4_users,aaron.risk_equity_protect_cut
+#     WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '2' AND mt4_users.EQUITY < risk_equity_protect_cut.Equity AND
+#     mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0
+#     UNION
+#     SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT
+#     FROM live3.mt4_users,aaron.risk_equity_protect_cut
+#     WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '3' AND mt4_users.EQUITY < risk_equity_protect_cut.Equity AND
+#     mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0
+#     UNION
+#     SELECT risk_equity_protect_cut.LIVE,mt4_users.LOGIN,mt4_users.BALANCE,mt4_users.EQUITY,mt4_users.`GROUP`,risk_equity_protect_cut.Equity as EQUITY_CUT
+#     FROM live5.mt4_users,aaron.risk_equity_protect_cut
+#     WHERE mt4_users.LOGIN = risk_equity_protect_cut.Account AND risk_equity_protect_cut.Live = '5' AND mt4_users.EQUITY < risk_equity_protect_cut.Equity AND
+#     mt4_users.BALANCE + mt4_users.CREDIT - mt4_users.EQUITY <> 0"""
+#
+#     sql_result = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
+#     if update_tool_time == 1:
+#         async_update_Runtime(app=current_app._get_current_object(), Tool="Equity_protect")
+#
+#
+#     if len(sql_result) > 0:
+#         return_val = sql_result
+#     else:   # Nothing to do. Will return.
+#         return_val = [{"Result" : "No Client to change. {}".format(time_now())}]
+#         #return json.dumps("[Hello")
+#         return json.dumps(return_val)
+#
+#     c_return = {}
+#     c_return[0] = "ALL_DONE"
+#     c_return[1] = "LOGIN_NUM_ERROR"
+#     c_return[2] = "SERVER_NUM_ERROR"
+#     c_return[3] = "LOGIN_NUM_ERROR"
+#     c_return[4] = "EQUITY_ABOVE_LIMIT"
+#     c_return[5] = "OPEN_POSITION"
+#     c_return[6] = "MT4_UPDATE_ERROR"
+#     c_return[7] = "MT4_CONNECTION_ERROR"
+#     c_return[8] = "EQUITY_WITHIN_EQUITY_LIMIT"
+#     c_return[9] = "SQL RETURN ERROR."  # Not in C return. Added my Python
+#
+#     success_change = []
+#     failed_change = []
+#
+#     for i in range(len(sql_result)):
+#         live = sql_result[i]["LIVE"] if "LIVE" in sql_result[i] else -1
+#         login = sql_result[i]["LOGIN"] if "LOGIN" in sql_result[i] else -1
+#         equity_cut = sql_result[i]["EQUITY_CUT"] if "EQUITY_CUT" in sql_result[i] else -1
+#
+#         if not any([live==-1, login==-1, equity_cut==-1]):      # Need to ensure we have the correct input
+#             c_run_return = Run_C_Prog("app" + url_for('static', filename='Exec/Risk_Equity_Protect.exe') + " {live} {login} {equity_cut}".format( \
+#                live=live, login=login,equity_cut=equity_cut))
+#             sql_result[i]["RUN_RESULTS"] = c_return[c_run_return[0]] if c_run_return[0] in c_return else "Unknown error: {}".format(c_run_return)
+#
+#
+#             if c_run_return[0] == 0: # Successfully changed.
+#                 success_change.append(sql_result[i])
+#             else:
+#                 failed_change.append(sql_result[i])
+#             #c_run_return = [0,1]
+#         else:
+#             sql_result[i]["RUN_RESULTS"] = "SQL Return Error."
+#             failed_change.append(sql_result[i])
+#
+#     if len(success_change) > 0:
+#         table_data_html = Array_To_HTML_Table(list(success_change[0].keys()),
+#                                               [list(d.values()) for d in success_change])
+#         async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
+#                      Subject="Equity Protection cut.",
+#                      HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below limit.. \
+#                                 <br><br> {table_data_html} This is done to protect client equity. \
+#                                <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
+#                          Email_Header = Email_Header, table_data_html = table_data_html, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+#                          Email_Footer=Email_Footer), Attachment_Name=[])
+#
+#     if len(failed_change) > 0:
+#         table_data_html = Array_To_HTML_Table(list(failed_change[0].keys()),
+#                                               [list(d.values()) for d in failed_change])
+#
+#         async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
+#                          Subject="Error: Equity Protection cut.",
+#                          HTML_Text="{Email_Header}Hi,<br><br>The following client/s have equity below limit, but was unable to close due to errors. \
+#                                         <br><br> {table_data_html}\
+#                                        <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
+#                              Email_Header=Email_Header, table_data_html=table_data_html,
+#                              datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+#                              Email_Footer=Email_Footer), Attachment_Name=[])
+#
+#
+#     return json.dumps(return_val)
+#
 
 
 
