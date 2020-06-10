@@ -505,7 +505,7 @@ def risk_auto_cut_ajax(update_tool_time=1):
         # Want to set to test, if it's just test accounts.
         # If it's just TEST account. Send to just Aaron and TW.
 
-        email_list = EMAIL_AARON if all([d["GROUP"].lower().find("test") >= 0 for d in To_SQL]) else EMAIL_LIST_RISKTW
+        email_list = EMAIL_LIST_RISKTW if all([d["GROUP"].lower().find("test") >= 0 for d in To_SQL]) else EMAIL_LIST_BGI
         async_send_email(To_recipients=email_list, cc_recipients=[],
                      Subject="AutoCut: Equity Below Credit.",
                      HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below credit. \
