@@ -219,6 +219,8 @@ def Other_Brokers():
 @swaps.route('/Swaps/Other_Brokers_Ajax', methods=['GET', 'POST'])
 def Other_Brokers_Ajax():
 
+
+    start = datetime.datetime.now()
     # Get swaps from other brokers
     df_other_broker_swaps = get_broker_swaps(db)
 
@@ -237,7 +239,7 @@ def Other_Brokers_Ajax():
     #print(df_other_broker_swaps)
 
     #return json.dumps(pd_dataframe_to_dict(df_fdc))
-
+    print("Swap Compare took: {}s".format((datetime.datetime.now() - start).total_seconds()))
     return json.dumps(pd_dataframe_to_dict(df_other_broker_swaps))
     #return json.dumps([{"Testing": "12345"}])
 
@@ -264,9 +266,12 @@ def cfh_oz_upload():
 def cfh_oz_upload_Ajax():
 
     df_cfd_conversion = get_OZ_CFH_cfd_Digits()
+
+    # This is using unsync. Need to query .result() to get the return data.
+    # Does the wait when calling .result()
     cfh_oz_swaps = CFH_Soap_Swaps(backtrace_days_max=1, divide_by_days=False, cfd_conversion=False, df_cfd_conversion=df_cfd_conversion)
 
-    return json.dumps({"Swaps": cfh_oz_swaps})
+    return json.dumps({"Swaps": cfh_oz_swaps.result()})
     #return json.dumps([{"Testing": "12345"}])
 
 

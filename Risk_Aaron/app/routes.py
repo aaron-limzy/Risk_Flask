@@ -83,6 +83,7 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display
 if get_machine_ip_address() == '192.168.64.73': #Only On Server computer
     EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
     EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "risk@blackwellglobal.com", "cs@bgifx.com"]
+    EMAIL_LIST_RISKTW = ["aaron.lim@blackwellglobal.com". "fei.shao@blackwellglobal.com", "nicole.cheng@blackwellglobal.com"]
     print("On Server 64.73")
 else:
     EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
@@ -360,8 +361,8 @@ def Risk_auto_cut():
 
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Scissors.jpg', Table_name="Risk Auto Cut", \
-                           title=title, ajax_url=url_for('main_app.risk_auto_cut_ajax', _external=True), no_backgroud_Cover=True, \
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Risk_Auto_Cut.jpg', Table_name="Risk Auto Cut", \
+                           title=title, ajax_url=url_for('main_app.risk_auto_cut_ajax', _external=True), no_backgroud_Cover=False, \
                            header=header, setinterval=10, \
                            description=description, replace_words=Markup(["Today"]))
 
@@ -466,8 +467,8 @@ def risk_auto_cut_ajax(update_tool_time=1):
         if not None in [live, login]:   # If both are not None.
 
             # # print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
-            c_run_return = Run_C_Prog("Risk_Auto_Cut_New.exe " + " {live} {login} {equity_limit}".format( live=live,
-                login=login, equity_limit=equity_limit), cwd=".\\app" + url_for('static', filename='Exec/'))
+            c_run_return = Run_C_Prog("Risk_Auto_Cut.exe " + " {live} {login} {equity_limit}".format( live=live,
+                login=login, equity_limit=equity_limit), cwd=".\\app" + url_for('static', filename='Exec/Risk_Auto_Cut/'))
 
             #print("c_run_return = {}".format(c_run_return))
             # c_run_return = 0
@@ -501,8 +502,9 @@ def risk_auto_cut_ajax(update_tool_time=1):
         table_data_html =  Array_To_HTML_Table(list(total_result_value[0].keys()),[list(d.values()) for d in total_result_value])
 
         # Want to set to test, if it's just test accounts.
-        email_list = EMAIL_AARON if all([d["GROUP"].lower().find("test") >= 0 for d in To_SQL]) else EMAIL_LIST_BGI
-        #email_list
+        # If it's just TEST account. Send to just Aaron and TW.
+
+        email_list = EMAIL_AARON if all([d["GROUP"].lower().find("test") >= 0 for d in To_SQL]) else EMAIL_LIST_RISKTW
         async_send_email(To_recipients=email_list, cc_recipients=[],
                      Subject="AutoCut: Equity Below Credit.",
                      HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below credit. \
@@ -781,7 +783,7 @@ def Equity_protect():
         flash("Live: {Live}, Account: {Account}, Equity: {Equity} updated in aaron.`risk_equity_protect_cut`.".format(Live=Live, Account=Login, Equity=Equity_Limit))
 
 
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut", \
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Risk_Auto_Cut.jpg', Table_name="Equity Protect Cut", \
                            title=title, ajax_url=url_for('main_app.Equity_protect_Cut_ajax',_external=True), header=header,
                            form=form,setinterval = 20,
                            description=description, replace_words=Markup(["Today"]))

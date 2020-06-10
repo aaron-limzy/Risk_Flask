@@ -22,6 +22,8 @@ import pandas as pd
 
 from Aaron_Lib import *
 
+from unsync import unsync
+
 from app.OZ_Rest_Class import *
 
 #logging.basicConfig(level=logging.INFO)
@@ -35,7 +37,7 @@ from app.OZ_Rest_Class import *
 
 
 
-
+@unsync
 def get_swaps_fxdd():
     # https://www.fxdd.com/mt/en/trading/offering
     try:
@@ -87,7 +89,7 @@ def get_swaps_fxdd():
     except:
         return []
 
-
+@unsync
 def get_swaps_forexDotCom():
     # Information got off https://www.forex.com/en/trading/pricing-fees/rollover-rates/
 
@@ -153,6 +155,7 @@ def get_swaps_forexDotCom():
 # Need to correct for digits
 # Need to check if today isn't available.
 # It's usually 1 day late.
+@unsync
 def get_swaps_saxo():
     try:
         # https://www.home.saxo/en-sg/rates-and-conditions/forex/trading-conditions#historic-swap-points
@@ -212,6 +215,7 @@ def get_swaps_saxo():
 
 # Scrape if off the website.
 # Not by JSON
+@unsync
 def get_swaps_tradeview():
     try:
         url = "https://www.tradeviewforex.com/room/forex-resources/rollover-rates"
@@ -245,6 +249,7 @@ def get_swaps_tradeview():
 
 # Scrape if off the website.
 # Not by JSON
+@unsync
 def get_swaps_fpmarkets():
     try:
         url = "https://www.fpmarkets.com/swap-point"
@@ -279,6 +284,7 @@ def get_swaps_fpmarkets():
 
 # Scrape if off the website.
 # Not by JSON
+@unsync
 def get_swaps_ebhforex():
     try:
         url = "https://ebhforex.com/faq/rollover-policy/"
@@ -340,6 +346,7 @@ def get_swaps_ebhforex():
 ## https://www.globalprime.com/trading-conditions/swaps-financing/
 ##https://admin.gleneagle.com.au/Account/SwapPoints
 # Not by JSON
+@unsync
 def get_swaps_globalprime():
     try:
         url = "https://admin.gleneagle.com.au/Account/SwapPoints"
@@ -428,7 +435,7 @@ def get_from_sql_or_file(sql_query_line, file_name, db):
 # divide_by_days=False If we want to divide by days, so that comparing is easier.
 # cfd_convertion=False to convert to BGI Symbols or not
 # cfd_conversion=pd.DataFrame([]) A pandas dataframe for the digits.
-
+@unsync
 def CFH_Soap_Swaps(backtrace_days_max=5, start_date="", divide_by_days=False, cfd_conversion=False, df_cfd_conversion=pd.DataFrame([])):
     # TODO: Update Minitor Tools Table.
 
@@ -648,36 +655,51 @@ def get_OZ_CFH_cfd_Digits():
 # Will get other broker swaps with requests.
 # and join them together.
 def get_broker_swaps(db=False):
-    df_fxdd = pd.DataFrame(get_swaps_fxdd())
+
+    # Using Unsync to get the details.
+    # Will need to .result() to get the returned data
+    # Doing it this way would cause it to be threaded.
+    # Wait when it's calling .result()
+    cfh_unsync = CFH_Soap_Swaps(divide_by_days=True, df_cfd_conversion=get_MT4_cfd_Digits(db), cfd_conversion=True)
+    fxdd_unsync = get_swaps_fxdd()
+    forexDotCom_unsync = get_swaps_forexDotCom()
+    saxo_unsync = get_swaps_saxo()
+    tradeview_unsync = get_swaps_tradeview()
+    globalprime_unsync = get_swaps_globalprime()
+    ebhforex_unsync = get_swaps_ebhforex()
+    fpmarkets_unsync = get_swaps_fpmarkets()
+
+
+
+    df_fxdd = pd.DataFrame(fxdd_unsync.result())
     # df_fxdd['Long'] = df_fxdd['Long'].apply(lambda x: round(x, 2) if type(x) == "float" or  type(x) == "int" else x)
     # df_fxdd['Short'] = df_fxdd['Long'].apply(lambda x: round(x, 2) if type(x) == "float" or type(x) == "int" else x)
     df_fxdd = df_fxdd.rename(columns={"Long": "fxdd Long", "Short": "fxdd Short"})
 
-    df_fdc = pd.DataFrame(get_swaps_forexDotCom())
+    df_fdc = pd.DataFrame(forexDotCom_unsync.result())
     # df_fdc['Long'] = df_fdc['Long'].apply(lambda x: round(x, 2) if type(x) == "float" or  type(x) == "int" else x)
     # df_fdc['Short'] = df_fdc['Short'].apply(lambda x: round(x, 2) if type(x) == "float" or type(x) == "int" else x)
     df_fdc = df_fdc.rename(columns={"Long": "fdc Long", "Short": "fdc Short"})
 
-    df_saxo = pd.DataFrame(get_swaps_saxo())
+    df_saxo = pd.DataFrame(saxo_unsync.result())
     df_saxo = df_saxo.rename(columns={"Long": "saxo Long", "Short": "saxo Short"})
 
-    df_tradeview = pd.DataFrame(get_swaps_tradeview())
+    df_tradeview = pd.DataFrame(tradeview_unsync.result())
     df_tradeview = df_tradeview.rename(columns={"Long": "tv Long", "Short": "tv Short"})
 
-    df_global_prime = pd.DataFrame(get_swaps_globalprime())
+    df_global_prime = pd.DataFrame(globalprime_unsync.result())
     df_global_prime = df_global_prime.rename(columns={"Long": "gp Long", "Short": "gp Short"})
 
-    df_ebhforex = pd.DataFrame(get_swaps_ebhforex())
+    df_ebhforex = pd.DataFrame(ebhforex_unsync.result())
     df_ebhforex = df_ebhforex.rename(columns={"Long": "ebh Long", "Short": "ebh Short"})
 
-    df_fpmarkets = pd.DataFrame(get_swaps_fpmarkets())
+    df_fpmarkets = pd.DataFrame(fpmarkets_unsync.result())
     df_fpmarkets = df_fpmarkets.rename(columns={"Long": "fpm Long", "Short": "fpm Short"})
 
 
 
-    df_cfh = pd.DataFrame(CFH_Soap_Swaps(divide_by_days=True, df_cfd_conversion=get_MT4_cfd_Digits(db), cfd_conversion=True))
+    df_cfh = pd.DataFrame(cfh_unsync.result())
     df_cfh = df_cfh.rename(columns={"Long": "cfh Long", "Short": "cfh Short"})
-
 
     swaps_array = [df_fxdd, df_fdc, df_saxo, df_tradeview, df_global_prime,df_ebhforex, df_fpmarkets, df_cfh]
     df_return = pd.DataFrame([], columns=["Symbol"])
