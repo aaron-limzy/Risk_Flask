@@ -2378,7 +2378,7 @@ def Monitor_Account_Trades_Settings():
 
         sql_insert = sql_insert.replace("\t", "").replace("\n", "")
 
-        print(sql_insert)
+        #print(sql_insert)
         db.engine.execute(text(sql_insert))  # Insert into DB
 
         flash("Live {}, Account: {} Successfully added.".format(Live, Account))
@@ -2398,6 +2398,18 @@ def Monitor_Account_Trades_Settings():
     form.Telegram_User.choices = name_list
 
 
+    table = Delete_Monitor_Account_Table_fun()
+
+    # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
+    # backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut",  replace_words=Markup(["Today"])
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("General_Form.html",
+                           title=title, header=header,
+                           form=form, description=description, table=table,
+                           backgroud_Filename='css/Glasses_3.jpeg')
+
+
+def Delete_Monitor_Account_Table_fun():
     # Want to select all the accounts that we are monitoring.
     # Flask Table, that has Delete button that allows us to delete with 1 click.
     sql_query = """select Live, Account, Tele_name, Email_risk, Entry_time FROM aaron.Monitor_Account where Disable_time = '1970-01-01 00:00:00' ORDER BY Live, Account"""
@@ -2415,15 +2427,7 @@ def Monitor_Account_Trades_Settings():
         table = Delete_Monitor_Account_Table(account_tele_names)
         table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
 
-
-
-    # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
-    # backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut",  replace_words=Markup(["Today"])
-    # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("General_Form.html",
-                           title=title, header=header,
-                           form=form, description=description, table=table,
-                           backgroud_Filename='css/Glasses_3.jpeg')
+    return table
 
 
 # To remove the account from being monitored.
@@ -2432,7 +2436,6 @@ def Monitor_Account_Trades_Settings():
 def Delete_Monitor_Account_Button_Endpoint(Live="", Account="", Tele_name=""):
     #print("Live: {}, Account: {}, Tele_name: {}".format(Live, Account, Tele_name))
 
-    #TODO: Asyc this.
 
     # Write the SQL Statement and Update to disable the Account monitoring.
     sql_update_statement = """UPDATE aaron.Monitor_Account SET Disable_time=NOW() where Disable_time = '1970-01-01 00:00:00' 
@@ -2468,8 +2471,14 @@ def Monitor_Account_Trades():
                          "Uses SQL table (64.73) <span style='color:red'>aaron.monitor_account_trades</span> for the trades that are being tracked.<br>")
     header = "To track accounts, to see if trades are opened/closed."
 
+    # Want to show what acounts are being monitored.
+    # Will need to be refreshed to show the most updated ones.
+    varibles = {"Monitor Account": Delete_Monitor_Account_Table_fun()}
+
+
     return render_template("Webworker_Single_Table.html",  backgroud_Filename='css/Glasses_3.jpeg', Table_name="Account Trades", \
-                           title="Monitor Account Trades", ajax_url=url_for('main_app.Monitor_Account_Trades_Ajax', _external=True), header=header, setinterval=10,
+                           title="Monitor Account Trades", ajax_url=url_for('main_app.Monitor_Account_Trades_Ajax', _external=True),
+                           header=header, setinterval=10, varibles=varibles,
                            description=description, replace_words=Markup(["None"]))
 
 
@@ -2481,18 +2490,21 @@ def Monitor_Account_Trades_Ajax():
 
     # Get the Trades that are newly opened, or just closed.
     sql_query_array = []
+    testing = 1
+    monitor_account_table = "aaron.`monitor_account_copy`"
+    monitor_account_trades_table = "aaron.`monitor_account_trades_copy`"
 
     per_live_sql = """SELECT '{Live}' as `LIVE`, T.LOGIN, T.TICKET, T.CMD, T.SYMBOL, T.VOLUME, T.OPEN_TIME,T.CLOSE_TIME, 
         T.OPEN_PRICE, T.CLOSE_PRICE, T.PROFIT, T.SWAPS, M.Tele_name as `TELE_NAME`,TID.Tele_ID as `TELE_ID`, M.Email_risk as `EMAIL_RISK`
-    FROM `monitor_account` as M, live{Live}.mt4_trades as T, aaron.telegram_id as TID
+    FROM {monitor_account_table} as M, live{Live}.mt4_trades as T, aaron.telegram_id as TID
     WHERE M.Account = T.LOGIN AND T.CMD < 2 AND  TID.Tele_name = M.Tele_name AND
     M.Live = {Live} AND M.Disable_time = '1970-01-1 00:00:00'  AND CLOSE_TIME = '1970-01-01 00:00:00' AND 
     T.TICKET NOT IN 
-        (SELECT TICKET FROM aaron.monitor_account_trades as MT WHERE MT.Trade_Close_Notify = 0 AND MT.Live = {Live} AND  M.Tele_name = MT.Tele_name)
+        (SELECT TICKET FROM {monitor_account_trades_table} as MT WHERE MT.Trade_Close_Notify = 0 AND MT.Live = {Live} AND  M.Tele_name = MT.Tele_name)
     UNION
     SELECT '{Live}' as `LIVE`, T.LOGIN, T.TICKET, T.CMD, T.SYMBOL, T.VOLUME, T.OPEN_TIME,T.CLOSE_TIME, 
         T.OPEN_PRICE, T.CLOSE_PRICE, T.PROFIT, T.SWAPS, M.Tele_name as `TELE_NAME`,TID.Tele_ID as `TELE_ID`, M.Email_risk as `EMAIL_RISK`
-    FROM `monitor_account` as M, live{Live}.mt4_trades as T, aaron.monitor_account_trades as MT, aaron.telegram_id as TID
+    FROM {monitor_account_table} as M, live{Live}.mt4_trades as T, {monitor_account_trades_table} as MT, aaron.telegram_id as TID
     WHERE M.Account = T.LOGIN AND T.CMD < 2 AND  MT.Tele_name = M.Tele_name AND TID.Tele_name = MT.Tele_name AND M.Live = {Live} AND 
     M.Disable_time = '1970-01-1 00:00:00'  AND CLOSE_TIME != '1970-01-01 00:00:00' 
     AND MT.Account = T.LOGIN AND MT.Live = {Live} AND MT.Ticket = T.TICKET AND MT.Trade_Close_Notify = 0
@@ -2500,7 +2512,9 @@ def Monitor_Account_Trades_Ajax():
 
     # To write each Individual Live in.
     for Live in [1, 2, 3, 5]:
-        sql_query_array.append(per_live_sql.format(Live=Live))
+        sql_query_array.append(per_live_sql.format(Live=Live,
+                                                   monitor_account_table=monitor_account_table,
+                                                   monitor_account_trades_table=monitor_account_trades_table))
 
     sql_query = text(" UNION ".join(sql_query_array))
 
@@ -2515,56 +2529,102 @@ def Monitor_Account_Trades_Ajax():
         all_open_trade_values = df_all_open_trades.apply(lambda x: " ('{Live}', '{Login}', '{Ticket}', '0', '{Tele_name}') ".format(
             Live=x["LIVE"], Login=x['LOGIN'], Ticket=x["TICKET"], Tele_name=x["TELE_NAME"]), axis=1)
 
-
+        # Put 1 as Trade Close Notify for those that are closed.
         df_all_close_trades = df_trades[df_trades["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')]
         all_close_trade_values = df_all_close_trades.apply(lambda x: " ('{Live}', '{Login}', '{Ticket}', '1', '{Tele_name}') ".format(
             Live=x["LIVE"], Login=x['LOGIN'], Ticket=x["TICKET"], Tele_name=x["TELE_NAME"]), axis=1)
 
-        async_sql_insert(app=current_app._get_current_object(), header="""INSERT INTO aaron.monitor_account_trades (`live`,`account`, `ticket`, `trade_close_notify`, `tele_name`) VALUES """,
-                         values=list(all_open_trade_values.values) + list(all_close_trade_values.values),
-                         footer=" ON DUPLICATE KEY UPDATE `Trade_Close_Notify`=VALUES(`Trade_Close_Notify`) ",
-                         sql_max_insert=20)
+
+        if testing == 0:    # If we are not testing, we will go ahead to append these into the table to stop the notifications.
+            async_sql_insert(app=current_app._get_current_object(),
+                             header="""INSERT INTO {monitor_account_trades_table} (`live`,`account`, `ticket`, `trade_close_notify`, `tele_name`) VALUES """.format(monitor_account_trades_table=monitor_account_trades_table),
+                             values=list(all_open_trade_values.values) + list(all_close_trade_values.values),
+                             footer=" ON DUPLICATE KEY UPDATE `Trade_Close_Notify`=VALUES(`Trade_Close_Notify`) ",
+                             sql_max_insert=20)
 
 
-        direction = ["B", "S"]
+        # Want to create a live-Login column. To find unique and loop over.
+        # For Display sake.
+        df_trades["LIVE-LOGIN"] = df_trades.apply(lambda x: "Live: {}, Login: {}".format(x["LIVE"], x["LOGIN"]), axis = 1)
+
+        # Want to get the unique Live/Login of Each
+        df_live_login = df_trades[['LIVE', 'LOGIN']]
+        df_live_login = df_live_login[df_live_login.duplicated() == False]
+
+        # Need to get the total position of each Live/Login pair. 
+
+
+        direction = ["+", "-"]
         direction_full = ["BUY", "SELL"]
-        # Want to find out which are unique.
-        for tele_id in df_trades["TELE_ID"].unique():
-            df_unique_teleID = df_trades[df_trades["TELE_ID"] == tele_id]
 
+        for tele_id in df_trades["TELE_ID"].unique():                        # Want to find out which TELEGRAM ID are unique.
+            df_unique_teleID = df_trades[df_trades["TELE_ID"] == tele_id]
             df_open_trades = df_unique_teleID[df_unique_teleID["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]
             open_trades_str = ""
-            if len(df_open_trades) > 0:
-                open_trades = df_open_trades.apply(
-                    lambda x: "{Live:^1}|{Login:^8}|{Direction:<1}|{Lots:2.2f}|{Symbol:^9}|{Open_price:^7}".format(
-                        Live=x["LIVE"], Login=x["LOGIN"], Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
-                        Symbol=x["SYMBOL"], Open_price=x["OPEN_PRICE"]), axis=1)
 
-                open_trades_str = "<u><b>Open Trade/s</b></u>\n" + \
-                                  "<pre>{:^1}|{:<7}|{:<1}|{:^5}|{:^7}|{:^7}</pre>\n".format("L", "LOGIN","C", "LOT", "SYMBOL", "OPEN $") +  \
-                                    "\n".join(open_trades.values) + "\n\n"
+            if len(df_open_trades) > 0: # If there are open trades (Cause it might be just that they have closed trades)
+
+                # Append the top most line to indicate open trades.
+                # To this particular user.
+                open_trades_str += "<u><b>Open Trade/s</b></u>\n\n"
+
+                for live_login in df_open_trades["LIVE-LOGIN"].unique():    # For each unique Live/Login pair.
+                    df_open_live_login = df_open_trades[df_open_trades["LIVE-LOGIN"] == live_login]
+                    if len(df_open_live_login) > 0:
+                        open_trades_str += "<u>{}</u>\n".format(live_login)
+                        open_trades_str += "<pre>{:^5}|{:^7}|{:^7}</pre>\n".format("LOT", "SYMBOL", "OPEN $")
+                        open_trades = df_open_live_login.apply(lambda x: "  {Direction:<1}{Lots:2.2f}|{Symbol:^9}|{Open_price:^7}".format(
+                                Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100, Symbol=x["SYMBOL"], Open_price=x["OPEN_PRICE"]), axis=1)
+
+
+                    # open_trades = df_open_trades.apply(
+                    #     lambda x: "{Live:^1}|{Login:^8}|{Direction:<1}{Lots:2.2f}|{Symbol:^9}|{Open_price:^7}".format(
+                    #         Live=x["LIVE"], Login=x["LOGIN"], Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
+                    #         Symbol=x["SYMBOL"], Open_price=x["OPEN_PRICE"]), axis=1)
+
+                        open_trades_str +=  "\n".join(open_trades.values) + "\n\n"
 
             # Get all the closed Trades.
             # needs to be different because we compare close time. And close trades will need to show profoit.
             close_trades_str = ""
             df_close_trades = df_unique_teleID[df_unique_teleID["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')]
             if len(df_close_trades) > 0:
-                # Want to get the open trades into a line of string.
-                close_trades = df_close_trades.apply(
-                    lambda x: "{Live:1}|{Login:^8}|{Direction:<1}|{Lots:.2f}|{Symbol:^9}|{Close_price:^7}|${Profit}".format(
-                        Live=x["LIVE"], Login=x["LOGIN"], Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
-                        Symbol=x["SYMBOL"], Profit=x["PROFIT"], Close_price=x["CLOSE_PRICE"]), axis=1)
+                close_trades_str += "<u><b>Closed Trade/s</b></u>\n\n"
 
-                close_trades_str = "<u><b>Closed Trade/s</b></u>\n" + \
-                              "<pre>{:^1}|{:<7}|{:<1}|{:^3}|{:^7}|{:^7}|{:^6}</pre>\n".format("L",
-                                        "LOGIN", "C", "LOT", "SYMBOL", "CLOSE $", "PnL") + "\n".join(close_trades.values) + "\n"
+                for live_login in df_close_trades["LIVE-LOGIN"].unique():    # For each unique Live/Login pair.
+                    df_close_live_login = df_close_trades[df_close_trades["LIVE-LOGIN"] == live_login]
 
-            total_tele_mesage = "<b>Account Monitoring</b>\n\n" +  open_trades_str + close_trades_str + "\nTool that monitors newly open/closed trades for selected accounts."
+
+                    if len(df_close_live_login) > 0:
+                        # for each unique live/login pair.
+                        # We want to show the Closed Trades
+                        close_trades_str += "<u>{}</u>\n".format(live_login)
+                        close_trades_str += "<pre>{:^5}|{:^7}|{:^7}|{:^6}</pre>\n".format("LOT",
+                                                                                          "SYMBOL", "CLOSE $", "Rev")
+
+                    # Want to get the open trades into a line of string.
+                    # Want to get the revenue. Revenue = PnL + Swaps
+
+                    close_trades = df_close_trades.apply(
+                        lambda x: "  {Direction:<1}{Lots:2.2f}|{Symbol:^9}|{Close_price:^7}|${Profit}".format(
+                            Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
+                            Symbol=x["SYMBOL"], Profit=float(x["PROFIT"]) + float(x["SWAPS"]),
+                            Close_price=x["CLOSE_PRICE"]), axis=1)
+
+                        # close_trades = df_close_trades.apply(
+                        #     lambda x: "{Live:1}|{Login:^8}|{Direction:<1}{Lots:.2f}|{Symbol:^9}|{Close_price:^7}|${Profit}".format(
+                        #         Live=x["LIVE"], Login=x["LOGIN"], Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
+                        #         Symbol=x["SYMBOL"], Profit=float(x["PROFIT"]) + float(x["SWAPS"]), Close_price=x["CLOSE_PRICE"]), axis=1)
+
+                    close_trades_str +=  "\n".join(close_trades.values) + "\n\n"
+
+            total_tele_mesage = "<b>Account Monitoring</b>\n\n" +  open_trades_str + close_trades_str + \
+                                "Tool that monitors newly open/closed trades for selected accounts. Positions are on client side."
 
             # Need to send the Tele Messages.
             #async_Post_To_Telegram("1055969880:AAHcXIDWlQqrFGU319wYoldv9FJuu4srx_E", total_tele_mesage, ["486797751"], Parse_mode=telegram.ParseMode.HTML)
-            async_Post_To_Telegram(TELE_ID_MONITOR, total_tele_mesage, [tele_id],  Parse_mode=telegram.ParseMode.HTML)
-
+            async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, total_tele_mesage, [tele_id],  Parse_mode=telegram.ParseMode.HTML)
+            #TELE_ID_MONITOR
 
         # If we need to email Risk.
         df_Email_Risk = df_trades[df_trades["EMAIL_RISK"] == 1]
