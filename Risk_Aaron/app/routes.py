@@ -624,8 +624,11 @@ def Delete_Risk_Autocut_Include_Button_Endpoint(Live="", Login=""):
     # print(sql_update_statement)
     sql_update_statement=text(sql_update_statement)
     result = db.engine.execute(sql_update_statement)
+
     flash("Live:{Live}, Login: {Login} has been removed from Risk Autocut".format(Live=Live,Login=Login))
-    return redirect(url_for('main_app.Include_Risk_Autocut'))
+    #print("Request URL: {}".format(redirect(request.url)))
+    return redirect(request.referrer)
+    #return redirect(url_for('main_app.Include_Risk_Autocut'))
 
 
 # Want to insert into table.
@@ -702,8 +705,8 @@ def Delete_Risk_Autocut_Exclude_Button_Endpoint(Live="", Login=""):
     sql_update_statement=text(sql_update_statement)
     result = db.engine.execute(sql_update_statement)
     flash(Markup("Live: <b>{Live}</b>, Login: <b>{Login}</b> has been removed from Risk Autocut Exclude.<br>{Login} will no longer be excluded".format(Live=Live,Login=Login)))
-    return redirect(url_for('main_app.Exclude_Risk_Autocut'))
-
+    #return redirect(url_for('main_app.Exclude_Risk_Autocut'))
+    return redirect(request.referrer)
 
 
 @main_app.route('/Risk_Autocut_Include_Group', methods=['GET', 'POST'])
@@ -778,8 +781,8 @@ def Delete_Risk_Autocut_Group_Button_Endpoint(Live="", Group=""):
     sql_update_statement=text(sql_update_statement)
     result = db.engine.execute(sql_update_statement)
     flash(Markup("Live: <b>{Live}</b>, Group: <b>{Group}</b> has been removed from Risk Autocut Group".format(Live=Live,Group=Group)))
-    return redirect(url_for('main_app.Include_Risk_Autocut_Group'))
-
+    #return redirect(url_for('main_app.Include_Risk_Autocut_Group'))
+    return redirect(request.referrer)
 
 
 #
@@ -2453,7 +2456,8 @@ def Delete_Monitor_Account_Button_Endpoint(Live="", Account="", Tele_name=""):
 
 
     flash("Live:{Live}, Account: {Account}, Telegram User: {Tele_name} has been removed from Account Monitoring".format(Live=Live,Account=Account,Tele_name=Tele_name))
-    return redirect(url_for('main_app.Monitor_Account_Trades_Settings'))
+    #return redirect(url_for('main_app.Monitor_Account_Trades_Settings'))
+    return redirect(request.referrer)
 
 
 @main_app.route('/Monitor_Account_Trades')
@@ -2464,7 +2468,7 @@ def Monitor_Account_Trades():
                          "Uses SQL table (64.73) <span style='color:red'>aaron.monitor_account_trades</span> for the trades that are being tracked.<br>")
     header = "To track accounts, to see if trades are opened/closed."
 
-    return render_template("Webworker_Single_Table_No_Border.html",  backgroud_Filename='css/Glasses_3.jpeg', Table_name="Account Trades", \
+    return render_template("Webworker_Single_Table.html",  backgroud_Filename='css/Glasses_3.jpeg', Table_name="Account Trades", \
                            title="Monitor Account Trades", ajax_url=url_for('main_app.Monitor_Account_Trades_Ajax', _external=True), header=header, setinterval=10,
                            description=description, replace_words=Markup(["None"]))
 

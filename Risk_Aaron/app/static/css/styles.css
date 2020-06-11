@@ -30,11 +30,12 @@ body {
 
 table.basic_table {
   caption-side: bottom;
-  border: 1px solid grey;
+  border: 2px solid grey;
   border-collapse: separate;
   text-align: center;
   color: black;
   float: none;
+  background: rgba(255, 255, 255, 0.9);
 }
 
 table.basic_table td{
@@ -77,6 +78,7 @@ caption {
   line-height: 1;
   text-shadow: #EDEDED 3px 2px 0;
   position: relative;
+  background: rgba(242, 242, 242, 0.8);
 }
 
 table.table_orange tr:nth-child(even) {
@@ -160,4 +162,21 @@ table.table_orange caption {
 
 .bg_a_lighter_green {
   background-color: #d1eecc;
+}
+
+.caption {
+  padding: .75rem;
+  text-align: center;
+  caption-side: top;
+  color: #555;
+  text-decoration: none;
+  text-transform: uppercase;
+  font-family: 'Playfair Display', serif;
+  font-size: 45px;
+  font-weight: 800;
+  letter-spacing: -3px;
+  line-height: 1;
+  text-shadow: #EDEDED 3px 2px 0;
+  position: relative;
+  background: rgba(242, 242, 242, 0.8);
 }
