@@ -6,10 +6,10 @@ from aiopyfix.connection import ConnectionState, MessageDirection
 from aiopyfix.client_connection import FIXClient
 from aiopyfix.engine import FIXEngine
 from aiopyfix.message import FIXMessage
+from datetime import datetime
 from sqlalchemy import create_engine, text
 from time import sleep
 
-import datetime
 import logging
 logging.basicConfig(level=logging.INFO)
 
@@ -31,6 +31,7 @@ class Client(FIXEngine):
         # userName = "BGI_NZ_DataDemo"
         # password = "6SPwaVqJ"
         # self.client_num = "197201"
+
 
         self.client_account_info = dict()
         self.client_open_position = dict()
@@ -92,9 +93,6 @@ class Client(FIXEngine):
         session.removeMessageHandler(self.onLogin, MessageDirection.INBOUND, self.client.protocol.msgtype.LOGON)
         # session.removeMessageHandler(self.onExecutionReport, MessageDirection.INBOUND,
         #                              self.client.protocol.msgtype.EXECUTIONREPORT)
-
-        logging.info("Stopping all loops.")
-        self.loop.stop()
 
     async def position_info(self, connectionHandler, msg):   # If it replies with the account Info.
         logging.info("account position recieved: {}".format(msg))
@@ -160,7 +158,8 @@ class Client(FIXEngine):
         #print(self.client_account_info)
         #print(self.client_open_position)
 
-        #await self.account_logout(connectionHandler)
+
+        # # await self.account_logout(connectionHandler)
 
 
         #connectionHandler.handle_close()
@@ -212,7 +211,7 @@ class Client(FIXEngine):
 
     async def chf_fix_details_ajax(self, update_tool_time=1):  # Return the Bloomberg dividend table in Json.
 
-        datetime_now = datetime.datetime.utcnow()
+        datetime_now = datetime.utcnow()
         #datetime_now.weekday()  # 0 - monday
 
         # if cfh_fix_timing() == False:  # Want to check if CFH Fix still running.
@@ -284,7 +283,7 @@ class Client(FIXEngine):
         return
 
     async def heartbeat(self, connectionHandler, msg):
-        sleep_from = datetime.datetime.now()
+        sleep_from = datetime.now()
         print("Heartbeat: {} Time: {}".format(msg, sleep_from))
 
 
@@ -308,14 +307,14 @@ class Client(FIXEngine):
 
         codec = connectionHandler.codec
         msg = FIXMessage("AN")
-        msg.setField(codec.protocol.fixtags.PosReqID, "{}".format(datetime.datetime.now().timestamp()))
+        msg.setField(codec.protocol.fixtags.PosReqID, "{}".format(datetime.now().timestamp()))
         #msg.setField(codec.protocol.fixtags.PosReqID, "ABC1234")
         msg.setField(codec.protocol.fixtags.PosReqType, 0)
         msg.setField(codec.protocol.fixtags.NoPartyIDs, 0)
         msg.setField(codec.protocol.fixtags.Account, self.client_num)
         msg.setField(codec.protocol.fixtags.AccountType, 1)
-        msg.setField(codec.protocol.fixtags.ClearingBusinessDate, datetime.datetime.utcnow().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
-        msg.setField(codec.protocol.fixtags.TransactTime, datetime.datetime.utcnow().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
+        msg.setField(codec.protocol.fixtags.ClearingBusinessDate, datetime.utcnow().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
+        msg.setField(codec.protocol.fixtags.TransactTime, datetime.utcnow().strftime("%Y%m%d-%H:%M:%S.%f")[:-3])
         #msg.setField(codec.protocol.fixtags.PartyID, "197201")
         await connectionHandler.sendMsg(msg)
 
@@ -392,34 +391,5 @@ def CFH_Position_n_Info():
     return [client.client_account_info, client.client_open_position]
 
 
-
-
-# CFH Fix works from UTC Sunday 1730 - Friday 2215
-# GMT = UTC timing
-# We want to allow for Sunday 1735 - Friday 2210 Connection.
-# Giving 5 mins buffer.
-def cfh_fix_timing():
-    datetime_now = datetime.datetime.utcnow()
-    weekd = datetime_now.weekday()  # Monday = 0
-
-    # # For Testing
-    # if weekd == 3 and datetime_now.time() > datetime.time(8, 7, 0):
-    #     return False
-
-    if weekd >= 4:
-        if weekd == 4 and datetime_now.time() > datetime.time(22,10,0):  # Friday
-            return False
-        if weekd == 5:  # Sat
-            return False
-        if weekd == 6 and datetime_now.time() < datetime.time(17,35,0):   # Sunday
-            return False
-    return True
-
-
 if __name__ == '__main__':
-    while True:
-        if cfh_fix_timing():
-            CFH_Position_n_Info()
-            sleep(5)
-        else:
-            sleep(60)
+    CFH_Position_n_Info()

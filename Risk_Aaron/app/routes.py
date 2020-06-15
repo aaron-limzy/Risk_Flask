@@ -32,8 +32,7 @@ from requests import Session
 from zeep.transports import Transport
 
 from zeep import Client
-
-
+from unsync import unsync
 
 from sqlalchemy import text
 import json
@@ -2551,13 +2550,15 @@ def Monitor_Account_Trades_Ajax():
         df_live_login = df_trades[['LIVE', 'LOGIN']]
         df_live_login = df_live_login[df_live_login.duplicated() == False]
 
-        # Need to get the total position of each Live/Login pair. 
+        # Want to run this with unsync. So will need to await with .result()
+        user_trade = get_user_consolidated_trades(df_live_login)
 
 
         direction = ["+", "-"]
         direction_full = ["BUY", "SELL"]
 
         for tele_id in df_trades["TELE_ID"].unique():                        # Want to find out which TELEGRAM ID are unique.
+
             df_unique_teleID = df_trades[df_trades["TELE_ID"] == tele_id]
             df_open_trades = df_unique_teleID[df_unique_teleID["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]
             open_trades_str = ""
@@ -2618,6 +2619,11 @@ def Monitor_Account_Trades_Ajax():
 
                     close_trades_str +=  "\n".join(close_trades.values) + "\n\n"
 
+
+
+
+
+
             total_tele_mesage = "<b>Account Monitoring</b>\n\n" +  open_trades_str + close_trades_str + \
                                 "Tool that monitors newly open/closed trades for selected accounts. Positions are on client side."
 
@@ -2672,6 +2678,45 @@ def Monitor_Account_Trades_Ajax():
     async_update_Runtime(app=current_app._get_current_object(), Tool="Monitor_Account_Trades")
 
     return json.dumps(return_dict)
+
+
+#Input: [{'LIVE': '1', 'LOGIN': 2050}, {'LIVE': '2', 'LOGIN': 2040}]
+# A list of dicts with LIVE and LOGIN
+def get_user_consolidated_trades(live_login_list_dict):
+
+    raw_sql_str = """SELECT '{}'  as LIVE, LOGIN, SYMBOL, 0.01*SUM(
+        CASE
+            WHEN CMD = 0  THEN VOLUME
+            WHEN CMD = 1 THEN -1 * VOLUME
+        END) as LOTS
+        FROM live{Live}.mt4_trades
+        WHERE LOGIN = {Login} AND CMD < 2 AND CLOSE_TIME = "1970-01-01 00:00:00"
+        GROUP BY LOGIN, SYMBOL """
+
+    # Get the SQL query for each login
+    sql_query_array = [raw_sql_str.format(Live=x["LIVE"], Login=x["LOGIN"]).replace("\n", "").replace("\t", "")
+                   for x in live_login_list_dict if
+                   all(i in x for i in ["LIVE", "LOGIN"])]
+    # Get the union of it all, and query SQL
+    return_val = Query_SQL_db_engine(text(" UNION ".join(sql_query_array)))
+
+
+
+    return return_val
+
+# Input: [{'LOGIN': 2050, 'SYMBOL': 'AUDUSD', 'LOTS': Decimal('0.05')},
+#  {'LOGIN': 2050, 'SYMBOL': 'EURUSD', 'LOTS': Decimal('-0.05')}]
+# A list of dicts.
+def user_consolidated_trades_to_str(trade_dict):
+
+    df_user_trades = pd.DataFrame(trade_dict)
+    df_user_trades.sort_values(by="SYMBOL",inplace=True)
+    for login in list(df_user_trades["LOGIN"].unique()):
+        df_specific_user = df_user_trades[df_user_trades["LOGIN"] == login]
+        open_position = df_specific_user.apply(lambda x: "{Symbol:<7} : {Lots:2.2f}".format(Symbol=x["SYMBOL"],
+                                                                                            Lots=x["LOTS"]), axis=1)
+
+    return
 
 
 # Want to query SQL to pull and display all trades that might be the mismatched one.
