@@ -2620,7 +2620,7 @@ def Monitor_Account_Trades_Ajax():
 
 
             # Want to consolidate total lots of the open trades
-            consolidated_trades = "<b><u>Consolidated position</u></b>\n"
+            consolidated_trades = "<b><u>Consolidated position</u></b>\n\n"
             for live_login in df_unique_teleID["LIVE-LOGIN"].unique():
                 if live_login in user_trades_str_dict:
                     consolidated_trades += "{}".format(user_trades_str_dict[live_login])
