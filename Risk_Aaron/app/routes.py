@@ -2489,9 +2489,14 @@ def Monitor_Account_Trades_Ajax():
 
     # Get the Trades that are newly opened, or just closed.
     sql_query_array = []
-    testing = 1
-    monitor_account_table = "aaron.`monitor_account_copy`"
-    monitor_account_trades_table = "aaron.`monitor_account_trades_copy`"
+    testing = False # Set to True when Testing.
+
+    if testing :
+        monitor_account_table = "aaron.`monitor_account_copy`"
+        monitor_account_trades_table = "aaron.`monitor_account_trades_copy`"
+    else:
+        monitor_account_table = "aaron.`monitor_account`"
+        monitor_account_trades_table = "aaron.`monitor_account_trades`"
 
     per_live_sql = """SELECT '{Live}' as `LIVE`, T.LOGIN, T.TICKET, T.CMD, T.SYMBOL, T.VOLUME, T.OPEN_TIME,T.CLOSE_TIME, 
         T.OPEN_PRICE, T.CLOSE_PRICE, T.PROFIT, T.SWAPS, M.Tele_name as `TELE_NAME`,TID.Tele_ID as `TELE_ID`, M.Email_risk as `EMAIL_RISK`
@@ -2520,7 +2525,7 @@ def Monitor_Account_Trades_Ajax():
     sql_record = query_SQL_return_record(sql_query)
     df_trades = pd.DataFrame(sql_record)
 
-    if len(df_trades) == 0:
+    if len(df_trades) == 0: # If there are no trades to be notified of. 
         return_dict=[{"Results":"There has been no trade movements in the accounts."}]
     else:
         # Need to insert into SQL.
@@ -2534,7 +2539,7 @@ def Monitor_Account_Trades_Ajax():
             Live=x["LIVE"], Login=x['LOGIN'], Ticket=x["TICKET"], Tele_name=x["TELE_NAME"]), axis=1)
 
 
-        if testing == 0:    # If we are not testing, we will go ahead to append these into the table to stop the notifications.
+        if not testing:    # If we are not testing, we will go ahead to append these into the table to stop the notifications.
             async_sql_insert(app=current_app._get_current_object(),
                              header="""INSERT INTO {monitor_account_trades_table} (`live`,`account`, `ticket`, `trade_close_notify`, `tele_name`) VALUES """.format(monitor_account_trades_table=monitor_account_trades_table),
                              values=list(all_open_trade_values.values) + list(all_close_trade_values.values),
@@ -2551,7 +2556,11 @@ def Monitor_Account_Trades_Ajax():
         df_live_login = df_live_login[df_live_login.duplicated() == False]
 
         # Want to run this with unsync. So will need to await with .result()
-        user_trade = get_user_consolidated_trades(df_live_login)
+        user_trades = get_user_consolidated_trades(df_live_login.to_dict("record"))
+
+        # Will be in form of dict.
+        # With "LIVE-LOGIN" as KEY
+        user_trades_str_dict = user_consolidated_trades_to_str(user_trades)    # Consolidated user trades in string
 
 
         direction = ["+", "-"]
@@ -2576,12 +2585,6 @@ def Monitor_Account_Trades_Ajax():
                         open_trades_str += "<pre>{:^5}|{:^7}|{:^7}</pre>\n".format("LOT", "SYMBOL", "OPEN $")
                         open_trades = df_open_live_login.apply(lambda x: "  {Direction:<1}{Lots:2.2f}|{Symbol:^9}|{Open_price:^7}".format(
                                 Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100, Symbol=x["SYMBOL"], Open_price=x["OPEN_PRICE"]), axis=1)
-
-
-                    # open_trades = df_open_trades.apply(
-                    #     lambda x: "{Live:^1}|{Login:^8}|{Direction:<1}{Lots:2.2f}|{Symbol:^9}|{Open_price:^7}".format(
-                    #         Live=x["LIVE"], Login=x["LOGIN"], Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
-                    #         Symbol=x["SYMBOL"], Open_price=x["OPEN_PRICE"]), axis=1)
 
                         open_trades_str +=  "\n".join(open_trades.values) + "\n\n"
 
@@ -2612,19 +2615,18 @@ def Monitor_Account_Trades_Ajax():
                             Symbol=x["SYMBOL"], Profit=float(x["PROFIT"]) + float(x["SWAPS"]),
                             Close_price=x["CLOSE_PRICE"]), axis=1)
 
-                        # close_trades = df_close_trades.apply(
-                        #     lambda x: "{Live:1}|{Login:^8}|{Direction:<1}{Lots:.2f}|{Symbol:^9}|{Close_price:^7}|${Profit}".format(
-                        #         Live=x["LIVE"], Login=x["LOGIN"], Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
-                        #         Symbol=x["SYMBOL"], Profit=float(x["PROFIT"]) + float(x["SWAPS"]), Close_price=x["CLOSE_PRICE"]), axis=1)
 
                     close_trades_str +=  "\n".join(close_trades.values) + "\n\n"
 
 
+            # Want to consolidate total lots of the open trades
+            consolidated_trades = "<b><u>Consolidated position</u></b>\n"
+            for live_login in df_unique_teleID["LIVE-LOGIN"].unique():
+                if live_login in user_trades_str_dict:
+                    consolidated_trades += "{}".format(user_trades_str_dict[live_login])
 
 
-
-
-            total_tele_mesage = "<b>Account Monitoring</b>\n\n" +  open_trades_str + close_trades_str + \
+            total_tele_mesage = "<b>Account Monitoring</b>\n\n" +  open_trades_str + close_trades_str + consolidated_trades +\
                                 "Tool that monitors newly open/closed trades for selected accounts. Positions are on client side."
 
             # Need to send the Tele Messages.
@@ -2635,6 +2637,17 @@ def Monitor_Account_Trades_Ajax():
         # If we need to email Risk.
         df_Email_Risk = df_trades[df_trades["EMAIL_RISK"] == 1]
         if len(df_Email_Risk) > 0:
+
+
+            # Want to get the User consolidated trades to be sent via email.
+            df_user_trades = pd.DataFrame(user_trades)
+            df_user_trades["LIVE-LOGIN"] = df_user_trades.apply(lambda x: "Live: {}, Login: {}".format(x["LIVE"], x["LOGIN"]), axis=1)
+            df_user_trades.sort_values(by="LIVE-LOGIN",inplace=True)    # Sort by Live/Login
+            user_consolidated_trades = df_user_trades[df_user_trades["LIVE-LOGIN"].isin(df_Email_Risk["LIVE-LOGIN"].unique())].to_dict("record")
+            consolidated_position_table_html = List_of_Dict_To_Horizontal_HTML_Table(user_consolidated_trades)
+
+
+
             email_html_str = "{}Hi,<br><br>Account/s in account monitoring tool has had some open/closed trades.<br>Kindly see the details below.<br><br>".format(Email_Header)
             # Want Lots, Not Volume. Need to Multiply by 0.01, or divide by 100
             df_Email_Risk["LOTS"] = df_Email_Risk["VOLUME"].apply(lambda x: "{:.2f}".format(float(x) * 0.01))
@@ -2647,6 +2660,8 @@ def Monitor_Account_Trades_Ajax():
             df_Email_Risk["CMD"] = df_Email_Risk["CMD"].apply(lambda x: "{}".format(direction_full[int(x)]))
 
 
+
+
             df_open_trades = df_Email_Risk[df_Email_Risk["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]
             if len(df_open_trades) > 0: # If there are open trades to show.
                 df_open_trades = df_open_trades.drop(columns=["CLOSE_TIME", "CLOSE_PRICE"])  # No need for open trades
@@ -2657,11 +2672,11 @@ def Monitor_Account_Trades_Ajax():
                 email_html_str += "<b><u>Closed Trades</u></b><br>{}".format(
                     List_of_Dict_To_Horizontal_HTML_Table(df_close_trades.to_dict("Record")))
 
+            email_html_str += "<b><u>Consolidated Positions</u></b>\n{}".format(consolidated_position_table_html)
+
             email_html_str += "<br>Thanks,<br>Aaron{}".format(Email_Footer)
 
             async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[], Subject="Account Trade Monitoring", HTML_Text=email_html_str, Attachment_Name=[])
-
-            # print(total_tele_mesage)
 
 
         # Make the dates printable.
@@ -2684,39 +2699,44 @@ def Monitor_Account_Trades_Ajax():
 # A list of dicts with LIVE and LOGIN
 def get_user_consolidated_trades(live_login_list_dict):
 
-    raw_sql_str = """SELECT '{}'  as LIVE, LOGIN, SYMBOL, 0.01*SUM(
+    raw_sql_str = """SELECT '{Live}'  as LIVE, LOGIN, SYMBOL, 0.01*SUM(
         CASE
             WHEN CMD = 0  THEN VOLUME
             WHEN CMD = 1 THEN -1 * VOLUME
-        END) as LOTS
+        END) as LOTS, ROUND(SUM(PROFIT + SWAPS),2) AS REVENUE
         FROM live{Live}.mt4_trades
         WHERE LOGIN = {Login} AND CMD < 2 AND CLOSE_TIME = "1970-01-01 00:00:00"
         GROUP BY LOGIN, SYMBOL """
 
     # Get the SQL query for each login
     sql_query_array = [raw_sql_str.format(Live=x["LIVE"], Login=x["LOGIN"]).replace("\n", "").replace("\t", "")
-                   for x in live_login_list_dict if
-                   all(i in x for i in ["LIVE", "LOGIN"])]
+                   for x in live_login_list_dict if all(i in x for i in ["LIVE", "LOGIN"])]
     # Get the union of it all, and query SQL
     return_val = Query_SQL_db_engine(text(" UNION ".join(sql_query_array)))
-
-
 
     return return_val
 
 # Input: [{'LOGIN': 2050, 'SYMBOL': 'AUDUSD', 'LOTS': Decimal('0.05')},
 #  {'LOGIN': 2050, 'SYMBOL': 'EURUSD', 'LOTS': Decimal('-0.05')}]
-# A list of dicts.
+# Out: Dict with LIVE-LOGIN as Key
 def user_consolidated_trades_to_str(trade_dict):
 
     df_user_trades = pd.DataFrame(trade_dict)
-    df_user_trades.sort_values(by="SYMBOL",inplace=True)
-    for login in list(df_user_trades["LOGIN"].unique()):
-        df_specific_user = df_user_trades[df_user_trades["LOGIN"] == login]
-        open_position = df_specific_user.apply(lambda x: "{Symbol:<7} : {Lots:2.2f}".format(Symbol=x["SYMBOL"],
-                                                                                            Lots=x["LOTS"]), axis=1)
+    df_user_trades["LIVE-LOGIN"] = df_user_trades.apply(lambda x: "Live: {}, Login: {}".format(x["LIVE"], x["LOGIN"]), axis=1)
+    df_user_trades.sort_values(by="SYMBOL",inplace=True)    # Sort by Synbols
 
-    return
+    return_dict = {}
+
+    for live_login in list(df_user_trades["LIVE-LOGIN"].unique()):    # Loop thru each unique user
+
+        df_specific_user = df_user_trades[df_user_trades["LIVE-LOGIN"] == live_login]
+        open_position = df_specific_user.apply(lambda x: "  {Symbol:<7} : {Lots:>2.2f} Lots at ${Revenue}".format(Symbol=x["SYMBOL"],
+                                                                        Lots=x["LOTS"], Revenue=x["REVENUE"]), axis=1)
+
+        login_trade_string = "<u>{}</u>\n".format(live_login) + "\n".join(open_position.values) + "\n\n"
+        return_dict[live_login] = login_trade_string
+        #print(return_dict[live_login])
+    return return_dict
 
 
 # Want to query SQL to pull and display all trades that might be the mismatched one.
