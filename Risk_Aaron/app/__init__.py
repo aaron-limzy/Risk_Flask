@@ -14,7 +14,7 @@ import logging
 from logging.handlers import SMTPHandler
 
 
-from app.routes import db as main_app_db  # blueprint db
+#from app.routes import db as main_app_db  # blueprint db
 import dash
 
 def create_app():
@@ -90,10 +90,12 @@ def register_blueprints(server):
     from app.errors import bp as errors_bp
     from app.Login.routes import login_bp
 
-    # Want to see if we can init the Blueprint db
-    main_app_db.init_app(server)
-    with server.app_context():
-        main_app_db.create_all()  # <--- Create blueprint db.
+    # # Want to see if we can init the Blueprint db
+    # main_app_db.init_app(server)
+    #
+    #
+    # with server.app_context():
+    #     main_app_db.create_all()  # <--- Create blueprint db.
 
 
 

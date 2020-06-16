@@ -275,7 +275,15 @@ def cfh_oz_upload_Ajax():
     #return json.dumps([{"Testing": "12345"}])
 
 
-
+def markup_swaps(Val, positive_markup, negative_markup ):
+    val = Val
+    if val >= 0:  # Positive!
+        markup_percentage = float(positive_markup)
+        val = val * (100 - markup_percentage) / 100
+    else:
+        markup_percentage = float(negative_markup)
+        val = val * (100 + markup_percentage) / 100
+    return val
 
 
 # @app.route('/upload')

@@ -65,6 +65,11 @@ import json
 from .decorators import async_fun, roles_required
 from io import StringIO
 
+from app.extensions import db
+
+from Helper_Flask_Lib import *
+
+
 
 #simple_page = Blueprint('simple_page', __name__, template_folder='templates')
 
@@ -93,7 +98,8 @@ EMAIL_AARON =  ["aaron.lim@blackwellglobal.com"]     # For test Groups.
 EMAIL_LIST_RISKTW = ["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com",
                      "nicole.cheng@blackwellglobal.com"]
 
-db = SQLAlchemy()  # <--- The db object belonging to the blueprint
+# db = SQLAlchemy()  # <--- The db object belonging to the blueprint
+
 
 #main_app = Blueprint('main_app', "main")
 
@@ -927,7 +933,6 @@ def Delete_Risk_Autocut_Group_Button_Endpoint(Live="", Group=""):
 
 
 
-
 # Want to check and close off account/trades.
 @main_app.route('/USOil_Price_Alerts', methods=['GET', 'POST'])
 @roles_required()
@@ -1276,27 +1281,6 @@ def CFH_Soap_Symbol_ajax(update_all=0):  # Optional Parameter, to update from th
 
 
 
-
-
-def markup_swaps(Val, positive_markup, negative_markup ):
-    val = Val
-    if val >= 0:  # Positive!
-        markup_percentage = float(positive_markup)
-        val = val * (100 - markup_percentage) / 100
-    else:
-        markup_percentage = float(negative_markup)
-        val = val * (100 + markup_percentage) / 100
-    return val
-
-
-def Check_Float(element):
-    try:
-        float(element)
-        return True
-    except ValueError:
-        print ("Not a float")
-        return False
-
 # Need to have a generic page that does all the SQL Query RAW
 
 
@@ -1505,21 +1489,6 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
                                                                    and (isinstance(post_data['send_email_flag'], str)
                                                                         and isfloat(post_data['send_email_flag'])) else 0
 
-        # if "MT4_LP_Position_save" in post_data:
-        #     print("MT4_LP_Position_save in post_data")
-        # else:
-        #     print("MT4_LP_Position_save Not in post_data")
-        #
-        # if isinstance(post_data['MT4_LP_Position_save'], str):
-        #     print("post_data['MT4_LP_Position_save'] is str")
-        # else:
-        #     print("post_data['MT4_LP_Position_save'] is NOT str: {}".format(type(post_data['MT4_LP_Position_save'])))
-        #
-        #
-        # if is_json(post_data["MT4_LP_Position_save"]):
-        #     print('post_data["MT4_LP_Position_save"] is json')
-        # else:
-        #     print('post_data[" MT4_LP_Position_save"] is not json: {}'.format())
 
         # Check for the past details.
         # Should be stored in Javascript, and returned back Via post.
@@ -2819,37 +2788,6 @@ def Mismatch_trades_bridge(symbol=[], hours=8, mins=16):
     return [result_col, result_data_clean]
 
 
-# Async Call to send email.
-@async_fun
-def async_send_email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name):
-    Send_Email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name)
-
-
-# Async Call to send telegram message.
-@async_fun
-def async_Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode=""):
-
-    if Parse_mode == "":
-        Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs)
-    else:
-        Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode = Parse_mode)
-
-
-
-# Async update the runtime table for update.
-@async_fun
-def async_update_Runtime(app, Tool):
-
-    #start = time.perf_counter()
-    with app.app_context(): # Using current_app._get_current_object()
-        # Want to update the runtime table to ensure that tool is running.
-        sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`, `email_sent`) VALUES" + \
-                     " ('{Tool}', now(), 0) ON DUPLICATE KEY UPDATE Updated_Time=now(), email_sent=VALUES(email_sent)".format(
-                         Tool=Tool)
-        raw_insert_result = db.engine.execute(sql_insert)
-        # print("Updating Runtime for Tool: {}".format(Tool))
-    #total_time = time.perf_counter() - start
-    #print('Total Time taken for non-sync SQL insert: {}'.format(total_time))
 
 
 #
@@ -2877,18 +2815,20 @@ def async_update_Runtime(app, Tool):
 # footer - On duplicate, what do we do?
 # sql_max_insert - Optional. How many max do we want to insert at one time.
 
-@async_fun
-def async_sql_insert(app, header="", values = [" "], footer = "", sql_max_insert=500):
-
-    with app.app_context():  # Using current_app._get_current_object()
-        for i in range(math.ceil(len(values) / sql_max_insert)):
-            # To construct the sql statement. header + values + footer.
-            sql_trades_insert = header + " , ".join(values[i * sql_max_insert:(i + 1) * sql_max_insert]) + footer
-            sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
-            #print(sql_trades_insert)
-            sql_trades_insert = text(sql_trades_insert)  # To make it to SQL friendly text.
-            raw_insert_result = db.engine.execute(sql_trades_insert)
-    return
+# @async_fun
+# def async_sql_insert(app, header="", values = [" "], footer = "", sql_max_insert=500):
+#
+#     print("Using async_sql_insert")
+#
+#     with app.app_context():  # Using current_app._get_current_object()
+#         for i in range(math.ceil(len(values) / sql_max_insert)):
+#             # To construct the sql statement. header + values + footer.
+#             sql_trades_insert = header + " , ".join(values[i * sql_max_insert:(i + 1) * sql_max_insert]) + footer
+#             sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
+#             #print(sql_trades_insert)
+#             sql_trades_insert = text(sql_trades_insert)  # To make it to SQL friendly text.
+#             raw_insert_result = db.engine.execute(sql_trades_insert)
+#     return
 
 
 
@@ -2959,13 +2899,7 @@ def time_difference_check(time_to_check):
     else:
         return time_to_check.strftime("%Y-%m-%d<br>%H:%M:%S")
 
-# Query SQL and return the Zip of the results to get a record.
-def query_SQL_return_record(SQL_Query):
-    raw_result = db.engine.execute(SQL_Query)
-    result_data = raw_result.fetchall()
-    result_col = raw_result.keys()
-    collate = [dict(zip(result_col, a)) for a in result_data]
-    return collate
+
 
 
 # To get the User Data, for finance use. Used on download page.
@@ -2980,18 +2914,3 @@ def Live_MT4_Users(live):    # To upload the Files, or post which trades to dele
     df_users["ENABLE_READONLY"] = df_users["ENABLE_READONLY"].apply(lambda x: "YES" if x == 0 else "NO")
     return excel.make_response_from_array(list([result_col]) + list(df_users.values), 'csv', file_name="Live{}_Users.csv".format(live))
 
-
-def create_table_fun(table_data, additional_class=[]):
-
-    T = create_table()
-    table_class = additional_class + ["table", "table-striped", "table-bordered", "table-hover", "table-sm"]
-    table = T(table_data, classes=table_class)
-    if (len(table_data) > 0) and isinstance(table_data[0], dict):
-        for c in table_data[0]:
-            if c != "\n":
-                table.add_column(c, Col(c, th_html_attrs={"style": "background-color:# afcdff; word-wrap:break-word"}))
-    return table
-
-# Simple way of returning time string.
-def time_now():
-    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
