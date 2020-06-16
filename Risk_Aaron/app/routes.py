@@ -2408,7 +2408,7 @@ def Monitor_Account_Trades_Ajax():
 
     # Get the Trades that are newly opened, or just closed.
     sql_query_array = []
-    testing = True # Set to True when Testing.
+    testing = False # Set to True when Testing.
 
     if testing :
         monitor_account_table = "aaron.`monitor_account_copy`"
