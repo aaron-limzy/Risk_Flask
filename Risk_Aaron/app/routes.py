@@ -2508,12 +2508,12 @@ def Monitor_Account_Trades_Ajax():
             Live=x["LIVE"], Login=x['LOGIN'], Ticket=x["TICKET"], Tele_name=x["TELE_NAME"]), axis=1)
 
 
-        if not testing:    # If we are not testing, we will go ahead to append these into the table to stop the notifications.
-            async_sql_insert(app=current_app._get_current_object(),
-                             header="""INSERT INTO {monitor_account_trades_table} (`live`,`account`, `ticket`, `trade_close_notify`, `tele_name`) VALUES """.format(monitor_account_trades_table=monitor_account_trades_table),
-                             values=list(all_open_trade_values.values) + list(all_close_trade_values.values),
-                             footer=" ON DUPLICATE KEY UPDATE `Trade_Close_Notify`=VALUES(`Trade_Close_Notify`) ",
-                             sql_max_insert=20)
+        #if not testing:    # If we are not testing, we will go ahead to append these into the table to stop the notifications.
+        async_sql_insert(app=current_app._get_current_object(),
+                         header="""INSERT INTO {monitor_account_trades_table} (`live`,`account`, `ticket`, `trade_close_notify`, `tele_name`) VALUES """.format(monitor_account_trades_table=monitor_account_trades_table),
+                         values=list(all_open_trade_values.values) + list(all_close_trade_values.values),
+                         footer=" ON DUPLICATE KEY UPDATE `Trade_Close_Notify`=VALUES(`Trade_Close_Notify`) ",
+                         sql_max_insert=20)
 
 
         # Want to create a live-Login column. To find unique and loop over.
@@ -2550,9 +2550,9 @@ def Monitor_Account_Trades_Ajax():
                 for live_login in df_open_trades["LIVE-LOGIN"].unique():    # For each unique Live/Login pair.
                     df_open_live_login = df_open_trades[df_open_trades["LIVE-LOGIN"] == live_login]
                     if len(df_open_live_login) > 0:
-                        open_trades_str += "<u>{}</u>\n".format(live_login)
-                        open_trades_str += "<pre>{:^5}|{:^7}|{:^7}</pre>\n".format("LOT", "SYMBOL", "OPEN $")
-                        open_trades = df_open_live_login.apply(lambda x: "  {Direction:<1}{Lots:2.2f}|{Symbol:^9}|{Open_price:^7}".format(
+                        open_trades_str += "{}\n".format(live_login)
+                        open_trades_str += "<pre>  {:^5}|{:^7}|{:^7}</pre>\n".format("LOT", "SYMBOL", "OPEN $")
+                        open_trades = df_open_live_login.apply(lambda x: "    {Direction:<1}{Lots:2.2f}|{Symbol:^9}|{Open_price:^7}".format(
                                 Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100, Symbol=x["SYMBOL"], Open_price=x["OPEN_PRICE"]), axis=1)
 
                         open_trades_str +=  "\n".join(open_trades.values) + "\n\n"
@@ -2571,15 +2571,15 @@ def Monitor_Account_Trades_Ajax():
                     if len(df_close_live_login) > 0:
                         # for each unique live/login pair.
                         # We want to show the Closed Trades
-                        close_trades_str += "<u>{}</u>\n".format(live_login)
-                        close_trades_str += "<pre>{:^5}|{:^7}|{:^7}|{:^6}</pre>\n".format("LOT",
+                        close_trades_str += "{}\n".format(live_login)
+                        close_trades_str += "<pre>  {:^5}|{:^7}|{:^7}|{:^6}</pre>\n".format("LOT",
                                                                                           "SYMBOL", "CLOSE $", "Rev")
 
                     # Want to get the open trades into a line of string.
                     # Want to get the revenue. Revenue = PnL + Swaps
 
                     close_trades = df_close_trades.apply(
-                        lambda x: "  {Direction:<1}{Lots:2.2f}|{Symbol:^9}|{Close_price:^7}|${Profit}".format(
+                        lambda x: "    {Direction:<1}{Lots:2.2f}|{Symbol:^9}|{Close_price:^7}|${Profit}".format(
                             Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
                             Symbol=x["SYMBOL"], Profit=float(x["PROFIT"]) + float(x["SWAPS"]),
                             Close_price=x["CLOSE_PRICE"]), axis=1)
@@ -2619,7 +2619,8 @@ def Monitor_Account_Trades_Ajax():
 
             email_html_str = "{}Hi,<br><br>Account/s in account monitoring tool has had some open/closed trades.<br>Kindly see the details below.<br><br>".format(Email_Header)
             # Want Lots, Not Volume. Need to Multiply by 0.01, or divide by 100
-            df_Email_Risk["LOTS"] = df_Email_Risk["VOLUME"].apply(lambda x: "{:.2f}".format(float(x) * 0.01))
+            df_Email_Risk["LOTS"] = df_Email_Risk["VOLUME"] * 0.01
+
             # Want only those that are needed.
             df_Email_Risk = df_Email_Risk[["LIVE", "LOGIN", "TICKET", "SYMBOL", "CMD", "LOTS", "OPEN_TIME","OPEN_PRICE",
                                            "CLOSE_TIME", "CLOSE_PRICE", "SWAPS", "PROFIT"]]
@@ -2699,10 +2700,10 @@ def user_consolidated_trades_to_str(trade_dict):
     for live_login in list(df_user_trades["LIVE-LOGIN"].unique()):    # Loop thru each unique user
 
         df_specific_user = df_user_trades[df_user_trades["LIVE-LOGIN"] == live_login]
-        open_position = df_specific_user.apply(lambda x: "  {Symbol:<7} : {Lots:>2.2f} Lots at ${Revenue}".format(Symbol=x["SYMBOL"],
+        open_position = df_specific_user.apply(lambda x: "    {Symbol:<7} : {Lots:>2.2f} Lots at ${Revenue}".format(Symbol=x["SYMBOL"],
                                                                         Lots=x["LOTS"], Revenue=x["REVENUE"]), axis=1)
 
-        login_trade_string = "<u>{}</u>\n".format(live_login) + "\n".join(open_position.values) + "\n\n"
+        login_trade_string = "{}\n".format(live_login) + "\n".join(open_position.values) + "\n\n"
         return_dict[live_login] = login_trade_string
         #print(return_dict[live_login])
     return return_dict
