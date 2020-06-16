@@ -2612,7 +2612,16 @@ def Monitor_Account_Trades_Ajax():
             df_user_trades = pd.DataFrame(user_trades)
             df_user_trades["LIVE-LOGIN"] = df_user_trades.apply(lambda x: "Live: {}, Login: {}".format(x["LIVE"], x["LOGIN"]), axis=1)
             df_user_trades.sort_values(by="LIVE-LOGIN",inplace=True)    # Sort by Live/Login
-            user_consolidated_trades = df_user_trades[df_user_trades["LIVE-LOGIN"].isin(df_Email_Risk["LIVE-LOGIN"].unique())].to_dict("record")
+
+            # Need to check which live-login is there that we need to send out.
+            user_consolidated_trades_live_login = df_user_trades[df_user_trades["LIVE-LOGIN"].isin(df_Email_Risk["LIVE-LOGIN"].unique())]
+
+            # Want to remove the extra created column
+            user_consolidated_trades = user_consolidated_trades_live_login.drop("LIVE-LOGIN", axis=1)[["LIVE",
+                                                        "LOGIN", "SYMBOL", "LOTS", "REVENUE"]].to_dict("record")
+
+
+
             consolidated_position_table_html = List_of_Dict_To_Horizontal_HTML_Table(user_consolidated_trades)
 
 
