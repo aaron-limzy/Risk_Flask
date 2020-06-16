@@ -504,7 +504,42 @@ def Include_Risk_Autocut_Group():
 
 
 
+# Want to show which clients got recently changed to read only.
+# Due to Equity < Balance.
+@Risk_Client_Tools_bp.route('/Risk_Autocut_Result')
+@roles_required()
+def Risk_Autocut_Result():
+    description = Markup("Showing Clients that has been Cut by Risk Auto Cut in the last 5 days.<br>" + \
+                         "Ignores all Test Accounts.<br>Data taken from aaron.`risk_autocut_results`")
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Scissors.jpg', Table_name="Risk AutoCut", \
+                           title="Risk Auto Cut Results", ajax_url=url_for('Risk_Client_Tools_bp.Risk_Autocut_Result_ajax', _external=True),
+                           description=description, no_backgroud_Cover=True, replace_words=Markup(["Today"]))
 
+
+@Risk_Client_Tools_bp.route('/Risk_Autocut_Result_ajax', methods=['GET', 'POST'])
+@roles_required()
+def Risk_Autocut_Result_ajax():
+
+    # Which Date to start with. We want to count back 1 day.
+    start_date = get_working_day_date(datetime.date.today(), weekdays_count= -5)
+    sql_query = text("Select * from aaron.`risk_autocut_results` WHERE `date_time` >= '{}' and `GROUP` not like '%Test%' order by date_time DESC".format(start_date.strftime("%Y-%m-%d")))
+
+    #Query_SQL_db_engine(sql_query)
+
+    raw_result = db.engine.execute(sql_query)
+    result_data = raw_result.fetchall()     # Return Result
+
+    result_dict = []
+    if len(result_data) > 0:
+        # dict of the results
+        result_col = raw_result.keys()
+        # Clean up the data. Date.
+        result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
+        result_dict = [dict(zip(result_col,d)) for d in result_data_clean]
+    else:
+        result_dict.append({'Result': 'No Clients has been Risk-auto-Cut since <b>{}</b> MT4 Server Time.'.format(start_date.strftime("%Y-%m-%d"))})
+
+    return json.dumps(result_dict)
 
 
 

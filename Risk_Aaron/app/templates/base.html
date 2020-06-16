@@ -46,7 +46,7 @@
   {% block styles %}
   <link rel="stylesheet" href="https://raw.githubusercontent.com/daneden/animate.css/master/animate.css">
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=2.0.23">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=2.0.25">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles_opacity.css') }}?v=1.0.0">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootnavbar.css') }}?v=1.0.0">
   {% endblock %}
@@ -103,6 +103,10 @@
                     <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Risk_Client_Tools_bp.Include_Risk_Autocut') }}">Risk Auto Cut [Add Login] ➕</a></li>
                     <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Risk_Client_Tools_bp.Include_Risk_Autocut_Group') }}">Risk Auto Cut [Add Group] ➕</a></li>
                     <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Risk_Client_Tools_bp.Exclude_Risk_Autocut') }}">Risk Auto Cut Exclude ➕</a></li>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Risk_Client_Tools_bp.Risk_Autocut_Result') }}">Risk Auto Cut Result 📘</a></li>
+
+
+
                     <div class="dropdown-divider"></div>
                     <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.noopentrades_changegroup') }}">Change Group ⭐</br>(No Open Trades)</a></li>
 
