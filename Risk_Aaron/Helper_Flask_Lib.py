@@ -8,6 +8,22 @@ from flask_table import create_table, Col
 import decimal
 from Aaron_Lib import *
 
+
+
+if get_machine_ip_address() == '192.168.64.73': #Only On Server computer
+    EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
+    EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "risk@blackwellglobal.com", "cs@bgifx.com"]
+    print("On Server 64.73")
+else:
+    EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
+    EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com"]
+    print("On Aaron's Computer")
+
+EMAIL_AARON =  ["aaron.lim@blackwellglobal.com"]     # For test Groups.
+EMAIL_LIST_RISKTW = ["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com", "nicole.cheng@blackwellglobal.com"]
+
+
+
 @async_fun
 def async_sql_insert(app, header="", values = [" "], footer = "", sql_max_insert=500):
 

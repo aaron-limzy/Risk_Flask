@@ -4,9 +4,10 @@ from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse
 
 from app.forms import AddOffSet, MT5_Modify_Trades_Form
-from app.forms import noTrade_ChangeGroup_Form,equity_Protect_Cut,Live_Group, risk_AutoCut_Exclude, Monitor_Account_Trade, Monitor_Account_Remove
+from app.forms import noTrade_ChangeGroup_Form,equity_Protect_Cut, Monitor_Account_Trade, Monitor_Account_Remove
 
-from app.table import Delete_Monitor_Account_Table, Delete_Risk_Autocut_Include_Table, Delete_Risk_Autocut_Group_Table, Delete_Risk_Autocut_Exclude_Table
+from app.table import Delete_Monitor_Account_Table
+#, Delete_Risk_Autocut_Include_Table, Delete_Risk_Autocut_Group_Table, Delete_Risk_Autocut_Exclude_Table
 from app.table import Delete_Risk_ABook_Offset_Table
 
 # Import function to call in case the page dosn't run.
@@ -84,19 +85,7 @@ LP_MARGIN_ALERT_LEVEL = 20            # How much away from MC do we start making
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display the warnings.
 
 
-if get_machine_ip_address() == '192.168.64.73': #Only On Server computer
-    EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
-    EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "risk@blackwellglobal.com", "cs@bgifx.com"]
-    print("On Server 64.73")
-else:
-    EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
-    EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com"]
 
-    print("On Aaron's Computer")
-
-EMAIL_AARON =  ["aaron.lim@blackwellglobal.com"]     # For test Groups.
-EMAIL_LIST_RISKTW = ["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com",
-                     "nicole.cheng@blackwellglobal.com"]
 
 # db = SQLAlchemy()  # <--- The db object belonging to the blueprint
 
@@ -322,456 +311,368 @@ def noopentrades_changegroup_ajax(update_tool_time=1):
     return json.dumps(return_val)
 
 
-# Want to check and close off account/trades.
-@main_app.route('/Risk_auto_cut', methods=['GET', 'POST'])
-@roles_required()
-def Risk_auto_cut():
-
-    start = datetime.datetime.now()
-    title = "Risk Auto Cut"
-    header = "Risk Auto Cut"
-
-    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
-    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
-    # For Login in aaron.Risk_autocut and Credit_limit != 0
-
-
-    description = Markup('Running on <font color = "red">ALL</font> Live 1, Live 2, Live 3 and Live 5.<br>'   + \
-                         "Will <b>close all client's position</b> and <b>change client to read-only</b>.<br>" + \
-                         "Sql Table ( <font color = 'red'>aaron.risk_autocut_exclude</font>) for client excluded from the autocut.<br>" + \
-                         "Sql Table ( <font color = 'red'>aaron.risk_autocut_include</font>) for client with special requests.<br><br>" + \
-                         "<b>1)</b> For <font color = 'red'>%TW%</font> Clients : <br>EQUITY < CREDIT AND <br>((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND" + \
-                                "<br>`ENABLE` = 1 AND ENABLE_READONLY = 0<br>and " + \
-                                " LOGIN NOT IN ( <font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>" + \
-                         "<b>2)</b>For other clients, where GROUP` IN  <font color = 'red'>aaron.risk_autocut_group</font> and EQUITY < CREDIT and<br>" + \
-                                " LOGIN NOT IN  (<font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>" + \
-                         "<b>3)</b> For Login in <font color = 'red'>aaron.Risk_autocut_exclude</font> and <font color = 'red'>Credit_limit != 0</font> and <br>" +\
-                                " LOGIN NOT IN ( <font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>" + \
-                         "<b>4)</b> Tool will not cut for <font color = 'red'>Equity > Credit</font> . For such, kindly look at Equity Protect.<br><br>")
-
-
-    client_include_tab = Delete_Risk_Autocut_Include_Table_fun()
-    client_group_include_tab = Delete_Risk_Autocut_Group_Table_fun()
-    client_exclude = Delete_Risk_Autocut_Exclude_Table_fun()
-
-    print("Generating of tables at risk auto cut took:{}s".format((datetime.datetime.now()-start).total_seconds()))
-
-        # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Scissors.jpg', Table_name="Risk Auto Cut", \
-                           title=title, ajax_url=url_for('main_app.risk_auto_cut_ajax', _external=True), no_backgroud_Cover=True, \
-                           header=header, setinterval=10, \
-                           description=description, replace_words=Markup(["Today"]), \
-                           varibles={"Client Include": client_include_tab,
-                                     "Client Group Include": client_group_include_tab,
-                                     "Client Exclude": client_exclude})
-
-
-
-@main_app.route('/risk_auto_cut_ajax', methods=['GET', 'POST'])
-@roles_required()
-def risk_auto_cut_ajax(update_tool_time=1):
-    # TODO: Check if user exist first.
-
-    #print("Risk Auto Cut Ajax")
-    # Using External Table
-    # aaron.risk_autocut_exclude
-    # aaron.risk_autocut_group
-
-    Live_server = [1,2,3,5]
-
-    # Want to temp kill this tool for awhile. Will be re-writing it.
-    #print(current_user.id)
-    # print("{}".format( url_for('static', filename='Exec/')))
-    # return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
-    # return json.dumps(return_val)
-
-    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
-    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
-    # For Login in aaron.Risk_autocut and Credit_limit != 0
-
-    # To check the Lucky Draw Login. All TW clients for login not in aaron.risk_autocut_exclude
-    # Also done a check to cause hedging clients to SO
-    tw_sql_statement = """ SELECT LOGIN, '3' as LIVE, mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT, '-' as EQUITY_LIMIT
-            FROM live3.mt4_users WHERE `GROUP` LIKE '%TW%' AND EQUITY < CREDIT AND 
-        ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0 and
-        LOGIN not in (select login from aaron.risk_autocut_exclude where LIVE = 3) and 
-        LOGIN not in (select login from aaron.risk_autocut_include where LIVE = 3 and EQUITY_LIMIT <> 0) """
-
-    # For the client's whose groups are in aaron.risk_autocut_group, and login not in aaron.risk_autocut_exclude
-    group_n_login_raw_sql_statement = """ SELECT DISTINCT mt4_trades.LOGIN,'{Live}' AS LIVE,  mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT, '-' as EQUITY_LIMIT
-    FROM live{Live}.mt4_trades, live{Live}.mt4_users WHERE
-    mt4_trades.LOGIN = mt4_users.LOGIN AND 
-        ( mt4_users.`GROUP` IN (SELECT `GROUP` FROM aaron.risk_autocut_group WHERE LIVE = '{Live}') 
-                                OR
-        mt4_users.LOGIN IN (SELECT LOGIN FROM aaron.risk_autocut_include WHERE LIVE = '{Live}' and EQUITY_LIMIT = 0)
-        )    AND 
-    CLOSE_TIME = '1970-01-01 00:00:00' AND 
-    CMD < 6 AND 
-    EQUITY < CREDIT AND 
-    mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_exclude WHERE `LIVE` = '{Live}') AND
-    mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_include WHERE `LIVE` = '{Live}' and EQUITY_LIMIT <> 0) """
-    #
-    group_n_login_sql_statement = " UNION ".join([group_n_login_raw_sql_statement.format(Live=n) for n in Live_server])  # construct the SQL Statment
-    # raw_sql_statement += " UNION " + tw_raw_sql_statement
-    #
-    # raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
-    # sql_result2 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
-
-
-
-    # For the client's who are in aaron.risk_autocut_include and Credit_limit != 0
-    login_special_raw_sql_statement = """SELECT DISTINCT T.LOGIN, {Live} AS LIVE,  U.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT, R.EQUITY_LIMIT as EQUITY_LIMIT
-    FROM live{Live}.mt4_users as U, aaron.risk_autocut_include as R, live{Live}.mt4_trades as T
-    WHERE R.LIVE = {Live} and R.EQUITY_LIMIT != 0 and
-    R.LOGIN = U.LOGIN and U.EQUITY < R.EQUITY_LIMIT and
-    U.LOGIN = T.LOGIN and T.CLOSE_TIME = '1970-01-01 00:00:00' AND
-    U.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_exclude WHERE `LIVE` = '{Live}')"""
-
-    login_special_sql_statement = " UNION ".join([login_special_raw_sql_statement.format(Live=n) for n in Live_server])  # construct the SQL Statment
-    raw_sql_statement = "{} UNION {} UNION {}".format(tw_sql_statement, group_n_login_sql_statement, login_special_sql_statement)
-    raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
-    sql_result3 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
-
-    #sql_result3 = []
-
-    total_result = dict()
-    # sql_result1, sql_result2 has been removed. Union to make SQL statement run faster.
-    sql_results = [sql_result3]
-    for s in sql_results:   # We want only unique values.
-        for ss in s:
-            live = ss["LIVE"] if "LIVE" in ss else None
-            login = ss["LOGIN"] if "LOGIN" in ss else None
-            if live != None and login != None and (live,login) not in total_result:
-                total_result[(live,login)] = ss
-
-    C_Return = dict()  # The returns from C++
-    C_Return[0] = "User Changed to Read-Only, position forced closed";
-    C_Return[-1] = "C++ ERROR: Params Wrong";
-    C_Return[1] = "C++ ERROR: Login Param Error";
-    C_Return[2] = "C++ ERROR: Server Param Error";
-    C_Return[3] = "C++ ERROR: Login Number Error on MT4";
-    C_Return[4] = "C++ ERROR: Equity Above Credit";
-    C_Return[6] = "C++ ERROR: MT4 Update Error!";
-    C_Return[7] = "C++ ERROR: MT4 Connection Error";
-    C_Return[-100] = "User changed to Read-only, but SQL ERROR. ";
-
-    To_SQL = []     # To save onto SQL
-
-    for k,d in total_result.items():
-        live = d['LIVE'] if "LIVE" in d else None
-        login = d['LOGIN'] if "LOGIN" in d else None
-        equity_limit = d['EQUITY_LIMIT'] if "EQUITY_LIMIT" in d and  d['EQUITY_LIMIT'] != "-" else 0
-        if equity_limit == 0:   # Adding this in to beautify the Table.
-            total_result[k]["EQUITY_LIMIT"] = "-"
-        if not None in [live, login]:   # If both are not None.
-
-            # # print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
-            c_run_return = Run_C_Prog("Risk_Auto_Cut.exe " + " {live} {login} {equity_limit}".format( live=live,
-                login=login, equity_limit=equity_limit), cwd=".\\app" + url_for('static', filename='Exec/Risk_Auto_Cut/'))
-
-            #print("c_run_return = {}".format(c_run_return))
-            # c_run_return = 0
-
-            if c_run_return[0] == 0:  # Need to save things into SQL as well.
-                To_SQL.append(d)
-            # elif c_run_return[0] not in C_Return:
-            #     print(c_run_return)
-
-            total_result[k]["RESULT"] = C_Return[c_run_return[0]] if c_run_return[0] in C_Return else "Unknown Error"
-            if equity_limit != 0:    # Want to state that it's doing a equity protection.
-                total_result[k]["RESULT"] += "<br><span style='color:green'>[Equity Protection]</span>"
-
-    return_val = dict()  # Return value to be used
-    if len(total_result) > 0:   # Want to send out an email should any changes have been made.
-
-        if len(To_SQL) > 0: # There might not be anything here due to an error in C exe
-            raw_insert_sql = " ({live}, {login}, {equity}, {credit}, '{group}', now()) "    # Raw template for insert.
-            sql_insert_w_values = ",".join([raw_insert_sql.format(live=d["LIVE"], login=d["LOGIN"], equity=d["EQUITY"], credit=d["CREDIT"], group=d["GROUP"]) for d in To_SQL]) # SQL insert with the values.
-            sql_insert = "INSERT INTO  aaron.`risk_autocut_results` (LIVE, LOGIN, EQUITY, CREDIT, `GROUP`, DATE_TIME) VALUES {}".format(sql_insert_w_values)   # Add it to the header.
-            sql_insert += " ON DUPLICATE KEY UPDATE `EQUITY`=VALUES(`EQUITY`), `CREDIT`=VALUES(`CREDIT`), `GROUP`=VALUES(`GROUP`)  "
-
-
-            #print("SQL Statement: {}".format(sql_insert))
-            raw_insert_result = db.engine.execute(sql_insert)   # Insert into SQL
-
-        #print("total_result: {}".format(total_result))
-
-        total_result_value = list(total_result.values())
-        # print(total_result_value)
-        table_data_html =  Array_To_HTML_Table(list(total_result_value[0].keys()),[list(d.values()) for d in total_result_value])
-
-        # Want to set to test, if it's just test accounts.
-        # If it's just TEST account. Send to just Aaron and TW.
-
-        email_list = EMAIL_LIST_RISKTW if all([d["GROUP"].lower().find("test") >= 0 for d in To_SQL]) else EMAIL_LIST_BGI
-        async_send_email(To_recipients=email_list, cc_recipients=[],
-                     Subject="AutoCut: Equity Below Credit.",
-                     HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below credit. \
-                                <br><br> {table_data_html} This is done to prevent client from trading on credit. \
-                               <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
-                         Email_Header = Email_Header, table_data_html = table_data_html, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                         Email_Footer=Email_Footer), Attachment_Name=[])
-
-
-
-        return_val = list(total_result.values())
-
-    else:   # If there are nothing to change. We want to show the time
-        return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
-
-    # # Need to update Run time on SQL Update table.
-    if update_tool_time ==1:
-        async_update_Runtime(app=current_app._get_current_object(), Tool="Risk_Auto_Cut")
-
-
-    return json.dumps(return_val)
-
-
-
-# Want to insert into table.
-# From Flask.
-@main_app.route('/Risk_Autocut_include', methods=['GET', 'POST'])
-@roles_required()
-def Include_Risk_Autocut():
-
-    title = "Risk Auto Cut [Include Client]"
-    header =  Markup("Include into<br>Risk Auto Cut [Client]")
-
-    description = Markup(
-        """<b>To Include/delete from the running tool of Risk Auto Cut</b>
-        <br>Will add/delete account into <span style="color:green"><b>aaron.risk_autocut_include</b></span>.<br>
-        To include/remove client from being autocut.<br>
-        If Equity_Limit = 0, will cut normally when <u>Equity < credit</u><br>
-        Else, it will cut when <u>Equity < Equity_Limit</u>""")
-
-    form = equity_Protect_Cut()
-
-    form.validate_on_submit()
-    if request.method == 'POST' and form.validate_on_submit():
-        Live = form.Live.data  # Get the Data.
-        Login = form.Login.data
-        Equity_Limit = form.Equity_Limit.data
-
-        sql_insert = """INSERT INTO  aaron.`risk_autocut_Include` (`Live`, `Login`, `Equity_Limit`) VALUES
-            ('{Live}','{Account}','{Equity}') ON DUPLICATE KEY UPDATE `Equity_Limit`=VALUES(`Equity_Limit`) """.format(Live=Live, Account=Login, Equity=Equity_Limit)
-        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
-
-        print(sql_insert)
-        db.engine.execute(text(sql_insert))  # Insert into DB
-        flash("Live: {live}, Login: {login} Equity limit: {equity_limit} has been added to aaron.`risk_autocut_Include`.".format(live=Live, login=Login, equity_limit=Equity_Limit))
-
-    table = Delete_Risk_Autocut_Include_Table_fun()
-
-    #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
-    return render_template("General_Form.html", title=title, header=header, table=table, form=form,
-                           description=description, backgroud_Filename='css/Scissors.jpg', no_backgroud_Cover=True)
-
-
-
-# Want to return the table that will be showing the list of client included in the risk auto cut.
-def Delete_Risk_Autocut_Include_Table_fun():
-    # Need to do a left join. To fully pull out the risk_autocut_include Logins.
-    # Some Logins might not even be on the server.
-    raw_sql = """SELECT R.Live, R.Login, R.Equity_limit, 
-        COALESCE(`Group`,"-") as `Group`, COALESCE(`Enable`,"-") as `Enable`, COALESCE(`Enable_readonly`,"-") as `Enable_readonly`,
-        COALESCE(ROUND(`Balance`,2),"-") as `Balance`, COALESCE(ROUND(`Credit`,2),"-") as `Credit`, COALESCE(ROUND(`Equity`,2),"-") as `Equity`
-        FROM aaron.`risk_autocut_include` as R
-            LEFT JOIN  live{Live}.mt4_users as U ON U.LOGIN = R.LOGIN
-       where R.LIVE = {Live} """
-
-    sql_query_array = [raw_sql.format(Live=l) for l in [1,2,3,5]]   # Want to loop thru all the LIVE server
-
-    sql_query = " UNION ".join(sql_query_array) + " ORDER BY Live, Login " # UNION the query all together.
-    collate = query_SQL_return_record(text(sql_query))
-
-
-    if len(collate) == 0:   # There is no data.
-        empty_table = [{"Result": "There are currently no single account included in the autocut. There might still be Groups tho."}]
-        table = create_table_fun(empty_table, additional_class=["basic_table", "table", "table-striped",
-                                                                "table-bordered", "table-hover", "table-sm"])
-    else:
-        # Live Account and other information of users that are in the Risk AutoCut Group.
-        df_data = pd.DataFrame(collate)
-        df_data["Equity_limit"] = df_data["Equity_limit"].apply(lambda x: "{:,.0f}".format(x) if type(x) == np.float64 else "{}".format(x))
-        df_data["Balance"] = df_data["Balance"].apply(lambda x: "{:,.2f}".format(x) if type(x) == np.float64 else "{}".format(x))
-        df_data["Credit"] = df_data["Credit"].apply(lambda x: "{:,.2f}".format(x) if type(x) == np.float64 else "{}".format(x))
-        df_data["Equity"] = df_data["Equity"].apply(lambda x: "{:,.2f}".format(x) if type(x) == np.float64 else "{}".format(x))
-
-        table = Delete_Risk_Autocut_Include_Table(df_data.to_dict("record"))
-        table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
-    return table
-
-
-# To remove the account from Risk Autocut.
-@main_app.route('/Remove_Risk_Autocut_User/<Live>/<Login>', methods=['GET', 'POST'])
-@roles_required()
-def Delete_Risk_Autocut_Include_Button_Endpoint(Live="", Login=""):
-
-    # # Write the SQL Statement and Update to disable the Account monitoring.
-    sql_update_statement = """DELETE FROM aaron.risk_autocut_include WHERE Live='{Live}' AND Login='{Login}'""".format(Live=Live, Login=Login)
-    sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
-    # print(sql_update_statement)
-    sql_update_statement=text(sql_update_statement)
-    result = db.engine.execute(sql_update_statement)
-
-    flash("Live:{Live}, Login: {Login} has been removed from Risk Autocut".format(Live=Live,Login=Login))
-    #print("Request URL: {}".format(redirect(request.url)))
-    return redirect(request.referrer)
-    #return redirect(url_for('main_app.Include_Risk_Autocut'))
-
-
-# Want to insert into table.
-# From Flask.
-@main_app.route('/Risk_Autocut_exclude', methods=['GET', 'POST'])
-@roles_required()
-def Exclude_Risk_Autocut():
-    title = "Exclude Risk Auto Cut"
-    header = Markup("Exclude<br>Risk Auto Cut [Client]")
-    description = Markup( """<b>To Exclude into the running tool of Risk Auto Cut</b>
-        <br>Will add account into <span style="color:green"><b><u>aaron.risk_autocut_Exclude</u></b></span>.<br>
-        To Exclude client from being autocut.""")
-
-    form = risk_AutoCut_Exclude()
-    form.validate_on_submit()
-    if request.method == 'POST' and form.validate_on_submit():
-        Live = form.Live.data  # Get the Data.
-        Login = form.Login.data
-
-        sql_insert = """INSERT INTO  aaron.`risk_autocut_exclude` (`Live`, `Login`) VALUES
-            ('{Live}','{Account}') ON DUPLICATE KEY UPDATE Login=VALUES(Login)  """.format(Live=Live, Account=Login)
-        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
-        db.engine.execute(text(sql_insert))  # Insert into DB
-        flash("Live: {live}, Login: {login} has been added to aaron.`risk_autocut_exclude`.".format(live=Live, login=Login))
-
-    table = Delete_Risk_Autocut_Exclude_Table_fun()
-
-    #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
-    return render_template("General_Form.html", title=title, header=header, table=table, form=form,
-                           description=description, backgroud_Filename='css/Scissors.jpg', no_backgroud_Cover=True)
-
-
-
-# Will Query SQL and return the table needed for this.
-# To generate the table needed to delete the excluded clients.
-def Delete_Risk_Autocut_Exclude_Table_fun():
-    # Need to do a left join. To fully pull out the risk_autocut_include Logins.
-    # Some Logins might not even be on the server.
-    raw_sql = """SELECT R.Live, R.`Login`, 
-            COALESCE(`Group`,"-") as `Group`, COALESCE(`Enable`,"-") as `Enable`, COALESCE(`Enable_readonly`,"-") as `Enable_readonly`,
-            COALESCE(`Balance`,"-") as `Balance`, COALESCE(`Credit`,"-") as `Credit`, COALESCE(ROUND(`Equity`,2),"-") as `Equity`
-            FROM `risk_autocut_exclude` as R
-            LEFT JOIN live{Live}.mt4_users as U ON U.LOGIN = R.LOGIN
-            WHERE R.LIVE = '{Live}' """
-
-    sql_query_array = [raw_sql.format(Live=l) for l in [1,2,3,5]]   # Want to loop thru all the LIVE server
-    sql_query = " UNION ".join(sql_query_array) + " ORDER BY Live, Login " # UNION the query all together.
-    collate = query_SQL_return_record(text(sql_query))
-
-
-    if len(collate) == 0:   # There is no data.
-        empty_table = [{"Result": "There are currently no single account excluded from the autocut."}]
-        table = create_table_fun(empty_table, additional_class=["basic_table", "table", "table-striped",
-                                                                "table-bordered", "table-hover", "table-sm"])
-    else:
-        # Live Account and other information that would be going into the table.
-        df_data = pd.DataFrame(collate)
-
-        table = Delete_Risk_Autocut_Exclude_Table(df_data.to_dict("record"))
-        table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
-
-    return table
-
-
-# To remove the account from being excluded.
-@main_app.route('/Remove_Risk_Autocut_Exclude/<Live>/<Login>', methods=['GET', 'POST'])
-@roles_required()
-def Delete_Risk_Autocut_Exclude_Button_Endpoint(Live="", Login=""):
-
-    # # Write the SQL Statement and Update to disable the Account monitoring.
-    sql_update_statement = """DELETE FROM aaron.risk_autocut_exclude WHERE `Live`='{Live}' AND `Login`='{Login}' """.format(Live=Live, Login=Login)
-    sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
-    print(sql_update_statement)
-    sql_update_statement=text(sql_update_statement)
-    result = db.engine.execute(sql_update_statement)
-    flash(Markup("Live: <b>{Live}</b>, Login: <b>{Login}</b> has been removed from Risk Autocut Exclude.<br>{Login} will no longer be excluded".format(Live=Live,Login=Login)))
-    #return redirect(url_for('main_app.Exclude_Risk_Autocut'))
-    return redirect(request.referrer)
-
-
-@main_app.route('/Risk_Autocut_Include_Group', methods=['GET', 'POST'])
-@roles_required()
-def Include_Risk_Autocut_Group():
-    title =  "Risk Auto Cut [Group]"
-    header = Markup("Risk Auto Cut [Group]")
-    description = Markup("""<b>To Include the Client <span style="color:green"><b>Group</b></span> into the running tool of Risk Auto Cut</b><br>
-                         Note that  <span style="color:green"><b><u>%TW% are automatically</u></b></span> included into the search.""")
-
-    form = Live_Group()
-
-    form.validate_on_submit()
-    if request.method == 'POST' and form.validate_on_submit():
-        Live = form.Live.data  # Get the Data.
-        Client_Group = form.Client_Group.data
-
-        sql_insert = """INSERT INTO  aaron.`risk_autocut_group` (`Live`, `GROUP`) VALUES
-            ('{Live}','{Group}')""".format(Live=Live, Group=Client_Group)
-        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
-
-        db.engine.execute(text(sql_insert))  # Insert into DB
-        flash("Live: {live}, Group: {Group} has been added to aaron.`risk_autocut_group`.".format(live=Live, Group=Client_Group))
-
-    table = Delete_Risk_Autocut_Group_Table_fun()
-
-    #Scissors backgound. We do not want it to cover. So.. we want the picture to be repeated.
-    return render_template("General_Form.html", title=title, header=header, table=table, form=form,
-                           description=description, backgroud_Filename='css/Scissors.jpg', no_backgroud_Cover=True)
-
-# Generate table from Querying SQL
-# To add and remove GROUPS from Risk Auto Cut
-def Delete_Risk_Autocut_Group_Table_fun():
-
-    # Need to do a left join. To fully pull out the risk_autocut_group Groups.
-    # Some Groups might not have any Logins.
-    raw_sql =""" SELECT R.Live, R.`Group`, COALESCE(count(U.LOGIN), 0) as `Num_users`, 
-            COALESCE(ROUND(SUM(U.Balance),2), 0) as `Sum_balance`, COALESCE(ROUND(SUM(U.Credit),2), 0) as `Sum_credit`
-            FROM aaron.`risk_autocut_group` as R
-            LEFT JOIN live{Live}.mt4_users AS U ON U.`Group` = R.`Group`
-            WHERE R.Live='{Live}'
-            GROUP BY `Group` """
-
-    sql_query_array = [raw_sql.format(Live=l) for l in [1,2,3,5]]   # Want to loop thru all the LIVE server
-
-    sql_query = " UNION ".join(sql_query_array) + " ORDER BY  Live, `Num_users`, `Group` " # UNION the query all together.
-    collate = query_SQL_return_record(text(sql_query))
-
-    if len(collate) == 0:   # There is no data.
-        empty_table = [{"Result": "There are currently Groups included in the autocut. There might still be Groups tho."}]
-        table = create_table_fun(empty_table, additional_class=["basic_table", "table", "table-striped",
-                                                                "table-bordered", "table-hover", "table-sm"])
-    else:
-        # Live Account and other information of users that are in the Risk AutoCut Group.
-        df_data = pd.DataFrame(collate)
-        # df_data["Sum_balance"] = df_data["Sum_balance"].apply(lambda x: "{:,.2f}".format(x))
-        # df_data["Sum_credit"] = df_data["Sum_credit"].apply(lambda x: "{:,.2f}".format(x))
-        # df_data["Num_users"] = df_data["Num_users"].apply(lambda x: "{:,.0f}".format(x))
-        table = Delete_Risk_Autocut_Group_Table(df_data.to_dict("record"))
-        table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
-    return table
-
-# To remove the account from Risk Autocut.
-@main_app.route('/Remove_Risk_Autocut_Group/<Live>/<Group>', methods=['GET', 'POST'])
-@roles_required()
-def Delete_Risk_Autocut_Group_Button_Endpoint(Live="", Group=""):
-
-    # # Write the SQL Statement and Update to disable the Account monitoring.
-    sql_update_statement = """DELETE FROM aaron.risk_autocut_group WHERE `Live`='{Live}' AND `Group`='{Group}' """.format(Live=Live, Group=Group)
-    sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
-    print(sql_update_statement)
-    sql_update_statement=text(sql_update_statement)
-    result = db.engine.execute(sql_update_statement)
-    flash(Markup("Live: <b>{Live}</b>, Group: <b>{Group}</b> has been removed from Risk Autocut Group".format(Live=Live,Group=Group)))
-    #return redirect(url_for('main_app.Include_Risk_Autocut_Group'))
-    return redirect(request.referrer)
+# # Want to check and close off account/trades.
+# @main_app.route('/Risk_auto_cut', methods=['GET', 'POST'])
+# @roles_required()
+# def Risk_auto_cut():
+#
+#     start = datetime.datetime.now()
+#     title = "Risk Auto Cut"
+#     header = "Risk Auto Cut"
+#
+#     # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+#     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+#     # For Login in aaron.Risk_autocut and Credit_limit != 0
+#
+#
+#     description = Markup('Running on <font color = "red">ALL</font> Live 1, Live 2, Live 3 and Live 5.<br>'   + \
+#                          "Will <b>close all client's position</b> and <b>change client to read-only</b>.<br>" + \
+#                          "Sql Table ( <font color = 'red'>aaron.risk_autocut_exclude</font>) for client excluded from the autocut.<br>" + \
+#                          "Sql Table ( <font color = 'red'>aaron.risk_autocut_include</font>) for client with special requests.<br><br>" + \
+#                          "<b>1)</b> For <font color = 'red'>%TW%</font> Clients : <br>EQUITY < CREDIT AND <br>((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND" + \
+#                                 "<br>`ENABLE` = 1 AND ENABLE_READONLY = 0<br>and " + \
+#                                 " LOGIN NOT IN ( <font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>" + \
+#                          "<b>2)</b>For other clients, where GROUP` IN  <font color = 'red'>aaron.risk_autocut_group</font> and EQUITY < CREDIT and<br>" + \
+#                                 " LOGIN NOT IN  (<font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>" + \
+#                          "<b>3)</b> For Login in <font color = 'red'>aaron.Risk_autocut_exclude</font> and <font color = 'red'>Credit_limit != 0</font> and <br>" +\
+#                                 " LOGIN NOT IN ( <font color = 'red'>aaron.risk_autocut_exclude</font>)<br>and LOGIN IN ( <font color = 'red'>aaron.risk_autocut_include</font> where EQUITY_LIMIT <> 0 )<br><br>" + \
+#                          "<b>4)</b> Tool will not cut for <font color = 'red'>Equity > Credit</font> . For such, kindly look at Equity Protect.<br><br>")
+#
+#
+#     client_include_tab = Delete_Risk_Autocut_Include_Table_fun()
+#     client_group_include_tab = Delete_Risk_Autocut_Group_Table_fun()
+#     client_exclude = Delete_Risk_Autocut_Exclude_Table_fun()
+#
+#     print("Generating of tables at risk auto cut took:{}s".format((datetime.datetime.now()-start).total_seconds()))
+#
+#         # TODO: Add Form to add login/Live/limit into the exclude table.
+#     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Scissors.jpg', Table_name="Risk Auto Cut", \
+#                            title=title, ajax_url=url_for('main_app.risk_auto_cut_ajax', _external=True), no_backgroud_Cover=True, \
+#                            header=header, setinterval=10, \
+#                            description=description, replace_words=Markup(["Today"]), \
+#                            varibles={"Client Include": client_include_tab,
+#                                      "Client Group Include": client_group_include_tab,
+#                                      "Client Exclude": client_exclude})
+
+
+
+# @main_app.route('/risk_auto_cut_ajax', methods=['GET', 'POST'])
+# @roles_required()
+# def risk_auto_cut_ajax(update_tool_time=1):
+#     # TODO: Check if user exist first.
+#
+#     #print("Risk Auto Cut Ajax")
+#     # Using External Table
+#     # aaron.risk_autocut_exclude
+#     # aaron.risk_autocut_group
+#
+#     Live_server = [1,2,3,5]
+#
+#     # Want to temp kill this tool for awhile. Will be re-writing it.
+#     #print(current_user.id)
+#     # print("{}".format( url_for('static', filename='Exec/')))
+#     # return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
+#     # return json.dumps(return_val)
+#
+#     # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+#     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+#     # For Login in aaron.Risk_autocut and Credit_limit != 0
+#
+#     # To check the Lucky Draw Login. All TW clients for login not in aaron.risk_autocut_exclude
+#     # Also done a check to cause hedging clients to SO
+#     tw_sql_statement = """ SELECT LOGIN, '3' as LIVE, mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT, '-' as EQUITY_LIMIT
+#             FROM live3.mt4_users WHERE `GROUP` LIKE '%TW%' AND EQUITY < CREDIT AND
+#         ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0 and
+#         LOGIN not in (select login from aaron.risk_autocut_exclude where LIVE = 3) and
+#         LOGIN not in (select login from aaron.risk_autocut_include where LIVE = 3 and EQUITY_LIMIT <> 0) """
+#
+#     # For the client's whose groups are in aaron.risk_autocut_group, and login not in aaron.risk_autocut_exclude
+#     group_n_login_raw_sql_statement = """ SELECT DISTINCT mt4_trades.LOGIN,'{Live}' AS LIVE,  mt4_users.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT, '-' as EQUITY_LIMIT
+#     FROM live{Live}.mt4_trades, live{Live}.mt4_users WHERE
+#     mt4_trades.LOGIN = mt4_users.LOGIN AND
+#         ( mt4_users.`GROUP` IN (SELECT `GROUP` FROM aaron.risk_autocut_group WHERE LIVE = '{Live}')
+#                                 OR
+#         mt4_users.LOGIN IN (SELECT LOGIN FROM aaron.risk_autocut_include WHERE LIVE = '{Live}' and EQUITY_LIMIT = 0)
+#         )    AND
+#     CLOSE_TIME = '1970-01-01 00:00:00' AND
+#     CMD < 6 AND
+#     EQUITY < CREDIT AND
+#     mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_exclude WHERE `LIVE` = '{Live}') AND
+#     mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_include WHERE `LIVE` = '{Live}' and EQUITY_LIMIT <> 0) """
+#     #
+#     group_n_login_sql_statement = " UNION ".join([group_n_login_raw_sql_statement.format(Live=n) for n in Live_server])  # construct the SQL Statment
+#     # raw_sql_statement += " UNION " + tw_raw_sql_statement
+#     #
+#     # raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
+#     # sql_result2 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
+#
+#
+#
+#     # For the client's who are in aaron.risk_autocut_include and Credit_limit != 0
+#     login_special_raw_sql_statement = """SELECT DISTINCT T.LOGIN, {Live} AS LIVE,  U.`GROUP`, ROUND(EQUITY, 2) as EQUITY, ROUND(CREDIT, 2) as CREDIT, R.EQUITY_LIMIT as EQUITY_LIMIT
+#     FROM live{Live}.mt4_users as U, aaron.risk_autocut_include as R, live{Live}.mt4_trades as T
+#     WHERE R.LIVE = {Live} and R.EQUITY_LIMIT != 0 and
+#     R.LOGIN = U.LOGIN and U.EQUITY < R.EQUITY_LIMIT and
+#     U.LOGIN = T.LOGIN and T.CLOSE_TIME = '1970-01-01 00:00:00' AND
+#     U.LOGIN NOT IN (SELECT LOGIN FROM aaron.risk_autocut_exclude WHERE `LIVE` = '{Live}')"""
+#
+#     login_special_sql_statement = " UNION ".join([login_special_raw_sql_statement.format(Live=n) for n in Live_server])  # construct the SQL Statment
+#     raw_sql_statement = "{} UNION {} UNION {}".format(tw_sql_statement, group_n_login_sql_statement, login_special_sql_statement)
+#     raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", " ")
+#     sql_result3 = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
+#
+#     #sql_result3 = []
+#
+#     total_result = dict()
+#     # sql_result1, sql_result2 has been removed. Union to make SQL statement run faster.
+#     sql_results = [sql_result3]
+#     for s in sql_results:   # We want only unique values.
+#         for ss in s:
+#             live = ss["LIVE"] if "LIVE" in ss else None
+#             login = ss["LOGIN"] if "LOGIN" in ss else None
+#             if live != None and login != None and (live,login) not in total_result:
+#                 total_result[(live,login)] = ss
+#
+#     C_Return = dict()  # The returns from C++
+#     C_Return[0] = "User Changed to Read-Only, position forced closed";
+#     C_Return[-1] = "C++ ERROR: Params Wrong";
+#     C_Return[1] = "C++ ERROR: Login Param Error";
+#     C_Return[2] = "C++ ERROR: Server Param Error";
+#     C_Return[3] = "C++ ERROR: Login Number Error on MT4";
+#     C_Return[4] = "C++ ERROR: Equity Above Credit";
+#     C_Return[6] = "C++ ERROR: MT4 Update Error!";
+#     C_Return[7] = "C++ ERROR: MT4 Connection Error";
+#     C_Return[-100] = "User changed to Read-only, but SQL ERROR. ";
+#
+#     To_SQL = []     # To save onto SQL
+#
+#     for k,d in total_result.items():
+#         live = d['LIVE'] if "LIVE" in d else None
+#         login = d['LOGIN'] if "LOGIN" in d else None
+#         equity_limit = d['EQUITY_LIMIT'] if "EQUITY_LIMIT" in d and  d['EQUITY_LIMIT'] != "-" else 0
+#         if equity_limit == 0:   # Adding this in to beautify the Table.
+#             total_result[k]["EQUITY_LIMIT"] = "-"
+#         if not None in [live, login]:   # If both are not None.
+#
+#             # # print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
+#             c_run_return = Run_C_Prog("Risk_Auto_Cut.exe " + " {live} {login} {equity_limit}".format( live=live,
+#                 login=login, equity_limit=equity_limit), cwd=".\\app" + url_for('static', filename='Exec/Risk_Auto_Cut/'))
+#
+#             #print("c_run_return = {}".format(c_run_return))
+#             # c_run_return = 0
+#
+#             if c_run_return[0] == 0:  # Need to save things into SQL as well.
+#                 To_SQL.append(d)
+#             # elif c_run_return[0] not in C_Return:
+#             #     print(c_run_return)
+#
+#             total_result[k]["RESULT"] = C_Return[c_run_return[0]] if c_run_return[0] in C_Return else "Unknown Error"
+#             if equity_limit != 0:    # Want to state that it's doing a equity protection.
+#                 total_result[k]["RESULT"] += "<br><span style='color:green'>[Equity Protection]</span>"
+#
+#     return_val = dict()  # Return value to be used
+#     if len(total_result) > 0:   # Want to send out an email should any changes have been made.
+#
+#         if len(To_SQL) > 0: # There might not be anything here due to an error in C exe
+#             raw_insert_sql = " ({live}, {login}, {equity}, {credit}, '{group}', now()) "    # Raw template for insert.
+#             sql_insert_w_values = ",".join([raw_insert_sql.format(live=d["LIVE"], login=d["LOGIN"], equity=d["EQUITY"], credit=d["CREDIT"], group=d["GROUP"]) for d in To_SQL]) # SQL insert with the values.
+#             sql_insert = "INSERT INTO  aaron.`risk_autocut_results` (LIVE, LOGIN, EQUITY, CREDIT, `GROUP`, DATE_TIME) VALUES {}".format(sql_insert_w_values)   # Add it to the header.
+#             sql_insert += " ON DUPLICATE KEY UPDATE `EQUITY`=VALUES(`EQUITY`), `CREDIT`=VALUES(`CREDIT`), `GROUP`=VALUES(`GROUP`)  "
+#
+#
+#             #print("SQL Statement: {}".format(sql_insert))
+#             raw_insert_result = db.engine.execute(sql_insert)   # Insert into SQL
+#
+#         #print("total_result: {}".format(total_result))
+#
+#         total_result_value = list(total_result.values())
+#         # print(total_result_value)
+#         table_data_html =  Array_To_HTML_Table(list(total_result_value[0].keys()),[list(d.values()) for d in total_result_value])
+#
+#         # Want to set to test, if it's just test accounts.
+#         # If it's just TEST account. Send to just Aaron and TW.
+#
+#         email_list = EMAIL_LIST_RISKTW if all([d["GROUP"].lower().find("test") >= 0 for d in To_SQL]) else EMAIL_LIST_BGI
+#         async_send_email(To_recipients=email_list, cc_recipients=[],
+#                      Subject="AutoCut: Equity Below Credit.",
+#                      HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below credit. \
+#                                 <br><br> {table_data_html} This is done to prevent client from trading on credit. \
+#                                <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
+#                          Email_Header = Email_Header, table_data_html = table_data_html, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+#                          Email_Footer=Email_Footer), Attachment_Name=[])
+#
+#
+#
+#         return_val = list(total_result.values())
+#
+#     else:   # If there are nothing to change. We want to show the time
+#         return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
+#
+#     # # Need to update Run time on SQL Update table.
+#     if update_tool_time ==1:
+#         async_update_Runtime(app=current_app._get_current_object(), Tool="Risk_Auto_Cut")
+#
+#
+#     return json.dumps(return_val)
+
+
+
+
+
+# # Copied
+# # Want to return the table that will be showing the list of client included in the risk auto cut.
+# def Delete_Risk_Autocut_Include_Table_fun():
+#     # Need to do a left join. To fully pull out the risk_autocut_include Logins.
+#     # Some Logins might not even be on the server.
+#     raw_sql = """SELECT R.Live, R.Login, R.Equity_limit,
+#         COALESCE(`Group`,"-") as `Group`, COALESCE(`Enable`,"-") as `Enable`, COALESCE(`Enable_readonly`,"-") as `Enable_readonly`,
+#         COALESCE(ROUND(`Balance`,2),"-") as `Balance`, COALESCE(ROUND(`Credit`,2),"-") as `Credit`, COALESCE(ROUND(`Equity`,2),"-") as `Equity`
+#         FROM aaron.`risk_autocut_include` as R
+#             LEFT JOIN  live{Live}.mt4_users as U ON U.LOGIN = R.LOGIN
+#        where R.LIVE = {Live} """
+#
+#     sql_query_array = [raw_sql.format(Live=l) for l in [1,2,3,5]]   # Want to loop thru all the LIVE server
+#
+#     sql_query = " UNION ".join(sql_query_array) + " ORDER BY Live, Login " # UNION the query all together.
+#     collate = query_SQL_return_record(text(sql_query))
+#
+#
+#     if len(collate) == 0:   # There is no data.
+#         empty_table = [{"Result": "There are currently no single account included in the autocut. There might still be Groups tho."}]
+#         table = create_table_fun(empty_table, additional_class=["basic_table", "table", "table-striped",
+#                                                                 "table-bordered", "table-hover", "table-sm"])
+#     else:
+#         # Live Account and other information of users that are in the Risk AutoCut Group.
+#         df_data = pd.DataFrame(collate)
+#         df_data["Equity_limit"] = df_data["Equity_limit"].apply(lambda x: "{:,.0f}".format(x) if type(x) == np.float64 else "{}".format(x))
+#         df_data["Balance"] = df_data["Balance"].apply(lambda x: "{:,.2f}".format(x) if type(x) == np.float64 else "{}".format(x))
+#         df_data["Credit"] = df_data["Credit"].apply(lambda x: "{:,.2f}".format(x) if type(x) == np.float64 else "{}".format(x))
+#         df_data["Equity"] = df_data["Equity"].apply(lambda x: "{:,.2f}".format(x) if type(x) == np.float64 else "{}".format(x))
+#
+#         table = Delete_Risk_Autocut_Include_Table(df_data.to_dict("record"))
+#         table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
+#     return table
+
+#
+# # To remove the account from Risk Autocut.
+# #Copied
+# @main_app.route('/Remove_Risk_Autocut_User/<Live>/<Login>', methods=['GET', 'POST'])
+# @roles_required()
+# def Delete_Risk_Autocut_Include_Button_Endpoint(Live="", Login=""):
+#
+#     # # Write the SQL Statement and Update to disable the Account monitoring.
+#     sql_update_statement = """DELETE FROM aaron.risk_autocut_include WHERE Live='{Live}' AND Login='{Login}'""".format(Live=Live, Login=Login)
+#     sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
+#     # print(sql_update_statement)
+#     sql_update_statement=text(sql_update_statement)
+#     result = db.engine.execute(sql_update_statement)
+#
+#     flash("Live:{Live}, Login: {Login} has been removed from Risk Autocut".format(Live=Live,Login=Login))
+#     #print("Request URL: {}".format(redirect(request.url)))
+#     return redirect(request.referrer)
+#     #return redirect(url_for('main_app.Include_Risk_Autocut'))
+
+
+
+
+# # Copied
+# # Will Query SQL and return the table needed for this.
+# # To generate the table needed to delete the excluded clients.
+# def Delete_Risk_Autocut_Exclude_Table_fun():
+#     # Need to do a left join. To fully pull out the risk_autocut_include Logins.
+#     # Some Logins might not even be on the server.
+#     raw_sql = """SELECT R.Live, R.`Login`,
+#             COALESCE(`Group`,"-") as `Group`, COALESCE(`Enable`,"-") as `Enable`, COALESCE(`Enable_readonly`,"-") as `Enable_readonly`,
+#             COALESCE(`Balance`,"-") as `Balance`, COALESCE(`Credit`,"-") as `Credit`, COALESCE(ROUND(`Equity`,2),"-") as `Equity`
+#             FROM `risk_autocut_exclude` as R
+#             LEFT JOIN live{Live}.mt4_users as U ON U.LOGIN = R.LOGIN
+#             WHERE R.LIVE = '{Live}' """
+#
+#     sql_query_array = [raw_sql.format(Live=l) for l in [1,2,3,5]]   # Want to loop thru all the LIVE server
+#     sql_query = " UNION ".join(sql_query_array) + " ORDER BY Live, Login " # UNION the query all together.
+#     collate = query_SQL_return_record(text(sql_query))
+#
+#
+#     if len(collate) == 0:   # There is no data.
+#         empty_table = [{"Result": "There are currently no single account excluded from the autocut."}]
+#         table = create_table_fun(empty_table, additional_class=["basic_table", "table", "table-striped",
+#                                                                 "table-bordered", "table-hover", "table-sm"])
+#     else:
+#         # Live Account and other information that would be going into the table.
+#         df_data = pd.DataFrame(collate)
+#
+#         table = Delete_Risk_Autocut_Exclude_Table(df_data.to_dict("record"))
+#         table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
+#
+#     return table
+
+#
+# # To remove the account from being excluded.
+# #Copied
+# @main_app.route('/Remove_Risk_Autocut_Exclude/<Live>/<Login>', methods=['GET', 'POST'])
+# @roles_required()
+# def Delete_Risk_Autocut_Exclude_Button_Endpoint(Live="", Login=""):
+#
+#     # # Write the SQL Statement and Update to disable the Account monitoring.
+#     sql_update_statement = """DELETE FROM aaron.risk_autocut_exclude WHERE `Live`='{Live}' AND `Login`='{Login}' """.format(Live=Live, Login=Login)
+#     sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
+#     print(sql_update_statement)
+#     sql_update_statement=text(sql_update_statement)
+#     result = db.engine.execute(sql_update_statement)
+#     flash(Markup("Live: <b>{Live}</b>, Login: <b>{Login}</b> has been removed from Risk Autocut Exclude.<br>{Login} will no longer be excluded".format(Live=Live,Login=Login)))
+#     #return redirect(url_for('main_app.Exclude_Risk_Autocut'))
+#     return redirect(request.referrer)
+
+
+
+# # Copied
+# # Generate table from Querying SQL
+# # To add and remove GROUPS from Risk Auto Cut
+# def Delete_Risk_Autocut_Group_Table_fun():
+#
+#     # Need to do a left join. To fully pull out the risk_autocut_group Groups.
+#     # Some Groups might not have any Logins.
+#     raw_sql =""" SELECT R.Live, R.`Group`, COALESCE(count(U.LOGIN), 0) as `Num_users`,
+#             COALESCE(ROUND(SUM(U.Balance),2), 0) as `Sum_balance`, COALESCE(ROUND(SUM(U.Credit),2), 0) as `Sum_credit`
+#             FROM aaron.`risk_autocut_group` as R
+#             LEFT JOIN live{Live}.mt4_users AS U ON U.`Group` = R.`Group`
+#             WHERE R.Live='{Live}'
+#             GROUP BY `Group` """
+#
+#     sql_query_array = [raw_sql.format(Live=l) for l in [1,2,3,5]]   # Want to loop thru all the LIVE server
+#
+#     sql_query = " UNION ".join(sql_query_array) + " ORDER BY  Live, `Num_users`, `Group` " # UNION the query all together.
+#     collate = query_SQL_return_record(text(sql_query))
+#
+#     if len(collate) == 0:   # There is no data.
+#         empty_table = [{"Result": "There are currently Groups included in the autocut. There might still be Groups tho."}]
+#         table = create_table_fun(empty_table, additional_class=["basic_table", "table", "table-striped",
+#                                                                 "table-bordered", "table-hover", "table-sm"])
+#     else:
+#         # Live Account and other information of users that are in the Risk AutoCut Group.
+#         df_data = pd.DataFrame(collate)
+#         # df_data["Sum_balance"] = df_data["Sum_balance"].apply(lambda x: "{:,.2f}".format(x))
+#         # df_data["Sum_credit"] = df_data["Sum_credit"].apply(lambda x: "{:,.2f}".format(x))
+#         # df_data["Num_users"] = df_data["Num_users"].apply(lambda x: "{:,.0f}".format(x))
+#         table = Delete_Risk_Autocut_Group_Table(df_data.to_dict("record"))
+#         table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
+#     return table
+
+# # To remove the account from Risk Autocut.
+# #Copied
+# @main_app.route('/Remove_Risk_Autocut_Group/<Live>/<Group>', methods=['GET', 'POST'])
+# @roles_required()
+# def Delete_Risk_Autocut_Group_Button_Endpoint(Live="", Group=""):
+#
+#     # # Write the SQL Statement and Update to disable the Account monitoring.
+#     sql_update_statement = """DELETE FROM aaron.risk_autocut_group WHERE `Live`='{Live}' AND `Group`='{Group}' """.format(Live=Live, Group=Group)
+#     sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
+#     print(sql_update_statement)
+#     sql_update_statement=text(sql_update_statement)
+#     result = db.engine.execute(sql_update_statement)
+#     flash(Markup("Live: <b>{Live}</b>, Group: <b>{Group}</b> has been removed from Risk Autocut Group".format(Live=Live,Group=Group)))
+#     #return redirect(url_for('main_app.Include_Risk_Autocut_Group'))
+#     return redirect(request.referrer)
 
 
 #

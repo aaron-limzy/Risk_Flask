@@ -89,6 +89,8 @@ def register_blueprints(server):
     from app.Plotly.routes import analysis
     from app.errors import bp as errors_bp
     from app.Login.routes import login_bp
+    from app.Risk_Client_Tools.routes import Risk_Client_Tools_bp
+
 
     # # Want to see if we can init the Blueprint db
     # main_app_db.init_app(server)
@@ -104,7 +106,7 @@ def register_blueprints(server):
     server.register_blueprint(main_app)
     server.register_blueprint(swaps)
     server.register_blueprint(analysis)
-
+    server.register_blueprint(Risk_Client_Tools_bp, url_prefix='/Risk/Tools')
 
 
 def register_dashapps(app):
