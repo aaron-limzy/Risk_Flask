@@ -32,6 +32,9 @@ from requests import Session
 from zeep.transports import Transport
 
 from zeep import Client
+
+from app.Risk_Client_Tools.routes import risk_auto_cut_ajax
+
 from unsync import unsync
 
 from sqlalchemy import text
