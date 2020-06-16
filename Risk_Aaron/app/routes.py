@@ -121,22 +121,6 @@ def Dividend():
     return render_template("base.html")
 
 
-def color_negative_red(value):
-      # """
-      # Colors elements in a dateframe
-      # green if positive and red if
-      # negative. Does not color NaN
-      # values.
-      # """
-
-    if value < 0:
-        color = 'red'
-    elif value > 0:
-        color = 'green'
-    else:
-        color = 'black'
-
-    return 'color: %s' % color
 
 
 @main_app.route('/add_offset', methods=['GET', 'POST'])      # Want to add an offset to the ABook page.
@@ -1248,41 +1232,6 @@ def CFH_Soap_Symbol_ajax(update_all=0):  # Optional Parameter, to update from th
 
 
     return json.dumps(return_val)
-#
-#
-# @main_app.route('/g', methods=['GET', 'POST'])
-# def read_from_main_app_g():
-#
-#
-#     # print(main_app.config["MAIL_SERVER"])
-#     # print(main_app.config["MAIL_PORT"])
-#     # print(main_app.config["MAIL_USE_TLS"])
-#     # print(main_app.config["MAIL_USERNAME"])
-#     # print(main_app.config["MAIL_PASSWORD"])
-#
-#     # if "Swap_data" in g:
-#     #  print("Swap_data in g")
-#     # else:
-#     #  print("Swap_data Data? ")
-#     return render_template("upload_form.html")
-
-
-#
-# @main_app.route('/h', methods=['GET', 'POST'])
-# def read_from_main_app_h():
-#
-#     # Time = datetime.now().strftime("%H:%M:%S")
-#     # for t in range(10):
-#     #  SymbolTotalTest.append_field(str(t) + " " + str(Time), FormField(SymbolSwap))
-#     # form = SymbolTotalTest()
-#     # return render_template("standard_form.html", form=form)
-#     return render_template("Standard_Single_Table.html", backgroud_Filename='css/test7.jpg', Table_name="Table1", title="Table", ajax_url=url_for('main_app.LP_Margin_UpdateTime'))
-
-
-
-
-# Need to have a generic page that does all the SQL Query RAW
-
 
 
 @main_app.route('/is_prime')
@@ -2302,8 +2251,9 @@ def Scrape_futures_ajax():
 
     # Get all data from the web
     # Using the module "Scrape_Futures"
+    time_now = datetime.datetime.now()
     return_val = Get_Current_Futures_Margin(db=db, sendemail=False)
-
+    print("Time taken to scrape future:{}s".format((datetime.datetime.now()-time_now).total_seconds()))
     #return_val = [dict(zip(col, d)) for d in dict_of_df["US"]]
     #return_val = {'SG': [{"a":1, "b":2,"c":3}, {"a":2, "b":3,"c":4}],'UK': [{"d":10, "e":9,"f":8}, {"d":7, "e":6,"f":5}], 'US': [{"d":10, "e":9,"f":8}, {"d":7, "e":6,"f":5}]}
     #start_date = get_working_day_date(datetime.date.today(), weekdays_count=0)
@@ -2458,7 +2408,7 @@ def Monitor_Account_Trades_Ajax():
 
     # Get the Trades that are newly opened, or just closed.
     sql_query_array = []
-    testing = False # Set to True when Testing.
+    testing = True # Set to True when Testing.
 
     if testing :
         monitor_account_table = "aaron.`monitor_account_copy`"
@@ -2499,20 +2449,20 @@ def Monitor_Account_Trades_Ajax():
     else:
         # Need to insert into SQL.
         df_all_open_trades = df_trades[df_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]
-        all_open_trade_values = df_all_open_trades.apply(lambda x: " ('{Live}', '{Login}', '{Ticket}', '0', '{Tele_name}') ".format(
+        all_open_trade_values = df_all_open_trades.apply(lambda x: " ('{Live}', '{Login}', '{Ticket}', '0', '{Tele_name}', NOW()) ".format(
             Live=x["LIVE"], Login=x['LOGIN'], Ticket=x["TICKET"], Tele_name=x["TELE_NAME"]), axis=1)
 
         # Put 1 as Trade Close Notify for those that are closed.
         df_all_close_trades = df_trades[df_trades["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')]
-        all_close_trade_values = df_all_close_trades.apply(lambda x: " ('{Live}', '{Login}', '{Ticket}', '1', '{Tele_name}') ".format(
+        all_close_trade_values = df_all_close_trades.apply(lambda x: " ('{Live}', '{Login}', '{Ticket}', '1', '{Tele_name}', NOW()) ".format(
             Live=x["LIVE"], Login=x['LOGIN'], Ticket=x["TICKET"], Tele_name=x["TELE_NAME"]), axis=1)
 
 
         #if not testing:    # If we are not testing, we will go ahead to append these into the table to stop the notifications.
         async_sql_insert(app=current_app._get_current_object(),
-                         header="""INSERT INTO {monitor_account_trades_table} (`live`,`account`, `ticket`, `trade_close_notify`, `tele_name`) VALUES """.format(monitor_account_trades_table=monitor_account_trades_table),
+                         header="""INSERT INTO {monitor_account_trades_table} (`live`,`account`, `ticket`, `trade_close_notify`, `tele_name`, `datetime`) VALUES """.format(monitor_account_trades_table=monitor_account_trades_table),
                          values=list(all_open_trade_values.values) + list(all_close_trade_values.values),
-                         footer=" ON DUPLICATE KEY UPDATE `Trade_Close_Notify`=VALUES(`Trade_Close_Notify`) ",
+                         footer=" ON DUPLICATE KEY UPDATE `Trade_Close_Notify`=VALUES(`Trade_Close_Notify`), `datetime`=VALUES(`datetime`) ",
                          sql_max_insert=20)
 
 
@@ -2529,7 +2479,7 @@ def Monitor_Account_Trades_Ajax():
 
         # Will be in form of dict.
         # With "LIVE-LOGIN" as KEY
-        user_trades_str_dict = user_consolidated_trades_to_str(user_trades)    # Consolidated user trades in string
+        user_trades_str_dict = user_consolidated_trades_to_str(user_trades)  if len(user_trades) > 0 else {}  # Consolidated user trades in string
 
 
         direction = ["+", "-"]
@@ -2593,6 +2543,8 @@ def Monitor_Account_Trades_Ajax():
             for live_login in df_unique_teleID["LIVE-LOGIN"].unique():
                 if live_login in user_trades_str_dict:
                     consolidated_trades += "{}".format(user_trades_str_dict[live_login])
+                else: # Not inside. No more open trades.
+                    consolidated_trades += "{}\n    No open position.\n\n".format(live_login)
 
 
             total_tele_mesage = "<b>Account Monitoring</b>\n\n" +  open_trades_str + close_trades_str + consolidated_trades +\
@@ -2609,21 +2561,27 @@ def Monitor_Account_Trades_Ajax():
 
 
             # Want to get the User consolidated trades to be sent via email.
-            df_user_trades = pd.DataFrame(user_trades)
-            df_user_trades["LIVE-LOGIN"] = df_user_trades.apply(lambda x: "Live: {}, Login: {}".format(x["LIVE"], x["LOGIN"]), axis=1)
-            df_user_trades.sort_values(by="LIVE-LOGIN",inplace=True)    # Sort by Live/Login
+            if len(user_trades) > 0: # If there are still open position
+                df_user_trades = pd.DataFrame(user_trades)
+                df_user_trades["LIVE-LOGIN"] = df_user_trades.apply(lambda x: "Live: {}, Login: {}".format(x["LIVE"], x["LOGIN"]), axis=1)
+                df_user_trades.sort_values(by="LIVE-LOGIN",inplace=True)    # Sort by Live/Login
 
-            # Need to check which live-login is there that we need to send out.
-            user_consolidated_trades_live_login = df_user_trades[df_user_trades["LIVE-LOGIN"].isin(df_Email_Risk["LIVE-LOGIN"].unique())]
+                # Need to check which live-login is there that we need to send out.
+                user_consolidated_trades_live_login = df_user_trades[df_user_trades["LIVE-LOGIN"].isin(df_Email_Risk["LIVE-LOGIN"].unique())]
 
-            # Want to remove the extra created column
-            user_consolidated_trades = user_consolidated_trades_live_login.drop("LIVE-LOGIN", axis=1)[["LIVE",
-                                                        "LOGIN", "SYMBOL", "LOTS", "REVENUE"]].to_dict("record")
+                # Want to remove the extra created column
+                user_consolidated_trades = user_consolidated_trades_live_login.drop("LIVE-LOGIN", axis=1)[["LIVE",
+                                                            "LOGIN", "SYMBOL", "LOTS", "REVENUE"]].to_dict("record")
 
+                consolidated_position_table_html = List_of_Dict_To_Horizontal_HTML_Table(user_consolidated_trades)
+            else:   # If there are no more positions..
+                #TODO: This would give errors if there are more than 1 account.
+                # and if 1 account has no more trades while one account still has trades.
+                con_empty_position = []
+                for ll in df_Email_Risk["LIVE-LOGIN"].unique():
+                    con_empty_position.append({"Live-Login": ll, "Comment": "No more open position"})
 
-
-            consolidated_position_table_html = List_of_Dict_To_Horizontal_HTML_Table(user_consolidated_trades)
-
+                consolidated_position_table_html = List_of_Dict_To_Horizontal_HTML_Table(con_empty_position)
 
 
             email_html_str = "{}Hi,<br><br>Account/s in account monitoring tool has had some open/closed trades.<br>Kindly see the details below.<br><br>".format(Email_Header)
@@ -2695,17 +2653,17 @@ def get_user_consolidated_trades(live_login_list_dict):
 
     return return_val
 
-# Input: [{'LOGIN': 2050, 'SYMBOL': 'AUDUSD', 'LOTS': Decimal('0.05')},
-#  {'LOGIN': 2050, 'SYMBOL': 'EURUSD', 'LOTS': Decimal('-0.05')}]
+# Input: [{'LOGIN': 2050, 'SYMBOL': 'AUDUSD', 'LOTS': '0.05'},
+#  {'LOGIN': 2050, 'SYMBOL': 'EURUSD', 'LOTS': '-0.05'}]
 # Out: Dict with LIVE-LOGIN as Key
 def user_consolidated_trades_to_str(trade_dict):
 
     df_user_trades = pd.DataFrame(trade_dict)
+    #print(df_user_trades)
     df_user_trades["LIVE-LOGIN"] = df_user_trades.apply(lambda x: "Live: {}, Login: {}".format(x["LIVE"], x["LOGIN"]), axis=1)
     df_user_trades.sort_values(by="SYMBOL",inplace=True)    # Sort by Synbols
 
     return_dict = {}
-
     for live_login in list(df_user_trades["LIVE-LOGIN"].unique()):    # Loop thru each unique user
 
         df_specific_user = df_user_trades[df_user_trades["LIVE-LOGIN"] == live_login]
@@ -2885,15 +2843,6 @@ def is_json(myjson):
     return False
   return True
 
-# Input: sql_query.
-# Return a Dict, using Zip for the results and the col names.
-def Query_SQL_db_engine(sql_query):
-    raw_result = db.engine.execute(sql_query)
-    result_data = raw_result.fetchall()
-    result_data_decimal = [[float(a) if isinstance(a, decimal.Decimal) else a for a in d ] for d in result_data]    # correct The decimal.Decimal class to float.
-    result_col = raw_result.keys()
-    zip_results = [dict(zip(result_col,d)) for d in result_data_decimal]
-    return zip_results
 
 
 # Helper function to do a time check.

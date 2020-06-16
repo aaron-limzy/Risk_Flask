@@ -549,7 +549,7 @@
 
 <div class="row">
   <div class="col-lg-12 col-md-12 col-sm-12" id="Data_table_Div1">
-    <div class ="bg-dark"><img class="rounded mx-auto d-block" src="{{ url_for('static', filename='css/please_wait_2.gif') }}"> </div>
+     {% include '_pleaseWait.html' %}
   </div>
   <br>
   {% if description %}

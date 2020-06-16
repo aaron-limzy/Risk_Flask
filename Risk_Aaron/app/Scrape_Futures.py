@@ -9,8 +9,13 @@ from bs4 import BeautifulSoup
 import logging
 
 from Aaron_Lib import *
+
+from unsync import unsync
+
 logging.basicConfig(level=logging.INFO)
 
+
+EMAIL_LIST = ["aaron.lim@blackwellglobal.com", "Risk@Blackwellglobal.com"]
 
 # Can return a bool, or the actual float valu
 def isfloat(str, value=False):
@@ -20,7 +25,7 @@ def isfloat(str, value=False):
   except ValueError:
     return str if value == True else  False
 
-
+@unsync
 def get_capital_futures(url, column_thatis_alphanum = 5):
 
     try:
@@ -99,29 +104,50 @@ def get_all_futures():
 
 
     # # Singapore Exchange
-    url = "https://www.capitalfutures.com.tw/product/deposit_sp.asp?xy=2&xt=4"
-    sg_exchange = get_capital_futures(url)
+    sg_url = "https://www.capitalfutures.com.tw/product/deposit_sp.asp?xy=2&xt=4"
+
 
     # HK Exchange
-    url = "https://www.capitalfutures.com.tw/product/deposit-hk.asp?xy=2&xt=5"
-    hk_exchange = get_capital_futures(url)
+    hk_url = "https://www.capitalfutures.com.tw/product/deposit-hk.asp?xy=2&xt=5"
+
 
     #US Exchange
-    url = "https://www.capitalfutures.com.tw/product/deposit.asp?xy=2&xt=2"
-    us_exchange = get_capital_futures(url)
+    us_url = "https://www.capitalfutures.com.tw/product/deposit.asp?xy=2&xt=2"
+
 
     # Japan exchange. Alittle tricky cause it's a shared row..
-    url = "https://www.capitalfutures.com.tw/product/deposit-jp.asp?xy=2&xt=3"
-    # Shared rows has only 2-3 alphanumeric strings. Since it's chinese.
-    jp_exchange = get_capital_futures(url, column_thatis_alphanum=4)
+    jp_url = "https://www.capitalfutures.com.tw/product/deposit-jp.asp?xy=2&xt=3"
+
 
     # not dealing with the TW Stocks for now.. Theyhave no Symbol names
-    url = "https://www.taifex.com.tw/cht/5/indexMarging"
-    tw_exchange = get_capital_futures_TW(url)
+    tw_url = "https://www.taifex.com.tw/cht/5/indexMarging"
+
+
+    sg_exchange_await = get_capital_futures(sg_url)
+    hk_exchange_await = get_capital_futures(hk_url)
+    us_exchange_await = get_capital_futures(us_url)
+    # # Shared rows has only 2-3 alphanumeric strings. Since it's chinese.
+    jp_exchange_await = get_capital_futures(jp_url, column_thatis_alphanum=4)
+    tw_exchange_await = get_capital_futures_TW(tw_url)
+
+    # Since it's a-sync. We need to await the result.
+    sg_exchange = sg_exchange_await.result()
+    hk_exchange = hk_exchange_await.result()
+    us_exchange = us_exchange_await.result()
+    # # Shared rows has only 2-3 alphanumeric strings. Since it's chinese.
+    jp_exchange = jp_exchange_await.result()
+    tw_exchange = tw_exchange_await.result()
+
+    # sg_exchange = get_capital_futures(url)
+    # hk_exchange = get_capital_futures(url)
+    # us_exchange = get_capital_futures(url)
+    # # Shared rows has only 2-3 alphanumeric strings. Since it's chinese.
+    # jp_exchange = get_capital_futures(url, column_thatis_alphanum=4)
+
 
     # Column that is needed.
-    tw_col = ["Exchange", "Symbol", "Original Margin", "Maintenance_Margin"]
-    col = ["Exchange", "Symbol", "Currency", "Original_Margin", "Maintenance_Margin"]
+    tw_col = ["Exchange", "Symbol", "Initial Margin", "Maintenance_Margin"]
+    col = ["Exchange", "Symbol", "Currency", "Initial_Margin", "Maintenance_Margin"]
 
     exchanges = {"SG": [dict(zip(col, d)) for d in sg_exchange],
                  "HK": [dict(zip(col, d)) for d in hk_exchange],
@@ -135,7 +161,13 @@ def get_all_futures():
     return exchanges
 
 
+def check_timing():
+    time_now = datetime.datetime.now()
+    get_all_futures()
+    print("Time taken to scrape future:{}s".format((datetime.datetime.now()-time_now).total_seconds()))
 
+
+@unsync
 def get_capital_futures_TW(url, column_thatis_alphanum = 4):
     try:
         r  = requests.get(url)      # Catch the return
@@ -205,7 +237,7 @@ def get_capital_futures_TW(url, column_thatis_alphanum = 4):
 # Takes in an array of dict
 def generate_sql_insert(data):
 
-    col = ["Exchange", "Symbol", "Currency", "Original_Margin", "Maintenance_Margin"]
+    col = ["Exchange", "Symbol", "Currency", "Initial_Margin", "Maintenance_Margin"]
 
     # SQl column has _ instead of spaces
     sql_columns = ", ".join("`{}`".format(d) for d in [c.replace(" ","_") for c in col] + ["Date_Time"])
@@ -231,7 +263,7 @@ def generate_sql_insert(data):
 
 
 def Get_previous_Future_data(db):
-    sql_query = """SELECT Exchange, Symbol, Original_Margin, Maintenance_Margin, Date_Time 
+    sql_query = """SELECT Exchange, Symbol, Initial_Margin, Maintenance_Margin, Date_Time 
     FROM `future_contract_sizes` as A
     WHERE Date_Time = (
         SELECT max(Date_Time) 
@@ -252,13 +284,13 @@ def Get_previous_Future_data(db):
 def futures_into_dict_tuple(data):
     past_margin_data = {}
     for d in data:
-        if all([c in d for c in ["Exchange", "Symbol", "Original_Margin", "Maintenance_Margin"]]):
+        if all([c in d for c in ["Exchange", "Symbol", "Initial_Margin", "Maintenance_Margin"]]):
             if "Date_Time" in d:    # If Date_time is available, we want it. Else, no need.
                 past_margin_data[(d["Exchange"], d["Symbol"])] = [
-                d["Original_Margin"], d["Maintenance_Margin"], d["Date_Time"]]
+                d["Initial_Margin"], d["Maintenance_Margin"], d["Date_Time"]]
             else:
                 past_margin_data[(d["Exchange"], d["Symbol"])] = [
-                    d["Original_Margin"], d["Maintenance_Margin"]]
+                    d["Initial_Margin"], d["Maintenance_Margin"]]
     return past_margin_data
 
 # Compare the past and now data,
@@ -303,14 +335,13 @@ def Get_Current_Futures_Margin(db=False, sendemail=True):
         if len(difference_key) > 0: # There are differences found. we want to send out a notification.
             array_of_difference = [list(k) + past_margin_dict[k] + Current_margin_dict[k] for k in difference_key]
             # The columns that are needed, in order, to be placed into HTML table.
-            table_header = ["Exchange", "Symbol", "Original Margin (Past)", "Maintenance Margin (Past)", "Date_Time (Past)", "Original Margin", "Maintenance Margin"]
+            table_header = ["Exchange", "Symbol", "Initial Margin (Past)", "Maintenance Margin (Past)", "Date_Time (Past)", "Initial Margin", "Maintenance Margin"]
             html_table = Array_To_HTML_Table(Table_Header=table_header, Table_Data=array_of_difference)
 
             email_body = "{Email_Header}Hi,<br><br>There were some changes to the Futures Margins on https://www.taifex.com <br>Kindly see the difference in the table below<br> \
                     {html_table}<br>The Futures margin excel can be downloaded here: <a href='{url}'>Download Future Excel.</a> \
                     <br><br>Thanks,<br>Aaron{Email_Footer}".format(Email_Header=Email_Header, html_table=html_table, url="http://202.88.105.3:5000/Futures/Scrape",Email_Footer=Email_Footer)
 
-            #EMAIL_LIST_ALERT
             Send_Email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[], Subject="Futures Margin Changed",
                              HTML_Text=email_body, Attachment_Name=[])
         else:   # If there are no changes.
@@ -320,7 +351,8 @@ def Get_Current_Futures_Margin(db=False, sendemail=True):
 
 
             #EMAIL_LIST_ALERT
-            Send_Email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[], Subject="Futures Margin Checked",
+
+            Send_Email(To_recipients=EMAIL_LIST, cc_recipients=[], Subject="Futures Margin Checked",
                              HTML_Text=email_body, Attachment_Name=[])
 
         # Put the latest details into SQL
@@ -332,6 +364,6 @@ def Get_Current_Futures_Margin(db=False, sendemail=True):
 
     return return_val
 
-# If we are not importing this, we want to run main()
+# # If we are not importing this, we want to run main()
 if __name__ == '__main__':
     Get_Current_Futures_Margin()

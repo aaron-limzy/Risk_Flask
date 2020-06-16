@@ -5,13 +5,13 @@ from app.decorators import async_fun
 from app.extensions import db
 
 from flask_table import create_table, Col
-
+import decimal
 from Aaron_Lib import *
 
 @async_fun
 def async_sql_insert(app, header="", values = [" "], footer = "", sql_max_insert=500):
 
-    print("Using async_sql_insert")
+    #print("Using async_sql_insert")
 
     with app.app_context():  # Using current_app._get_current_object()
         for i in range(math.ceil(len(values) / sql_max_insert)):
@@ -27,7 +27,7 @@ def async_sql_insert(app, header="", values = [" "], footer = "", sql_max_insert
 @async_fun
 def async_update_Runtime(app, Tool):
 
-    print("Running Async Tool time update: {}".format(Tool))
+    #print("Running Async Tool time update: {}".format(Tool))
 
     # sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`, `email_sent`) VALUES" + \
     #              " ('{Tool}', now(), 0) ON DUPLICATE KEY UPDATE Updated_Time=now(), email_sent=VALUES(email_sent)".format(
@@ -89,3 +89,14 @@ def query_SQL_return_record(SQL_Query):
     result_col = raw_result.keys()
     collate = [dict(zip(result_col, a)) for a in result_data]
     return collate
+
+
+# Input: sql_query.
+# Return a Dict, using Zip for the results and the col names.
+def Query_SQL_db_engine(sql_query):
+    raw_result = db.engine.execute(sql_query)
+    result_data = raw_result.fetchall()
+    result_data_decimal = [[float(a) if isinstance(a, decimal.Decimal) else a for a in d ] for d in result_data]    # correct The decimal.Decimal class to float.
+    result_col = raw_result.keys()
+    zip_results = [dict(zip(result_col,d)) for d in result_data_decimal]
+    return zip_results
