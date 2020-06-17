@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, Markup, url_for, request, session
+from flask import Blueprint, render_template, Markup, url_for, request, session, current_app
 from flask_login import current_user, login_user, logout_user, login_required
 
 from Aaron_Lib import *
@@ -27,6 +27,10 @@ import requests
 
 import pyexcel
 from werkzeug.utils import secure_filename
+
+from Helper_Flask_Lib import *
+
+
 
 analysis = Blueprint('analysis', __name__)
 
@@ -651,10 +655,13 @@ def get_symbol_daily_pnl():
 # Want to delete from the table where min is not 1.
 # TODO: will need to improve this when MY gives the code
 def delete_from_floating_table():
-    if get_machine_ip_address() == '192.168.64.73': # This keeps getting stuck. Only implement on 64.73 server.
-        print("Trying to delete from aaron.`BGI_Float_History_Save`")
-        insert_into_table = text("DELETE FROM aaron.`BGI_Float_History_Save` WHERE MINUTE(datetime) <> 1")
-        raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
+    #if get_machine_ip_address() == '192.168.64.73': # This keeps getting stuck. Only implement on 64.73 server.
+    print("Trying to delete from aaron.`BGI_Float_History_Save`")
+    #insert_into_table = text("DELETE FROM aaron.`BGI_Float_History_Save` WHERE MINUTE(datetime) <> 1")
+
+    async_sql_insert_raw(app=current_app._get_current_object(), sql_insert="DELETE FROM aaron.`BGI_Float_History_Save` WHERE MINUTE(datetime) <> 1")
+    # Will Asnc this.
+    # raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
 
 # Clear session data.
 # Called when refreshing cookies.

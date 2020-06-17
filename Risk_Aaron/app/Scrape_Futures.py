@@ -342,7 +342,7 @@ def Get_Current_Futures_Margin(db=False, sendemail=True):
                     {html_table}<br>The Futures margin excel can be downloaded here: <a href='{url}'>Download Future Excel.</a> \
                     <br><br>Thanks,<br>Aaron{Email_Footer}".format(Email_Header=Email_Header, html_table=html_table, url="http://202.88.105.3:5000/Futures/Scrape",Email_Footer=Email_Footer)
 
-            Send_Email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[], Subject="Futures Margin Changed",
+            Send_Email(To_recipients=EMAIL_LIST, cc_recipients=[], Subject="Futures Margin Changed",
                              HTML_Text=email_body, Attachment_Name=[])
         else:   # If there are no changes.
             email_body = "{Email_Header}Hi,<br><br>Futures Margins on https://www.taifex.com Remains unchanged.<br><br> \

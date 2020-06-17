@@ -39,6 +39,18 @@ def async_sql_insert(app, header="", values = [" "], footer = "", sql_max_insert
             raw_insert_result = db.engine.execute(sql_trades_insert)
     return
 
+
+@async_fun
+def async_sql_insert_raw(app, sql_insert):
+
+    print("Using async_sql_insert")
+
+    with app.app_context():  # Using current_app._get_current_object()
+        # To make it to SQL friendly text.
+        sql_trades_insert = text(sql_insert.replace("\n", " ").replace("\t", " "))
+        raw_insert_result = db.engine.execute(sql_trades_insert)
+    return
+
 # Async update the runtime table for update.
 @async_fun
 def async_update_Runtime(app, Tool):
