@@ -30,7 +30,7 @@ from werkzeug.utils import secure_filename
 
 from Helper_Flask_Lib import *
 
-
+import decimal
 
 analysis = Blueprint('analysis', __name__)
 
@@ -923,13 +923,14 @@ def BGI_Symbol_Float():
                          'Using Live5.group_table where book = "B"<br>' +
                          'Values are all on <b>BGI Side</b>. <br>' +
                          'Sort by absolute net volume.<br>'+
-                         "Yesterday Data saved in cookies.<br>")
+                         "Yesterday Data saved in cookies.<br>" +
+                         "Taking Live prices from Live 1 q Symbols")
 
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Symbol_Float.html", backgroud_Filename='css/yellow-grey.jpg', icon= "", Table_name="Symbol Float (B 📘)", \
+    return render_template("Webworker_Symbol_Float.html", backgroud_Filename='css/pattern7.jpg', icon= "", Table_name="Symbol Float (B 📘)", \
                            title=title, ajax_url=url_for('analysis.BGI_Symbol_Float_ajax', _external=True), header=header, setinterval=15,
-                           description=description, replace_words=Markup(['(Client Side)']))
+                           description=description, no_backgroud_Cover=True, replace_words=Markup(['(Client Side)']))
 
 
 
@@ -979,17 +980,31 @@ def BGI_Symbol_Float_ajax():
 
     server_time_diff_str = "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
 
-    sql_statement = """SELECT SYMBOL, SUM(ABS(floating_volume)) AS VOLUME, -1 * SUM(net_floating_volume) AS NETVOL, 
-                            SUM(floating_revenue) AS REVENUE, 
-                            SUM(closed_vol_today) as "TODAY_VOL",
-                            SUM(closed_revenue_today) as "TODAY_REVENUE",                            
-                            DATE_ADD(DATETIME,INTERVAL ({ServerTimeDiff_Query}) HOUR) AS DATETIME
-            FROM aaron.BGI_Float_History_Save
-            WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.BGI_Float_History_Save)
-            AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "B")
-            GROUP BY SYMBOL
-            ORDER BY REVENUE DESC
-            """.format(ServerTimeDiff_Query=server_time_diff_str)
+    # sql_statement = """SELECT SYMBOL, SUM(ABS(floating_volume)) AS VOLUME, -1 * SUM(net_floating_volume) AS NETVOL,
+    #                         SUM(floating_revenue) AS REVENUE,
+    #                         SUM(closed_vol_today) as "TODAY_VOL",
+    #                         SUM(closed_revenue_today) as "TODAY_REVENUE",
+    #                         DATE_ADD(DATETIME,INTERVAL ({ServerTimeDiff_Query}) HOUR) AS DATETIME
+    #         FROM aaron.BGI_Float_History_Save
+    #         WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.BGI_Float_History_Save)
+    #         AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "B")
+    #         GROUP BY SYMBOL
+    #         ORDER BY REVENUE DESC
+    #         """.format(ServerTimeDiff_Query=server_time_diff_str)
+
+    sql_statement = """SELECT aaron.BGI_Float_History_Save.SYMBOL, SUM(ABS(floating_volume)) AS VOLUME, -1 * SUM(net_floating_volume) AS NETVOL, 
+                    SUM(floating_revenue) AS REVENUE, 
+                    SUM(closed_vol_today) as "TODAY_VOL",
+                    SUM(closed_revenue_today) as "TODAY_REVENUE",                            
+                                                P.ASK, P.BID,
+                                                DATE_ADD(DATETIME,INTERVAL ({ServerTimeDiff_Query}) HOUR) AS DATETIME
+    FROM aaron.BGI_Float_History_Save 
+                    LEFT JOIN live1.mt4_prices as P ON  CONCAT(aaron.BGI_Float_History_Save.SYMBOL, "q") = P.SYMBOL
+    WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.BGI_Float_History_Save)
+    AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "B")
+    GROUP BY SYMBOL
+    ORDER BY REVENUE DESC""".format(ServerTimeDiff_Query=server_time_diff_str)
+
 
     sql_query = text(sql_statement)
     raw_result = db.engine.execute(sql_query)   # Insert select..
@@ -1030,17 +1045,30 @@ def BGI_Symbol_Float_ajax():
     if "DATETIME" in df_to_table:
         df_to_table.pop('DATETIME')
 
+
+    # SQL sometimes return values with lots of decimal points.
+    # We only want to show afew. Else, it takes up too much screen spaace.
+    if "BID" in df_to_table:
+        df_to_table["BID"] = df_to_table["BID"].apply(lambda x: "{:2.5f}".format(x) if (isfloat(decimal.Decimal(str(x)).as_tuple().exponent)
+                                                                                        and (decimal.Decimal(str(x)).as_tuple().exponent < -5)) else x)
+
+    # SQL sometimes return values with lots of decimal points.
+    # We only want to show afew. Else, it takes up too much screen spaace.
+    if "ASK" in df_to_table:
+        df_to_table["ASK"] = df_to_table["ASK"].apply(lambda x: "{:2.5f}".format(x) if (isfloat(decimal.Decimal(str(x)).as_tuple().exponent)
+                                                                                        and (decimal.Decimal(str(x)).as_tuple().exponent < -5)) else x)
+
     # Go ahead to merge the tables.
     if "SYMBOL" in df_to_table and "SYMBOL" in df_yesterday_symbol_pnl:
         df_to_table = df_to_table.merge(df_yesterday_symbol_pnl, on="SYMBOL", how='left')
-        df_to_table.fillna(0, inplace=True)  # Want to fill up all the empty ones with 0
+        df_to_table.fillna("-", inplace=True)  # Want to fill up all the empty ones with -
 
 
 
 
     # Need to check if the columns are in the df.
     # taking this chance to re-arrange them as well.
-    col_of_df = [c for c in ["SYMBOL", "NETVOL", "VOLUME", "REVENUE", "TODAY_VOL", "TODAY_REVENUE", "YESTERDAY_VOLUME", "YESTERDAY_REVENUE"] if c in  list(df_to_table.columns)]
+    col_of_df = [c for c in ["SYMBOL", "NETVOL", "VOLUME", "REVENUE", "TODAY_VOL", "TODAY_REVENUE", "BID", "ASK","YESTERDAY_VOLUME", "YESTERDAY_REVENUE"] if c in  list(df_to_table.columns)]
 
     df_records = df_to_table[col_of_df].to_records(index=False)
     df_records = [list(a) for a in df_records]

@@ -6,8 +6,11 @@
 {{ super() }}
 <style>
   body { background: #eee url({{ url_for('static', filename=backgroud_Filename) }});
+  {% if not no_backgroud_Cover %}
   background-repeat: no-repeat;
-  background-size: cover;}
+  background-size: cover;
+  {% endif %}
+}
 </style>
 {% endblock %}
 
@@ -191,7 +194,7 @@
       //console.log(responseData.length);
 
       // Post to main thread to update the DOM
-      self.postMessage({Data_table_Div1: Draw_Table(responseData[0], "{{ Table_name }}" , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div1_table" ) + below_table});
+      self.postMessage({Data_table_Div1: Draw_Table(responseData[0], "{{ Table_name }}" , "table compact  table-hover table-sm table-responsive-sm table-bordered bg-light large_text_table basic_table", ["Update Slow"] , {{ replace_words }}, "Data_table_Div1_table" ) + below_table});
       self.postMessage({Table1_Raw : JSON.stringify(responseData)});
       // self.postMessage({plot1 : responseData[1]});
       //self.postMessage({To_Save : responseData[2]});
@@ -222,9 +225,6 @@
         }
         return reurn_val;
     }
-
-
-
 
 
     function Draw_Vertical_Table(table_Data, Table_Caption, Table_Class, Replace_words) {
@@ -289,8 +289,8 @@
             for (var x in table_Data) {
                 //For table header.
                 for (var xx in table_Data[x]) {
-                    sString += '<th>';
-                    sString += xx.replace("_", " ");  // Replace _ with ' ' so that table can be smaller
+                    sString += '<th class="align-middle">';
+                    sString += xx.replace("_", "<br>");  // Replace _ with ' ' so that table can be smaller
                     sString += '</th>';
                 }
                 break;
@@ -481,17 +481,20 @@
           var order = [];
           //console.log( table_id + ' is NOT data table' );
 
-        }else{
+        }else{  // If it's a Datatable already...
           var table = $( table_id).DataTable();
           var order = table.order();
+          var search = table.search()
           //console.log( 'Column '+order+' is the ordering column' );
         }
         $(div_id).html(data);
         table = $( table_id ).DataTable( {
         paging: false,
-        searching: false,
-        "aaSorting": order // Don't want to sort initially
-        } );
+        searching: true,
+        "aaSorting": order, // Don't want to sort initially
+        "oSearch": {"sSearch": search}
+      } );
+      //console.log(search);
       }
 
 
@@ -535,7 +538,7 @@
               if (key.toLowerCase().search("data_table_div")>=0){    // All tables can be put to Datatables
                 // used to check if a table is a DataTable or not already.
                 // Datatables dosn't allow for re-init. So.. gotta check
-                console.log(key);
+                //console.log(key);
                 //'#' + key + '_table' will be the name of the table in the Div.
                  refresh_datatable('#' + key, current_html + ret_obj[key]);
 

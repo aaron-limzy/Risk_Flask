@@ -28,6 +28,7 @@ body {
   padding: Auto;
 }
 
+
 table.basic_table {
   caption-side: bottom;
   border: 2px solid grey;
@@ -179,4 +180,9 @@ table.table_orange caption {
   text-shadow: #EDEDED 3px 2px 0;
   position: relative;
   background: rgba(242, 242, 242, 0.8);
+}
+
+table.large_text_table {
+  font-size: 120%;
+  border-collapse: collapse;
 }

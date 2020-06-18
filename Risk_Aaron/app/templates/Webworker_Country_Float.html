@@ -198,7 +198,7 @@
       // Post to main thread to update the DOM
       //table table-hover table-sm table-responsive-sm basic_table bg-light
       // datatable class at https://datatables.net/manual/styling/classes
-      self.postMessage({Data_table_Div1: Draw_Table(responseData[0], "{{ Table_name }}" , "compact row-border table table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div1_table" ) + below_table});
+      self.postMessage({Data_table_Div1: Draw_Table(responseData[0], "{{ Table_name }}" , "compact row-border table table-hover table-sm table-responsive-sm basic_table large_text_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div1_table" ) + below_table});
       self.postMessage({Table1_Raw : JSON.stringify(responseData)});
       // self.postMessage({plot1 : responseData[1]});
       //self.postMessage({To_Save : responseData[2]});
@@ -296,8 +296,8 @@
         for (var x in table_Data) {
             //For table header.
             for (var xx in table_Data[x]) {
-                sString += '<th>';
-                sString += xx.replace("_", " ");  // Replace _ with ' ' so that table can be smaller
+                sString += '<th class="align-middle">';
+                sString += xx.replace("_", "<br>");  // Replace _ with ' ' so that table can be smaller
                 sString += '</th>';
             }
             break;
@@ -498,7 +498,7 @@
         $(div_id).html(data);
         table = $( table_id ).DataTable( {
         paging: false,
-        searching: false,
+        searching: true,
         "aaSorting": order // Don't want to sort initially
         } );
       }
