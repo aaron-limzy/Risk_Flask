@@ -1,0 +1,73 @@
+{
+  "name": "ifvisible.js",
+  "version": "2.0.12",
+  "description": "Crossbrowser & lightweight way to check if user is looking at the page or interacting with it. (wrapper around HTML5 visibility api)",
+  "main": "dist/ifvisible.js",
+  "scripts": {
+    "start": "webpack",
+    "build": "NODE_ENV=production webpack --production",
+    "lint": "eslint --ext .js,.ts ./src",
+    "docs": "docco src/*.ts --output docs/docco",
+    "release": "npm run build && npm run docs && npm run publish"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/serkanyersen/ifvisible.js.git"
+  },
+  "typescript": {
+    "definition": "src/ifvisible.ts"
+  },
+  "keywords": [
+    "visibility",
+    "HTML5",
+    "cross",
+    "browser",
+    "api",
+    "UI",
+    "idle",
+    "status",
+    "mousemove",
+    "reading",
+    "mode",
+    "tab",
+    "change",
+    "typescript"
+  ],
+  "author": "Serkan Yersen <serkanyersen@gmail.com> (http://serkan.io/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/serkanyersen/ifvisible.js/issues"
+  },
+  "homepage": "https://github.com/serkanyersen/ifvisible.js",
+  "devDependencies": {
+    "@types/jest": "^24.0.18",
+    "@typescript-eslint/eslint-plugin": "^2.0.0",
+    "@typescript-eslint/parser": "^2.0.0",
+    "docco": "^0.8.0",
+    "eslint": "^6.2.2",
+    "eslint-config-airbnb-typescript": "^4.0.1",
+    "eslint-plugin-import": "^2.18.2",
+    "jest": "^24.9.0",
+    "ts-jest": "^24.0.2",
+    "ts-loader": "^6.0.4",
+    "typescript": "^3.6.2",
+    "webpack": "^4.39.3",
+    "webpack-shell-plugin": "^0.5.0"
+  },
+  "jest": {
+    "transform": {
+      ".(ts|tsx)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
+    },
+    "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|tsx|js)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json"
+    ]
+  },
+  "dependencies": {
+    "webpack-cli": "^3.3.7"
+  }
+}

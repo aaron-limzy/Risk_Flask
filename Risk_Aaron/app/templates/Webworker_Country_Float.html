@@ -22,13 +22,21 @@
 <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
 <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
 
+<script type='text/javascript' src="http://202.88.105.5/javascripts/api/tableau-2.min.js"></script>
+<script src="{{ url_for('static', filename='js/ifvisible.js') }}"></script>
+
 
 
 
 <script type="javascript/worker" id="my_first_worker">
 
-  var Increment_counter = 1;
+  var Increment_counter = 1;  // Will increment it one at a time. 1 second
   var Refresh_Page_Counter = 0;  // When to refresh the page.
+  var Inactive_timer_counter = 0; // Counter to store how long the tab is inactive for.
+
+
+
+  var tabIsActive=true;
 
   self.onmessage = function(event){
     //console.log(event);
@@ -37,27 +45,36 @@
       Refresh_Page_Counter =  {{ setinterval }};
       Refresh_Page_seconds_call();
       {% else %}
-      xhr_call();
+      xhr_call();   // The Ajax Call.
       {% endif %}
     }else if (event.data == "CLEAR_COOKIES") {  // Want to clear the cookies.
       sent_httprequest("POST", "{{ ajax_clear_cookie_url }}").then(responseData => {});
-      }
-
+    }else if (event.data == "TAB-IS-ACTIVE"){ // Main thread will send, when it sense that tab is active
+        tabIsActive=true;
+        {% if setinterval %}
+        if (Inactive_timer_counter >= {{ setinterval }} ){
+          Refresh_Page_Counter = {{ setinterval }}; // Set it to large number so that it runs immediately.
+          self.postMessage({TO_LOG: "Tab forced refresh as it has been inactive for " + Inactive_timer_counter + " Seconds. " + return_Time_String()});
+          Inactive_timer_counter=0;
+        }
+        //Refresh_Page_seconds_call() // Call the function to re-start everything
+          {% endif %}
+        self.postMessage({TO_LOG:"TAB IS ACTIVE. " + return_Time_String()});
+    }else if (event.data == "TAB-IS-INACTIVE"){
+        tabIsActive = false;
+        self.postMessage({TO_LOG: "TAB IS INACTIVE " + return_Time_String()});
+    }
     else {
-
-      xhr_call();    // Do the XMLHTTPRequest
+      xhr_call();    // Do the Ajax
 
       {% if setinterval %}
         Refresh_Page_seconds_call();
         setInterval(Refresh_Page_seconds_call,1000);
       {% endif %}
-
-
-
     }
-    //self.postMessage(return_Time_String());
-    //xhr_call();
-  };
+};
+
+
 
     var UTC_Timing_Fixed = -480;        // Used for UTC Time offset to SGT
     var UTC_Offset_Change = 0;
@@ -78,12 +95,12 @@
     //
     // Call in every second, will check and update button.
     function Refresh_Page_seconds_call(){
+      if (tabIsActive){
         Refresh_Page_Counter = Refresh_Page_Counter + Increment_counter;
         //console.log( return_Time_String());
-
         // If the call is to be made.
         if (Refresh_Page_Counter >=  {{ setinterval }}){
-          Increment_counter = 0;
+          Increment_counter = 0;  // Stop the increment for now.
           Refresh_Page_Counter = 0;
 
           //Table1_Update();
@@ -97,6 +114,11 @@
             self.postMessage({Refresh_count_down : (Refresh_Page_seconds - Refresh_Page_Counter)});
           }
         }
+      }else{  // If the tab is now inactive. We don't need to keep calling.
+        Inactive_timer_counter = Inactive_timer_counter + 1;
+      }
+
+
     }
 
     {% endif %}
@@ -198,15 +220,10 @@
       // Post to main thread to update the DOM
       //table table-hover table-sm table-responsive-sm basic_table bg-light
       // datatable class at https://datatables.net/manual/styling/classes
-      self.postMessage({Data_table_Div1: Draw_Table(responseData[0], "{{ Table_name }}" , "compact row-border table table-hover table-sm table-responsive-sm basic_table large_text_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div1_table" ) + below_table});
+      self.postMessage({Data_table_Div1: Draw_Table(responseData[0], "{{ Table_name }}" , "compact row-border table table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div1_table" ) + below_table});
       self.postMessage({Table1_Raw : JSON.stringify(responseData)});
       // self.postMessage({plot1 : responseData[1]});
       //self.postMessage({To_Save : responseData[2]});
-
-
-
-
-
 
     }).catch(err => {
       //self.postMessage(err);
@@ -439,6 +456,8 @@
         }
         return str;
     }
+
+
 </script>
 
 
@@ -501,22 +520,29 @@
         searching: true,
         "aaSorting": order // Don't want to sort initially
         } );
+
       }
 
       myWorker.onmessage = function(e){
         if (e.data instanceof Object){  // If it is an object, we loop thru and add it to the correct container/Div
           ret_obj = e.data;
-          //console.log(ret_obj);
+        //console.log(ret_obj);
           var consolidate = false;
           if ('consolidate' in ret_obj){  // If we want to consolidate all the errors.
             consolidate = true;
           }
+
           for (let key in ret_obj){
 
            //if(e.data.hasOwnProperty("consolidate")) {
 
 
           //}
+
+            if (key.search("TO_LOG") != -1){  //If we want to log this to consol from web worker.
+              console.log(ret_obj[key]);
+            }
+
              var current_html = "";
              if (consolidate == true){  // If we need to consolidate the items.
 
@@ -540,9 +566,13 @@
               if (key.toLowerCase().search("data_table_div")>=0){    // All tables can be put to Datatables
                 // used to check if a table is a DataTable or not already.
                 // Datatables dosn't allow for re-init. So.. gotta check
-                console.log(key);
+                //console.log(key);
                 //'#' + key + '_table' will be the name of the table in the Div.
                  refresh_datatable('#' + key, current_html + ret_obj[key]);
+
+                 //console.log("Refreshing viz data.");
+                 viz.refreshDataAsync(); // Want to refresh the tableau viz's data
+
 
 
               }else{
@@ -552,31 +582,7 @@
               console.log(ret_obj[key]);
               Plotly.newPlot(key, ret_obj[key]);
             }
-
-
           }
-
-          // // used to check if a table is a DataTable or not already.
-          // // Datatables dosn't allow for re-init. So.. gotta check
-          // if ( $.fn.dataTable.isDataTable( '#tTable_1' ) != true) {
-          //   console.log( 'tTable_1 is NOT data table' );
-          //     table = $('#tTable_1').DataTable( {
-          //         paging: false,
-          //         searching: false,
-          //         "aaSorting": [] // Don't want to sort initially
-          //     } );
-          // }else{
-          //   var table = $('#tTable_1').DataTable();
-          //   var order = table.order();
-          //   console.log( 'Column '+order+' is the ordering column' );
-          // }
-
-
-
-
-
-            //}
-          //}
         }else{
           console.log(e.data);
         }
@@ -594,12 +600,49 @@
       myWorker.postMessage("CLEAR_COOKIES");  // Send a click to the web worker
     });
 
+    var viz;
+    function initViz() {
+        var containerDiv = document.getElementById("vizContainer"),
+        url = "http://202.88.105.5/views/Aaron_Floating/BGIFloating";
+        viz = new tableau.Viz(containerDiv, url);
+        //viz.setFrameSize(parseInt(1600, 10), parseInt(950, 10));
+    }
+    initViz();
 
+
+    var TabIsNotActive=false;
+
+    setInterval(function(){
+
+      var h = (new Date()).getHours();
+      var m = (new Date()).getMinutes();
+      var s = (new Date()).getSeconds();
+      h = h < 10? "0"+h : h;
+      m = m < 10? "0"+m : m;
+      s = s < 10? "0"+s : s;
+
+      if ( TabIsNotActive != document.hidden){
+        console.log("Document state changed (Inactive/Active) : "+ h+':'+m+':'+s);
+        TabIsNotActive = document.hidden;
+        if (TabIsNotActive == true){
+          myWorker.postMessage("TAB-IS-INACTIVE");  // Send to the web worker
+        }else{
+          myWorker.postMessage("TAB-IS-ACTIVE");  // Send to the web worker
+        }
+      }
+    }, 1000);
 
   });
 
 
 </script>
+
+
+<script type="text/javascript">
+
+</script>
+
+
 {% endblock %}
 
 
@@ -643,15 +686,11 @@
 <!-- <div class="row">
   <div class="col-sm chart" id="plot1"> </div>
 </div> -->
-<script type='text/javascript' src='http://202.88.105.5/javascripts/api/viz_v1.js'></script>
-<div class='tableauPlaceholder' style='width: 1600px; height: 950px;'><object class='tableauViz' width='1600' height='950' style='display:none;'>
-    <param name='host_url' value='http%3A%2F%2F202.88.105.5%2F' />
-    <param name='embed_code_version' value='3' />
-    <param name='site_root' value='' />
-    <param name='name' value='Aaron_Floating&#47;BGIFloating' />
-    <param name='tabs' value='yes' />
-    <param name='toolbar' value='yes' />
-    <param name='showAppBanner' value='false' /></object></div>
+
+
+<div id="vizContainer" style='width: 1600px; height: 950px;'></div>
+
+
 {% if table %}
 <br>
 <h2>Uploaded Swap Values</h2>
