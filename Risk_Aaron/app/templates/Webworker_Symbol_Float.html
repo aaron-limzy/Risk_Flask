@@ -31,6 +31,14 @@
   var Increment_counter = 1;
   var Refresh_Page_Counter = 0;  // When to refresh the page.
 
+  var Inactive_timer_counter = 0; // Counter to store how long the tab is inactive for.
+  var tabIsActive=true;
+
+  var UTC_Timing_Fixed = -480;        // Used for UTC Time offset to SGT
+  var UTC_Offset_Change = 0;
+
+  Check_Time_Offset();
+
   self.onmessage = function(event){
     //console.log(event);
     if (event.data == "BUTTON") {  // force the xmlhttprequest to fire off.
@@ -40,53 +48,49 @@
       {% else %}
       xhr_call();
       {% endif %}
+    }else if (event.data == "TAB-IS-ACTIVE"){         // Main thread will send, when it sense that tab is active
+        tabIsActive=true;
+        {% if setinterval %}
+        if (Inactive_timer_counter >= {{ setinterval }} ){  // If the page is idle, we will not need to run the refresh.
+                                                            // Thus, saving some resources.
+          Refresh_Page_Counter = {{ setinterval }};         // Set it to large number so that it runs immediately.
+          self.postMessage({TO_LOG: "Tab forced refresh as it has been inactive for " + Inactive_timer_counter + " Seconds. " + return_Time_String()});
+          Inactive_timer_counter=0;                        // Reset the inactive counter since it's now active
+        }
+        //Refresh_Page_seconds_call() // Call the function to re-start everything
+          {% endif %}
+        self.postMessage({TO_LOG:"TAB IS ACTIVE. " + return_Time_String()});
+    }else if (event.data == "TAB-IS-INACTIVE"){
+        tabIsActive = false;
+        self.postMessage({TO_LOG: "TAB IS INACTIVE " + return_Time_String()});
     }else{
-
-
       xhr_call();    // Do the XMLHTTPRequest
-
       {% if setinterval %}
         Refresh_Page_seconds_call();
         setInterval(Refresh_Page_seconds_call,1000);
       {% endif %}
-
-
-
     }
-    //self.postMessage(return_Time_String());
-    //xhr_call();
   };
 
-    var UTC_Timing_Fixed = -480;        // Used for UTC Time offset to SGT
-    var UTC_Offset_Change = 0;
-    Check_Time_Offset();
-    //Table1_Update();
 
 
-    Ajax_data = [];
 
-    // function call_main(){
-    //   self.postMessage(return_Time_String());
-    // }
 
     {% if setinterval %}
     var Refresh_Page_seconds = {{ setinterval }};  // When to refresh the page.
 
-    // setInterval(Refresh_Page_seconds_call, 1000);        //     Refresh the time.
-    //
     // Call in every second, will check and update button.
     function Refresh_Page_seconds_call(){
+      if (tabIsActive){
         Refresh_Page_Counter = Refresh_Page_Counter + Increment_counter;
-        //console.log( return_Time_String());
 
-        // If the call is to be made.
+        // If the counter (1 second) has reached the set interval duration
         if (Refresh_Page_Counter >=  {{ setinterval }}){
-          Increment_counter = 0;
+          Increment_counter = 0;          // Stop the increment for now.
           Refresh_Page_Counter = 0;
 
-          //Table1_Update();
-          xhr_call();    // Do the XMLHTTP call.
-          self.postMessage({Refresh_count_down : "Running.."});
+          xhr_call();         // Do the XMLHTTP call. Ajax to end point.
+          self.postMessage({Refresh_count_down : "Running.."}); // Post that we are running to the button.
 
         }else{
           //console.log({Refresh_count_down : (Refresh_Page_seconds - Refresh_Page_Counter)});
@@ -95,6 +99,9 @@
             self.postMessage({Refresh_count_down : (Refresh_Page_seconds - Refresh_Page_Counter)});
           }
         }
+      }else{  // If the tab is now inactive. We don't need to keep calling.
+        Inactive_timer_counter = Inactive_timer_counter + 1;  // Increment inactive counter so we know how long it's been out for.
+      }
     }
 
     {% endif %}
@@ -116,23 +123,6 @@
         console.log(status);
         console.log(error);
     }
-
-    function Table1_Update() {
-
-
-
-        //clearInterval(SetInterval_LP_Details);
-        //$( "#btn_refresh_page" ).removeClass( "btn-warning" );
-        //$( "#btn_refresh_page" ).addClass( "btn-info" );
-
-        var Post_Data = { };
-        xhr_call();
-        //Custom_Ajax_Call(Post_Data, "{{ ajax_url }}", "Table1", "Table1_Raw", "Table1_Raw_Error", '{{ Table_name }}', ["Update Slow"] );
-        // fetch("{{ ajax_url }}")
-        // .then(res => res.json())
-        // .then(posts => self.postMessage(posts))
-    }
-
 
   function sent_httprequest(method, url, data){
     const promise = new Promise((resolve, reject) => {
@@ -499,11 +489,6 @@
 
 
 
-
-
-
-
-
       myWorker.onmessage = function(e){
         if (e.data instanceof Object){  // If it is an object, we loop thru and add it to the correct container/Div
           ret_obj = e.data;
@@ -513,8 +498,9 @@
           }
           for (let key in ret_obj){
 
-           //if(e.data.hasOwnProperty("consolidate")) {
-
+            if (key.search("TO_LOG") != -1){  //If we want to log this to consol from web worker.
+              console.log(ret_obj[key]);
+            }
 
           //}
              var current_html = "";
@@ -574,6 +560,30 @@
 
     // Could be anything. We just want to post something out.
     myWorker.postMessage("START");
+
+    // To let the page not run Ajax when tab is deemed idle.
+    var TabIsNotActive=false;
+
+    setInterval(function(){
+      var h = (new Date()).getHours();
+      var m = (new Date()).getMinutes();
+      var s = (new Date()).getSeconds();
+      h = h < 10? "0"+h : h;
+      m = m < 10? "0"+m : m;
+      s = s < 10? "0"+s : s;
+
+      if ( TabIsNotActive != document.hidden){
+        console.log("Document state changed (Inactive/Active) : "+ h+':'+m+':'+s);
+        TabIsNotActive = document.hidden;
+        if (TabIsNotActive == true){
+          myWorker.postMessage("TAB-IS-INACTIVE");  // Send to the web worker
+        }else{
+          myWorker.postMessage("TAB-IS-ACTIVE");  // Send to the web worker
+          refresh_viz_count=10; // Set to large number so that it will be forced to refresh at next go.
+        }
+      }
+    }, 1000);
+
 
 
     $('#btn_refresh_page').click(function() {

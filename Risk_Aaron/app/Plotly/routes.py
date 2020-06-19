@@ -369,7 +369,7 @@ def BGI_Country_Float():
                          "All others are BGI Side (Flipped, BGI Side)<br><br>" +
                          "Data taken from aaron.BGI_Float_History_Save table.<br><br>" +
                          "Tableau Data taken off same table." +
-                         "Page will automatically refresh. However, it (<span style = 'background-color: yellow'>will stop with tab is idle</span>. (Hidden / Minimized)" +
+                         "Page will automatically refresh. However, it (<span style = 'background-color: yellow'>will stop with tab is idle</span>. (Hidden / Minimized) <br>" +
                          "Tableau Viz will auto refresh every 2 mins.")
 
 
