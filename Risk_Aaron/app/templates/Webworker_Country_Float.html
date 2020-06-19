@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% import 'bootstrap/wtf.html' as wtf %}
 
-
 {% block styles %}
 {{ super() }}
 <style>
@@ -23,9 +22,6 @@
 <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
 
 <script type='text/javascript' src="http://202.88.105.5/javascripts/api/tableau-2.min.js"></script>
-<script src="{{ url_for('static', filename='js/ifvisible.js') }}"></script>
-
-
 
 
 <script type="javascript/worker" id="my_first_worker">
@@ -34,28 +30,33 @@
   var Refresh_Page_Counter = 0;  // When to refresh the page.
   var Inactive_timer_counter = 0; // Counter to store how long the tab is inactive for.
 
-
-
   var tabIsActive=true;
 
-  self.onmessage = function(event){
+  var UTC_Timing_Fixed = -480;        // Used for UTC Time offset to SGT
+  var UTC_Offset_Change = 0;
+  Check_Time_Offset();
+
+  Ajax_data = [];
+
+  self.onmessage = function(event){ // When recieved anything from main thread
     //console.log(event);
-    if (event.data == "BUTTON") {  // force the xmlhttprequest to fire off.
+    if (event.data == "BUTTON") {  // force the xmlhttprequest to fire off. Ajax to endpoint
       {% if setinterval %}
       Refresh_Page_Counter =  {{ setinterval }};
       Refresh_Page_seconds_call();
       {% else %}
       xhr_call();   // The Ajax Call.
       {% endif %}
-    }else if (event.data == "CLEAR_COOKIES") {  // Want to clear the cookies.
+    }else if (event.data == "CLEAR_COOKIES") {        // Want to clear the cookies.
       sent_httprequest("POST", "{{ ajax_clear_cookie_url }}").then(responseData => {});
-    }else if (event.data == "TAB-IS-ACTIVE"){ // Main thread will send, when it sense that tab is active
+    }else if (event.data == "TAB-IS-ACTIVE"){         // Main thread will send, when it sense that tab is active
         tabIsActive=true;
         {% if setinterval %}
-        if (Inactive_timer_counter >= {{ setinterval }} ){
-          Refresh_Page_Counter = {{ setinterval }}; // Set it to large number so that it runs immediately.
+        if (Inactive_timer_counter >= {{ setinterval }} ){  // If the page is idle, we will not need to run the refresh.
+                                                            // Thus, saving some resources.
+          Refresh_Page_Counter = {{ setinterval }};         // Set it to large number so that it runs immediately.
           self.postMessage({TO_LOG: "Tab forced refresh as it has been inactive for " + Inactive_timer_counter + " Seconds. " + return_Time_String()});
-          Inactive_timer_counter=0;
+          Inactive_timer_counter=0;                        // Reset the inactive counter since it's now active
         }
         //Refresh_Page_seconds_call() // Call the function to re-start everything
           {% endif %}
@@ -66,7 +67,6 @@
     }
     else {
       xhr_call();    // Do the Ajax
-
       {% if setinterval %}
         Refresh_Page_seconds_call();
         setInterval(Refresh_Page_seconds_call,1000);
@@ -75,37 +75,21 @@
 };
 
 
-
-    var UTC_Timing_Fixed = -480;        // Used for UTC Time offset to SGT
-    var UTC_Offset_Change = 0;
-    Check_Time_Offset();
-    //Table1_Update();
-
-
-    Ajax_data = [];
-
-    // function call_main(){
-    //   self.postMessage(return_Time_String());
-    // }
-
     {% if setinterval %}
     var Refresh_Page_seconds = {{ setinterval }};  // When to refresh the page.
 
-    // setInterval(Refresh_Page_seconds_call, 1000);        //     Refresh the time.
-    //
     // Call in every second, will check and update button.
     function Refresh_Page_seconds_call(){
       if (tabIsActive){
         Refresh_Page_Counter = Refresh_Page_Counter + Increment_counter;
-        //console.log( return_Time_String());
-        // If the call is to be made.
+
+        // If the counter (1 second) has reached the set interval duration
         if (Refresh_Page_Counter >=  {{ setinterval }}){
-          Increment_counter = 0;  // Stop the increment for now.
+          Increment_counter = 0;          // Stop the increment for now.
           Refresh_Page_Counter = 0;
 
-          //Table1_Update();
-          xhr_call();    // Do the XMLHTTP call.
-          self.postMessage({Refresh_count_down : "Running.."});
+          xhr_call();         // Do the XMLHTTP call. Ajax to end point.
+          self.postMessage({Refresh_count_down : "Running.."}); // Post that we are running to the button.
 
         }else{
           //console.log({Refresh_count_down : (Refresh_Page_seconds - Refresh_Page_Counter)});
@@ -115,10 +99,8 @@
           }
         }
       }else{  // If the tab is now inactive. We don't need to keep calling.
-        Inactive_timer_counter = Inactive_timer_counter + 1;
+        Inactive_timer_counter = Inactive_timer_counter + 1;  // Increment inactive counter so we know how long it's been out for.
       }
-
-
     }
 
     {% endif %}
@@ -141,23 +123,7 @@
         console.log(error);
     }
 
-    function Table1_Update() {
-
-
-
-        //clearInterval(SetInterval_LP_Details);
-        //$( "#btn_refresh_page" ).removeClass( "btn-warning" );
-        //$( "#btn_refresh_page" ).addClass( "btn-info" );
-
-        var Post_Data = { };
-        xhr_call();
-        //Custom_Ajax_Call(Post_Data, "{{ ajax_url }}", "Table1", "Table1_Raw", "Table1_Raw_Error", '{{ Table_name }}', ["Update Slow"] );
-        // fetch("{{ ajax_url }}")
-        // .then(res => res.json())
-        // .then(posts => self.postMessage(posts))
-    }
-
-
+    // Does the Ajax call. Get JSON in return
   function sent_httprequest(method, url, data){
     const promise = new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -181,8 +147,6 @@
         console.log('xmlHTTP Error');
         console.error(xhr);
         reject(xhr.response);
-
-
       };
 
       xhr.ontimeout = function (e) {
@@ -487,7 +451,7 @@
       var Increment_counter = 1;
 
       var Refresh_Page_Counter = 0;  // When to refresh the page.
-
+      var refresh_viz_count = 0;    // counter to decrease the viz refresh rate.
       //var SetInterval_MT4_LP;
       //var SetInterval_LP_Details;
 
@@ -569,10 +533,13 @@
                 //console.log(key);
                 //'#' + key + '_table' will be the name of the table in the Div.
                  refresh_datatable('#' + key, current_html + ret_obj[key]);
-
+                 if (refresh_viz_count >= 2){  // Only want to refresh the viz every 30 secons.
                  //console.log("Refreshing viz data.");
-                 viz.refreshDataAsync(); // Want to refresh the tableau viz's data
-
+                  viz.refreshDataAsync(); // Want to refresh the tableau viz's data
+                  refresh_viz_count = 0;  // reset the counbter
+                }else{
+                  refresh_viz_count = refresh_viz_count + 1;  // Increment when we are not refreshing the Viz
+                }
 
 
               }else{
@@ -609,7 +576,7 @@
     }
     initViz();
 
-
+    // To let the page not run Ajax when tab is deemed idle.
     var TabIsNotActive=false;
 
     setInterval(function(){
@@ -628,6 +595,7 @@
           myWorker.postMessage("TAB-IS-INACTIVE");  // Send to the web worker
         }else{
           myWorker.postMessage("TAB-IS-ACTIVE");  // Send to the web worker
+          refresh_viz_count=10; // Set to large number so that it will be forced to refresh at next go.
         }
       }
     }, 1000);

@@ -139,7 +139,7 @@ def save_BGI_float():
                          "Save it by Country, by Symbol.<br>" +
                          "Country Float and Symbol Float will be using this page.<br>"+
                          "Table time is in Server [Live 1] Timing.<br>" +
-                         "Revenue has been all flipped (*-1) regardless of A or B book.")
+                         "Revenue has been all flipped (*-1) regardless of A or B book.<br><br>")
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/city_overview.jpg', icon="css/save_Filled.png",
@@ -368,7 +368,9 @@ def BGI_Country_Float():
                          "_A Groups shows Client side PnL (<span style = 'background-color: #C7E679'>Client Side</span>).<br>" +
                          "All others are BGI Side (Flipped, BGI Side)<br><br>" +
                          "Data taken from aaron.BGI_Float_History_Save table.<br><br>" +
-                         "Tableau Data taken off same table. However, needs to click (<span style = 'background-color: yellow'>Refresh</span>) for data to be re-synced.")
+                         "Tableau Data taken off same table." +
+                         "Page will automatically refresh. However, it (<span style = 'background-color: yellow'>will stop with tab is idle</span>. (Hidden / Minimized)" +
+                         "Tableau Viz will auto refresh every 2 mins.")
 
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
@@ -651,17 +653,17 @@ def get_symbol_daily_pnl():
     return return_df
 
 
-
-# Want to delete from the table where min is not 1.
-# TODO: will need to improve this when MY gives the code
-def delete_from_floating_table():
-    #if get_machine_ip_address() == '192.168.64.73': # This keeps getting stuck. Only implement on 64.73 server.
-    print("Trying to delete from aaron.`BGI_Float_History_Save`")
-    #insert_into_table = text("DELETE FROM aaron.`BGI_Float_History_Save` WHERE MINUTE(datetime) <> 1")
-
-    async_sql_insert_raw(app=current_app._get_current_object(), sql_insert="DELETE FROM aaron.`BGI_Float_History_Save` WHERE MINUTE(datetime) <> 1")
-    # Will Asnc this.
-    # raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
+#
+# # Want to delete from the table where min is not 1.
+# # TODO: will need to improve this when MY gives the code
+# def delete_from_floating_table():
+#     #if get_machine_ip_address() == '192.168.64.73': # This keeps getting stuck. Only implement on 64.73 server.
+#     print("Trying to delete from aaron.`BGI_Float_History_Save`")
+#     #insert_into_table = text("DELETE FROM aaron.`BGI_Float_History_Save` WHERE MINUTE(datetime) <> 1")
+#
+#     async_sql_insert_raw(app=current_app._get_current_object(), sql_insert="DELETE FROM aaron.`BGI_Float_History_Save` WHERE MINUTE(datetime) <> 1")
+#     # Will Asnc this.
+#     # raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
 
 # Clear session data.
 # Called when refreshing cookies.
@@ -670,7 +672,7 @@ def delete_from_floating_table():
 def Clear_session_ajax():
     #list_of_pop = ["live1_sgt_time_diff", "live1_sgt_time_update", "yesterday_pnl_by_country", "yesterday_pnl_by_symbol"]
 
-    delete_from_floating_table()
+    #delete_from_floating_table()
 
     list_of_pop = []
     # We want to clear everything, other then the system generated ones.
