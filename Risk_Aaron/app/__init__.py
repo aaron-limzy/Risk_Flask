@@ -11,16 +11,21 @@ from werkzeug.security import generate_password_hash
 import os
 
 import logging
+
 from logging.handlers import SMTPHandler
+from logging.handlers import RotatingFileHandler
 
 
 #from app.routes import db as main_app_db  # blueprint db
 import dash
 
+
+
 def create_app():
     server = Flask(__name__)
     #server = Flask("Main", static_folder='static')
     server.config.from_object(Config)
+
     register_dashapps(server)
     register_extensions(server)
     register_blueprints(server)
@@ -73,6 +78,21 @@ def register_extensions(server):
                 credentials=auth, secure=secure)
             mail_handler.setLevel(logging.ERROR)
             server.logger.addHandler(mail_handler)
+
+
+        # Want to log down some things to see what has been happening.
+        if not os.path.exists('logs'):
+            os.mkdir('logs')
+        # Max file size of 10 kb, Max 10 backup files.
+        file_handler = RotatingFileHandler('logs/microblog.log', maxBytes=10240,
+                                           backupCount=10)
+        file_handler.setFormatter(logging.Formatter(
+            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+        file_handler.setLevel(logging.INFO)
+        server.logger.addHandler(file_handler)
+
+        server.logger.setLevel(logging.INFO)
+        server.logger.info('Microblog startup')
 
     # Create DB Context for all blueprints?
     # with server.app_context():
