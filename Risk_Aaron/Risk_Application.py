@@ -25,8 +25,8 @@ from flask.logging import default_handler
 # })
 
 server = create_app()
-# logger = logging.getLogger('waitress')
-# logger.setLevel(logging.DEBUG)
+logger = logging.getLogger('waitress')
+logger.setLevel(logging.DEBUG)
 
 # log = logging.getLogger('werkzeug')
 # log.setLevel(logging.INFO)
