@@ -1,5 +1,5 @@
 
-from flask import render_template, flash, redirect, url_for, request, Blueprint
+from flask import render_template, flash, redirect, url_for, request, Blueprint,current_app
 from werkzeug.urls import url_parse
 
 from app.Login.login_forms import CreateUserForm, LoginForm, EditDetailsForm, Admin_EditDetailsForm
@@ -16,6 +16,17 @@ from app.decorators import roles_required, role_authentication
 from app.extensions import db
 
 login_bp = Blueprint('login', __name__)
+
+
+@login_bp.before_app_request
+def logging_requests():
+
+    # Need to check if the user is logged in.
+    user_name = current_user.id if current_user.is_authenticated else "Not-Logined-user"
+    logging_string = "{User}, {IP} {Method} {URL}".format(User=user_name, IP=request.remote_addr,Method=request.method, URL=request.path)
+    #current_app.logger.info('Headers: %s', request.headers)
+    current_app.logger.info(logging_string)
+
 
 
 @login_bp.route('/login', methods=['GET', 'POST'])       # Login Page. If user is login-ed, will re-direct to index.

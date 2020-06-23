@@ -11,19 +11,17 @@ from werkzeug.security import generate_password_hash
 import os
 
 import logging
-
 from logging.handlers import SMTPHandler
 from logging.handlers import RotatingFileHandler
-
+from logging.config import fileConfig
 
 # logger = logging.getLogger('waitress')
 # logger.setLevel(logging.INFO)
 
-
 #from app.routes import db as main_app_db  # blueprint db
 import dash
 
-
+fileConfig('logging.cfg')
 
 def create_app(config_class=Config):
     server = Flask(__name__)
@@ -31,6 +29,7 @@ def create_app(config_class=Config):
     server.config.from_object(config_class)
 
     register_dashapps(server)
+
     register_extensions(server)
     register_blueprints(server)
 
@@ -69,6 +68,7 @@ def register_extensions(server):
 
     if not server.debug:
         if server.config['MAIL_SERVER']:
+            print("Setting up email when Flask Errors. ")
             auth = None
             if server.config['MAIL_USERNAME'] or server.config['MAIL_PASSWORD']:
                 auth = (server.config['MAIL_USERNAME'], server.config['MAIL_PASSWORD'])
@@ -84,19 +84,19 @@ def register_extensions(server):
             server.logger.addHandler(mail_handler)
 
 
-        # Want to log down some things to see what has been happening.
-        if not os.path.exists('logs'):
-            os.mkdir('logs')
-        # Max file size of 10 kb, Max 10 backup files.
-        file_handler = RotatingFileHandler('logs/Risk_Application.log', maxBytes=10240,
-                                           backupCount=10)
-        file_handler.setFormatter(logging.Formatter(
-            '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
-        file_handler.setLevel(logging.INFO)
-        server.logger.addHandler(file_handler)
+    # Want to log down some things to see what has been happening.
+    if not os.path.exists('logs'):
+        os.mkdir('logs')
+    # Max file size of 10 kb, Max 10 backup files.
+    file_handler = RotatingFileHandler('logs/Risk_Application.log', maxBytes=15048576,
+                                       backupCount=10)
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+    file_handler.setLevel(logging.INFO)
+    server.logger.addHandler(file_handler)
 
-        server.logger.setLevel(logging.INFO)
-        server.logger.info('Microblog startup')
+    server.logger.setLevel(logging.INFO)
+    server.logger.info('Microblog startup')
 
     # Create DB Context for all blueprints?
     # with server.app_context():

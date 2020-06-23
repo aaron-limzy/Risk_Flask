@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, Markup, url_for, request
+from flask import Blueprint, render_template, Markup, url_for, request, current_app
 from flask_login import current_user, login_user, logout_user, login_required
 
 from Aaron_Lib import *
@@ -19,6 +19,16 @@ from werkzeug.utils import secure_filename
 from app.decorators import roles_required
 
 swaps = Blueprint('swaps', __name__)
+
+# @swaps.before_request
+# def log_request_info():
+#     current_app.logger.info('{} - Trying logging for all swaps Blueprint.'.format(request.remote_addr))
+#     print(request)
+#     current_app.logger.info('Headers: %s', request.headers)
+#     current_app.logger.info('Body: %s', request.get_data())
+
+
+    #print("Before each request...")
 
 @swaps.route('/Swaps/BGI_Swaps')
 @roles_required()

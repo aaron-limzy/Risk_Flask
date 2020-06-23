@@ -52,13 +52,21 @@ class Config(object):
     UPLOADED_SWAPS_URL='http://localhost:5000/static/vantage_swap/'
     VANTAGE_UPLOAD_FOLDER="./Swaps_upload/Vantage_upload/"
 
-    # To send email when there are server issues.
-    MAIL_SERVER = os.environ.get('MAIL_SERVER')
-    MAIL_PORT = int(os.environ.get('MAIL_PORT') or 25)
-    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS') is not None
-    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
-    MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    MAIL_SERVER = "smtp.googlemail.com"
+    MAIL_PORT = 587
+    MAIL_USE_TLS = 1
+    MAIL_USERNAME = "aaron.riskbgi@gmail.com"
+    MAIL_PASSWORD = "ReportReport"
     ADMINS = ['aaron.lim@blackwellglobal.com']
+
+
+    # # To send email when there are server issues.
+    # MAIL_SERVER = os.environ.get('MAIL_SERVER')
+    # MAIL_PORT = int(os.environ.get('MAIL_PORT') or 25)
+    # MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS') is not None
+    # MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    # MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
+    # ADMINS = ['aaron.lim@blackwellglobal.com']
     CFH_BO_PASSWORD = "Bgil8888!!"
 
     #WTF_CSRF_TIME_LIMIT= None
