@@ -13,7 +13,7 @@ import os
 import logging
 from logging.handlers import SMTPHandler
 from logging.handlers import RotatingFileHandler
-#from logging.config import fileConfig
+from logging.config import fileConfig
 
 # logger = logging.getLogger('waitress')
 # logger.setLevel(logging.INFO)
@@ -21,7 +21,7 @@ from logging.handlers import RotatingFileHandler
 #from app.routes import db as main_app_db  # blueprint db
 import dash
 
-#fileConfig('logging.cfg')
+fileConfig('logging.cfg')
 
 def create_app(config_class=Config):
     server = Flask(__name__)
