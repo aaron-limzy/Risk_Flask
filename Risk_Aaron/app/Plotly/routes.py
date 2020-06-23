@@ -723,6 +723,8 @@ def BGI_Country_Float_ajax():
     if not cfh_fix_timing():
         return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
+    current_app.logger.info('{} - Trying logging from BGI Country Float.'.format(request.remote_addr))
+
     #check_session_live1_timing()
     # Will check the timing
     if check_session_live1_timing() == True and "yesterday_pnl_by_country" in session:

@@ -60,6 +60,7 @@ class Config(object):
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     ADMINS = ['aaron.lim@blackwellglobal.com']
     CFH_BO_PASSWORD = "Bgil8888!!"
+
     #WTF_CSRF_TIME_LIMIT= None
 
 

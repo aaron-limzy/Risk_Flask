@@ -16,15 +16,19 @@ from logging.handlers import SMTPHandler
 from logging.handlers import RotatingFileHandler
 
 
+# logger = logging.getLogger('waitress')
+# logger.setLevel(logging.INFO)
+
+
 #from app.routes import db as main_app_db  # blueprint db
 import dash
 
 
 
-def create_app():
+def create_app(config_class=Config):
     server = Flask(__name__)
     #server = Flask("Main", static_folder='static')
-    server.config.from_object(Config)
+    server.config.from_object(config_class)
 
     register_dashapps(server)
     register_extensions(server)
@@ -84,7 +88,7 @@ def register_extensions(server):
         if not os.path.exists('logs'):
             os.mkdir('logs')
         # Max file size of 10 kb, Max 10 backup files.
-        file_handler = RotatingFileHandler('logs/microblog.log', maxBytes=10240,
+        file_handler = RotatingFileHandler('logs/Risk_Application.log', maxBytes=10240,
                                            backupCount=10)
         file_handler.setFormatter(logging.Formatter(
             '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
