@@ -6,6 +6,16 @@ from logging.config import dictConfig
 
 import logging
 
+
+def effectivehandlers(logger):
+    handlers = logger.handlers
+    while True:
+        logger = logger.parent
+        handlers.extend(logger.handlers)
+        if not (logger.parent and logger.propagate):
+            break
+    return handlers
+
 from flask.logging import default_handler
 
 # dictConfig({
@@ -28,6 +38,7 @@ server = create_app()
 logger = logging.getLogger('waitress')
 logger.setLevel(logging.DEBUG)
 logger.propagate = False
+print(effectivehandlers(logger))
 
 # log = logging.getLogger('werkzeug')
 # log.setLevel(logging.INFO)
@@ -37,3 +48,5 @@ serve(server, host='0.0.0.0', port=5000, threads=12)
 
 #server.run()
 #server.app_context().push()
+
+
