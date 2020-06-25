@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, Markup, url_for, request, session, current_app
+from flask import Blueprint, render_template, Markup, url_for, request, session, current_app, flash, redirect
 from flask_login import current_user, login_user, logout_user, login_required
 
 from Aaron_Lib import *
@@ -15,6 +15,8 @@ import numpy as np
 import json
 
 from app.decorators import roles_required
+
+#from app.Plotly.table import Client_Trade_Table
 
 import emoji
 import flag
@@ -1355,3 +1357,119 @@ def plot_volVSgroup_heat_map(df, chart_title):
     #     z = z, x = x, y=y,
     #     hoverongaps=False))
     # fig.show()
+
+
+
+# To remove the account from being excluded.
+@analysis.route('/Client_Trades/<Live>/<Login>', methods=['GET', 'POST'])
+@roles_required()
+def Client_trades_Analysis(Live="", Login=""):
+
+    title = "Live:{Live}, Account:{Login} Trades".format(Live=Live, Login=Login)
+    header  = "Live:{Live}, Account:{Login} Trades".format(Live=Live, Login=Login)
+
+    description = "Live:{Live}, Account:{Login} Trades<br>Information from SQL DB<br>Information are on client side.".format(Live=Live, Login=Login)
+
+    if Live == "" or Login == "":   # There are no information.
+        flash("There were no Live or Login details.")
+        return redirect("main_app.index")
+
+
+    return render_template("Webworker_Single_Table_No_Border_tableHtml.html", backgroud_Filename='css/pattern5.jpg', icon="",
+                           Table_name="Live: {}, Login: {}".format(Live, Login),
+                           title=title,
+                           ajax_url=url_for('analysis.Client_trades_Analysis_ajax', _external=True, Live=Live, Login=Login),
+                           header=header,
+                           description=description, no_backgroud_Cover=True,
+                           replace_words=Markup(["Today"]))
+
+# To remove the account from being excluded.
+@analysis.route('/Client_Trades_ajax/<Live>/<Login>', methods=['GET', 'POST'])
+@roles_required()
+def Client_trades_Analysis_ajax(Live="", Login=""):
+
+
+    if Live == "" or Login == "":   # There are no information.
+        return json.dumps([{"Result":"Error in Login or Live"}])
+
+    # # Write the SQL Statement and Update to disable the Account monitoring.
+    sql_statement = """SELECT TICKET, SYMBOL, VOLUME * 0.01 AS LOTS, CMD, OPEN_TIME, 
+        CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`
+        FROM live{Live}.mt4_trades 
+        WHERE `Login`='{Login}' 
+        order by CLOSE_TIME DESC""".format(Live=Live, Login=Login)
+
+    sql_statement = sql_statement.replace("\n", "").replace("\t", "")
+    result = Query_SQL_db_engine(sql_statement)
+    df_data = pd.DataFrame(result)
+
+
+
+    if "PROFIT" in df_data:     # BOLD the profit
+        df_data["PROFIT"] =  df_data["PROFIT"].apply(lambda x: '<span style="color:{Color}">{value}</span>'.format(Color=color_negative_red(x), value=x))
+    if "SWAPS" in df_data:
+        df_data["SWAPS"] =  df_data["SWAPS"].apply(lambda x: '<span style="color:{Color}">{value}</span>'.format(Color=color_negative_red(x), value=x))
+
+    # Want to calculate the time duration. Let format deal with printing it.
+    # If the trade is closed, we want to find out how long it was opened for.
+    # If it's still opened, we want to know how long..
+    # We don't care about the BALANCE, CREDIT, and the sell/buy stop/limit
+
+    df_data["DURATION"] = df_data.apply(lambda x: "-" if int(x['CMD']) >= 2 else \
+                        (x["CLOSE_TIME"] - x["OPEN_TIME"] \
+                        if x["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00') else \
+                        pd.Timestamp.now() - x["OPEN_TIME"]), axis=1)
+
+    # Want to see which trades are below 3 mins..
+    df_data["DURATION"] =  df_data["DURATION"].apply(lambda x: '<span style="color:red">{value}</span>'.format(value=x)  \
+                            if isinstance(x, datetime.timedelta) and x < datetime.timedelta(seconds=180) else x )
+
+
+    cmd = {0: "BUY", 1: "SELL", 2: "BUY LIMIT", 3:"SELL LIMIT", 4: "BUY STOP", 5: "SELL STOP", 6: "BALANCE", 7: "CREDIT"}
+
+    if "CMD" in df_data:
+        df_data["CMD"] = df_data["CMD"].apply(lambda x: cmd[x] if x in cmd else x)
+
+    # Re-arrange the index
+    df_data = df_data[[ 'TICKET', 'SYMBOL', 'CMD','LOTS', 'OPEN_TIME',
+                        'CLOSE_TIME',"DURATION",'SWAPS', 'PROFIT','GROUP', 'COMMENT']]
+
+    # Sort by Close time. Descending.
+    df_data.sort_index(by=["CLOSE_TIME"], ascending=False, inplace=True)
+
+    #print(df_data.to_html())
+    return_html = df_data.to_html(table_id ="Data_table_Div1_table", index=False, \
+                    classes=["table", "compact", "row-border", "table-hover", "table-sm", "table-responsive-sm", "basic_table", "bg-light", "dataTable", "no-footer"],
+                                  escape=False,
+                                  border =0).replace("\n", "")
+
+    # Want to input the caption into the HTML data.
+    thead_index = return_html.find("<thead>")
+    caption = "Live: {Live}, Login:{Login}".format(Live=Live, Login=Login)
+    return_html = return_html[:thead_index] + "<caption>{}</caption>".format(caption) + return_html[thead_index:]
+
+    #print(df_data.to_html())
+
+    # Want to make the data printable
+    #result_clean = [{k : "{}".format(d) for k,d in r.items()} for r in result]
+    return json.dumps(return_html)
+    #return json.dumps(a.render())
+
+
+def color_negative_red(value):
+      # """
+      # Colors elements in a dateframe
+      # green if positive and red if
+      # negative. Does not color NaN
+      # values.
+      # """
+
+    if value < 0:
+        color = 'red'
+    elif value > 0:
+        color = 'green'
+    else:
+        color = 'black'
+    #return 'color: %s' % color
+    return  color
+

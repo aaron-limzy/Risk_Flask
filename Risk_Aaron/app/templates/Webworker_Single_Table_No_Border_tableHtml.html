@@ -177,7 +177,7 @@
       Increment_counter = 1;  // Restart the Counter.
 
       // Post to main thread to update the DOM
-      self.postMessage({Data_table_Div1: Draw_Table(responseData, "{{ Table_name }}" , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div1_table" ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
+      self.postMessage({Data_table_Div1: responseData  + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
       self.postMessage({Table1_Raw : JSON.stringify(responseData)});
 
 

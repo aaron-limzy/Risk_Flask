@@ -719,21 +719,3 @@ def get_broker_swaps(db=False):
     return df_return[Symbol_array + Swap_long_array + Swap_short_array + everything_else_array]
     # return df_return
 
-
-
-def color_negative_red(value):
-      # """
-      # Colors elements in a dateframe
-      # green if positive and red if
-      # negative. Does not color NaN
-      # values.
-      # """
-
-    if value < 0:
-        color = 'red'
-    elif value > 0:
-        color = 'green'
-    else:
-        color = 'black'
-
-    return 'color: %s' % color

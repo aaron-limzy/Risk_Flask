@@ -133,7 +133,7 @@ def add_off_set():
             " ('{}','{}','{}','{}',NOW(),'{}' )".format(symbol, ticket, offset, comment, lp)
         # print(sql_insert)
         db.engine.execute(sql_insert)   # Insert into DB
-        flash(Markup("<b>{symbol}>/b>, <b>{offset} Lots</b> has been updated in A Book offset.".format(symbol=symbol, offset=offset)))
+        flash(Markup("<b>{symbol</b>, <b>{offset} Lots</b> has been updated in A Book offset.".format(symbol=symbol, offset=offset)))
 
 
     # For FLASK-TABLE to work. We need to get the names from SQL right.

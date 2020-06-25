@@ -389,6 +389,7 @@ def Query_SQL_Host(SQL_Query, SQL_ip, SQL_user, SQL_password, SQL_database):
 
 # Want to use the same code as Flask.
 # Will use sqlalchemy instead of py-sql
+# db = init_SQLALCHEMY()
 def init_SQLALCHEMY():
     #TODO: Link this with Flask's config. Else, there  might be trouble when moving SQL Bases.
     SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/aaron'

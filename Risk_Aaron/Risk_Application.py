@@ -35,15 +35,13 @@ from flask.logging import default_handler
 # })
 
 server = create_app()
-logger = logging.getLogger('waitress')
-logger.setLevel(logging.DEBUG)
-logger.propagate = False
-print(effectivehandlers(logger))
-
-# log = logging.getLogger('werkzeug')
-# log.setLevel(logging.INFO)
-
-serve(server, host='0.0.0.0', port=5000, threads=12)
+# logger = logging.getLogger('waitress')
+# logger.setLevel(logging.DEBUG)
+# logger.propagate = False
+# print(effectivehandlers(logger))
+#
+#
+# #serve(server, host='0.0.0.0', port=5000, threads=12)
 
 
 #server.run()
