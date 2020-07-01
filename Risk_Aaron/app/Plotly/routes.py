@@ -1389,12 +1389,18 @@ def Client_trades_Analysis(Live="", Login=""):
 def Client_trades_Analysis_ajax(Live="", Login=""):
 
 
-    if Live == "" or Login == "":   # There are no information.
+    if Live not in ["1","2","3","5"] or Login == "":   # There are no information.
         return json.dumps([{"Result":"Error in Login or Live"}])
 
-    # sql_statement = """SELECT LOGIN, ENABLE, ENABLE_READONLY, BALANCE, CREDIT, EQUITY,  `GROUP`
-    #         FROM live{Live}.mt4_users
-    #         WHERE `Login`='{Login}'""".format(Live=Live, Login=Login)
+    sql_statement = """SELECT LOGIN, ENABLE, ENABLE_READONLY, BALANCE, CREDIT, EQUITY,  `GROUP`
+            FROM live{Live}.mt4_users
+            WHERE `Login`='{Login}'""".format(Live=Live, Login=Login)
+
+    result = Query_SQL_db_engine(sql_statement)
+
+    if len(result) <= 0:   # There are no information.
+        return json.dumps([{"Result":"Error in Login or Live"}])
+
 
     # # Write the SQL Statement and Update to disable the Account monitoring.
     # # Want the CLOSE TRADES limited to 100

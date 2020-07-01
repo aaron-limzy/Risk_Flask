@@ -994,7 +994,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
 
 @main_app.route('/ABook_LP_Details', methods=['GET', 'POST'])
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
-def ABook_LP_Details():    # LP Details. Balance, Credit, Margin, MC/SO levels. Will alert if email is set to send.
+def ABook_LP_Details(update_tool_time=0):    # LP Details. Balance, Credit, Margin, MC/SO levels. Will alert if email is set to send.
                             # Checks Margin against MC/SO values, with some buffer as alert.
 
     sql_query = text("""SELECT lp, deposit, credit, pnl, equity, total_margin, free_margin, 
