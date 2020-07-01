@@ -1455,7 +1455,8 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
                         'CLOSE_TIME',"DURATION",'SWAPS', 'PROFIT','GROUP', 'COMMENT']]
 
     # Sort by Close time. Descending.
-    df_data.sort_index(by=["CLOSE_TIME"], ascending=False, inplace=True)
+    df_data.sort_values(by=["CLOSE_TIME"], ascending=False, inplace=True)
+
 
     #print(df_data.to_html())
     return_html = df_data.to_html(table_id ="Data_table_Div1_table", index=False, \
