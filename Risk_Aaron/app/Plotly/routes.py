@@ -1375,7 +1375,7 @@ def Client_trades_Analysis(Live="", Login=""):
         return redirect("main_app.index")
 
 
-    return render_template("Webworker_Single_Table_No_Border_tableHtml.html", backgroud_Filename='css/pattern5.jpg', icon="",
+    return render_template("Webworker_Single_Table_No_Border.html", backgroud_Filename='css/pattern5.jpg', icon="",
                            Table_name="Live: {}, Login: {}".format(Live, Login),
                            title=title,
                            ajax_url=url_for('analysis.Client_trades_Analysis_ajax', _external=True, Live=Live, Login=Login),
@@ -1456,7 +1456,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
 
     # Sort by Close time. Descending.
     df_data.sort_values(by=["CLOSE_TIME"], ascending=False, inplace=True)
-
+    return_val = df_data.to_dict("record")
 
     #print(df_data.to_html())
     return_html = df_data.to_html(table_id ="Data_table_Div1_table", index=False, \
@@ -1473,8 +1473,8 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
 
     # Want to make the data printable
     #result_clean = [{k : "{}".format(d) for k,d in r.items()} for r in result]
-    return json.dumps(return_html)
-    #return json.dumps(a.render())
+    # #return json.dumps(return_html)
+    return json.dumps(return_val)
 
 
 def color_negative_red(value):
