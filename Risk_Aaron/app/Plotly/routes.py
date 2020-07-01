@@ -1368,7 +1368,7 @@ def Client_trades_Analysis(Live="", Login=""):
     title = "Live:{Live}, Account:{Login} Trades".format(Live=Live, Login=Login)
     header  = "Live:{Live}, Account:{Login} Trades".format(Live=Live, Login=Login)
 
-    description = "Live:{Live}, Account:{Login} Trades<br>Information from SQL DB<br>Information are on client side.".format(Live=Live, Login=Login)
+    description = Markup("Live:{Live}, Account:{Login} Trades<br>Information from SQL DB<br>Information are on client side.".format(Live=Live, Login=Login))
 
     if Live == "" or Login == "":   # There are no information.
         flash("There were no Live or Login details.")
