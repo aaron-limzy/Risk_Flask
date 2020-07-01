@@ -1444,6 +1444,9 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     df_data["DURATION"] =  df_data["DURATION"].apply(lambda x: '<span style="color:red">{value}</span>'.format(value=x)  \
                             if isinstance(x, datetime.timedelta) and x < datetime.timedelta(seconds=180) else x )
 
+    # To make it JSON printable
+    df_data["DURATION"] = df_data["DURATION"].apply(lambda x: "{}".format(x))
+
 
     cmd = {0: "BUY", 1: "SELL", 2: "BUY LIMIT", 3:"SELL LIMIT", 4: "BUY STOP", 5: "SELL STOP", 6: "BALANCE", 7: "CREDIT"}
 
