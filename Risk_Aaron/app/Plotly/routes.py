@@ -1392,12 +1392,26 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     if Live == "" or Login == "":   # There are no information.
         return json.dumps([{"Result":"Error in Login or Live"}])
 
+    # sql_statement = """SELECT LOGIN, ENABLE, ENABLE_READONLY, BALANCE, CREDIT, EQUITY,  `GROUP`
+    #         FROM live{Live}.mt4_users
+    #         WHERE `Login`='{Login}'""".format(Live=Live, Login=Login)
+
     # # Write the SQL Statement and Update to disable the Account monitoring.
-    sql_statement = """SELECT TICKET, SYMBOL, VOLUME * 0.01 AS LOTS, CMD, OPEN_TIME, 
-        CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`
+    # # Want the CLOSE TRADES limited to 100
+    # # AND all the OPEN trades
+    sql_statement = """(SELECT TICKET, SYMBOL, VOLUME * 0.01 AS LOTS, CMD, OPEN_TIME, 
+		CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`
         FROM live{Live}.mt4_trades 
-        WHERE `Login`='{Login}' 
-        order by CLOSE_TIME DESC""".format(Live=Live, Login=Login)
+        WHERE `Login`='{Login}' and CLOSE_TIME = "1970-01-01 00:00:00")
+        
+        UNION
+        
+        (SELECT TICKET, SYMBOL, VOLUME * 0.01 AS LOTS, CMD, OPEN_TIME, 
+                CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`
+        FROM live{Live}.mt4_trades 
+        WHERE `Login`='{Login}' and CLOSE_TIME <> "1970-01-01 00:00:00"
+        order by CLOSE_TIME DESC
+        LIMIT 100 )""".format(Live=Live, Login=Login)
 
     sql_statement = sql_statement.replace("\n", "").replace("\t", "")
     result = Query_SQL_db_engine(sql_statement)
