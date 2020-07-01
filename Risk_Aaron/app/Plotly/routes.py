@@ -1456,7 +1456,15 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
 
     # Sort by Close time. Descending.
     df_data.sort_values(by=["CLOSE_TIME"], ascending=False, inplace=True)
+
+    # Want it to be printable to JSON
+    df_data["CLOSE_TIME"] = df_data["CLOSE_TIME"].apply(lambda x: "{}".format(x))
+    df_data["OPEN_TIME"] = df_data["OPEN_TIME"].apply(lambda x: "{}".format(x))
+
     return_val = df_data.to_dict("record")
+
+
+
 
     #print(df_data.to_html())
     return_html = df_data.to_html(table_id ="Data_table_Div1_table", index=False, \
