@@ -1374,11 +1374,12 @@ def Client_trades_Analysis(Live="", Login=""):
         flash("There were no Live or Login details.")
         return redirect("main_app.index")
 
-
-    return render_template("Webworker_Single_Table_No_Border.html", backgroud_Filename='css/pattern5.jpg', icon="",
-                           Table_name="Live: {}, Login: {}".format(Live, Login),
+    # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
+    # Will try to do smaller vertical table to put 2 or 3 tables in a row.
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/pattern5.jpg', icon="",
+                           Table_name={"Live: {}, Login: {}".format(Live, Login):"V", "Profit Calculation":"V", "Past Trades" : "H", "Net Position":"H"},
                            title=title,
-                           ajax_url=url_for('analysis.Client_trades_Analysis_ajax', _external=True, Live=Live, Login=Login),
+                           ajax_url=url_for('analysis.Client_trades_Analysis_ajax',_external=True, Live=Live, Login=Login),
                            header=header,
                            description=description, no_backgroud_Cover=True,
                            replace_words=Markup(["Today"]))
@@ -1408,20 +1409,39 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     sql_statement = """(SELECT TICKET, SYMBOL, VOLUME * 0.01 AS LOTS, CMD, OPEN_TIME, 
 		CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`
         FROM live{Live}.mt4_trades 
-        WHERE `Login`='{Login}' and CLOSE_TIME = "1970-01-01 00:00:00")
+        WHERE `Login`='{Login}' AND CLOSE_TIME = "1970-01-01 00:00:00" AND CMD < 2)
         
         UNION
         
         (SELECT TICKET, SYMBOL, VOLUME * 0.01 AS LOTS, CMD, OPEN_TIME, 
                 CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`
         FROM live{Live}.mt4_trades 
-        WHERE `Login`='{Login}' and CLOSE_TIME <> "1970-01-01 00:00:00"
-        order by CLOSE_TIME DESC
+        WHERE `Login`='{Login}' and CLOSE_TIME <> "1970-01-01 00:00:00"  AND CMD < 2
+        ORDER BY CLOSE_TIME DESC
         LIMIT 100 )""".format(Live=Live, Login=Login)
 
     sql_statement = sql_statement.replace("\n", "").replace("\t", "")
     result = Query_SQL_db_engine(sql_statement)
     df_data = pd.DataFrame(result)
+
+
+
+    sql_statement = """SELECT LOGIN, `GROUP`, `ENABLE`, ENABLE_READONLY, `NAME`, BALANCE, CREDIT, EQUITY, MARGIN, MARGIN_LEVEL, MARGIN_FREE
+            FROM live{Live}.mt4_users 
+            WHERE `Login`='{Login}'""".format(Live=Live, Login=Login)
+
+    sql_statement = sql_statement.replace("\n", "").replace("\t", "")
+    login_details = Query_SQL_db_engine(sql_statement)
+    #df_data = pd.DataFrame(result)
+
+    # Get net positions for all.
+    net_position = Calculate_Net_position(df_data)
+    net_position_dict = net_position.to_dict("record")
+    net_position_dict_clean = [{k: "{}".format(d) for k, d in r.items()} for r in net_position_dict]
+
+    # Want to get total deposit, withdrawal.. etc.
+    Sum_details = Sum_total_account_details(Live, Login)
+
 
 
 
@@ -1444,8 +1464,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     df_data["DURATION"] =  df_data["DURATION"].apply(lambda x: '<span style="color:red">{value}</span>'.format(value=x)  \
                             if isinstance(x, datetime.timedelta) and x < datetime.timedelta(seconds=180) else x )
 
-    # To make it JSON printable
-    df_data["DURATION"] = df_data["DURATION"].apply(lambda x: "{}".format(x))
+
 
 
     cmd = {0: "BUY", 1: "SELL", 2: "BUY LIMIT", 3:"SELL LIMIT", 4: "BUY STOP", 5: "SELL STOP", 6: "BALANCE", 7: "CREDIT"}
@@ -1458,7 +1477,10 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
                         'CLOSE_TIME',"DURATION",'SWAPS', 'PROFIT','GROUP', 'COMMENT']]
 
     # Sort by Close time. Descending.
-    df_data.sort_values(by=["CLOSE_TIME"], ascending=False, inplace=True)
+    df_data.sort_values(by=["CLOSE_TIME", "DURATION"], ascending=False, inplace=True)
+
+    # To make it JSON printable
+    df_data["DURATION"] = df_data["DURATION"].apply(lambda x: "{}".format(x))
 
     # Want it to be printable to JSON
     df_data["CLOSE_TIME"] = df_data["CLOSE_TIME"].apply(lambda x: "{}".format(x))
@@ -1480,12 +1502,14 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     caption = "Live: {Live}, Login:{Login}".format(Live=Live, Login=Login)
     return_html = return_html[:thead_index] + "<caption>{}</caption>".format(caption) + return_html[thead_index:]
 
-    #print(df_data.to_html())
+    print(net_position)
 
     # Want to make the data printable
     #result_clean = [{k : "{}".format(d) for k,d in r.items()} for r in result]
     # #return json.dumps(return_html)
-    return json.dumps(return_val)
+
+    # Return "Trades" and "Net position"
+    return json.dumps({"V1" : login_details, "V2": Sum_details, "H1": return_val, "H2": net_position_dict_clean})
 
 
 def color_negative_red(value):

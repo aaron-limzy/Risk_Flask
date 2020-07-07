@@ -40,8 +40,8 @@ server = create_app()
 # logger.propagate = False
 # print(effectivehandlers(logger))
 #
-#
-serve(server, host='0.0.0.0', port=5000, threads=12)
+# Need to uncomment the serve for it to work on production level.
+# #serve(server, host='0.0.0.0', port=5000, threads=12)
 
 
 #server.run()

@@ -31,6 +31,14 @@
   var Increment_counter = 1;
   var Refresh_Page_Counter = 0;  // When to refresh the page.
 
+
+  var Table_Caption = [];     // Since it's multiple table names, we need to store it.
+  {% for tb in Table_name %} // Want to add in the table name
+    Table_Caption.push("{{ tb }}")
+  {% endfor %}
+
+
+
   self.onmessage = function(event){
     //console.log(event);
     if (event.data == "BUTTON") {  // force the xmlhttprequest to fire off.
@@ -170,15 +178,51 @@
 
   }
 
+
   // The actual function to do the XHR call.
   function xhr_call(){
-    sent_httprequest("POST", "{{ ajax_url }}").then(responseData => {
+
+    sent_httprequest("POST", "{{ ajax_url }}").then(data => {
       //self.postMessage(responseData);
       Increment_counter = 1;  // Restart the Counter.
 
       // Post to main thread to update the DOM
-      self.postMessage({Data_table_Div1: responseData  + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
-      self.postMessage({Table1_Raw : JSON.stringify(responseData)});
+      // self.postMessage({"Data_table_Div1": Draw_Table(responseData, "{{ Table_name[0] }}" , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div1_table" ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
+      // self.postMessage({Table1_Raw : JSON.stringify(responseData)});
+
+      var data_div_id_pre = 'Data_table_Div';
+      self.postMessage({data_length: data});
+
+      // Get the Dictionary Keys
+      const keys = Object.keys(data)
+
+      var i=0;
+
+      for (const key of keys) {
+
+        if (i >= {{ Table_name|length }}){  // Must have a table name with it.
+          break;
+        }
+
+        var data_div_id = data_div_id_pre.concat((i+1).toString());
+        var data_raw_id =  'Table' + (i+1).toString() + "_Raw_Div";
+
+        if (key.search("H") >= 0){  // We will use Horizontal table.
+          // Need to add in [] for the object key for it to use the variable.
+          // Need to get the table name the old fashion way since we can't use the passed-in pythin variable.
+          self.postMessage({[data_div_id] : Draw_Table(data[key], Table_Caption[i] , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div" + (i+1).toString() + "_table" ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
+        } else{
+          // We will use the vertical table.
+          self.postMessage({[data_div_id] : Draw_Vertical_Table(data[key][0], Table_Caption[i] , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light float-left", {{ replace_words }} ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
+
+          //Draw_Vertical_Table(table_Data, Table_Caption, Table_Class, Replace_words)
+        }
+
+        self.postMessage({[data_raw_id] : JSON.stringify(data[key])});
+        i = i + 1;  // Increment the counter since we are looping thru dictionary keys
+
+      }
+
 
 
     }).catch(err => {
@@ -187,7 +231,8 @@
 
       //TODO: Try to catch the error.
       self.postMessage({Table1_Error: "An Error Occured: " + return_Time_String(), consolidate: true});
-      console.log(err);
+      self.postMessage({Table1_Error: err});
+      //console.log(err);
 
     });
   }
@@ -202,6 +247,8 @@
         }
         return reurn_val;
     }
+
+
 
 
 
@@ -474,8 +521,11 @@
 
       var myWorker = new Worker(blobURL);
       myWorker.onmessage = function(e){
+
+
         if (e.data instanceof Object){  // If it is an object, we loop thru and add it to the correct container/Div
           ret_obj = e.data;
+          console.log(ret_obj);
           var consolidate = false;
           if ('consolidate' in ret_obj){  // If we want to consolidate all the errors.
             consolidate = true;
@@ -550,9 +600,31 @@
 </h1>
 
 <div class="row">
-  <div class="col-lg-12 col-md-12 col-sm-12" id="Data_table_Div1">
-     {% include '_pleaseWait.html' %}
-  </div>
+
+  {% for i in range(1, Table_name|length + 1) %}
+
+
+  {% endfor %}
+
+
+
+ {% for key, value in Table_name.items() %}
+  {% if "H" in value %}
+    <div class="col-lg-12 col-md-12 col-sm-12" id="Data_table_Div{{ loop.index  }}">
+  {% else %}
+    <div class="col-lg-6 col-md-6 col-sm-12" id="Data_table_Div{{ loop.index  }}">
+  {% endif %}
+   {% include '_pleaseWait.html' %}
+ </div>
+
+
+ <!--
+ <h1>Key: {{key}}</h1>
+ <h2>Value: {{value}}</h2> -->
+
+  {% endfor %}
+
+
   <br>
   {% if description %}
   <br><br>
@@ -585,26 +657,27 @@
 <br>
 {% endif %}
 
+<br>
 
+{% for i in range(1, Table_name|length + 1) %}
+  <p>
+    <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#Table{{ i }}_Raw_Div" aria-expanded="false">
+      Show Table
+    </button>
 
-  <br>
-<p>
-  <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#Table1_Raw_Div" aria-expanded="false">
-    Show Table
-  </button>
+  </p>
 
-</p>
-
-<div class="collapse" id="Table1_Raw_Div">
-  <div class="card card-body">
-    <b>Table 1 Raw JSON:</b> <br>
-    <span id="Table1_Raw"></span>
+  <div class="collapse" id="Table{{ i }}_Raw_Div">
+    <div class="card card-body">
+      <b>Table 1 Raw JSON:</b> <br>
+      <span id="Table{{ i }}_Raw"></span>
+    </div>
+    <div class="card card-body">
+      <b>MT4/LP Position Ajax Error:</b> <br>
+      <span id="Table{{ i }}_Error"></span>
+    </div>
   </div>
-  <div class="card card-body">
-    <b>MT4/LP Position Ajax Error:</b> <br>
-    <span id="Table1_Error"></span>
-  </div>
-</div>
+{% endfor %}
 
 {% endblock %}
 

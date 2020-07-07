@@ -7,7 +7,7 @@ from app.extensions import db
 from flask_table import create_table, Col
 import decimal
 from Aaron_Lib import *
-
+import pandas as pd
 
 
 if get_machine_ip_address() == '192.168.64.73': #Only On Server computer
@@ -128,3 +128,53 @@ def Query_SQL_db_engine(sql_query):
     result_col = raw_result.keys()
     zip_results = [dict(zip(result_col,d)) for d in result_data_decimal]
     return zip_results
+
+# Gets in a Pandas dataframe.
+# Want to calculate what is the net position of the login
+def Calculate_Net_position(df_data):
+
+    # Need to check that all the needed column is in there before we can start calculating.
+    if not all(i in df_data for i in ['CLOSE_TIME', 'CMD', 'LOTS', 'PROFIT', 'SWAPS', 'SYMBOL']):
+        return (pd.DataFrame([{"Results": "No Open Trades"}]))  # Return empty dataframe
+
+    df_data = df_data[df_data["CMD"] < 2]   # Only want Buy and Sell
+    df_data = df_data[df_data["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')] # Only open trades.
+
+    if len(df_data) < 1:
+        return (pd.DataFrame([{"Results": "No Open Trades"}])) # Return empty dataframe
+
+
+    df_data["LOTS"] = df_data.apply(lambda x: x["LOTS"] if x["CMD"] == 0 else -1*x["LOTS"], axis=1)   # -ve for sell
+
+    df_data = df_data[["SYMBOL", "LOTS",  'PROFIT', 'SWAPS' ]]   # Only need these few.
+    ret_val = df_data.groupby(['SYMBOL']).sum()     # Want to group by Symbol, and sum
+    df_data["PROFIT"] = df_data["PROFIT"].apply(lambda x: "{:.2f}".format(x))       # Print in 2 D.P.
+    df_data["SWAPS"] = df_data["SWAPS"].apply(lambda x: "{:.2f}".format(x))          # Print in 2 D.P.
+    ret_val.reset_index(level=0, inplace=True)      # Want to reset the index so that "SYMBOL" becomes the column name
+
+    return ret_val
+
+
+# Want toquery SQL for derived data such as Total Deposit, Withdrawal, Profit, Floating Profit, Total Lots
+# And how many lots winning, How many lots loosing.. etc etc..
+def Sum_total_account_details(Live, Login):
+
+    sql_statement="""SELECT 
+        COALESCE(SUM(CASE WHEN PROFIT > 0 AND CMD = 6 THEN PROFIT  END),0) as "DEPOSIT", 
+        COALESCE(SUM(CASE WHEN PROFIT < 0 AND CMD = 6 THEN PROFIT  END),0) as "WITHDRAWAL", 
+        COALESCE(SUM(CASE WHEN CMD <2 and CLOSE_TIME != "1970-01-01 00:00:00" THEN PROFIT + SWAPS  END),0) as "PROFIT",
+        COALESCE(SUM(CASE WHEN CMD <2 and CLOSE_TIME = "1970-01-01 00:00:00" THEN PROFIT + SWAPS END),0) as "FLOATING PROFIT", 
+        COALESCE(SUM(CASE WHEN CMD < 2 AND CLOSE_TIME != "1970-01-01 00:00:00" THEN VOLUME * 0.01 END),0) as "LOTS",
+                COALESCE(SUM(CASE  WHEN CMD <2 and CLOSE_TIME != "1970-01-01 00:00:00" AND (PROFIT+SWAPS) > 0 THEN 1 END),0) as "NUM PROFIT TRADES",
+				COALESCE(SUM(CASE  WHEN CMD <2 and CLOSE_TIME != "1970-01-01 00:00:00" AND (PROFIT+SWAPS) < 0 THEN 1 END),0) as "NUM LOSING TRADES"
+    FROM live{Live}.mt4_trades 
+    where `Login`='{Login}'""".format(Live=Live, Login=Login)
+    sql_statement = sql_statement.replace("\n", "").replace("\t", "")
+    account_details_list = Query_SQL_db_engine(sql_statement)
+    account_details=account_details_list[0] # since we only expect 1 reply from SQL
+
+    account_details["% PROFIT"] = 100 * round(account_details["PROFIT"] / account_details["DEPOSIT"],2)        # The % of profit from total deposit
+    account_details["PER LOT AVERAGE"] = round(account_details["PROFIT"] / account_details["LOTS"],2)    # The Profit per lot.
+    account_details["% WINNING TRADES"] = 100 * round(account_details["NUM PROFIT TRADES"] / (account_details["NUM LOSING TRADES"] + account_details["NUM PROFIT TRADES"]),2)
+
+    return [account_details]
