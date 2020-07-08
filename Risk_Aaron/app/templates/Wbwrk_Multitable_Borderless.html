@@ -25,6 +25,12 @@
 <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
 <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
 
+<!-- For Plotly stuff -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+
+
+
 
 <script type="javascript/worker" id="my_first_worker">
 
@@ -211,11 +217,15 @@
           // Need to add in [] for the object key for it to use the variable.
           // Need to get the table name the old fashion way since we can't use the passed-in pythin variable.
           self.postMessage({[data_div_id] : Draw_Table(data[key], Table_Caption[i] , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div" + (i+1).toString() + "_table" ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
-        } else{
+        } else if(key.search("V") >= 0) {
           // We will use the vertical table.
           self.postMessage({[data_div_id] : Draw_Vertical_Table(data[key][0], Table_Caption[i] , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light float-left", {{ replace_words }} ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
 
           //Draw_Vertical_Table(table_Data, Table_Caption, Table_Class, Replace_words)
+        }else{
+            var plot_id = 'plot'.concat((i+1).toString());
+
+            self.postMessage({ [plot_id] :data[key] });
         }
 
         self.postMessage({[data_raw_id] : JSON.stringify(data[key])});
@@ -558,7 +568,11 @@
                 refresh_datatable('#' + key, current_html + ret_obj[key]);
 
 
-             }else{
+                // Want to plot the chart.
+             }else if(key.toLowerCase().search("plot")>=0){
+                $('#' + key).html(""); // Clear whatever that is in there first.
+                Plotly.newPlot(key, ret_obj[key] )
+             } else{
                $('#' + key).html(current_html + ret_obj[key]);
              }
 
@@ -611,9 +625,13 @@
  {% for key, value in Table_name.items() %}
   {% if "H" in value %}
     <div class="col-lg-12 col-md-12 col-sm-12" id="Data_table_Div{{ loop.index  }}">
-  {% else %}
+  {% elif "V" in value %}
     <div class="col-lg-6 col-md-6 col-sm-12" id="Data_table_Div{{ loop.index  }}">
+  {% else %}
+  <!-- Would read as P for value.  -->
+    <div class="chart col-lg-12 col-md-12 col-sm-12" id="plot{{ loop.index  }}">
   {% endif %}
+
    {% include '_pleaseWait.html' %}
  </div>
 

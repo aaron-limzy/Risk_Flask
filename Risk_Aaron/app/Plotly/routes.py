@@ -15,7 +15,7 @@ import numpy as np
 import json
 
 from app.decorators import roles_required
-
+from app.Plotly.forms import  Live_Login
 #from app.Plotly.table import Client_Trade_Table
 
 import emoji
@@ -1359,6 +1359,66 @@ def plot_volVSgroup_heat_map(df, chart_title):
     # fig.show()
 
 
+# Used for account details of client.
+# To show (something like tableau, for people with no access)
+def plot_account_details(account_details):
+
+    x = ['Deposit', 'Withdrawal', 'Profits']
+    y = [account_details[0]["DEPOSIT"], -1 * account_details[0]["WITHDRAWAL"], account_details[0]["PROFIT"]]
+
+    # Use the hovertext kw argument for hover text
+    fig = go.Figure(data=[go.Bar(x=x, y=y,
+                                 hovertext=['Deposit', 'Withdrawal', 'Profits'], text=y, textposition='outside')])
+    # Customize aspect
+    fig.update_traces(marker_color='rgb(158,202,225)', marker_line_color='rgb(8,48,107)',
+                      marker_line_width=1.5, opacity=0.6)
+    fig.update_layout(title_text='Profits % Calculation',
+                      yaxis=dict(
+                          title_text="Amount",
+                          titlefont=dict(size=20),
+                          automargin=True,
+                          ticks="outside", tickcolor='white', ticklen=5,
+                          layer='below traces'
+                      ),
+                      yaxis_tickfont_size=14,
+                      xaxis=dict(
+                          title_text="",
+                          titlefont=dict(size=20),
+                          automargin=True,
+                          layer='below traces'
+                      ),
+                      xaxis_tickfont_size=10,
+                      autosize=True,
+                      width=600,
+                      height=500,
+                      title_x=0.5,  titlefont=dict(size=20),
+                      )
+    return fig
+
+
+
+# To view Client's trades as well as some simple details.
+@analysis.route('/Client_Details_form', methods=['GET', 'POST'])
+@roles_required()
+def Client_trades_form(Live="", Login=""):
+    title = "Client Details Form"
+    header = "Client Details Form"
+    description = Markup("Will be able to see client's details as well as open trades as well as some recent trades.")
+    form = Live_Login()
+    # file_form = File_Form()
+
+    if request.method == 'POST' and form.validate_on_submit():
+
+        Live = form.Live.data  # Get the Data.
+        Login = form.Login.data
+        # Want to redirect this to some other pages.
+        return redirect(url_for('analysis.Client_trades_Analysis', Live=Live, Login=Login))
+
+
+    return render_template("General_Form.html",
+                           title=title, header=header,
+                           form=form, description=description)
+
 
 # To remove the account from being excluded.
 @analysis.route('/Client_Trades/<Live>/<Login>', methods=['GET', 'POST'])
@@ -1377,7 +1437,7 @@ def Client_trades_Analysis(Live="", Login=""):
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/pattern5.jpg', icon="",
-                           Table_name={"Live: {}, Login: {}".format(Live, Login):"V", "Profit Calculation":"V", "Past Trades" : "H", "Net Position":"H"},
+                           Table_name={"Live: {}, Login: {}".format(Live, Login):"V", "Profit Calculation":"V", "Past Trades" : "H", "Net Position":"H","Deposit/Withdrawal plot":"P" },
                            title=title,
                            ajax_url=url_for('analysis.Client_trades_Analysis_ajax',_external=True, Live=Live, Login=Login),
                            header=header,
@@ -1441,7 +1501,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
 
     # Want to get total deposit, withdrawal.. etc.
     Sum_details = Sum_total_account_details(Live, Login)
-
+    deposit_withdrawal_fig = plot_account_details(Sum_details)   # To get the figure to show.
 
 
 
@@ -1509,7 +1569,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     # #return json.dumps(return_html)
 
     # Return "Trades" and "Net position"
-    return json.dumps({"V1" : login_details, "V2": Sum_details, "H1": return_val, "H2": net_position_dict_clean})
+    return json.dumps({"V1" : login_details, "V2": Sum_details, "H1": return_val, "H2": net_position_dict_clean, "P1":deposit_withdrawal_fig }, cls=plotly.utils.PlotlyJSONEncoder)
 
 
 def color_negative_red(value):

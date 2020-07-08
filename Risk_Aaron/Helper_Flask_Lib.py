@@ -177,4 +177,5 @@ def Sum_total_account_details(Live, Login):
     account_details["PER LOT AVERAGE"] = round(account_details["PROFIT"] / account_details["LOTS"],2)    # The Profit per lot.
     account_details["% WINNING TRADES"] = 100 * round(account_details["NUM PROFIT TRADES"] / (account_details["NUM LOSING TRADES"] + account_details["NUM PROFIT TRADES"]),2)
 
+
     return [account_details]
