@@ -179,3 +179,18 @@ def Sum_total_account_details(Live, Login):
 
 
     return [account_details]
+
+# Function that takes in df for trades
+# Calculate Average trade time per symbol
+def Average_trade_time_per_symbol(df_data):
+    # Need to check that all the needed column is in there before we can start calculating.
+    if not all(i in df_data for i in ['CLOSE_TIME', 'OPEN_TIME', 'LOTS', 'PROFIT', 'SWAPS', 'SYMBOL']):
+        return (pd.DataFrame())  # Return empty dataframe
+
+
+    # Get the Duration in seconds
+    df_data["DURATION"] = df_data.apply(lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).seconds, axis=1)
+    symbol_duration_avg = df_data[["SYMBOL", "DURATION"]].groupby('SYMBOL').mean()    # Want to group by, for seconds
+    symbol_duration_avg.reset_index(level=0, inplace=True)  # Want to reset the index so that "SYMBOL" becomes the column name
+    symbol_duration_avg.sort_values(by=["DURATION"], ascending=True, inplace=True)
+    return symbol_duration_avg

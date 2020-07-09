@@ -1397,6 +1397,40 @@ def plot_account_details(account_details):
 
 
 
+# Used for account details of client.
+# To show (something like tableau, for people with no access)
+def plot_symbol_tradetime_duration(df_data):
+
+    fig = go.Figure(data=[go.Bar(x=df_data.SYMBOL, y=df_data.DURATION, text=df_data.DURATION, textposition='auto')])
+    # Customize aspect
+    fig.update_traces(marker_color='rgb(158,202,225)', marker_line_color='rgb(8,48,107)',
+                      marker_line_width=1.5, opacity=0.6)
+
+    fig.update_layout(title_text='Trade Duration Average (Only for above trades)',
+                      yaxis=dict(
+                          title_text="Time (s)",
+                          titlefont=dict(size=20),
+                          automargin=True,
+                          ticks="outside", tickcolor='white', ticklen=5,
+                          layer='below traces'
+                      ),
+                      yaxis_tickfont_size=14,
+                      xaxis=dict(
+                          title_text="Symbol",
+                          titlefont=dict(size=20),
+                          automargin=True,
+                          layer='below traces'
+                      ),
+                      xaxis_tickfont_size=10,
+                      autosize=True,
+                      width=600,
+                      height=500,
+                      title_x=0.5,  titlefont=dict(size=20),
+                      )
+    return fig
+
+
+
 # To view Client's trades as well as some simple details.
 @analysis.route('/Client_Details_form', methods=['GET', 'POST'])
 @roles_required()
@@ -1428,7 +1462,7 @@ def Client_trades_Analysis(Live="", Login=""):
     title = "Live:{Live}, Account:{Login} Trades".format(Live=Live, Login=Login)
     header  = "Live:{Live}, Account:{Login} Trades".format(Live=Live, Login=Login)
 
-    description = Markup("Live:{Live}, Account:{Login} Trades<br>Information from SQL DB<br>Information are on client side.".format(Live=Live, Login=Login))
+    description = Markup("Live:{Live}, Account:{Login} Trades<br>Information from SQL DB<br>Information are on client side.<br>Limited to 100 close trades.<br>Shows all open trades".format(Live=Live, Login=Login))
 
     if Live == "" or Login == "":   # There are no information.
         flash("There were no Live or Login details.")
@@ -1437,7 +1471,11 @@ def Client_trades_Analysis(Live="", Login=""):
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/pattern5.jpg', icon="",
-                           Table_name={"Live: {}, Login: {}".format(Live, Login):"V", "Profit Calculation":"V", "Past Trades" : "H", "Net Position":"H","Deposit/Withdrawal plot":"P" },
+                           Table_name={"Live: {}, Login: {}".format(Live, Login):"V", "Profit Calculation":"V",
+                                       "Past Trades" : "H",
+                                       "Net Position":"H",
+                                       "Deposit/Withdrawal plot":"P",
+                                       "Average Trade Timings":"P"},
                            title=title,
                            ajax_url=url_for('analysis.Client_trades_Analysis_ajax',_external=True, Live=Live, Login=Login),
                            header=header,
@@ -1483,6 +1521,9 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     sql_statement = sql_statement.replace("\n", "").replace("\t", "")
     result = Query_SQL_db_engine(sql_statement)
     df_data = pd.DataFrame(result)
+
+    symbol_average_tradetime = Average_trade_time_per_symbol(df_data)
+    average_trade_duration_fig = plot_symbol_tradetime_duration(symbol_average_tradetime)
 
     # # Can use Pandas to calculate the average as well...
     # """select SYMBOL, AVG(CLOSE_TIME-OPEN_TIME) as 'AVERAGE DURATION'
@@ -1576,7 +1617,9 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     # #return json.dumps(return_html)
 
     # Return "Trades" and "Net position"
-    return json.dumps({"V1" : login_details, "V2": Sum_details, "H1": return_val, "H2": net_position_dict_clean, "P1":deposit_withdrawal_fig }, cls=plotly.utils.PlotlyJSONEncoder)
+    return json.dumps({"V1" : login_details, "V2": Sum_details, "H1": return_val,
+                       "H2": net_position_dict_clean, "P1":deposit_withdrawal_fig,
+                       "P2": average_trade_duration_fig}, cls=plotly.utils.PlotlyJSONEncoder)
 
 
 def color_negative_red(value):
