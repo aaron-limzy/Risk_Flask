@@ -178,6 +178,9 @@ def Sum_total_account_details(Live, Login):
     account_details["% WINNING TRADES"] = 100 * round(account_details["NUM PROFIT TRADES"] / (account_details["NUM LOSING TRADES"] + account_details["NUM PROFIT TRADES"]),2)
 
 
+
+
+
     return [account_details]
 
 # Function that takes in df for trades
@@ -193,4 +196,5 @@ def Average_trade_time_per_symbol(df_data):
     symbol_duration_avg = df_data[["SYMBOL", "DURATION"]].groupby('SYMBOL').mean()    # Want to group by, for seconds
     symbol_duration_avg.reset_index(level=0, inplace=True)  # Want to reset the index so that "SYMBOL" becomes the column name
     symbol_duration_avg.sort_values(by=["DURATION"], ascending=True, inplace=True)
+    symbol_duration_avg["DURATION"] = symbol_duration_avg["DURATION"].round(2)  # Want to set to 2 DP only.
     return symbol_duration_avg

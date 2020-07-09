@@ -1364,7 +1364,7 @@ def plot_volVSgroup_heat_map(df, chart_title):
 def plot_account_details(account_details):
 
     x = ['Deposit', 'Withdrawal', 'Profits']
-    y = [account_details[0]["DEPOSIT"], -1 * account_details[0]["WITHDRAWAL"], account_details[0]["PROFIT"]]
+    y = [account_details[0]["DEPOSIT"], -1 * account_details[0]["WITHDRAWAL"], round(account_details[0]["PROFIT"],2)]
 
     # Use the hovertext kw argument for hover text
     fig = go.Figure(data=[go.Bar(x=x, y=y,
@@ -1389,7 +1389,7 @@ def plot_account_details(account_details):
                       ),
                       xaxis_tickfont_size=10,
                       autosize=True,
-                      width=600,
+                      width=700,
                       height=500,
                       title_x=0.5,  titlefont=dict(size=20),
                       )
@@ -1423,7 +1423,7 @@ def plot_symbol_tradetime_duration(df_data):
                       ),
                       xaxis_tickfont_size=10,
                       autosize=True,
-                      width=600,
+                      width=700,
                       height=500,
                       title_x=0.5,  titlefont=dict(size=20),
                       )
@@ -1610,7 +1610,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     caption = "Live: {Live}, Login:{Login}".format(Live=Live, Login=Login)
     return_html = return_html[:thead_index] + "<caption>{}</caption>".format(caption) + return_html[thead_index:]
 
-    print(net_position)
+    #print(net_position)
 
     # Want to make the data printable
     #result_clean = [{k : "{}".format(d) for k,d in r.items()} for r in result]

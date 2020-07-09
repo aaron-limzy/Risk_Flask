@@ -646,7 +646,9 @@
   <br>
   {% if description %}
   <br><br>
-  <span class="border border-secondary col-lg-12 col-md-12 col-sm-12 rounded bg-light p-4">{{ description }}</span>
+  <div class="container col-lg-12 col-md-12 col-sm-12">
+  <div class="border border-secondary  rounded bg-light p-4">{{ description }}</div>
+  </div>
   <br>
   {% endif %}
 
@@ -687,7 +689,7 @@
 
   <div class="collapse" id="Table{{ i }}_Raw_Div">
     <div class="card card-body">
-      <b>Table 1 Raw JSON:</b> <br>
+      <b>Table {{ i }} Raw JSON:</b> <br>
       <span id="Table{{ i }}_Raw"></span>
     </div>
     <div class="card card-body">
