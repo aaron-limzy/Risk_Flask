@@ -1372,7 +1372,7 @@ def plot_account_details(account_details):
     # Customize aspect
     fig.update_traces(marker_color='rgb(158,202,225)', marker_line_color='rgb(8,48,107)',
                       marker_line_width=1.5, opacity=0.6)
-    fig.update_layout(title_text='Profits % Calculation',
+    fig.update_layout(title_text='Total Profits % Calculation',
                       yaxis=dict(
                           title_text="Amount",
                           titlefont=dict(size=20),
@@ -1484,6 +1484,13 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     result = Query_SQL_db_engine(sql_statement)
     df_data = pd.DataFrame(result)
 
+    # # Can use Pandas to calculate the average as well...
+    # """select SYMBOL, AVG(CLOSE_TIME-OPEN_TIME) as 'AVERAGE DURATION'
+    # FROM live2.mt4_trades
+    # WHERE login = 2040 and CMD <2 and CLOSE_TIME != "1970-01-01 00:00:00"
+    # AND CLOSE_TIME > DATE_SUB(NOW(),INTERVAL 1 MONTH)
+    # GROUP BY SYMBOL
+    # ORDER BY 'AVERAGE DURATION' DESC"""
 
 
     sql_statement = """SELECT LOGIN, `GROUP`, `ENABLE`, ENABLE_READONLY, `NAME`, BALANCE, CREDIT, EQUITY, MARGIN, MARGIN_LEVEL, MARGIN_FREE
