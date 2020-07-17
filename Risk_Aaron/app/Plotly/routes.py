@@ -1472,8 +1472,9 @@ def Client_trades_Analysis(Live="", Login=""):
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/pattern5.jpg', icon="",
                            Table_name={"Live: {}, Login: {}".format(Live, Login):"V", "Profit Calculation":"V",
+                                       "Net Position": "H",
                                        "Past Trades" : "H",
-                                       "Net Position":"H",
+
                                        "Deposit/Withdrawal plot":"P",
                                        "Average Trade Timings":"P"},
                            title=title,
@@ -1617,8 +1618,9 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     # #return json.dumps(return_html)
 
     # Return "Trades" and "Net position"
-    return json.dumps({"V1" : login_details, "V2": Sum_details, "H1": return_val,
-                       "H2": net_position_dict_clean, "P1":deposit_withdrawal_fig,
+    return json.dumps({"V1" : login_details, "V2": Sum_details, "H2": net_position_dict_clean,
+                       "H1": return_val,
+                        "P1":deposit_withdrawal_fig,
                        "P2": average_trade_duration_fig}, cls=plotly.utils.PlotlyJSONEncoder)
 
 

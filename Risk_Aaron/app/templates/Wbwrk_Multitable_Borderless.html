@@ -216,10 +216,10 @@
         if (key.search("H") >= 0){  // We will use Horizontal table.
           // Need to add in [] for the object key for it to use the variable.
           // Need to get the table name the old fashion way since we can't use the passed-in pythin variable.
-          self.postMessage({[data_div_id] : Draw_Table(data[key], Table_Caption[i] , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div" + (i+1).toString() + "_table" ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
+          self.postMessage({[data_div_id] : Draw_Table(data[key], Table_Caption[i] , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div" + (i+1).toString() + "_table" ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + " SGT </span>"});
         } else if(key.search("V") >= 0) {
           // We will use the vertical table.
-          self.postMessage({[data_div_id] : Draw_Vertical_Table(data[key][0], Table_Caption[i] , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light float-left", {{ replace_words }} ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
+          self.postMessage({[data_div_id] : Draw_Vertical_Table(data[key][0], Table_Caption[i] , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light float-left", {{ replace_words }} ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + " SGT</span>"});
 
           //Draw_Vertical_Table(table_Data, Table_Caption, Table_Class, Replace_words)
         }else{

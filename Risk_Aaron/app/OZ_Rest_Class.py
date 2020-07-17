@@ -27,7 +27,8 @@ class OZ_Rest_Class:
 
     def __init__(self, hub):
         print("hub:{}".format(hub))
-        self.Bridge_REST_Version = "1.06"
+        self.Bridge_REST_Version = "1.01"
+        #self.Bridge_REST_Version = "1.06"
         self.BRIDGE_IP = ""
         self.REST_Password = ""
         self.REST_Login = ""
@@ -108,6 +109,8 @@ class OZ_Rest_Class:
         Get_Return = requests.get("https://" + self.BRIDGE_IP + "/api/rest/{endpoint}".format(endpoint=endpoint), verify=False, headers=Authorization)
 
         return Get_Return
+
+
 
 
     # Returns
@@ -220,9 +223,6 @@ class OZ_Rest_Class:
     def get_symbol_settings_rules(self):
 
         price_channel_rule_req = self.Rest_Get_OZ("/settings/price-channel-rule")
-
-
-
 
         #Checks for Status code return.
         if price_channel_rule_req.status_code != 200:
