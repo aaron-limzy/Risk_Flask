@@ -1401,6 +1401,8 @@ def plot_account_details(account_details):
 # To show (something like tableau, for people with no access)
 def plot_symbol_tradetime_duration(df_data):
 
+
+
     fig = go.Figure(data=[go.Bar(x=df_data.SYMBOL, y=df_data.DURATION, text=df_data.DURATION, textposition='auto')])
     # Customize aspect
     fig.update_traces(marker_color='rgb(158,202,225)', marker_line_color='rgb(8,48,107)',
@@ -1427,6 +1429,50 @@ def plot_symbol_tradetime_duration(df_data):
                       height=500,
                       title_x=0.5,  titlefont=dict(size=20),
                       )
+    return fig
+
+# Used for account details of client.
+# To show (something like tableau, for people with no access)
+def plot_symbol_tradetime_duration_2(df_data):
+
+    # Want to get the duration string
+    df_data["DURATION_STR"] = df_data.apply(lambda x: trade_duration_bin((x["CLOSE_TIME"] - x["OPEN_TIME"]).seconds), axis=1)
+    df_data_2 = df_data.groupby(by=["SYMBOL", "DURATION_STR"]).count().reset_index()
+
+
+    fig = px.bar(df_data_2, x="DURATION_STR", y="TICKET", color="SYMBOL", text="SYMBOL")
+
+    # Customize aspect
+    fig.update_traces(marker_line_color='rgb(8,48,107)', marker_line_width=1.5, opacity=0.8)
+
+    fig.update_layout(title_text='Trade Duration Average (Only for above trades)',
+                      yaxis=dict(
+                          title_text="Count",
+                          titlefont=dict(size=20),
+                          automargin=True,
+                          ticks="outside", tickcolor='white', ticklen=5,
+                          layer='below traces'
+                      ),
+                      yaxis_tickfont_size=14,
+                      xaxis=dict(
+                          title_text="Duration",
+                          titlefont=dict(size=20),
+                          automargin=True,
+                          layer='below traces',
+                          categoryorder='array',
+                          categoryarray=["<= 1 min", "1-2 mins", "2-3 mins", "3-5 mins",
+                                         "5 mins - 10 Mins", "10 mins - 1 hour",
+                                         "> 1 Hour"]
+                      ),
+
+                      xaxis_tickfont_size=10,
+                      autosize=True,
+                      width=700,
+                      height=500,
+                      title_x=0.5, titlefont=dict(size=20),
+                      )
+
+    # fig.show()
     return fig
 
 
@@ -1471,10 +1517,11 @@ def Client_trades_Analysis(Live="", Login=""):
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/pattern5.jpg', icon="",
-                           Table_name={"Live: {}, Login: {}".format(Live, Login):"V", "Profit Calculation":"V",
+                           Table_name={"Live: {}, Login: {}".format(Live, Login):"V",
+                                       "Profit Calculation":"V",
                                        "Net Position": "H",
+                                       "Open Trades": "H",
                                        "Past Trades" : "H",
-
                                        "Deposit/Withdrawal plot":"P",
                                        "Average Trade Timings":"P"},
                            title=title,
@@ -1492,13 +1539,24 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     if Live not in ["1","2","3","5"] or Login == "":   # There are no information.
         return json.dumps([{"Result":"Error in Login or Live"}])
 
-    sql_statement = """SELECT LOGIN, ENABLE, ENABLE_READONLY, BALANCE, CREDIT, EQUITY,  `GROUP`
-            FROM live{Live}.mt4_users
+    # sql_statement = """SELECT LOGIN, ENABLE, ENABLE_READONLY, BALANCE, CREDIT, EQUITY, `GROUP`
+    #         FROM live{Live}.mt4_users
+    #         WHERE `Login`='{Login}'""".format(Live=Live, Login=Login)
+    #
+    # result = Query_SQL_db_engine(sql_statement)
+
+
+    sql_statement = """SELECT LOGIN, `GROUP`, `ENABLE`, ENABLE_READONLY, `NAME`, 
+                        ROUND(BALANCE,2) as BALANCE, ROUND(CREDIT , 2) as CREDIT,
+                        ROUND(EQUITY, 2) as EQUITY, ROUND(MARGIN, 2) as MARGIN (E/M), 
+                        ROUND(MARGIN_LEVEL,2) as MARGIN_LEVEL, ROUND(MARGIN_FREE, 2) as MARGIN_FREE
+            FROM live{Live}.mt4_users 
             WHERE `Login`='{Login}'""".format(Live=Live, Login=Login)
 
-    result = Query_SQL_db_engine(sql_statement)
+    sql_statement = sql_statement.replace("\n", "").replace("\t", "")
+    login_details = Query_SQL_db_engine(sql_statement)
 
-    if len(result) <= 0:   # There are no information.
+    if len(login_details) <= 0:   # There are no information.
         return json.dumps([{"Result":"Error in Login or Live"}])
 
 
@@ -1523,8 +1581,13 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     result = Query_SQL_db_engine(sql_statement)
     df_data = pd.DataFrame(result)
 
-    symbol_average_tradetime = Average_trade_time_per_symbol(df_data)
-    average_trade_duration_fig = plot_symbol_tradetime_duration(symbol_average_tradetime)
+    #
+    # # symbol_average_tradetime = Average_trade_time_per_symbol(df_data)
+    #
+    # # average_trade_duration_fig = plot_symbol_tradetime_duration(symbol_average_tradetime)
+
+
+    average_trade_duration_fig = plot_symbol_tradetime_duration_2(df_data)
 
     # # Can use Pandas to calculate the average as well...
     # """select SYMBOL, AVG(CLOSE_TIME-OPEN_TIME) as 'AVERAGE DURATION'
@@ -1535,12 +1598,12 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     # ORDER BY 'AVERAGE DURATION' DESC"""
 
 
-    sql_statement = """SELECT LOGIN, `GROUP`, `ENABLE`, ENABLE_READONLY, `NAME`, BALANCE, CREDIT, EQUITY, MARGIN, MARGIN_LEVEL, MARGIN_FREE
-            FROM live{Live}.mt4_users 
-            WHERE `Login`='{Login}'""".format(Live=Live, Login=Login)
-
-    sql_statement = sql_statement.replace("\n", "").replace("\t", "")
-    login_details = Query_SQL_db_engine(sql_statement)
+    # sql_statement = """SELECT LOGIN, `GROUP`, `ENABLE`, ENABLE_READONLY, `NAME`, BALANCE, CREDIT, EQUITY, MARGIN, MARGIN_LEVEL, MARGIN_FREE
+    #         FROM live{Live}.mt4_users
+    #         WHERE `Login`='{Login}'""".format(Live=Live, Login=Login)
+    #
+    # sql_statement = sql_statement.replace("\n", "").replace("\t", "")
+    # login_details = Query_SQL_db_engine(sql_statement)
     #df_data = pd.DataFrame(result)
 
     # Get net positions for all.
@@ -1552,10 +1615,9 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     Sum_details = Sum_total_account_details(Live, Login)
     deposit_withdrawal_fig = plot_account_details(Sum_details)   # To get the figure to show.
 
-
-
     if "PROFIT" in df_data:     # BOLD the profit
         df_data["PROFIT"] =  df_data["PROFIT"].apply(lambda x: '<span style="color:{Color}">{value}</span>'.format(Color=color_negative_red(x), value=x))
+
     if "SWAPS" in df_data:
         df_data["SWAPS"] =  df_data["SWAPS"].apply(lambda x: '<span style="color:{Color}">{value}</span>'.format(Color=color_negative_red(x), value=x))
 
@@ -1575,7 +1637,6 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
 
 
 
-
     cmd = {0: "BUY", 1: "SELL", 2: "BUY LIMIT", 3:"SELL LIMIT", 4: "BUY STOP", 5: "SELL STOP", 6: "BALANCE", 7: "CREDIT"}
 
     if "CMD" in df_data:
@@ -1583,7 +1644,19 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
 
     # Re-arrange the index
     df_data = df_data[[ 'TICKET', 'SYMBOL', 'CMD','LOTS', 'OPEN_TIME',
-                        'CLOSE_TIME',"DURATION",'SWAPS', 'PROFIT','GROUP', 'COMMENT']]
+                        'CLOSE_TIME',"DURATION",'SWAPS', 'PROFIT','GROUP',
+                        'COMMENT', 'DURATION_STR']]
+
+    # Want to get the open trades.
+    open_position =  df_data[df_data["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')] # Only open trades.
+    open_position.drop(columns=['CLOSE_TIME', 'DURATION'], inplace=True)
+    open_position_dict = open_position.to_dict("record")
+
+    # Want to get the duration string
+    df_data["DURATION_STR"] = df_data.apply(lambda x: (x["OPEN_TIME"] - x["CLOSE_TIME"]).seconds, axis=1)
+
+    # Overwrite df_data to consist of only the closed trades
+    df_data = df_data[df_data["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')]  # Only open trades
 
     # Sort by Close time. Descending.
     df_data.sort_values(by=["CLOSE_TIME", "DURATION"], ascending=False, inplace=True)
@@ -1595,9 +1668,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     df_data["CLOSE_TIME"] = df_data["CLOSE_TIME"].apply(lambda x: "{}".format(x))
     df_data["OPEN_TIME"] = df_data["OPEN_TIME"].apply(lambda x: "{}".format(x))
 
-    return_val = df_data.to_dict("record")
-
-
+    closed_trades = df_data.to_dict("record")
 
 
     #print(df_data.to_html())
@@ -1619,7 +1690,8 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
 
     # Return "Trades" and "Net position"
     return json.dumps({"V1" : login_details, "V2": Sum_details, "H2": net_position_dict_clean,
-                       "H1": return_val,
+                       "H3" : open_position_dict,
+                       "H1": closed_trades,
                         "P1":deposit_withdrawal_fig,
                        "P2": average_trade_duration_fig}, cls=plotly.utils.PlotlyJSONEncoder)
 

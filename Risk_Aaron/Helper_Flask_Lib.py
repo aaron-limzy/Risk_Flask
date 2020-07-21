@@ -160,11 +160,11 @@ def Calculate_Net_position(df_data):
 def Sum_total_account_details(Live, Login):
 
     sql_statement="""SELECT 
-        COALESCE(SUM(CASE WHEN PROFIT > 0 AND CMD = 6 THEN PROFIT  END),0) as "DEPOSIT", 
-        COALESCE(SUM(CASE WHEN PROFIT < 0 AND CMD = 6 THEN PROFIT  END),0) as "WITHDRAWAL", 
-        COALESCE(SUM(CASE WHEN CMD <2 and CLOSE_TIME != "1970-01-01 00:00:00" THEN PROFIT + SWAPS  END),0) as "PROFIT",
-        COALESCE(SUM(CASE WHEN CMD <2 and CLOSE_TIME = "1970-01-01 00:00:00" THEN PROFIT + SWAPS END),0) as "FLOATING PROFIT", 
-        COALESCE(SUM(CASE WHEN CMD < 2 AND CLOSE_TIME != "1970-01-01 00:00:00" THEN VOLUME * 0.01 END),0) as "LOTS",
+        ROUND(COALESCE(SUM(CASE WHEN PROFIT > 0 AND CMD = 6 THEN PROFIT  END),0),2) as "DEPOSIT", 
+        ROUND(COALESCE(SUM(CASE WHEN PROFIT < 0 AND CMD = 6 THEN PROFIT  END),0),2) as "WITHDRAWAL", 
+        ROUND(COALESCE(SUM(CASE WHEN CMD <2 and CLOSE_TIME != "1970-01-01 00:00:00" THEN PROFIT + SWAPS  END),0),2) as "CLIENT PROFIT",
+        ROUND(COALESCE(SUM(CASE WHEN CMD <2 and CLOSE_TIME = "1970-01-01 00:00:00" THEN PROFIT + SWAPS END),0),2) as "FLOATING PROFIT", 
+        ROUND(COALESCE(SUM(CASE WHEN CMD < 2 AND CLOSE_TIME != "1970-01-01 00:00:00" THEN VOLUME * 0.01 END),0),2) as "LOTS",
                 COALESCE(SUM(CASE  WHEN CMD <2 and CLOSE_TIME != "1970-01-01 00:00:00" AND (PROFIT+SWAPS) > 0 THEN 1 END),0) as "NUM PROFIT TRADES",
 				COALESCE(SUM(CASE  WHEN CMD <2 and CLOSE_TIME != "1970-01-01 00:00:00" AND (PROFIT+SWAPS) < 0 THEN 1 END),0) as "NUM LOSING TRADES"
     FROM live{Live}.mt4_trades 
@@ -198,3 +198,14 @@ def Average_trade_time_per_symbol(df_data):
     symbol_duration_avg.sort_values(by=["DURATION"], ascending=True, inplace=True)
     symbol_duration_avg["DURATION"] = symbol_duration_avg["DURATION"].round(2)  # Want to set to 2 DP only.
     return symbol_duration_avg
+
+# Gives the duration in seconds
+def trade_duration_bin(duration):
+    # Want to do 1 min, 2 mins, 3 mins, 5 mins, 10 mins and an hour
+    bin_in_seconds = {60: "<= 1 min", 120: "1-2 mins", 180 : "2-3 mins", 300: "3-5 mins",
+                      600:"5 mins - 10 Mins", 3600 : "10 mins - 1 hour"}
+
+    for d, s in bin_in_seconds.items():
+        if duration <= d:   # If less then or equals to
+            return s
+    return "Longer than 1 hour"
