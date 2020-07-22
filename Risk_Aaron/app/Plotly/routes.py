@@ -1364,7 +1364,7 @@ def plot_volVSgroup_heat_map(df, chart_title):
 def plot_account_details(account_details):
 
     x = ['Deposit', 'Withdrawal', 'Profits']
-    y = [account_details[0]["DEPOSIT"], -1 * account_details[0]["WITHDRAWAL"], round(account_details[0]["PROFIT"],2)]
+    y = [account_details[0]["DEPOSIT"], -1 * account_details[0]["WITHDRAWAL"], round(account_details[0]["CLIENT PROFIT"],2)]
 
     # Use the hovertext kw argument for hover text
     fig = go.Figure(data=[go.Bar(x=x, y=y,
@@ -1548,7 +1548,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
 
     sql_statement = """SELECT LOGIN, `GROUP`, `ENABLE`, ENABLE_READONLY, `NAME`, 
                         ROUND(BALANCE,2) as BALANCE, ROUND(CREDIT , 2) as CREDIT,
-                        ROUND(EQUITY, 2) as EQUITY, ROUND(MARGIN, 2) as MARGIN (E/M), 
+                        ROUND(EQUITY, 2) as EQUITY, ROUND(MARGIN, 2) as `MARGIN (E/M)`, 
                         ROUND(MARGIN_LEVEL,2) as MARGIN_LEVEL, ROUND(MARGIN_FREE, 2) as MARGIN_FREE
             FROM live{Live}.mt4_users 
             WHERE `Login`='{Login}'""".format(Live=Live, Login=Login)
