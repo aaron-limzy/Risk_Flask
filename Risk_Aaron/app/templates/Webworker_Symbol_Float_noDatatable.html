@@ -461,10 +461,12 @@
 
       var myWorker = new Worker(blobURL);
 
-
+      console.log("Hello World");
 
 
       myWorker.onmessage = function(e){
+        console.log("On Message. ");
+
         if (e.data instanceof Object){  // If it is an object, we loop thru and add it to the correct container/Div
           ret_obj = e.data;
           var consolidate = false;
@@ -492,7 +494,7 @@
             if (key.search("plot") == -1){  // If there's no need to plot.
 
 
-
+              console.log("Key:" + key);
             // If it's a table, we want to convert it to a datatable
             // Naming convention. If it's a div ment to store a datatable.
             // We name it  Data_table_Div<number>, so that the table ID = '#' + key + '_table'
