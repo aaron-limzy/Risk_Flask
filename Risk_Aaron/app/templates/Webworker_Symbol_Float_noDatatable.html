@@ -459,30 +459,6 @@
 
 
 
-      function refresh_datatable(div_id, data){
-        //'#' + key + '_table'
-        var table_id = div_id + "_table";
-        if ( $.fn.dataTable.isDataTable( table_id ) != true) { // If not a datatable
-          var order = [];
-          //console.log( table_id + ' is NOT data table' );
-
-        }else{  // If it's a Datatable already...
-          var table = $( table_id).DataTable();
-          var order = table.order();
-          var search = table.search()
-          //console.log( 'Column '+order+' is the ordering column' );
-        }
-        $(div_id).html(data);
-        table = $( table_id ).DataTable( {
-        paging: false,
-        searching: true,
-        "aaSorting": order, // Don't want to sort initially
-        "oSearch": {"sSearch": search}
-      } );
-      //console.log(search);
-      }
-
-
 
       myWorker.onmessage = function(e){
         if (e.data instanceof Object){  // If it is an object, we loop thru and add it to the correct container/Div
