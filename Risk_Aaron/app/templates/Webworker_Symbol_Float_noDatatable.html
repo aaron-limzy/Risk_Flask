@@ -120,6 +120,7 @@
     }
 
   function sent_httprequest(method, url, data){
+    self.postMessage({TO_LOG: "Sending HTTP-Request to: " + url + ". " + return_Time_String()});
     const promise = new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.timeout = 90*1000;         // time in milliseconds
@@ -160,11 +161,14 @@
   // The actual function to do the XHR call.
   function xhr_call(){
     sent_httprequest("POST", "{{ ajax_url }}").then(responseData => {
+
+      self.postMessage({TO_LOG: "Recieved Ajax Return: " + responseData + ". " + return_Time_String()});
       //self.postMessage(responseData);
       Increment_counter = 1;  // Restart the Counter.
 
       var below_table =  '<div class="left-text small-text bg-light p-1 m-1"> <table class="table table-sm"><tbody>';
       below_table += '<tr><th scope="row">Refresh time</th><td>' + return_Time_String() + '</td></tr>';
+
 
 
       if (responseData.length >= 3) {
