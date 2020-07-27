@@ -943,6 +943,7 @@ def BGI_Symbol_Float():
     description = Markup("<b>Floating PnL By Symbol.</b><br> Revenue = Profit + Swaps<br>"+
                          "Includes B book Groups. Includes HK as well.<br>"+
                          'Using Live5.group_table where book = "B"<br>' +
+                          'HK Is excluded from all symbols <br>'  +
                          'Values are all on <b>BGI Side</b>. <br>' +
                          'Sort by absolute net volume.<br>'+
                          "Yesterday Data saved in cookies.<br>" +
@@ -1023,7 +1024,7 @@ def BGI_Symbol_Float_ajax():
     FROM aaron.BGI_Float_History_Save 
                     LEFT JOIN live1.mt4_prices as P ON  CONCAT(aaron.BGI_Float_History_Save.SYMBOL, "q") = P.SYMBOL
     WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.BGI_Float_History_Save)
-    AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "B")
+    AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "B") and COUNTRY not like "HK"
     GROUP BY SYMBOL
     ORDER BY REVENUE DESC""".format(ServerTimeDiff_Query=server_time_diff_str)
 

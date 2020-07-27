@@ -1432,9 +1432,16 @@ def BGI_Convert_Rate():
 @roles_required()
 def BGI_Convert_Rate_Ajax():
 
-    sql_query = text("""select symbol, max(time) as time, average from live1.daily_prices_temp as A
-    where LENGTH(A.SYMBOL) = 6 and A.SYMBOL like "%USD%"
-    group by A.SYMBOL""")
+    # sql_query = text("""select symbol, max(time) as time, average from live1.daily_prices_temp as A
+    # where LENGTH(A.SYMBOL) = 6 and A.SYMBOL like "%USD%"
+    # group by A.SYMBOL""")
+
+    # Want to use another table
+    sql_query = text("""select symbol, MODIFY_TIME as time, (BID + ASK) * 0.5 as average 
+        From live1.mt4_prices as A
+        Where LENGTH(A.SYMBOL) = 6 and A.SYMBOL like "%USD%"
+        Group by A.SYMBOL""")
+
 
     raw_result = db.engine.execute(sql_query)
     result_data = raw_result.fetchall()     # Return Result
