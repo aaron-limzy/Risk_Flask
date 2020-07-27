@@ -535,31 +535,6 @@
     // Could be anything. We just want to post something out.
     myWorker.postMessage("START");
 
-    // To let the page not run Ajax when tab is deemed idle.
-    var TabIsNotActive=false;
-
-    setInterval(function(){
-      var h = (new Date()).getHours();
-      var m = (new Date()).getMinutes();
-      var s = (new Date()).getSeconds();
-      h = h < 10? "0"+h : h;
-      m = m < 10? "0"+m : m;
-      s = s < 10? "0"+s : s;
-
-      if ( TabIsNotActive != document.hidden){
-        console.log("Document state changed (Inactive/Active) : "+ h+':'+m+':'+s);
-        TabIsNotActive = document.hidden;
-        if (TabIsNotActive == true){
-          myWorker.postMessage("TAB-IS-INACTIVE");  // Send to the web worker
-        }else{
-          myWorker.postMessage("TAB-IS-ACTIVE");  // Send to the web worker
-          refresh_viz_count=10; // Set to large number so that it will be forced to refresh at next go.
-        }
-      }
-    }, 1000);
-
-
-
     $('#btn_refresh_page').click(function() {
       myWorker.postMessage("BUTTON");  // Send a click to the web worker
     });
