@@ -516,16 +516,16 @@
 
           // used to check if a table is a DataTable or not already.
           // Datatables dosn't allow for re-init. So.. gotta check
-          if ( $.fn.dataTable.isDataTable( '#tTable_1' ) ) {
-              table = $('#tTable_1').DataTable();
-          }
-          else {
-              table = $('#tTable_1').DataTable( {
-                  paging: false,
-                  searching: false,
-                  "aaSorting": [] // Don't want to sort initially
-              } );
-          }
+          // if ( $.fn.dataTable.isDataTable( '#tTable_1' ) ) {
+          //     table = $('#tTable_1').DataTable();
+          // }
+          // else {
+          //     table = $('#tTable_1').DataTable( {
+          //         paging: false,
+          //         searching: false,
+          //         "aaSorting": [] // Don't want to sort initially
+          //     } );
+          // }
 
         }else{
           console.log(e.data);
