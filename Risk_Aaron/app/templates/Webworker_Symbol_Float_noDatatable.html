@@ -378,68 +378,6 @@
             }
         });
       }
-
-
-      // myWorker.onmessage = function(e){
-      //   console.log("On Message. ");
-      //
-      //   if (e.data instanceof Object){  // If it is an object, we loop thru and add it to the correct container/Div
-      //     ret_obj = e.data;
-      //     var consolidate = false;
-      //     if ('consolidate' in ret_obj){  // If we want to consolidate all the errors.
-      //       consolidate = true;
-      //     }
-      //     for (let key in ret_obj){
-      //
-      //       if (key.search("TO_LOG") != -1){  //If we want to log this to consol from web worker.
-      //         console.log(ret_obj[key]);
-      //       }
-      //
-      //     //}
-      //        var current_html = "";
-      //        if (consolidate == true){  // If we need to consolidate the items.
-      //           var current_html = $('#' + key).html();   // To display the error. First, we need to store the HTML as we want to append.
-      //           current_html += "<br>-------------------------------------------------<br>";
-      //           //current_html += "Ajax Response: " + JSON.stringify(xhr) + "<br>";
-      //           //current_html += "status: " + status + "<br>";
-      //           //current_html += "Error: " + error['message'] + "<br>" + error['stack'] + "<br>";
-      //           //$('#' + error_card_id ).html(current_html);  // Put it back into the Card.
-      //        }
-      //        //console.log(`${key} : ${e.data[key]}`);
-      //
-      //       if (key.search("plot") == -1){  // If there's no need to plot.
-      //
-      //
-      //         console.log("Key:" + key);
-      //       // If it's a table, we want to convert it to a datatable
-      //       // Naming convention. If it's a div ment to store a datatable.
-      //       // We name it  Data_table_Div<number>, so that the table ID = '#' + key + '_table'
-      //         if (key.toLowerCase().search("data_table_div")>=0){    // All tables can be put to Datatables
-      //
-      //           $('#' + key).html(current_html + ret_obj[key]);
-      //
-      //
-      //
-      //         }else{
-      //           $('#' + key).html(current_html + ret_obj[key]);
-      //         }
-      //       }else{
-      //         console.log(ret_obj[key]);
-      //         Plotly.newPlot(key, ret_obj[key]);
-      //       }
-      //
-      //
-      //     }
-      //
-      //
-      //   }else{
-      //     console.log(e.data);
-      //   }
-      // };
-
-    // Could be anything. We just want to post something out.
-    // myWorker.postMessage("START");
-
     $('#btn_refresh_page').click(Table1_Update);
 
 

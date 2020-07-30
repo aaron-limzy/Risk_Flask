@@ -982,7 +982,7 @@ def BGI_Symbol_Float1():
 
 
     #Webworker_Symbol_Float_noDatatable
-    return render_template("Standard_Single_Table.html", backgroud_Filename='css/pattern7.jpg', icon= "", Table_name="Symbol Float (B 📘)", \
+    return render_template("Webworker_Symbol_Float_noDatatable.html", backgroud_Filename='css/pattern7.jpg', icon= "", Table_name="Symbol Float (B 📘)", \
                            title=title, ajax_url=url_for('analysis.BGI_Symbol_Float_ajax', _external=True), header=header, setinterval=15,
                            description=description, no_backgroud_Cover=True, replace_words=Markup(['(Client Side)']))
 
