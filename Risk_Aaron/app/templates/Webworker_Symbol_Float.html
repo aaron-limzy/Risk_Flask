@@ -374,8 +374,12 @@
     // }
 
     function numberWithCommas(x) {
-      return x;
+      return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
     }
+
+    // function numberWithCommas(x) {
+    //   return x;
+    // }
 
     function Check_Time_Offset(){
         var d = new Date();
