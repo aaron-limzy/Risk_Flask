@@ -1004,8 +1004,8 @@ def BGI_Symbol_Float_ajax():
 
         df_yesterday_symbol_pnl = pd.DataFrame.from_dict(session["yesterday_pnl_by_symbol"])
     else:       # If session timing is outdated, or needs to be updated.
-        print("Getting from DB")
 
+        print("Getting from DB")
         df_yesterday_symbol_pnl = get_symbol_daily_pnl()
         if "DATE" in df_yesterday_symbol_pnl:  # We want to save it as a string.
             #print("DATE IN")
