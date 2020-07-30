@@ -83,157 +83,157 @@
           return reurn_val;
       }
 
-
-      function Draw_Vertical_Table(table_Data, Table_Caption, Table_Class, Replace_words) {
-          var sString = '';
-
-          //------------- Table Header -----------------------------
-          sString += '<table class="' + Table_Class + '">';
-          sString += '<caption>' + Table_Caption + '</caption>';
-          sString += '<tr>';
-          //------------- Table Data -----------------------------
-
-          for (var x in table_Data) {
-              //For each row, For each data
-
-              sString += '<tr>';
-
-              //for(var xx in table_Data[x]){	//
-
-              var string_buffer = "";
-              string_buffer += table_Data[x];
-
-              sString += '<td><b>' + x + '</b></td>';
-
-              if (string_buffer.search("ERROR") >= 0) {
-                  // If there is an error, change the color of the cell
-                  sString += '<td bgColor="#ff8080">';
-                  //sString+= '<td>';
-              } else {
-                  sString += '<td>';
-              }
-
-              if (table_Data[x]instanceof Array == true || table_Data[x]instanceof Object == true) {
-                  //sString += "Is Array..." ;
-
-                  sString += Draw_Vertical_Table(table_Data[x], "", "table_orange", Replace_words);
-              } else {
-                  sString += table_Data[x];
-              }
-
-              sString += "</td>";
-
-              sString += '</tr>';
-          }
-          sString += '</table>';
-          return sString;
-      }
-
-
-
-    // Draws a horizontal table.
-    function Draw_Table(table_Data, Table_Caption, Table_Class, Alert_Words, Replace_words, table_id) {
-        var sString = '';
-        //------------- Table Header -----------------------------
-        sString += '<table ';
-        if (table_id!=undefined){
-            sString += 'id="' + table_id + '" ';
-        }
-        sString += 'class="' + Table_Class + '">';
-        sString += '<caption>' + Table_Caption + '</caption>';
-        sString += '<thead><tr>';
-
-        for (var x in table_Data) {
-            //For table header.
-            for (var xx in table_Data[x]) {
-                sString += '<th class="align-middle">';
-                sString += xx.replace("_", "<br>");  // Replace _ with ' ' so that table can be smaller
-                sString += '</th>';
-            }
-            break;
-        }
-
-        //variable instanceof Array
-        sString += '</tr></thead>';
-
-        //------------- Table Data -----------------------------
-
-        for (var x in table_Data) {
-            //For each row
-
-            sString += '<tr>';
-
-            for (var xx in table_Data[x]) {
-                //For each data
-                var string_buffer = "";
-                string_buffer += table_Data[x][xx];
-
-
-
-                var Alert_Word_found = 0;
-                for (var aw in Alert_Words) {	// Loop thru the list of alert words
-                    // Loop thru the array
-                    if (string_buffer.search(Alert_Words[aw]) >= 0) {
-                        Alert_Word_found = 1;
-                        break;
-                    }
-                }
-
-                var Relace_Word_found = 0;
-                for (var rw in Replace_words) {	// Loop thru the list of Replace words
-                    // Loop thru the array
-                    if (string_buffer.search(Replace_words[aw]) >= 0) {
-                        Relace_Word_found = 1;
-                        string_buffer = table_Data[x][xx].replace(Replace_words[aw], "")
-                        break;
-                    }
-                }
-
-
-                Table_Column = xx;	// Get the Column Name
-                if ((xx.search("Discrepancy") >= 0) && (table_Data[x][xx] != 0)){	// If its the discrepancy Column/Row, we want to Flag out any that isn't 0.
-                    Alert_Word_found = 1;
-                }
-
-                 if ((xx.search("Mismatch_count") >= 0) && (table_Data[x][xx] >= 10)){	// If its the Mismatch_count Column/Row, we want to Flag out any larger then 10
-                    Alert_Word_found = 1;
-                }
-
-
-                if (Alert_Word_found == 1) {
-                    // If there is an error, change the color of the cell
-                    sString += '<td class="alert_cell">';
-                    //sString+= '<td>';
-                } else if (Relace_Word_found == 1) {
-                    //If replace words was found, we want to give it a class
-                    sString += '<td class="table_highlight">';
-                    //sString+= '<td>';
-                } else {
-                    sString += '<td>';
-                }
-
-                if (table_Data[x][xx]instanceof Array == true || table_Data[x][xx]instanceof Object == true) {
-                    //sString += "Is Array..." ;
-
-                    sString += Draw_Vertical_Table(table_Data[x][xx], "", "table_orange ", Replace_words);
-                } else  if (typeof(table_Data[x][xx]) === 'number'){  // If it's a number. we want to write it with a comma for easy reading.
-
-                  if (table_Data[x][xx] < 0){
-                    sString += "<font color='red'>" +  numberWithCommas(table_Data[x][xx]) + "</font>";
-                  }else{
-                    sString += numberWithCommas(table_Data[x][xx]);
-                  }
-                }else
-                {
-                    sString += string_buffer;
-                }
-                sString += "</td>";
-            }
-            sString += '</tr>';
-        }
-        sString += '</table>';
-        return sString;
-      }
+    //
+    //   function Draw_Vertical_Table(table_Data, Table_Caption, Table_Class, Replace_words) {
+    //       var sString = '';
+    //
+    //       //------------- Table Header -----------------------------
+    //       sString += '<table class="' + Table_Class + '">';
+    //       sString += '<caption>' + Table_Caption + '</caption>';
+    //       sString += '<tr>';
+    //       //------------- Table Data -----------------------------
+    //
+    //       for (var x in table_Data) {
+    //           //For each row, For each data
+    //
+    //           sString += '<tr>';
+    //
+    //           //for(var xx in table_Data[x]){	//
+    //
+    //           var string_buffer = "";
+    //           string_buffer += table_Data[x];
+    //
+    //           sString += '<td><b>' + x + '</b></td>';
+    //
+    //           if (string_buffer.search("ERROR") >= 0) {
+    //               // If there is an error, change the color of the cell
+    //               sString += '<td bgColor="#ff8080">';
+    //               //sString+= '<td>';
+    //           } else {
+    //               sString += '<td>';
+    //           }
+    //
+    //           if (table_Data[x]instanceof Array == true || table_Data[x]instanceof Object == true) {
+    //               //sString += "Is Array..." ;
+    //
+    //               sString += Draw_Vertical_Table(table_Data[x], "", "table_orange", Replace_words);
+    //           } else {
+    //               sString += table_Data[x];
+    //           }
+    //
+    //           sString += "</td>";
+    //
+    //           sString += '</tr>';
+    //       }
+    //       sString += '</table>';
+    //       return sString;
+    //   }
+    //
+    //
+    //
+    // // Draws a horizontal table.
+    // function Draw_Table(table_Data, Table_Caption, Table_Class, Alert_Words, Replace_words, table_id) {
+    //     var sString = '';
+    //     //------------- Table Header -----------------------------
+    //     sString += '<table ';
+    //     if (table_id!=undefined){
+    //         sString += 'id="' + table_id + '" ';
+    //     }
+    //     sString += 'class="' + Table_Class + '">';
+    //     sString += '<caption>' + Table_Caption + '</caption>';
+    //     sString += '<thead><tr>';
+    //
+    //     for (var x in table_Data) {
+    //         //For table header.
+    //         for (var xx in table_Data[x]) {
+    //             sString += '<th class="align-middle">';
+    //             sString += xx.replace("_", "<br>");  // Replace _ with ' ' so that table can be smaller
+    //             sString += '</th>';
+    //         }
+    //         break;
+    //     }
+    //
+    //     //variable instanceof Array
+    //     sString += '</tr></thead>';
+    //
+    //     //------------- Table Data -----------------------------
+    //
+    //     for (var x in table_Data) {
+    //         //For each row
+    //
+    //         sString += '<tr>';
+    //
+    //         for (var xx in table_Data[x]) {
+    //             //For each data
+    //             var string_buffer = "";
+    //             string_buffer += table_Data[x][xx];
+    //
+    //
+    //
+    //             var Alert_Word_found = 0;
+    //             for (var aw in Alert_Words) {	// Loop thru the list of alert words
+    //                 // Loop thru the array
+    //                 if (string_buffer.search(Alert_Words[aw]) >= 0) {
+    //                     Alert_Word_found = 1;
+    //                     break;
+    //                 }
+    //             }
+    //
+    //             var Relace_Word_found = 0;
+    //             for (var rw in Replace_words) {	// Loop thru the list of Replace words
+    //                 // Loop thru the array
+    //                 if (string_buffer.search(Replace_words[aw]) >= 0) {
+    //                     Relace_Word_found = 1;
+    //                     string_buffer = table_Data[x][xx].replace(Replace_words[aw], "")
+    //                     break;
+    //                 }
+    //             }
+    //
+    //
+    //             Table_Column = xx;	// Get the Column Name
+    //             if ((xx.search("Discrepancy") >= 0) && (table_Data[x][xx] != 0)){	// If its the discrepancy Column/Row, we want to Flag out any that isn't 0.
+    //                 Alert_Word_found = 1;
+    //             }
+    //
+    //              if ((xx.search("Mismatch_count") >= 0) && (table_Data[x][xx] >= 10)){	// If its the Mismatch_count Column/Row, we want to Flag out any larger then 10
+    //                 Alert_Word_found = 1;
+    //             }
+    //
+    //
+    //             if (Alert_Word_found == 1) {
+    //                 // If there is an error, change the color of the cell
+    //                 sString += '<td class="alert_cell">';
+    //                 //sString+= '<td>';
+    //             } else if (Relace_Word_found == 1) {
+    //                 //If replace words was found, we want to give it a class
+    //                 sString += '<td class="table_highlight">';
+    //                 //sString+= '<td>';
+    //             } else {
+    //                 sString += '<td>';
+    //             }
+    //
+    //             if (table_Data[x][xx]instanceof Array == true || table_Data[x][xx]instanceof Object == true) {
+    //                 //sString += "Is Array..." ;
+    //
+    //                 sString += Draw_Vertical_Table(table_Data[x][xx], "", "table_orange ", Replace_words);
+    //             } else  if (typeof(table_Data[x][xx]) === 'number'){  // If it's a number. we want to write it with a comma for easy reading.
+    //
+    //               if (table_Data[x][xx] < 0){
+    //                 sString += "<font color='red'>" +  numberWithCommas(table_Data[x][xx]) + "</font>";
+    //               }else{
+    //                 sString += numberWithCommas(table_Data[x][xx]);
+    //               }
+    //             }else
+    //             {
+    //                 sString += string_buffer;
+    //             }
+    //             sString += "</td>";
+    //         }
+    //         sString += '</tr>';
+    //     }
+    //     sString += '</table>';
+    //     return sString;
+    //   }
 
 
       function numberWithCommas(x) {
