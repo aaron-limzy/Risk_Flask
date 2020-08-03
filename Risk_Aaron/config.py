@@ -1,5 +1,6 @@
 import os
 from Aaron_Lib import *
+from datetime import timedelta
 
 class Config(object):
     SECRET_KEY = os.environ.get('SECRET_KEY') or "DSF#23kjsdh8aSAd@34asdf8akl23j48sdla"
@@ -68,6 +69,13 @@ class Config(object):
     # MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     # ADMINS = ['aaron.lim@blackwellglobal.com']
     CFH_BO_PASSWORD = "Bgil8888!!"
+
+    # If set to True the cookie is refreshed on every request, which bumps the lifetime.
+    # Works like Flask’s SESSION_REFRESH_EACH_REQUEST.
+    REMEMBER_COOKIE_REFRESH_EACH_REQUEST=True
+
+    # WE don't need to set this as Flask internally sets this to 31 days.
+    #PERMANENT_SESSION_LIFETIME = timedelta(minutes=1)
 
     #WTF_CSRF_TIME_LIMIT= None
 

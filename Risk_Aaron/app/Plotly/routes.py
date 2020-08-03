@@ -719,6 +719,8 @@ def check_session_live1_timing():
 def BGI_Country_Float_ajax():
 
     #start = datetime.datetime.now()
+    # print(current_app.permanent_session_lifetime)
+    # print(session)
 
     # TODO: Only want to save during trading hours.
     # TODO: Want to write a custom function, and not rely on using CFH timing.
@@ -954,39 +956,6 @@ def BGI_Symbol_Float():
     return render_template("Webworker_Symbol_Float.html", backgroud_Filename='css/pattern7.jpg', icon= "", Table_name="Symbol Float (B 📘)", \
                            title=title, ajax_url=url_for('analysis.BGI_Symbol_Float_ajax', _external=True), header=header, setinterval=15,
                            description=description, no_backgroud_Cover=True, replace_words=Markup(['(Client Side)']))
-
-
-
-
-@analysis.route('/BGI_Symbol_Float1', methods=['GET', 'POST'])
-@roles_required()
-def BGI_Symbol_Float1():
-
-    title = "Symbol Float"
-    header = "Symbol Float"
-
-    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
-    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
-    # For Login in aaron.Risk_autocut and Credit_limit != 0
-
-
-    description = Markup("<b>Floating PnL By Symbol.</b><br> Revenue = Profit + Swaps<br>"+
-                         "Includes B book Groups. Includes HK as well.<br>"+
-                         'Using Live5.group_table where book = "B"<br>' +
-                          'HK Is excluded from all symbols <br>'  +
-                         'Values are all on <b>BGI Side</b>. <br>' +
-                         'Sort by absolute net volume.<br>'+
-                         "Yesterday Data saved in cookies.<br>" +
-                         "Taking Live prices from Live 1 q Symbols")
-
-
-
-    #Webworker_Symbol_Float_noDatatable
-    return render_template("Webworker_Symbol_Float_noDatatable.html", backgroud_Filename='css/pattern7.jpg', icon= "", Table_name="Symbol Float (B 📘)", \
-                           title=title, ajax_url=url_for('analysis.BGI_Symbol_Float_ajax', _external=True), header=header, setinterval=15,
-                           description=description, no_backgroud_Cover=True, replace_words=Markup(['(Client Side)']))
-
-
 
 
 # Get BGI Float by Symbol

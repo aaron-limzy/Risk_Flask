@@ -167,12 +167,12 @@
       Increment_counter = 1;  // Restart the Counter.
 
       var below_table =  '<div class="left-text small-text bg-light p-1 m-1"> <table class="table table-sm"><tbody>';
-      below_table += '<tr><th scope="row">Refresh time</th><td>' + return_Time_String() + '</td></tr>';
+      below_table += '<tr><th scope="row">Refresh time (GMT + 8)</th><td>' + return_Time_String() + '</td></tr>';
 
 
       if (responseData.length >= 3) {
-        below_table += '<tr><th scope="row">Country [Floating]  Refresh</th><td>' + responseData[1] + '</td></tr>';
-        below_table += '<tr><th scope="row">Country [Yesterday] Refresh</th><td>' + responseData[2] + '</td></tr>';
+        below_table += '<tr><th scope="row">Country [Floating]  Refresh (GMT + 8)/th><td>' + responseData[1] + '</td></tr>';
+        below_table += '<tr><th scope="row">Country [Yesterday] Refresh (GMT + 8)</th><td>' + responseData[2] + '</td></tr>';
         //below_table += "<br>Country [Floating]  Refresh: " + responseData[1];
         //below_table += "<br>Country [Yesterday] Refresh: " + responseData[2];
       }
