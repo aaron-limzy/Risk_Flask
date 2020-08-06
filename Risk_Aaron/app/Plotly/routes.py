@@ -457,7 +457,7 @@ def check_previous_day_pnl_in_DB():
 
     pnl_date = live1_start_time.strftime("%Y-%m-%d")
 
-    insert_into_table = text("SELECT count(*) FROM aaron.bgi_dailypnl_by_country_group WHERE DATE ='{}' AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK', 'Dealing')".format(pnl_date))
+    insert_into_table = text("SELECT count(*) FROM aaron.bgi_dailypnl_by_country_group WHERE DATE ='{}'".format(pnl_date))
     raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
     result_data = raw_result.fetchall()     # Return Result
     if len(result_data) > 0:
@@ -641,7 +641,9 @@ def get_symbol_daily_pnl():
 
     sql_statement = """SELECT SYMBOL, SUM(VOLUME) AS VOLUME, SUM(REVENUE) AS REVENUE, DATE
             FROM aaron.`bgi_dailypnl_by_country_group`
-            WHERE DATE = '{}' AND COUNTRY in (SELECT COUNTRY from live5.group_table where BOOK = "B")
+            WHERE DATE = '{}' 
+            AND COUNTRY in (SELECT DISTINCT(COUNTRY) from live5.group_table where BOOK = "B")
+            AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK')
             GROUP BY SYMBOL""".format(date_of_pnl)
 
     # Want to get results for the above query, to get the Floating PnL
@@ -975,7 +977,7 @@ def BGI_Symbol_Float_ajax():
         df_yesterday_symbol_pnl = pd.DataFrame.from_dict(session["yesterday_pnl_by_symbol"])
     else:       # If session timing is outdated, or needs to be updated.
 
-        print("Getting from DB")
+        print("Getting yesterday symbol PnL from DB")
         df_yesterday_symbol_pnl = get_symbol_daily_pnl()
         if "DATE" in df_yesterday_symbol_pnl:  # We want to save it as a string.
             #print("DATE IN")
