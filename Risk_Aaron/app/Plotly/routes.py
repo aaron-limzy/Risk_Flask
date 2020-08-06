@@ -550,7 +550,7 @@ def save_previous_day_PnL():
     FROM live5.mt4_trades,live5.group_table WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND {live5_Time_String} AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live5' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, SYMBOL1)
     ) AS B 
     GROUP BY B.COUNTRY, B.SYMBOL1
-    HAVING COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST')
+    HAVING COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', "HK")
     ORDER BY COUNTRY, SYMBOL""".format(ServerTimeDiff_Query=ServerTimeDiff_Query, live123_Time_String=live123_Time_String,live5_Time_String=live5_Time_String)
 
     sql_query = text(sql_statement)
@@ -1133,6 +1133,75 @@ def BGI_Symbol_Float_ajax():
     #print("\nGetting SYMBOL PnL tool: {}s\n".format((end - start).total_seconds()))
     return json.dumps([return_val, ", ".join(datetime_pull), ", ".join(yesterday_datetime_pull)], cls=plotly.utils.PlotlyJSONEncoder)
 
+# To Query for all open trades by a particular symbol
+# Shows the closed trades for the day as well.
+@analysis.route('/Open_Symbol/<symbol>', methods=['GET', 'POST'])
+@roles_required()
+def symbol_float_trades_ajax(symbol=""):
+    symbol="XAUUSD"
+    symbol_condition = "AND SYMBOL Like '%{}%'".format(symbol)
+    sql_statement = """(SELECT 'live1' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+        FROM live1.mt4_trades, live5.group_table 
+        WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= (CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live1' 
+            AND LENGTH(mt4_trades.LOGIN)>4
+            {symbol_condition}
+            AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST'))
+    UNION 
+        (SELECT 'live2' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+            FROM live2.mt4_trades,live5.group_table 
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= (CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live2' 
+            AND LENGTH(mt4_trades.LOGIN)>4
+            {symbol_condition}
+            AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST'))
+    UNION 
+        (SELECT 'live3' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+            FROM live3.mt4_trades,live5.group_table 
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= (CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live3' 
+            AND LENGTH(mt4_trades.LOGIN)>4
+            {symbol_condition}
+            AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST'))
+    UNION
+        (SELECT 'live5' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+            FROM live5.mt4_trades,live5.group_table 
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= DATE_ADD(DATE_SUB((CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END),INTERVAL 1 DAY),INTERVAL 1 HOUR))
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live5' 
+            AND LENGTH(mt4_trades.LOGIN)>4
+            {symbol_condition}
+            AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST'))""".format(symbol_condition=symbol_condition, ServerTimeDiff_Query=6)
+
+    sql_query = text(sql_statement)
+    raw_result = db.engine.execute(sql_query)   # Insert select..
+    result_data = raw_result.fetchall()     # Return Result
+
+
+
 
 @analysis.route('/analysis/cn_live_vol_ajax')
 @roles_required()
@@ -1502,7 +1571,8 @@ def Client_trades_form(Live="", Login=""):
                            form=form, description=description)
 
 
-# To remove the account from being excluded.
+# To Have a look at the client's trades and details
+# Will query from SQL and display on screen.
 @analysis.route('/Client_Trades/<Live>/<Login>', methods=['GET', 'POST'])
 @roles_required()
 def Client_trades_Analysis(Live="", Login=""):
