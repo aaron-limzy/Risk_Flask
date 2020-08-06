@@ -457,7 +457,7 @@ def check_previous_day_pnl_in_DB():
 
     pnl_date = live1_start_time.strftime("%Y-%m-%d")
 
-    insert_into_table = text("SELECT count(*) FROM aaron.bgi_dailypnl_by_country_group WHERE DATE ='{}'".format(pnl_date))
+    insert_into_table = text("SELECT count(*) FROM aaron.bgi_dailypnl_by_country_group WHERE DATE ='{}' AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK', 'Dealing')".format(pnl_date))
     raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
     result_data = raw_result.fetchall()     # Return Result
     if len(result_data) > 0:
