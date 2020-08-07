@@ -339,7 +339,7 @@ def save_BGI_float_Ajax(update_tool_time=1):
                              "`datetime`) VALUES {}".format(" , ".join(result_array)))
 
 
-    print(insert_into_table)
+    #print(insert_into_table)
     raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
 
 
