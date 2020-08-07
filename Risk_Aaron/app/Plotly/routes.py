@@ -314,6 +314,9 @@ def save_BGI_float_Ajax(update_tool_time=1):
             country_symbol[(country, symbol, date_time)][2] += floating_revenue
             country_symbol[(country, symbol, date_time)][3] += sum_closed_volume
             country_symbol[(country, symbol, date_time)][4] += closed_profit
+    #
+    # for k,d in country_symbol.items():
+    #     print("{} : {}".format(k,d))
 
     # Put it back to the same array.
     result_data_clean = []
