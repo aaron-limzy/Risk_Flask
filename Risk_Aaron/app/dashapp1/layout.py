@@ -1,5 +1,5 @@
-import dash_core_components as dcc
-import dash_html_components as html
+# import dash_core_components as dcc
+# import dash_html_components as html
 
 
 # from iexfinance.stocks import get_historical_data
@@ -24,4 +24,4 @@ import dash_html_components as html
 #     )
 # ], style={'width': '500'})
 
-layout = html.Div([ html.Div(html.H1(children='Stock Tickers'))])
+# layout = html.Div([ html.Div(html.H1(children='Stock Tickers'))])

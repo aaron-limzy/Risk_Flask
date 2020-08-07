@@ -171,9 +171,10 @@ def save_BGI_float_Ajax(update_tool_time=1):
         save_previous_day_PnL()                 # We will take this chance to get the Previous day's PnL as well.
 
     # Want to reduce the query overheads. So try to use the saved value as much as possible.
-    server_time_diff_str = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
+    server_time_diff_str = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session \
+                else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
 
-    sql_statement = """SELECT COUNTRY, SYMBOL1 as SYMBOL, NET_FLOATING_VOLUME, SUM_FLOATING_VOLUME, FLOATING_PROFIT*-1 AS FLOATING_REVENUE,SUM_CLOSED_VOLUME, -1*CLOSED_PROFIT, DATE_SUB(now(),INTERVAL ({ServerTimeDiff_Query}) HOUR) as DATETIME FROM(
+    sql_statement = """SELECT LIVE, COUNTRY, SYMBOL1 as SYMBOL, NET_FLOATING_VOLUME, SUM_FLOATING_VOLUME, FLOATING_PROFIT*-1 AS FLOATING_REVENUE,SUM_CLOSED_VOLUME, -1*CLOSED_PROFIT, DATE_SUB(now(),INTERVAL ({ServerTimeDiff_Query}) HOUR) as DATETIME FROM(
     (SELECT 'live1' AS LIVE,group_table.COUNTRY, 
     CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
     SUM(CASE WHEN mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS SUM_FLOATING_VOLUME,
@@ -278,10 +279,8 @@ def save_BGI_float_Ajax(update_tool_time=1):
 		(mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= DATE_ADD(DATE_SUB((CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END),INTERVAL 1 DAY),INTERVAL 1 HOUR))
     AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live5' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, SYMBOL1)
     ) AS B 
-    GROUP BY B.COUNTRY, B.SYMBOL1
-    HAVING COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST')
+    WHERE COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST')
     ORDER BY COUNTRY, SYMBOL""".format(ServerTimeDiff_Query=server_time_diff_str)
-
 
     # Want to get results for the above query, to get the Floating PnL
     sql_query = text(sql_statement)
@@ -297,15 +296,15 @@ def save_BGI_float_Ajax(update_tool_time=1):
     # We want to add up the sums.
     country_symbol = {}
     for r in result_data:
-        country = r[0]
+        country = r[1]
         # Want to get core value
-        symbol = cfd_core_symbol(r[1])
-        net_floating_volume = r[2]
-        sum_floating_volume = r[3]
-        floating_revenue = r[4]
-        sum_closed_volume = r[5]
-        closed_profit = r[6]
-        date_time = r[7]
+        symbol = cfd_core_symbol(r[2])
+        net_floating_volume = r[3]
+        sum_floating_volume = r[4]
+        floating_revenue = r[5]
+        sum_closed_volume = r[6]
+        closed_profit = r[7]
+        date_time = r[8]
         if (country, symbol, date_time) not in country_symbol:
             # List/tuple packing
             country_symbol[(country, symbol, date_time)] = [net_floating_volume, sum_floating_volume, floating_revenue, sum_closed_volume, closed_profit]
@@ -338,7 +337,12 @@ def save_BGI_float_Ajax(update_tool_time=1):
     insert_into_table = text("INSERT INTO aaron.BGI_Float_History_Save (`country`, `symbol`, `floating_volume`, " +
                              "`floating_revenue`, `net_floating_volume`, `closed_revenue_today`, `closed_vol_today`," +
                              "`datetime`) VALUES {}".format(" , ".join(result_array)))
+
+
+    print(insert_into_table)
     raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
+
+
 
 
     # Insert into the Checking tools.
@@ -489,6 +493,7 @@ def save_previous_day_PnL():
     # Want to reduce the overheads
     ServerTimeDiff_Query = "{}".format(session["live1_sgt_time_diff"]) if "live1_sgt_time_diff" in session \
         else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
+
     live123_Time_String = "mt4_trades.close_time >= '{}' and mt4_trades.close_time < '{}'".format(live1_start_time, live1_start_time + datetime.timedelta(days=1))
     live5_Time_String = "mt4_trades.close_time >= '{}' and mt4_trades.close_time < '{}'".format(live5_start_time, live5_start_time + datetime.timedelta(days=1))
 
@@ -1003,8 +1008,10 @@ def BGI_Symbol_Float_ajax():
 
     #print(df_yesterday_symbol_pnl)
 
+    server_time_diff_str = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session \
+                else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
 
-    server_time_diff_str = "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
+    #server_time_diff_str = "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
 
     # sql_statement = """SELECT SYMBOL, SUM(ABS(floating_volume)) AS VOLUME, -1 * SUM(net_floating_volume) AS NETVOL,
     #                         SUM(floating_revenue) AS REVENUE,
