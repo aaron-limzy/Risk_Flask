@@ -1110,10 +1110,17 @@ def BGI_Symbol_Float_ajax():
     # taking this chance to re-arrange them as well.
     col_of_df = [c for c in ["SYMBOL", "NETVOL", "VOLUME", "REVENUE", "TODAY_VOL", "TODAY_REVENUE", "BID", "ASK","YESTERDAY_VOLUME", "YESTERDAY_REVENUE"] if c in  list(df_to_table.columns)]
 
-    df_records = df_to_table[col_of_df].to_records(index=False)
-    df_records = [list(a) for a in df_records]
+    #df_records = df_to_table[col_of_df].to_records(index=False)
+    #df_records = [list(a) for a in df_records]
+    #return_val = [dict(zip(col_of_df,d)) for d in df_records]
 
-    return_val = [dict(zip(col_of_df,d)) for d in df_records]
+    # Want to hyperlink it.
+    df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="https://www.google.com">{symbol}</a>'.format(symbol=x))
+
+    # Pandas return list of dicts.
+    return_val = df_to_table[col_of_df].to_dict("record")
+
+
 
     #end = datetime.datetime.now()
     #print("\nGetting Country PnL tool[Before Chart]: {}s\n".format((end - start).total_seconds()))
@@ -1151,15 +1158,111 @@ def BGI_Symbol_Float_ajax():
 
 # To Query for all open trades by a particular symbol
 # Shows the closed trades for the day as well.
-@analysis.route('/Open_Symbol/<symbol>', methods=['GET', 'POST'])
+@analysis.route('/Open_Symbol/B/<symbol>', methods=['GET', 'POST'])
+@roles_required()
+def symbol_float_trades(symbol=""):
+
+    title = "{}".format(symbol)
+    header = "{}".format(symbol)
+
+    description = Markup("{}<br>Details are on Client side.".format(symbol))
+
+    if symbol == "" :  # There are no information.
+        flash("There were no symbol details.")
+        return redirect("main_app.index")
+
+    # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
+    # Will try to do smaller vertical table to put 2 or 3 tables in a row.
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/pattern5.jpg', icon="",
+                           Table_name={ "Top 10 Accounts (Client Winning)": "H",
+                                        "Bottom 10 Accounts (Client Losing)": "H",
+                                        "Total": "V"},
+                           title=title,
+                           ajax_url=url_for('analysis.symbol_float_trades_ajax', _external=True, symbol=symbol),
+                           header=header,
+                           description=description, no_backgroud_Cover=True,
+                           replace_words=Markup(["Today"]))
+
+
+# The Ajax call for the symbols we want to query
+@analysis.route('/Open_Symbol/B/symbol_float_trades_ajax/<symbol>', methods=['GET', 'POST'])
 @roles_required()
 def symbol_float_trades_ajax(symbol=""):
-    symbol="XAUUSD"
-    symbol_condition = "AND SYMBOL Like '%{}%'".format(symbol)
+
+    open_trades = symbol_all_open_trades(symbol=symbol)
+    df_all_trades = pd.DataFrame(open_trades)
+
+
+    # Want only those open trades.
+    df_open_trades = df_all_trades[df_all_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]  # Only open trades.
+
+
+    # Use for calculating net volume.
+    df_open_trades["LOTS"] =  df_open_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
+    df_open_trades["NET_LOTS"] = df_open_trades.apply(lambda x: x["LOTS"] if x['CMD']==0 else -1*x["LOTS"] , axis=1)
+
+    # By Trades.
+    col = ['LIVE', 'LOGIN', 'TICKET', 'LOTS', 'CMD', 'CONVERTED_REVENUE', 'COUNTRY',
+     'GROUP',  'OPEN_TIME', 'PROFIT',
+     'SWAPS', 'SYMBOL']
+    top_trades = df_open_trades.sort_values('CONVERTED_REVENUE', ascending=False)[col].head(20)
+    bottom_trades = df_open_trades.sort_values('CONVERTED_REVENUE', ascending=True)[col].head(20)
+
+
+    #df_open_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL'])[['CONVERTED_REVENUE',
+    #                                                      "LOTS", 'NET_LOTS',  'PROFIT', 'SWAPS']].sum()
+
+    # By Live/Login #,'PROFIT', 'SWAPS'
+    live_login_sum = df_open_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
+
+    live_login_sum.columns
+
+    col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP',  'CONVERTED_REVENUE', 'PROFIT', 'SWAPS']
+    top_accounts = live_login_sum.sort_values('CONVERTED_REVENUE', ascending=False)[col2].head(20)
+    bottom_accounts = live_login_sum.sort_values('CONVERTED_REVENUE', ascending=True)[col2].head(20)
+
+    # Get the live, login and group, since sum would remove those.
+    #live_login_group = df_open_trades[['LIVE', 'LOGIN', 'COUNTRY','GROUP']].drop_duplicates()
+
+    # By Entity/Group
+    group_sum = df_open_trades.groupby(by=['COUNTRY', 'GROUP', 'SYMBOL'])['LOTS', 'CONVERTED_REVENUE',
+      'PROFIT', 'SWAPS', 'SYMBOL'].sum().reset_index()
+    col3 = ['SYMBOL', 'COUNTRY', 'GROUP', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS']
+    top_groups = group_sum.sort_values('CONVERTED_REVENUE', ascending=False)[col3].head(20)
+    bottom_groups = group_sum.sort_values('CONVERTED_REVENUE', ascending=True)[col3].head(20)
+
+
+    # Total sum
+    total_sum = df_open_trades[['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]].sum()
+
+    return json.dumps({"H1": top_accounts.to_dict("record"),
+                       "H2" : bottom_accounts.to_dict("record"),
+                       "V1": [total_sum.to_dict()]})
+
+
+
+
+# Get all open trades of a particular symbol.
+# Get it converted as well.
+# Can choose A Book or B Book.
+def symbol_all_open_trades(symbol="", book="B"):
+    #symbol="XAUUSD"
+    symbol_condition = " AND SYMBOL Like '%{}%' ".format(symbol)
+    country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
+    book_condition = " AND group_table.BOOK = '{}'".format(book)
     sql_statement = """(SELECT 'live1' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
         SYMBOL, CMD,
         VOLUME*0.01 as LOTS, OPEN_PRICE,
-            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,
+           ROUND(CASE 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
         FROM live1.mt4_trades, live5.group_table 
         WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
             (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= (CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
@@ -1167,13 +1270,22 @@ def symbol_float_trades_ajax(symbol=""):
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live1' 
             AND LENGTH(mt4_trades.LOGIN)>4
-            {symbol_condition}
-            AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST'))
+            {symbol_condition} {country_condition} {book_condition}
+            )
     UNION 
         (SELECT 'live2' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
         SYMBOL, CMD,
         VOLUME*0.01 as LOTS, OPEN_PRICE,
-            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,
+            ROUND(CASE 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
             FROM live2.mt4_trades,live5.group_table 
             WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
             (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= (CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
@@ -1181,27 +1293,44 @@ def symbol_float_trades_ajax(symbol=""):
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live2' 
             AND LENGTH(mt4_trades.LOGIN)>4
-            {symbol_condition}
-            AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST'))
+            {symbol_condition} {country_condition} {book_condition})
     UNION 
         (SELECT 'live3' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
         SYMBOL, CMD,
         VOLUME*0.01 as LOTS, OPEN_PRICE,
-            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,
+            ROUND(CASE 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
             FROM live3.mt4_trades,live5.group_table 
             WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
             (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= (CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
         AND LENGTH(mt4_trades.SYMBOL)>0 
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live3' 
-            AND LENGTH(mt4_trades.LOGIN)>4
-            {symbol_condition}
-            AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST'))
+            AND LENGTH(mt4_trades.LOGIN)>4 
+            AND mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM live3.cambodia_exclude) 
+            {symbol_condition} {country_condition} {book_condition})
     UNION
         (SELECT 'live5' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
         SYMBOL, CMD,
         VOLUME*0.01 as LOTS, OPEN_PRICE,
-            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,
+            ROUND(CASE 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
             FROM live5.mt4_trades,live5.group_table 
             WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
             (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= DATE_ADD(DATE_SUB((CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END),INTERVAL 1 DAY),INTERVAL 1 HOUR))
@@ -1209,13 +1338,16 @@ def symbol_float_trades_ajax(symbol=""):
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live5' 
             AND LENGTH(mt4_trades.LOGIN)>4
-            {symbol_condition}
-            AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST'))""".format(symbol_condition=symbol_condition, ServerTimeDiff_Query=6)
+            {symbol_condition} {country_condition} {book_condition})""".format(symbol_condition=symbol_condition, ServerTimeDiff_Query=6, \
+                                                                               book_condition=book_condition, country_condition=country_condition)
 
-    sql_query = text(sql_statement)
+
+    sql_query = text(sql_statement.replace("\n", " "))
     raw_result = db.engine.execute(sql_query)   # Insert select..
     result_data = raw_result.fetchall()     # Return Result
+    result_col = raw_result.keys()          # Column names
 
+    return [dict(zip(result_col, r)) for r in result_data]
 
 
 
