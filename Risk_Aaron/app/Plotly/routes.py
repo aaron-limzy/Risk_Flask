@@ -823,7 +823,10 @@ def BGI_Country_Float_ajax():
 
 
     # We want to show Client Side for Dealing as well as A book Clients.
-    df['FLOAT_REVENUE'] = df.apply(lambda x: -1*x['FLOAT_REVENUE'] if (x["COUNTRY"].find("_A") > 0 or x["COUNTRY"].find('Dealing') >= 0) else x['FLOAT_REVENUE'], axis=1)
+    to_flip_groups = ["_A", "Dealing"]
+    df['FLOAT_REVENUE'] = df.apply(lambda x: -1*x['FLOAT_REVENUE'] \
+                                if any([x["COUNTRY"].find(c) >=0 for c in to_flip_groups])  \
+                                else x['FLOAT_REVENUE'], axis=1)
 
     # For the display of table, we only want the latest data inout.
     df_to_table = df[df['DATETIME'] == df['DATETIME'].max()].drop_duplicates()
@@ -1037,7 +1040,8 @@ def BGI_Symbol_Float_ajax():
     FROM aaron.BGI_Float_History_Save 
                     LEFT JOIN live1.mt4_prices as P ON  CONCAT(aaron.BGI_Float_History_Save.SYMBOL, "q") = P.SYMBOL
     WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.BGI_Float_History_Save)
-    AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "B") and COUNTRY not like "HK"
+    AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "B") 
+    AND COUNTRY not like "HK"
     GROUP BY SYMBOL
     ORDER BY REVENUE DESC""".format(ServerTimeDiff_Query=server_time_diff_str)
 
