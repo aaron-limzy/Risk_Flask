@@ -1180,9 +1180,10 @@ def symbol_float_trades(symbol=""):
                                         "Top 20 Winning Accounts (Client Side)": "H",
                                         "Bottom 20 Losing Accounts (Client Side)": "H",
                                         "Total Floating (BGI Side)": "V",
-                                        "Top 20 Accounts Yesterday (Client Side)": "H",
-                                        "Bottom 20 Accounts Yesterday (Client Side)": "H",
-                                        "Total Closed Yesterday (BGI Side)": "V",},
+                                        "Top 20 Accounts Today (Client Side)": "H",
+                                        "Bottom 20 Accounts Today (Client Side)": "H",
+                                        "Total Closed Today (BGI Side)": "V",
+                                        },
                            title=title,
                            ajax_url=url_for('analysis.symbol_float_trades_ajax', _external=True, symbol=symbol),
                            header=header,
@@ -1249,7 +1250,8 @@ def symbol_float_trades_ajax(symbol=""):
     total_sum["LOTS"] = abs(total_sum["LOTS"])  # Since it's Total lots, we only want the abs value
 
 
-    # Closed trades
+    # Closed trades for today!
+    #TODO: Need to put in fail-safe if there are no closed for today.. yet!
     df_closed_trades = df_all_trades[df_all_trades["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')]  # Only Closed trades.
 
     # Use for calculating net volume.
@@ -1310,7 +1312,8 @@ def symbol_all_open_trades(symbol="", book="B"):
             ELSE 0 END,2) AS CONVERTED_REVENUE
         FROM live1.mt4_trades, live5.group_table 
         WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
-            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= (CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
+            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00'  
+                OR mt4_trades.CLOSE_TIME >= (CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
         AND LENGTH(mt4_trades.SYMBOL)>0 
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live1' 
