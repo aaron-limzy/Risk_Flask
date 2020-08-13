@@ -705,7 +705,7 @@ def Clear_session_ajax():
 
     # Flash the details, but want to return to the main app page.
     flash("Session Cleared: {}".format(", ".join(list_of_pop)))
-    return redirect("main_app.index")
+    return redirect(url_for("main_app.index"))
 
 
 
@@ -1002,7 +1002,7 @@ def BGI_Symbol_Float_ajax():
 
     if check_session_live1_timing() == True and "yesterday_pnl_by_symbol" in session:
         # From "in memory" of session
-        print(session)
+        #print(session)
         df_yesterday_symbol_pnl = pd.DataFrame.from_dict(session["yesterday_pnl_by_symbol"])
     else:       # If session timing is outdated, or needs to be updated.
 
@@ -1188,7 +1188,7 @@ def symbol_float_trades(symbol=""):
 
     if symbol == "" :  # There are no information.
         flash("There were no symbol details.")
-        return redirect("main_app.index")
+        return redirect(url_for("main_app.index"))
 
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
