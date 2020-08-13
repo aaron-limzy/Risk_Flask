@@ -163,6 +163,7 @@ def save_BGI_float_Ajax(update_tool_time=1):
     if not cfh_fix_timing():
         return json.dumps([{'Update time': "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
+
     if check_session_live1_timing() == False:    # If False, It needs an update.
         Post_To_Telegram(AARON_BOT, "Retrieving and saving previous day PnL.", TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
         # TOREMOVE: Comment out the print.
@@ -478,12 +479,16 @@ def check_previous_day_pnl_in_DB():
 
 
 # To save previous working day PnL to aaron.bgi_dailypnl_by_country_group
-def save_previous_day_PnL():
+def save_previous_day_PnL(force_update=False):
 
     # If PnL Has been saved already. We don't need to save it again.
-    if check_previous_day_pnl_in_DB():
-        #print("PnL for previous day has been saved.")
+    # Unless there's a need to force it to update.
+    if check_previous_day_pnl_in_DB() and not force_update:
+        print("PnL for previous day has been saved. Not saving it now.")
         return
+
+    #TODO: Remove
+    #print("Updating DB Yesterday PnL")
 
     # Trying to reduce the over-heads as much as possible.
     live1_server_difference = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else get_live1_time_difference()
@@ -558,7 +563,7 @@ def save_previous_day_PnL():
     FROM live5.mt4_trades,live5.group_table WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND {live5_Time_String} AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live5' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, SYMBOL1)
     ) AS B 
     GROUP BY B.COUNTRY, B.SYMBOL1
-    HAVING COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', "HK")
+    HAVING COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST')
     ORDER BY COUNTRY, SYMBOL""".format(ServerTimeDiff_Query=ServerTimeDiff_Query, live123_Time_String=live123_Time_String,live5_Time_String=live5_Time_String)
 
     sql_query = text(sql_statement)
@@ -605,7 +610,7 @@ def save_previous_day_PnL():
 
     # Want to insert into the Table.
     insert_into_table = text("INSERT INTO aaron.bgi_dailypnl_by_country_group (`date`, `country`, `symbol`, `volume`, " +
-                             "`revenue`, `update_time`) VALUES {} ON DUPLICATE KEY UPDATE VOLUME=VALUES(VOLUME), REVENUE=VALUES(REVENUE), UPDATE_TIME=UPDATE_TIME".format(" , ".join(result_array)))
+                             "`revenue`, `update_time`) VALUES {} ON DUPLICATE KEY UPDATE VOLUME=VALUES(VOLUME), REVENUE=VALUES(REVENUE), UPDATE_TIME=VALUES(UPDATE_TIME)".format(" , ".join(result_array)))
     raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
 
     return
@@ -618,6 +623,7 @@ def get_country_daily_pnl():
     # Trying to reduce the over-heads as much as possible.
     live1_server_difference = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else get_live1_time_difference()
 
+    # Want the start date. Need to add a few hours after 2300 to increase the date by 1.
     live1_start_time = liveserver_Previousday_start_timing(live1_server_difference=live1_server_difference, hour_from_2300=5)
     date_of_pnl = "{}".format(live1_start_time.strftime("%Y-%m-%d"))
 
@@ -631,6 +637,10 @@ def get_country_daily_pnl():
     raw_result = db.engine.execute(sql_query)  # Select From DB
     result_data = raw_result.fetchall()     # Return Result
     result_col = raw_result.keys()  # The column names
+
+    if len(result_data) <= 0:   # If there are no data.
+        # Force it to update yesterday's PnL, if it wasn't..
+        save_previous_day_PnL(force_update=True)
 
     # If empty, we just want to return an empty data frame. So that the following merge will not cause any issues
     return_df = pd.DataFrame(result_data, columns=result_col) if len(result_data) > 0 else pd.DataFrame()
@@ -692,7 +702,10 @@ def Clear_session_ajax():
         if u not in  ['_fresh', '_id', 'csrf_token']:
             session.pop(u, None)
             list_of_pop.append(u)
-    return "Session Cleared: {}".format(", ".join(list_of_pop))
+
+    # Flash the details, but want to return to the main app page.
+    flash("Session Cleared: {}".format(", ".join(list_of_pop)))
+    return redirect("main_app.index")
 
 
 
@@ -710,17 +723,22 @@ def check_session_live1_timing():
         #print(session.keys())
         #print("From session: {}. Next update time: {}".format(session['live1_sgt_time_diff'], session['live1_sgt_time_update']))
     else:
-        print(session)
+
         Clear_session_ajax()    # Clear all cookies. And reload everything again.
 
         #print("Getting live1 time diff from SQL.")
         session['live1_sgt_time_diff'] = get_live1_time_difference()
 
-        # Will get the timing that we need to update again. Want to get start of next working day in SGT
-        # so, will need to ADD the hours back.
-        session['live1_sgt_time_update'] = liveserver_Nextday_start_timing(
-                    live1_server_difference=session['live1_sgt_time_diff'],
-                        hour_from_2300=0) + datetime.timedelta(hours=session['live1_sgt_time_diff'], minutes=10)
+        # Will get the timing that we need to update again.
+        # Want to get either start of next working day in SGT, or in x period.
+        #time_refresh_next = datetime.datetime.now() + datetime.timedelta(hours=2, minutes=45)
+        time_refresh_next = datetime.datetime.now() + datetime.timedelta(minutes=2)
+        # need to add 10 mins, for roll overs and swap updates.
+        server_nextday_time =  liveserver_Nextday_start_timing(
+                    live1_server_difference=session['live1_sgt_time_diff'], hour_from_2300=0) + \
+                                           datetime.timedelta(hours=session['live1_sgt_time_diff'], minutes=10)
+        session['live1_sgt_time_update'] = min(time_refresh_next, server_nextday_time)
+        #print(session)
 
     return return_val
 
@@ -984,7 +1002,7 @@ def BGI_Symbol_Float_ajax():
 
     if check_session_live1_timing() == True and "yesterday_pnl_by_symbol" in session:
         # From "in memory" of session
-
+        print(session)
         df_yesterday_symbol_pnl = pd.DataFrame.from_dict(session["yesterday_pnl_by_symbol"])
     else:       # If session timing is outdated, or needs to be updated.
 
