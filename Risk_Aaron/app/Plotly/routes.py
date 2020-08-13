@@ -746,8 +746,8 @@ def check_session_live1_timing():
 
         # Will get the timing that we need to update again.
         # Want to get either start of next working day in SGT, or in x period.
-        #time_refresh_next = datetime.datetime.now() + datetime.timedelta(hours=2, minutes=45)
-        time_refresh_next = datetime.datetime.now() + datetime.timedelta(minutes=2)
+        time_refresh_next = datetime.datetime.now() + datetime.timedelta(hours=2, minutes=45)
+        #time_refresh_next = datetime.datetime.now() + datetime.timedelta(minutes=2)
         # need to add 10 mins, for roll overs and swap updates.
         server_nextday_time =  liveserver_Nextday_start_timing(
                     live1_server_difference=session['live1_sgt_time_diff'], hour_from_2300=0) + \
