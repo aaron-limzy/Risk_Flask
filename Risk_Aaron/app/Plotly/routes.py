@@ -1284,10 +1284,12 @@ def symbol_float_trades_ajax(symbol=""):
         #live_login_group = df_open_trades[['LIVE', 'LOGIN', 'COUNTRY','GROUP']].drop_duplicates()
 
         # By Entity/Group
-        group_sum = df_open_trades.groupby(by=['COUNTRY', 'GROUP',])[['LOTS', 'CONVERTED_REVENUE', 'SYMBOL']].sum().reset_index()
-        col3 = ['COUNTRY', 'GROUP', 'CONVERTED_REVENUE',]
+        group_sum = df_open_trades.groupby(by=['COUNTRY', 'GROUP',])[['LOTS', 'NET_LOTS','CONVERTED_REVENUE', 'SYMBOL']].sum().reset_index()
+        col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS',  'CONVERTED_REVENUE',]
         # Round it off to be able to be printed better.
         group_sum['CONVERTED_REVENUE'] = round(group_sum['CONVERTED_REVENUE'], 2)
+        group_sum['LOTS'] = round(group_sum['LOTS'], 2)
+        group_sum['NET_LOTS'] = round(group_sum['NET_LOTS'], 2)
         top_groups = group_sum.sort_values('CONVERTED_REVENUE', ascending=False)[col3].head(20)
         bottom_groups = group_sum.sort_values('CONVERTED_REVENUE', ascending=True)[col3].head(20)
 
