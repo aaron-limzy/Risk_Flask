@@ -5,6 +5,7 @@ from app.decorators import async_fun
 from app.extensions import db
 
 from flask_table import create_table, Col
+from flask import url_for
 import decimal
 from Aaron_Lib import *
 import pandas as pd
@@ -206,3 +207,11 @@ def trade_duration_bin(duration):
         if duration <= d:   # If less then or equals to
             return s
     return "Longer than 1 hour"
+
+# To get the URL for the Live/Login to run client analysis
+def live_login_analysis_url(Live, Login):
+
+    url = url_for("analysis.Client_trades_Analysis", Live=int(Live),  Login=int(Login), _external=True)
+    return '<a style="color:black" href="{url}">{Login}</a>'.format(url=url,  Login=Login)
+
+

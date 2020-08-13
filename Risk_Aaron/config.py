@@ -60,6 +60,9 @@ class Config(object):
     MAIL_PASSWORD = "ReportReport"
     ADMINS = ['aaron.lim@blackwellglobal.com']
 
+    # Set so that each time flask is ended and ran (in cmd)
+    # Can be used to refresh the cookies.
+    FLASK_UPDATE_TIMING = datetime.datetime.now()
 
     # # To send email when there are server issues.
     # MAIL_SERVER = os.environ.get('MAIL_SERVER')

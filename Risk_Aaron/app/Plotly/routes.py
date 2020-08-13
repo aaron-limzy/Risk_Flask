@@ -691,7 +691,7 @@ def get_symbol_daily_pnl():
 # Called when refreshing cookies.
 @analysis.route('/Clear_session_ajax', methods=['GET', 'POST'])
 @roles_required()
-def Clear_session_ajax():
+def Clear_session_ajax(flash_details=False):
     #list_of_pop = ["live1_sgt_time_diff", "live1_sgt_time_update", "yesterday_pnl_by_country", "yesterday_pnl_by_symbol"]
 
     #delete_from_floating_table()
@@ -703,9 +703,19 @@ def Clear_session_ajax():
             session.pop(u, None)
             list_of_pop.append(u)
 
-    # Flash the details, but want to return to the main app page.
-    flash("Session Cleared: {}".format(", ".join(list_of_pop)))
+    if flash_details:   # If we need to flash the details out.
+        # Flash the details, but want to return to the main app page.
+        flash("Session Cleared: {}".format(", ".join(list_of_pop)))
+
     return redirect(url_for("main_app.index"))
+
+
+
+@analysis.route('/Clear_session', methods=['GET', 'POST'])
+@roles_required()
+def Clear_session():
+
+    return redirect(url_for("analysis.Clear_session_ajax", flash_details=True))
 
 
 
@@ -718,16 +728,21 @@ def check_session_live1_timing():
     # Want to save some stuff in session so that we don't have to keep querying for it.
     if "live1_sgt_time_diff" in session and \
         "live1_sgt_time_update" in session and  \
-        datetime.datetime.now() < session["live1_sgt_time_update"] :
+        datetime.datetime.now() < session["live1_sgt_time_update"] and \
+            'FLASK_UPDATE_TIMING' in session and  \
+            session["FLASK_UPDATE_TIMING"]  != current_app.config["FLASK_UPDATE_TIMING"]:
         return_val = True
         #print(session.keys())
         #print("From session: {}. Next update time: {}".format(session['live1_sgt_time_diff'], session['live1_sgt_time_update']))
     else:
-
+        print(session)
         Clear_session_ajax()    # Clear all cookies. And reload everything again.
 
-        #print("Getting live1 time diff from SQL.")
+        print("Refreshing cookies automatically in Flask")
         session['live1_sgt_time_diff'] = get_live1_time_difference()
+
+        # Get the updated flask timing. This is when Flask re-runs on the server. To update any changes.
+        session["FLASK_UPDATE_TIMING"] = current_app.config["FLASK_UPDATE_TIMING"]
 
         # Will get the timing that we need to update again.
         # Want to get either start of next working day in SGT, or in x period.
@@ -994,6 +1009,8 @@ def BGI_Symbol_Float():
 @roles_required()
 def BGI_Symbol_Float_ajax():
 
+
+
     #start = datetime.datetime.now()
     # TODO: Only want to save during trading hours.
     # TODO: Want to write a custom function, and not rely on using CFH timing.
@@ -1193,13 +1210,13 @@ def symbol_float_trades(symbol=""):
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/double-bubble.png', icon="",
-                           Table_name={ "Top 20 Winning Groups (Client Side)": "Hs",
-                                        "Bottom 20 Losing Groups (Client Side)": "Hs",
-                                        "Top 20 Winning Accounts (Client Side)": "H",
-                                        "Bottom 20 Losing Accounts (Client Side)": "H",
+                           Table_name={ "Top Floating Groups (Client Side)": "Hs",
+                                        "Bottom Floating Groups (Client Side)": "Hs",
+                                        "Top Floating Accounts (Client Side)": "H",
+                                        "Bottom Floating Accounts (Client Side)": "H",
                                         "Total Floating (BGI Side)": "V",
-                                        "Top 20 Accounts Today (Client Side)": "H",
-                                        "Bottom 20 Accounts Today (Client Side)": "H",
+                                        "Top Realised Today (Client Side)": "H",
+                                        "Bottom Realised Today (Client Side)": "H",
                                         "Total Closed Today (BGI Side)": "V",
                                         },
                            title=title,
@@ -1214,84 +1231,103 @@ def symbol_float_trades(symbol=""):
 @roles_required()
 def symbol_float_trades_ajax(symbol=""):
 
-    open_trades = symbol_all_open_trades(symbol=symbol)
-    df_all_trades = pd.DataFrame(open_trades)
+    all_trades = symbol_all_open_trades(symbol=symbol)
+    df_all_trades = pd.DataFrame(all_trades)
+
+    if len(df_all_trades) <= 0:
+        return json.dumps({"H1": [{"Error": "No Trades for {} Found".format(symbol)}],
+                           "H2": [{"Error": "No Trades for {} Found".format(symbol)}]
+                           })
 
     # Want only those open trades.
     df_open_trades = df_all_trades[df_all_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]  # Only open trades.
 
+    if len(df_open_trades) <= 0:
+        top_groups = pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
+        bottom_groups = pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
+        top_accounts = pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
+        bottom_accounts = pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
+        total_sum = pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
 
-    # Use for calculating net volume.
-    df_open_trades["LOTS"] =  df_open_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
-    df_open_trades["NET_LOTS"] = df_open_trades.apply(lambda x: x["LOTS"] if x['CMD']==0 else -1*x["LOTS"] , axis=1)
+    else:
+        # Use for calculating net volume.
+        df_open_trades["LOTS"] =  df_open_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
+        df_open_trades["NET_LOTS"] = df_open_trades.apply(lambda x: x["LOTS"] if x['CMD']==0 else -1*x["LOTS"] , axis=1)
 
-    # By Trades.
-    col = ['LIVE', 'LOGIN', 'TICKET', 'LOTS', 'CMD', 'CONVERTED_REVENUE', 'COUNTRY',
-     'GROUP',  'OPEN_TIME', 'PROFIT',
-     'SWAPS', 'SYMBOL']
-    top_trades = df_open_trades.sort_values('CONVERTED_REVENUE', ascending=False)[col].head(20)
-    bottom_trades = df_open_trades.sort_values('CONVERTED_REVENUE', ascending=True)[col].head(20)
+        # By Trades.
+        #col = ['LIVE', 'LOGIN', 'TICKET', 'LOTS', 'CMD', 'CONVERTED_REVENUE', 'COUNTRY',
+        # 'GROUP',  'OPEN_TIME', 'PROFIT',
+        # 'SWAPS', 'SYMBOL']
+
+        #top_trades = df_open_trades.sort_values('CONVERTED_REVENUE', ascending=False)[col].head(20)
+        #bottom_trades = df_open_trades.sort_values('CONVERTED_REVENUE', ascending=True)[col].head(20)
+        #                                               "LOTS", 'NET_LOTS',  'PROFIT', 'SWAPS']].sum()
+
+        # By Live/Login #,'PROFIT', 'SWAPS'
+        live_login_sum = df_open_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
+
+        # Round off the values that is not needed.
+        live_login_sum["LOTS"] = round(live_login_sum['LOTS'],2)
+        live_login_sum["NET_LOTS"] = round(live_login_sum['NET_LOTS'], 2)
+        live_login_sum["CONVERTED_REVENUE"] = round(live_login_sum['CONVERTED_REVENUE'], 2)
+        live_login_sum["PROFIT"] = round(live_login_sum['PROFIT'], 2)
+        live_login_sum["SWAPS"] = round(live_login_sum['SWAPS'], 2)
+        live_login_sum["LOGIN"] = live_login_sum.apply(lambda x: live_login_analysis_url(\
+                                    Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
 
 
-    #df_open_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL'])[['CONVERTED_REVENUE',
-    #                                                      "LOTS", 'NET_LOTS',  'PROFIT', 'SWAPS']].sum()
+        col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE']
+        top_accounts = live_login_sum.sort_values('CONVERTED_REVENUE', ascending=False)[col2].head(20)
+        bottom_accounts = live_login_sum.sort_values('CONVERTED_REVENUE', ascending=True)[col2].head(20)
 
-    # By Live/Login #,'PROFIT', 'SWAPS'
-    live_login_sum = df_open_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
+        # Get the live, login and group, since sum would remove those.
+        #live_login_group = df_open_trades[['LIVE', 'LOGIN', 'COUNTRY','GROUP']].drop_duplicates()
 
-    # Round off the values that is not needed.
-    live_login_sum["LOTS"] = round(live_login_sum['LOTS'],2)
-    live_login_sum["NET_LOTS"] = round(live_login_sum['NET_LOTS'], 2)
-    live_login_sum["CONVERTED_REVENUE"] = round(live_login_sum['CONVERTED_REVENUE'], 2)
-    live_login_sum["PROFIT"] = round(live_login_sum['PROFIT'], 2)
-    live_login_sum["SWAPS"] = round(live_login_sum['SWAPS'], 2)
+        # By Entity/Group
+        group_sum = df_open_trades.groupby(by=['COUNTRY', 'GROUP',])[['LOTS', 'CONVERTED_REVENUE', 'SYMBOL']].sum().reset_index()
+        col3 = ['COUNTRY', 'GROUP', 'CONVERTED_REVENUE',]
+        # Round it off to be able to be printed better.
+        group_sum['CONVERTED_REVENUE'] = round(group_sum['CONVERTED_REVENUE'], 2)
+        top_groups = group_sum.sort_values('CONVERTED_REVENUE', ascending=False)[col3].head(20)
+        bottom_groups = group_sum.sort_values('CONVERTED_REVENUE', ascending=True)[col3].head(20)
 
-
-    col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE']
-    top_accounts = live_login_sum.sort_values('CONVERTED_REVENUE', ascending=False)[col2].head(20)
-    bottom_accounts = live_login_sum.sort_values('CONVERTED_REVENUE', ascending=True)[col2].head(20)
-
-    # Get the live, login and group, since sum would remove those.
-    #live_login_group = df_open_trades[['LIVE', 'LOGIN', 'COUNTRY','GROUP']].drop_duplicates()
-
-    # By Entity/Group
-    group_sum = df_open_trades.groupby(by=['COUNTRY', 'GROUP',])[['LOTS', 'CONVERTED_REVENUE', 'SYMBOL']].sum().reset_index()
-    col3 = ['COUNTRY', 'GROUP', 'CONVERTED_REVENUE',]
-    # Round it off to be able to be printed better.
-    group_sum['CONVERTED_REVENUE'] = round(group_sum['CONVERTED_REVENUE'], 2)
-    top_groups = group_sum.sort_values('CONVERTED_REVENUE', ascending=False)[col3].head(20)
-    bottom_groups = group_sum.sort_values('CONVERTED_REVENUE', ascending=True)[col3].head(20)
-
-    # Total sum Floating
-    total_sum = df_open_trades[['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]].sum()
-    total_sum =  total_sum.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
-    total_sum["LOTS"] = abs(total_sum["LOTS"])  # Since it's Total lots, we only want the abs value
+        # Total sum Floating
+        total_sum = df_open_trades[['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]].sum()
+        total_sum =  total_sum.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
+        total_sum["LOTS"] = abs(total_sum["LOTS"])  # Since it's Total lots, we only want the abs value
 
 
     # Closed trades for today!
-    #TODO: Need to put in fail-safe if there are no closed for today.. yet!
     df_closed_trades = df_all_trades[df_all_trades["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')]  # Only Closed trades.
 
-    # Use for calculating net volume.
-    df_closed_trades["LOTS"] =  df_closed_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
-    df_closed_trades["NET_LOTS"] = df_closed_trades.apply(lambda x: x["LOTS"] if x['CMD']==0 else -1*x["LOTS"] , axis=1)
-    # Uses the same col2 as the open trades
-    closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
+    # There are no closed trades for the day yet
+    if len(df_closed_trades) <=0:
+        closed_top_accounts = pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
+        closed_bottom_accounts =  pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
+        total_sum_closed =  pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
+    else:
+        # Use for calculating net volume.
+        df_closed_trades["LOTS"] =  df_closed_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
+        df_closed_trades["NET_LOTS"] = df_closed_trades.apply(lambda x: x["LOTS"] if x['CMD']==0 else -1*x["LOTS"] , axis=1)
+        # Uses the same col2 as the open trades
+        closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
 
-    # Round off the values that is not needed.
-    closed_login_sum["LOTS"] = round(live_login_sum['LOTS'],2)
-    closed_login_sum["NET_LOTS"] = round(live_login_sum['NET_LOTS'], 2)
-    closed_login_sum["CONVERTED_REVENUE"] = round(live_login_sum['CONVERTED_REVENUE'], 2)
-    closed_login_sum["PROFIT"] = round(live_login_sum['PROFIT'], 2)
-    closed_login_sum["SWAPS"] = round(live_login_sum['SWAPS'], 2)
+        # Round off the values that is not needed.
+        closed_login_sum["LOTS"] = round(live_login_sum['LOTS'],2)
+        closed_login_sum["NET_LOTS"] = round(live_login_sum['NET_LOTS'], 2)
+        closed_login_sum["CONVERTED_REVENUE"] = round(live_login_sum['CONVERTED_REVENUE'], 2)
+        closed_login_sum["PROFIT"] = round(live_login_sum['PROFIT'], 2)
+        closed_login_sum["SWAPS"] = round(live_login_sum['SWAPS'], 2)
+        closed_login_sum["LOGIN"] = closed_login_sum.apply(lambda x: live_login_analysis_url( \
+            Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
 
-    closed_top_accounts = closed_login_sum.sort_values('CONVERTED_REVENUE', ascending=False)[col2].head(20)
-    closed_bottom_accounts = closed_login_sum.sort_values('CONVERTED_REVENUE', ascending=True)[col2].head(20)
+        closed_top_accounts = closed_login_sum.sort_values('CONVERTED_REVENUE', ascending=False)[col2].head(20)
+        closed_bottom_accounts = closed_login_sum.sort_values('CONVERTED_REVENUE', ascending=True)[col2].head(20)
 
-    # Total sum Floating
-    total_sum_closed = df_closed_trades[['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]].sum()
-    total_sum_closed =  total_sum_closed.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
-    total_sum_closed["LOTS"] = abs(total_sum_closed["LOTS"])  # Since it's Total lots, we only want the abs value
+        # Total sum Floating
+        total_sum_closed = df_closed_trades[['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]].sum()
+        total_sum_closed =  total_sum_closed.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
+        total_sum_closed["LOTS"] = abs(total_sum_closed["LOTS"])  # Since it's Total lots, we only want the abs value
 
 
     # Return the values as json.
