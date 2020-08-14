@@ -1150,7 +1150,7 @@ def BGI_Symbol_Float_ajax():
     #return_val = [dict(zip(col_of_df,d)) for d in df_records]
 
     # Want to hyperlink it.
-    df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="{url}">{symbol}</a>'.format(symbol=x,
+    df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{symbol}</a>'.format(symbol=x,
                                                                     url=url_for('analysis.symbol_float_trades', _external=True, symbol=x)))
 
     # Pandas return list of dicts.
@@ -1243,11 +1243,11 @@ def symbol_float_trades_ajax(symbol=""):
     df_open_trades = df_all_trades[df_all_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]  # Only open trades.
 
     if len(df_open_trades) <= 0:
-        top_groups = pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
-        bottom_groups = pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
-        top_accounts = pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
-        bottom_accounts = pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
-        total_sum = pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
+        top_groups = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
+        bottom_groups = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
+        top_accounts = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
+        bottom_accounts =pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
+        total_sum = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
 
     else:
         # Use for calculating net volume.
@@ -1290,8 +1290,17 @@ def symbol_float_trades_ajax(symbol=""):
         group_sum['CONVERTED_REVENUE'] = round(group_sum['CONVERTED_REVENUE'], 2)
         group_sum['LOTS'] = round(group_sum['LOTS'], 2)
         group_sum['NET_LOTS'] = round(group_sum['NET_LOTS'], 2)
-        top_groups = group_sum.sort_values('CONVERTED_REVENUE', ascending=False)[col3].head(20)
-        bottom_groups = group_sum.sort_values('CONVERTED_REVENUE', ascending=True)[col3].head(20)
+
+        # Only want those that are profitable
+        top_groups = group_sum[group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE',
+                                                                              ascending=False)[col3].head(20)
+        top_groups = pd.DataFrame([{"Comment": "There are currently no groups with floating profit for {}".format(symbol)}]) if \
+            len(top_groups) <= 0 else top_groups
+        # Only want those that are making a loss
+        bottom_groups = group_sum[group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', ascending=True)[col3].head(20)
+        bottom_groups = pd.DataFrame(
+            [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
+            len(top_groups) <= 0 else bottom_groups
 
         # Total sum Floating
         total_sum = df_open_trades[['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]].sum()
@@ -1304,9 +1313,9 @@ def symbol_float_trades_ajax(symbol=""):
 
     # There are no closed trades for the day yet
     if len(df_closed_trades) <=0:
-        closed_top_accounts = pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
-        closed_bottom_accounts =  pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
-        total_sum_closed =  pd.DataFrame({"Error": "There are no closed trades for the day for {} yet".format(symbol)})
+        closed_top_accounts = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
+        closed_bottom_accounts =  pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
+        total_sum_closed =  pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
     else:
         # Use for calculating net volume.
         df_closed_trades["LOTS"] =  df_closed_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal

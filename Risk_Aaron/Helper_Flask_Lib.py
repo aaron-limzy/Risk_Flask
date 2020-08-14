@@ -212,6 +212,6 @@ def trade_duration_bin(duration):
 def live_login_analysis_url(Live, Login):
 
     url = url_for("analysis.Client_trades_Analysis", Live=int(Live),  Login=int(Login), _external=True)
-    return '<a style="color:black" href="{url}">{Login}</a>'.format(url=url,  Login=Login)
+    return '<a href="{url}">{Login}</a>'.format(url=url,  Login=Login)
 
 
