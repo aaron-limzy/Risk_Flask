@@ -77,6 +77,8 @@ class Config(object):
     # Works like Flask’s SESSION_REFRESH_EACH_REQUEST.
     REMEMBER_COOKIE_REFRESH_EACH_REQUEST=True
 
+    SESSION_COOKIE_SAMESITE = None
+
     # WE don't need to set this as Flask internally sets this to 31 days.
     #PERMANENT_SESSION_LIFETIME = timedelta(minutes=1)
 

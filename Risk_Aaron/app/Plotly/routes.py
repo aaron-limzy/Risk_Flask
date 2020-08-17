@@ -1218,10 +1218,11 @@ def symbol_float_trades(symbol=""):
                                         "Top Realised Today (Client Side)": "H",
                                         "Bottom Realised Today (Client Side)": "H",
                                         "Total Closed Today (BGI Side)": "V",
+
                                         },
                            title=title,
                            ajax_url=url_for('analysis.symbol_float_trades_ajax', _external=True, symbol=symbol),
-                           header=header,
+                           header=header, symbol=symbol,
                            description=description, no_backgroud_Cover=True,
                            replace_words=Markup(["Today"]))
 
