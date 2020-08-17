@@ -616,16 +616,19 @@
 
 
 {% block app_content %}
-<h1 class="right-text">
+<br>
+<div class="container" id="title">
+  <h1 class="text-muted display-4 text-center">
+
   {% if header %}
   {{ header }}
+  <hr>
   {% else %}
   Risk
   {% endif %}
-  <br>
   <span id="page_time"></span>
-
 </h1>
+</div>
 
 <div class="row">
 

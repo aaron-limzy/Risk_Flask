@@ -1215,8 +1215,8 @@ def symbol_float_trades(symbol=""):
                                         "Top Floating Accounts (Client Side)": "H",
                                         "Bottom Floating Accounts (Client Side)": "H",
                                         "Total Floating (BGI Side)": "V",
-                                        "Top Realised Today (Client Side)": "H",
-                                        "Bottom Realised Today (Client Side)": "H",
+                                        "Top Realised Accounts Today (Client Side)": "H",
+                                        "Bottom Realised Accounts Today (Client Side)": "H",
                                         "Total Closed Today (BGI Side)": "V",
 
                                         },
