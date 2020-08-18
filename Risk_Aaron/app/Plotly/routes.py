@@ -1199,7 +1199,7 @@ def BGI_Symbol_Float_ajax():
 def symbol_float_trades(symbol=""):
 
     title = "{}".format(symbol)
-    header = "{}".format(symbol)
+    header = "{} Floating Trades(B 📘)".format(symbol)
 
     description = Markup("Showing Open trades for {}<br>Details are on Client side.".format(symbol))
 
@@ -1210,15 +1210,18 @@ def symbol_float_trades(symbol=""):
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/double-bubble.png', icon="",
-                           Table_name={ "Top Floating Groups (Client Side)": "Hs",
-                                        "Bottom Floating Groups (Client Side)": "Hs",
-                                        "Top Floating Accounts (Client Side)": "H",
-                                        "Bottom Floating Accounts (Client Side)": "H",
-                                        "Total Floating (BGI Side)": "V",
-                                        "Top Realised Accounts Today (Client Side)": "H",
-                                        "Bottom Realised Accounts Today (Client Side)": "H",
-                                        "Total Closed Today (BGI Side)": "V",
-
+                           Table_name={ "Top Floating Groups (Client Side)": "Hs1",
+                                        "Bottom Floating Groups (Client Side)": "Hs2",
+                                        "Top Floating Accounts (Client Side)": "H1",
+                                        "Bottom Floating Accounts (Client Side)": "H2",
+                                        "Total Floating (BGI Side)": "V1",
+                                        "Line": "Hr1",
+                                        "Top Realised Accounts Today (Client Side)": "H3",
+                                        "Bottom Realised Accounts Today (Client Side)": "H4",
+                                        "Top Realised Group Today (Client Side)": "Hs3",
+                                        "Bottom Realised Group Today (Client Side)": "Hs4",
+                                        "Total Closed Today (BGI Side)": "V2",
+                                        "Line2": "Hr2",
                                         },
                            title=title,
                            ajax_url=url_for('analysis.symbol_float_trades_ajax', _external=True, symbol=symbol),
@@ -1243,7 +1246,7 @@ def symbol_float_trades_ajax(symbol=""):
     # Want only those open trades.
     df_open_trades = df_all_trades[df_all_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]  # Only open trades.
 
-    if len(df_open_trades) <= 0:
+    if len(df_open_trades) <= 0:    # If there are no closed trades for the day.
         top_groups = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
         bottom_groups = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
         top_accounts = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
@@ -1301,7 +1304,7 @@ def symbol_float_trades_ajax(symbol=""):
         bottom_groups = group_sum[group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', ascending=True)[col3].head(20)
         bottom_groups = pd.DataFrame(
             [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
-            len(top_groups) <= 0 else bottom_groups
+            len(bottom_groups) <= 0 else bottom_groups
 
         # Total sum Floating
         total_sum = df_open_trades[['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]].sum()
@@ -1333,8 +1336,44 @@ def symbol_float_trades_ajax(symbol=""):
         closed_login_sum["LOGIN"] = closed_login_sum.apply(lambda x: live_login_analysis_url( \
             Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
 
-        closed_top_accounts = closed_login_sum.sort_values('CONVERTED_REVENUE', ascending=False)[col2].head(20)
-        closed_bottom_accounts = closed_login_sum.sort_values('CONVERTED_REVENUE', ascending=True)[col2].head(20)
+        # Want the Closed Top/Bottom accounts. Top = Winning, so no -ve PnL.
+        closed_top_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] >= 0].sort_values(\
+                                                                'CONVERTED_REVENUE', ascending=False)[col2].head(20)
+        closed_bottom_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] < 0].sort_values(\
+                                                                'CONVERTED_REVENUE', ascending=True)[col2].head(20)
+
+
+        # If there are either no winning Accounts, or no losing accounts.
+        # No winning accounts with closed trades for today
+        closed_top_accounts = pd.DataFrame(
+            [{"Comment": "There are currently no Accounts With Closed Winning PnL for today for {}".format(symbol)}]) if \
+            len(closed_top_accounts) <= 0 else closed_top_accounts
+        # No losing accounts for closed trades for today.
+        closed_bottom_accounts = pd.DataFrame(
+            [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
+            len(closed_bottom_accounts) <= 0 else closed_bottom_accounts
+
+
+
+        # Closed Trades for today
+        # Group PnL
+        closed_group_sum = df_closed_trades.groupby(by=['COUNTRY', 'GROUP']).sum().reset_index()
+
+        # Only want those that are profitable
+        top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE',
+                                                                              ascending=False)[col3].head(20)
+        top_closed_groups = pd.DataFrame([{"Comment": "There are currently no groups with closed profit for {}".format(symbol)}]) if \
+            len(top_closed_groups) <= 0 else top_closed_groups
+
+        # Only want those that are making a loss
+        bottom_closed_groups = closed_group_sum[group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', ascending=True)[col3].head(20)
+        bottom_closed_groups = pd.DataFrame(
+            [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
+            len(bottom_closed_groups) <= 0 else bottom_closed_groups
+
+
+
+
 
         # Total sum Floating
         total_sum_closed = df_closed_trades[['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]].sum()
@@ -1344,15 +1383,20 @@ def symbol_float_trades_ajax(symbol=""):
 
     # Return the values as json.
     # Each item in the returned dict will become a table, or a plot
-    return json.dumps({"H1": top_groups.to_dict("record"),
-                       "H2": bottom_groups.to_dict("record"),
-                       "H3": top_accounts.to_dict("record"),
-                       "H4" : bottom_accounts.to_dict("record"),
+    return json.dumps({"Hs1": top_groups.to_dict("record"),
+                       "Hs2": bottom_groups.to_dict("record"),
+                       "H1": top_accounts.to_dict("record"),
+                       "H2" : bottom_accounts.to_dict("record"),
                        "V1": [total_sum.to_dict()],
-                       "H5": closed_top_accounts.to_dict("record"),
-                       "H6": closed_bottom_accounts.to_dict("record"),
+                       "H3": closed_top_accounts.to_dict("record"),
+                       "H4": closed_bottom_accounts.to_dict("record"),
+                       "Hs3": top_closed_groups.to_dict("record"),
+                       "Hs4" : bottom_closed_groups.to_dict("record"),
                        "V2": [total_sum_closed.to_dict()]
                        })
+
+
+
 
 
 # Get all open trades of a particular symbol.
@@ -1472,6 +1516,7 @@ def cn_live_vol_ajax():
 
     # start = datetime.datetime.now()
     # df = get_cn_df()
+    # bar = plot_open_position_net(df, chart_title = "[CN] Open Position")
     # bar = plot_open_position_net(df, chart_title = "[CN] Open Position")
     # cn_pnl_bar = plot_open_position_revenue(df, chart_title="[CN] Open Position Revenue")
     # cn_heat_map = plot_volVSgroup_heat_map(df,chart_title="[CN] Net Position by Group")
@@ -1851,13 +1896,13 @@ def Client_trades_Analysis(Live="", Login=""):
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/pattern5.jpg', icon="",
-                           Table_name={"Live: {}, Login: {}".format(Live, Login):"V",
-                                       "Profit Calculation":"V",
-                                       "Net Position": "H",
-                                       "Open Trades": "H",
-                                       "Past Trades" : "H",
-                                       "Deposit/Withdrawal plot":"P",
-                                       "Average Trade Timings":"P"},
+                           Table_name={"Live: {}, Login: {}".format(Live, Login):"V1",
+                                       "Profit Calculation":"V2",
+                                       "Net Position": "H1",
+                                       "Open Trades": "H2",
+                                       "Past Trades" : "H3",
+                                       "Deposit/Withdrawal plot":"P1",
+                                       "Average Trade Timings":"P2"},
                            title=title,
                            ajax_url=url_for('analysis.Client_trades_Analysis_ajax',_external=True, Live=Live, Login=Login),
                            header=header,
@@ -2023,9 +2068,9 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     # #return json.dumps(return_html)
 
     # Return "Trades" and "Net position"
-    return json.dumps({"V1" : login_details, "V2": Sum_details, "H2": net_position_dict_clean,
-                       "H3" : open_position_dict,
-                       "H1": closed_trades,
+    return json.dumps({"V1" : login_details, "V2": Sum_details, "H1": net_position_dict_clean,
+                       "H2" : open_position_dict,
+                       "H3": closed_trades,
                         "P1":deposit_withdrawal_fig,
                        "P2": average_trade_duration_fig}, cls=plotly.utils.PlotlyJSONEncoder)
 

@@ -39,11 +39,11 @@
   var Refresh_Page_Counter = 0;  // When to refresh the page.
 
 
-  var Table_Caption = [];     // Since it's multiple table names, we need to store it.
-  {% for tb in Table_name %} // Want to add in the table name
-    Table_Caption.push("{{ tb }}")
-  {% endfor %}
+  var Table_Caption = {};     // Since it's multiple table names, we need to store it.
 
+  {% for key, value in Table_name.items() %}
+    Table_Caption["{{ value }}"] = "{{ key }}";
+  {% endfor %}
 
 
   self.onmessage = function(event){
@@ -210,27 +210,33 @@
         if (i >= {{ Table_name|length }}){  // Must have a table name with it.
           break;
         }
+        var increment = 1;
+        // The table ID
+        var data_div_id = data_div_id_pre + "_" + key;
+         var data_raw_id =  'Table' + (i+1).toString() + "_Raw_Div";
 
-        var data_div_id = data_div_id_pre.concat((i+1).toString());
-        var data_raw_id =  'Table' + (i+1).toString() + "_Raw_Div";
+        if(key.search("Hr") >= 0) {
+          // Do nothing.
+          // Still let it imcrement due to table ID naming.
 
-        if (key.search("H") >= 0){  // We will use Horizontal table.
+        }else if (key.search("H") >= 0){  // We will use Horizontal table.
           // Need to add in [] for the object key for it to use the variable.
           // Need to get the table name the old fashion way since we can't use the passed-in pythin variable.
-          self.postMessage({[data_div_id] : Draw_Table(data[key], Table_Caption[i] , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div" + (i+1).toString() + "_table" ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + " SGT </span>"});
+          self.postMessage({[data_div_id] : Draw_Table(data[key], Table_Caption[key] , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div_" + key + "_table" ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + " SGT </span>"});
         } else if(key.search("V") >= 0) {
           // We will use the vertical table.
-          self.postMessage({[data_div_id] : Draw_Vertical_Table(data[key][0], Table_Caption[i] , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light float-left", {{ replace_words }} ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + " SGT</span>"});
+          self.postMessage({[data_div_id] : Draw_Vertical_Table(data[key][0], Table_Caption[key] , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light float-left", {{ replace_words }} ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + " SGT</span>"});
 
           //Draw_Vertical_Table(table_Data, Table_Caption, Table_Class, Replace_words)
-        }else{
-            var plot_id = 'plot'.concat((i+1).toString());
-
+        }else if(key.search("P") >= 0){
+            var plot_id = 'plot_'+key;
             self.postMessage({ [plot_id] :data[key] });
+        }else{
+          // Do nothing.
         }
 
         self.postMessage({[data_raw_id] : JSON.stringify(data[key])});
-        i = i + 1;  // Increment the counter since we are looping thru dictionary keys
+        i = i + increment;  // Increment the counter since we are looping thru dictionary keys
 
       }
 
@@ -258,9 +264,6 @@
         }
         return reurn_val;
     }
-
-
-
 
 
     function Draw_Vertical_Table(table_Data, Table_Caption, Table_Class, Replace_words) {
@@ -618,7 +621,7 @@
 {% block app_content %}
 <br>
 <div class="container" id="title">
-  <h1 class="text-muted display-4 text-center">
+  <h1 class="text-muted display-4 text-center bg-light">
 
   {% if header %}
   {{ header }}
@@ -641,16 +644,18 @@
 
  {% for key, value in Table_name.items() %}
   {% if "Hs" in value %}
-  <div class="col-lg-6 col-md-6 col-sm-12" id="Data_table_Div{{ loop.index  }}">
+  <div class="col-lg-6 col-md-6 col-sm-12" id="Data_table_Div_{{ value }}"></div>
+  {% elif "Hr" in value %}
+    <hr style="height:5px" class="col-lg-12 col-md-12 col-sm-12">
   {% elif "H" in value %}
-    <div class="col-lg-12 col-md-12 col-sm-12" id="Data_table_Div{{ loop.index  }}">
+    <div class="col-lg-12 col-md-12 col-sm-12" id="Data_table_Div_{{ value }}"></div>
   {% elif "V" in value %}
-    <div class="col-lg-6 col-md-6 col-sm-12" id="Data_table_Div{{ loop.index  }}" style="margin-left:auto;margin-right:auto;">
+    <div class="col-lg-6 col-md-6 col-sm-12" id="Data_table_Div_{{ value }}" style="margin-left:auto;margin-right:auto;"></div>
   {% else %}
   <!-- Would read as P for value.  -->
-    <div class="chart col-lg-6 col-md-6 col-sm-12" id="plot{{ loop.index  }}">
+    <div class="chart col-lg-6 col-md-6 col-sm-12" id="plot_{{ value }}"></div>
   {% endif %}
- </div>
+
 
 
  <!--
@@ -658,6 +663,9 @@
  <h2>Value: {{value}}</h2> -->
 
   {% endfor %}
+
+
+  <div class="col-lg-12 col-md-12 col-sm-12" id="Please_wait_Gif">  {% include '_pleaseWait.html' %}  </div>
 
   {% if symbol %}
 
@@ -674,7 +682,6 @@
        <param name='showAppBanner' value='false' /></object></div>
   {% endif %}
 
-  <div class="col-lg-12 col-md-12 col-sm-12" id="Please_wait_Gif">  {% include '_pleaseWait.html' %}  </div>
 
   <br>
   {% if description %}

@@ -149,9 +149,11 @@ def Calculate_Net_position(df_data):
 
     df_data = df_data[["SYMBOL", "LOTS",  'PROFIT', 'SWAPS' ]]   # Only need these few.
     ret_val = df_data.groupby(['SYMBOL']).sum()     # Want to group by Symbol, and sum
-    df_data["PROFIT"] = df_data["PROFIT"].apply(lambda x: "{:.2f}".format(x))       # Print in 2 D.P.
-    df_data["SWAPS"] = df_data["SWAPS"].apply(lambda x: "{:.2f}".format(x))          # Print in 2 D.P.
     ret_val.reset_index(level=0, inplace=True)      # Want to reset the index so that "SYMBOL" becomes the column name
+
+    ret_val["PROFIT"] = ret_val["PROFIT"].apply(lambda x: "{:.2f}".format(x))       # Print in 2 D.P.
+    ret_val["SWAPS"] = ret_val["SWAPS"].apply(lambda x: "{:.2f}".format(x))          # Print in 2 D.P.
+    ret_val["LOTS"] = ret_val["LOTS"].apply(lambda x: "{:.2f}".format(x))  # Print in 2 D.P.
 
     return ret_val
 
