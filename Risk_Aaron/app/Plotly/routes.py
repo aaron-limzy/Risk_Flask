@@ -1151,7 +1151,7 @@ def BGI_Symbol_Float_ajax():
 
     # Want to hyperlink it.
     df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{symbol}</a>'.format(symbol=x,
-                                                                    url=url_for('analysis.symbol_float_trades', _external=True, symbol=x)))
+                                                                    url=url_for('analysis.symbol_float_trades', _external=True, symbol=x, book="b")))
 
     # Pandas return list of dicts.
     return_val = df_to_table[col_of_df].to_dict("record")
@@ -1194,12 +1194,17 @@ def BGI_Symbol_Float_ajax():
 
 # To Query for all open trades by a particular symbol
 # Shows the closed trades for the day as well.
-@analysis.route('/BGI_Symbol_Float/Open_Symbol/B/<symbol>', methods=['GET', 'POST'])
+@analysis.route('/BGI_Symbol_Float/Open_Symbol/<book>/<symbol>', methods=['GET', 'POST'])
 @roles_required()
-def symbol_float_trades(symbol=""):
+def symbol_float_trades(symbol="", book="b"):
 
     title = "{}".format(symbol)
-    header = "{} Floating Trades(B 📘)".format(symbol)
+    header = "{} Floating Trades".format(symbol)
+
+    if book.lower() == "b":
+        header += "(B 📘)"
+    elif book.lower() == "a":
+        header += "(A 📕)"
 
     description = Markup("Showing Open trades for {}<br>Details are on Client side.".format(symbol))
 
@@ -1224,18 +1229,19 @@ def symbol_float_trades(symbol=""):
                                         "Line2": "Hr2",
                                         },
                            title=title,
-                           ajax_url=url_for('analysis.symbol_float_trades_ajax', _external=True, symbol=symbol),
+                           ajax_url=url_for('analysis.symbol_float_trades_ajax', _external=True, symbol=symbol, book=book),
+                           book = book.upper(),
                            header=header, symbol=symbol,
                            description=description, no_backgroud_Cover=True,
                            replace_words=Markup(["Today"]))
 
 
 # The Ajax call for the symbols we want to query. B Book.
-@analysis.route('/Open_Symbol/B/symbol_float_trades_ajax/<symbol>', methods=['GET', 'POST'])
+@analysis.route('/Open_Symbol/<book>/symbol_float_trades_ajax/<symbol>', methods=['GET', 'POST'])
 @roles_required()
-def symbol_float_trades_ajax(symbol=""):
+def symbol_float_trades_ajax(symbol="", book="b"):
 
-    all_trades = symbol_all_open_trades(symbol=symbol)
+    all_trades = symbol_all_open_trades(symbol=symbol, book=book)
     df_all_trades = pd.DataFrame(all_trades)
 
     if len(df_all_trades) <= 0:
@@ -1319,7 +1325,9 @@ def symbol_float_trades_ajax(symbol=""):
     if len(df_closed_trades) <=0:
         closed_top_accounts = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
         closed_bottom_accounts =  pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
-        total_sum_closed =  pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
+        total_sum_closed = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
+        top_closed_groups = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
+        bottom_closed_groups = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
     else:
         # Use for calculating net volume.
         df_closed_trades["LOTS"] =  df_closed_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
@@ -1353,11 +1361,12 @@ def symbol_float_trades_ajax(symbol=""):
             [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
             len(closed_bottom_accounts) <= 0 else closed_bottom_accounts
 
-
-
         # Closed Trades for today
         # Group PnL
         closed_group_sum = df_closed_trades.groupby(by=['COUNTRY', 'GROUP']).sum().reset_index()
+        closed_group_sum["LOTS"] = round(closed_group_sum['LOTS'],2)
+        closed_group_sum["NET_LOTS"] = round(closed_group_sum['NET_LOTS'], 2)
+        closed_group_sum["CONVERTED_REVENUE"] = round(closed_group_sum['CONVERTED_REVENUE'], 2)
 
         # Only want those that are profitable
         top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE',

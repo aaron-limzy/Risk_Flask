@@ -999,7 +999,7 @@ def ABook_LP_Details(update_tool_time=0):    # LP Details. Balance, Credit, Marg
 
     sql_query = text("""SELECT lp, deposit, credit, pnl, equity, total_margin, free_margin, 
 		ROUND((credit + deposit + pnl),2) as EQUITY, 
-		ROUND(100 * total_margin / (credit + deposit + pnl),2) as `Margin/Equity (%)` ,
+		COALESCE(ROUND(100 * total_margin / (credit + deposit + pnl),2),0) as `Margin/Equity (%)` ,
 		margin_call as `margin_call (M/E)` , stop_out as `stop_out (M/E)`,
 			  COALESCE(`stop_out_amount`, ROUND(  100* (`total_margin`/`stop_out`) ,2)) as `STOPOUT AMOUNT`,
 		ROUND(`equity` -  COALESCE(`stop_out_amount`, 100* (`total_margin`/`stop_out`) ),2) as `available`,
@@ -1030,7 +1030,7 @@ def ABook_LP_Details(update_tool_time=0):    # LP Details. Balance, Credit, Marg
 
         Lp_MC_Level = lp["margin_call (M/E)"] if "margin_call (M/E)" in lp else None
         Lp_SO_Level = lp["stop_out (M/E)"] if "stop_out (M/E)" in lp else None
-        Lp_Margin_Level = lp["Margin/Equity (%)"]  if "Margin/Equity (%)" in lp else None
+        Lp_Margin_Level = lp["Margin/Equity (%)"]  if "Margin/Equity (%)" in lp else 0
 
         # Want to induce an error
         #Lp_Margin_Level = lp["Margin/Equity (%)"] + 105  if "Margin/Equity (%)" in lp else None
