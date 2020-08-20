@@ -1379,13 +1379,14 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         closed_group_sum["CONVERTED_REVENUE"] = round(closed_group_sum['CONVERTED_REVENUE'], 2)
 
         # Only want those that are profitable
-        top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE',
+        top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE', \
                                                                               ascending=False)[col3].head(20)
         top_closed_groups = pd.DataFrame([{"Comment": "There are currently no groups with closed profit for {}".format(symbol)}]) if \
             len(top_closed_groups) <= 0 else top_closed_groups
 
         # Only want those that are making a loss
-        bottom_closed_groups = closed_group_sum[group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', ascending=True)[col3].head(20)
+        bottom_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', \
+                                                                                                      ascending=True)[col3].head(20)
         bottom_closed_groups = pd.DataFrame(
             [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
             len(bottom_closed_groups) <= 0 else bottom_closed_groups
