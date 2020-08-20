@@ -1287,8 +1287,18 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 
 
         col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE']
-        top_accounts = live_login_sum.sort_values('CONVERTED_REVENUE', ascending=False)[col2].head(20)
-        bottom_accounts = live_login_sum.sort_values('CONVERTED_REVENUE', ascending=True)[col2].head(20)
+
+        # Want Top and winning accounts. If there are none. we will reflect accordingly.
+        top_accounts = live_login_sum[live_login_sum['CONVERTED_REVENUE'] >= 0 ].sort_values('CONVERTED_REVENUE', ascending=False)[col2].head(20)
+        top_accounts = pd.DataFrame([{"Comment": "There are currently no client with floating profit for {}".format(symbol)}]) \
+                        if len(top_accounts) <= 0 else top_accounts
+
+        # Want bottom and Loosing accounts. If there are none, we will reflect it accordingly.
+        bottom_accounts = live_login_sum[live_login_sum['CONVERTED_REVENUE'] < 0 ].sort_values('CONVERTED_REVENUE', ascending=True)[col2].head(20)
+        bottom_accounts = pd.DataFrame(
+            [{"Comment": "There are currently no client with floating losses for {}".format(symbol)}]) \
+            if len(bottom_accounts) <= 0 else bottom_accounts
+
 
         # Get the live, login and group, since sum would remove those.
         #live_login_group = df_open_trades[['LIVE', 'LOGIN', 'COUNTRY','GROUP']].drop_duplicates()
@@ -1934,15 +1944,19 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     # result = Query_SQL_db_engine(sql_statement)
 
 
-    sql_statement = """SELECT LOGIN, `GROUP`, `ENABLE`, ENABLE_READONLY, `NAME`, 
-                        ROUND(BALANCE,2) as BALANCE, ROUND(CREDIT , 2) as CREDIT,
+    sql_statement = """SELECT LOGIN, mt4_users.`GROUP`,mt4_groups.CURRENCY,mt4_groups.MARGIN_CALL, mt4_groups.MARGIN_STOPOUT, 
+                    mt4_users.`ENABLE`, ENABLE_READONLY, `NAME`, LEVERAGE,
+                        ROUND(BALANCE,2) as BALANCE, ROUND(mt4_users.CREDIT , 2) as CREDIT,
                         ROUND(EQUITY, 2) as EQUITY, ROUND(MARGIN, 2) as `MARGIN (E/M)`, 
                         ROUND(MARGIN_LEVEL,2) as MARGIN_LEVEL, ROUND(MARGIN_FREE, 2) as MARGIN_FREE
-            FROM live{Live}.mt4_users 
-            WHERE `Login`='{Login}'""".format(Live=Live, Login=Login)
+            FROM live{Live}.mt4_users , live{Live}.mt4_groups 
+            WHERE `Login`='{Login}' AND mt4_groups.`GROUP` = mt4_users.`GROUP` """.format(Live=Live, Login=Login)
 
     sql_statement = sql_statement.replace("\n", "").replace("\t", "")
     login_details = Query_SQL_db_engine(sql_statement)
+
+    # Color the background for Balace to highlight it.
+    login_details[0]["BALANCE"] = "<span style = 'background-color:#4af076;' >{}</span> ".format(login_details[0]["BALANCE"])
 
     if len(login_details) <= 0:   # There are no information.
         return json.dumps([{"Result":"Error in Login or Live"}])

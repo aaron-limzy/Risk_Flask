@@ -216,4 +216,8 @@ def live_login_analysis_url(Live, Login):
     url = url_for("analysis.Client_trades_Analysis", Live=int(Live),  Login=int(Login), _external=True)
     return '<a href="{url}">{Login}</a>'.format(url=url,  Login=Login)
 
+# To get the URL for the Symbol Trades A/B Book
+def Symbol_Trades_url(symbol, book):
 
+    url = url_for("analysis.symbol_float_trades", symbol=symbol, book=book, _external=True)
+    return '<a href="{url}" target="_blank">{symbol}</a>'.format(url=url,  symbol=symbol)

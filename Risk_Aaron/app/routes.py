@@ -34,15 +34,15 @@ from zeep.transports import Transport
 from zeep import Client
 
 from app.Risk_Client_Tools.routes import risk_auto_cut_ajax
-
+from bs4 import BeautifulSoup
 from unsync import unsync
-
+import pandas as pd
 from sqlalchemy import text
 import json
 import math
 import asyncio
 import os
-import pandas as pd
+
 import numpy as np
 import datetime
 import pyexcel
@@ -817,6 +817,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
     curent_result = Query_SQL_db_engine(sql_query)  # Function to do the Query and return zip dict.
 
 
+
     # curent_result[10]["Discrepancy"] = 0.1  # Artificially induce a mismatch
     # print("request.method: {}".format(request.method))
     # print("Len of request.form: {}".format(len(request.form)))
@@ -849,6 +850,17 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
                                                                            and (isinstance(post_data['MT4_LP_Position_save'], str)) \
                                                                            and is_json(post_data["MT4_LP_Position_save"]) \
                                                                             else []
+
+        # To revert back to a normal Symbol string, instead of a URL.
+        df_past_details = pd.DataFrame(Past_Details)
+
+        print("past details")
+        print(df_past_details)
+        if "SYMBOL" in df_past_details:
+            df_past_details["SYMBOL"] = df_past_details["SYMBOL"].apply(lambda x: BeautifulSoup(x, features="lxml").a.text \
+                                                                    if BeautifulSoup(x, features="lxml").a != None else x)
+        Past_Details = df_past_details.to_dict("record")
+
         # If we want to send all the total position
         send_email_total = int(post_data["send_email_total"][0]) if ("send_email_total" in post_data) \
                                                                    and (isinstance(post_data['send_email_total'], list)) else 0
@@ -859,15 +871,24 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
         #print("Past Details: {}".format(Past_Details))
         # To Calculate the past (Previous result) Mismatches
         Past_discrepancy = dict()
-        for pd in Past_Details:
-            if "SYMBOL" in pd and "Discrepancy" in pd.keys() and pd["Discrepancy"] != 0:    # If the keys are there.
-                    Past_discrepancy[pd["SYMBOL"]] = pd["Mismatch_count"] if "Mismatch_count" in pd else 1  # Want to get the count. Or raise as 1.
+        for past in Past_Details:
+            if "SYMBOL" in past \
+                    and "Discrepancy" in past.keys() \
+                    and past["Discrepancy"] != 0:    # If the keys are there.
+                    Past_discrepancy[past["SYMBOL"]] = past["Mismatch_count"] if "Mismatch_count" in past else 1  # Want to get the count. Or raise as 1.
+
+        # # Using pandas
+        # # Get dataframe of only those that has Discrepancy for the past records
+        # df_past_discrepancy = pd.DataFrame()
+        # if all(a in df_past_details for a in ["SYMBOL", "Discrepancy"]):
+        #     df_past_discrepancy = df_past_details[df_past_details["Discrepancy"] != 0][["SYMBOL", "Discrepancy"]]
 
 
         # #To Artificially induce a mismatch
         # curent_result[0]["Discrepancy"] = 0.01
         # curent_result[1]["Discrepancy"] = 0.01
         # curent_result[2]["Discrepancy"] = 0.01
+
 
         # To tally off with current mismatches. If there are, add 1 to count. Else, Zero it.
         for d in curent_result:
@@ -876,6 +897,18 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
                     d["Mismatch_count"] = 1 if d['SYMBOL'] not in Past_discrepancy else Past_discrepancy[d['SYMBOL']] + 1
                 else:
                     d["Mismatch_count"] = 0
+
+
+        # # Using pandas
+        # # Get dataframe of only those that has Discrepancy for the current records
+        # df_current_discrepancy = pd.DataFrame()
+        # if all(a in df_postion for a in ["SYMBOL", "Discrepancy"]):
+        #     df_current_discrepancy = df_postion[df_postion["Discrepancy"] != 0]
+        #
+        # # Want to get all the mismatches using pandas
+        # Notify_Mismatch = df_current_discrepancy.to_dict("record")   # Need to rearrange the column names
+        # Current_discrepancy = list(df_current_discrepancy["SYMBOL"])       # Get all the Mimatch Symbols only
+
 
         # Want to get all the mismatches.
         Notify_Mismatch = [d for d in curent_result if d['Mismatch_count'] != 0 ]
@@ -985,6 +1018,14 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
                 async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Message, TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
 
         # '[{"Vantage_Update_Time": "2019-09-17 16:54:20", "BGI_Margin_Update_Time": "2019-09-17 16:54:23"}]'
+
+    # To add the symbol Link.For hyperlink to the A book Symbol page that shows symbol trades.
+    # Will use Beautiful soup to parse it back to symbols later when recieved as POST
+    df_postion = pd.DataFrame(data=curent_result)
+    #print(df_postion)
+    df_postion["SYMBOL"] = df_postion.apply(lambda x: Symbol_Trades_url(symbol=x["SYMBOL"], book="a"), axis = 1)
+    curent_result = df_postion.to_dict("record")
+
 
     #print("Current Results: {}".format(curent_result))
     return_result = {"current_result":curent_result, "Play_Sound": Play_Sound}   # End of if/else. going to return.
