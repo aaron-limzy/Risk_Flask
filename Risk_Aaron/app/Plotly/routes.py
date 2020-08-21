@@ -1254,6 +1254,9 @@ def symbol_float_trades_ajax(symbol="", book="b"):
     # Want only those open trades.
     df_open_trades = df_all_trades[df_all_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]  # Only open trades.
 
+    col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE']
+    col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS', 'CONVERTED_REVENUE']
+
     if len(df_open_trades) <= 0:    # If there are no closed trades for the day.
         top_groups = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
         bottom_groups = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
@@ -1288,7 +1291,6 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                                     Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
 
 
-        col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE']
 
         # Want Top and winning accounts. If there are none. we will reflect accordingly.
         top_accounts = live_login_sum[live_login_sum['CONVERTED_REVENUE'] >= 0 ].sort_values('CONVERTED_REVENUE', ascending=False)[col2].head(20)
@@ -1307,7 +1309,6 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 
         # By Entity/Group
         group_sum = df_open_trades.groupby(by=['COUNTRY', 'GROUP',])[['LOTS', 'NET_LOTS','CONVERTED_REVENUE', 'SYMBOL']].sum().reset_index()
-        col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS',  'CONVERTED_REVENUE',]
         # Round it off to be able to be printed better.
         group_sum['CONVERTED_REVENUE'] = round(group_sum['CONVERTED_REVENUE'], 2)
         group_sum['LOTS'] = round(group_sum['LOTS'], 2)
