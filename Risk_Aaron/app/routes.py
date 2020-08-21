@@ -758,8 +758,8 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
     mismatch_count = [10,15]
     #mismatch_count_1 = 1   # Notify when mismatch has lasted 1st time.
     #mismatch_count_2 = 15   # Second notify when mismatched has lasted a second timessss
-    # cfh_soap_query_count = [5]   # Want to fully quiery and update from CFH when mismatches reaches this.
 
+    # cfh_soap_query_count = [5]   # Want to fully quiery and update from CFH when mismatches reaches this.
     sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(CFH_Position,0) AS CFH_Lots ,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+ COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
         ,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy 
         FROM test.core_symbol
@@ -813,6 +813,7 @@ def ABook_Matching_Position_Vol():    # To upload the Files, or post which trade
         AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
         WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
         ) AS X GROUP BY SYMBOL) S ON core_symbol.SYMBOL = S.mt4_SYMBOL ORDER BY ABS(Discrepancy) DESC, ABS(MT4_Net_Vol) DESC, SYMBOL""")
+
 
     curent_result = Query_SQL_db_engine(sql_query)  # Function to do the Query and return zip dict.
 
