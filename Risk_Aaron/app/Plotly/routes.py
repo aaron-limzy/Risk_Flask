@@ -165,7 +165,7 @@ def save_BGI_float_Ajax(update_tool_time=1):
 
 
     if check_session_live1_timing() == False:    # If False, It needs an update.
-        Post_To_Telegram(AARON_BOT, "Retrieving and saving previous day PnL.", TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+
         # TOREMOVE: Comment out the print.
         print("Saving Previous Day PnL")
         #TODO: Maybe make this async?
@@ -732,6 +732,8 @@ def check_session_live1_timing():
             'FLASK_UPDATE_TIMING' in session and  \
             session["FLASK_UPDATE_TIMING"]  != current_app.config["FLASK_UPDATE_TIMING"]:
         return_val = True
+        Post_To_Telegram(AARON_BOT, "Clearing cookies and retrieving new cookies for: {}".format(current_user.id),
+                         TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
         #print(session.keys())
         #print("From session: {}. Next update time: {}".format(session['live1_sgt_time_diff'], session['live1_sgt_time_update']))
     else:
