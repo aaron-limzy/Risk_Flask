@@ -732,8 +732,6 @@ def check_session_live1_timing():
             'FLASK_UPDATE_TIMING' in session and  \
             session["FLASK_UPDATE_TIMING"]  != current_app.config["FLASK_UPDATE_TIMING"]:
         return_val = True
-        Post_To_Telegram(AARON_BOT, "Clearing cookies and retrieving new cookies for: {}".format(current_user.id),
-                         TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
         #print(session.keys())
         #print("From session: {}. Next update time: {}".format(session['live1_sgt_time_diff'], session['live1_sgt_time_update']))
     else:
@@ -755,6 +753,8 @@ def check_session_live1_timing():
                     live1_server_difference=session['live1_sgt_time_diff'], hour_from_2300=0) + \
                                            datetime.timedelta(hours=session['live1_sgt_time_diff'], minutes=10)
         session['live1_sgt_time_update'] = min(time_refresh_next, server_nextday_time)
+        Post_To_Telegram(AARON_BOT, "Clearing cookies and retrieving new cookies for: {}".format(current_user.id),
+                         TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
         #print(session)
 
     return return_val
