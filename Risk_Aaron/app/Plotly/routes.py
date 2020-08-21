@@ -1348,11 +1348,11 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
 
         # Round off the values that is not needed.
-        closed_login_sum["LOTS"] = round(live_login_sum['LOTS'],2)
-        closed_login_sum["NET_LOTS"] = round(live_login_sum['NET_LOTS'], 2)
-        closed_login_sum["CONVERTED_REVENUE"] = round(live_login_sum['CONVERTED_REVENUE'], 2)
-        closed_login_sum["PROFIT"] = round(live_login_sum['PROFIT'], 2)
-        closed_login_sum["SWAPS"] = round(live_login_sum['SWAPS'], 2)
+        closed_login_sum["LOTS"] = round(closed_login_sum['LOTS'],2)
+        closed_login_sum["NET_LOTS"] = round(closed_login_sum['NET_LOTS'], 2)
+        closed_login_sum["CONVERTED_REVENUE"] = round(closed_login_sum['CONVERTED_REVENUE'], 2)
+        closed_login_sum["PROFIT"] = round(closed_login_sum['PROFIT'], 2)
+        closed_login_sum["SWAPS"] = round(closed_login_sum['SWAPS'], 2)
         closed_login_sum["LOGIN"] = closed_login_sum.apply(lambda x: live_login_analysis_url( \
             Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
 
