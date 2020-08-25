@@ -1394,10 +1394,6 @@ def symbol_float_trades_ajax(symbol="", book="b"):
             [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
             len(bottom_closed_groups) <= 0 else bottom_closed_groups
 
-
-
-
-
         # Total sum Floating
         total_sum_closed = df_closed_trades[['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]].sum()
         total_sum_closed =  total_sum_closed.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
