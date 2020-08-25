@@ -374,7 +374,9 @@
                     Table_Column = xx;	// Get the Column Name
                     if ((xx.search("Discrepancy") >= 0) && (table_Data[x][xx] != 0)){	// If its the discrepancy Column/Row, we want to Flag out any that isn't 0.
                         Alert_Word_found = 1;
-                    }
+                    }    function numberWithCommas(x) {
+                          return x.toLocaleString(undefined, {maximumFractionDigits:4})
+                        }
 
                      if ((xx.search("Mismatch_count") >= 0) && (table_Data[x][xx] >= 10)){	// If its the Mismatch_count Column/Row, we want to Flag out any larger then 10
                         Alert_Word_found = 1;
@@ -429,7 +431,7 @@
           }
 
     function numberWithCommas(x) {
-      return x.toString().replace(/\B(?<!\.\d*)(?=(\d{3})+(?!\d))/g, ",");
+      return x.toLocaleString(undefined, {maximumFractionDigits:4})
     }
 
 
