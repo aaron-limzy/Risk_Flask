@@ -817,7 +817,8 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
 
     curent_result = Query_SQL_db_engine(sql_query)  # Function to do the Query and return zip dict.
 
-
+    # Variables to return.
+    Play_Sound = 0  # To play sound if needed
 
     # curent_result[10]["Discrepancy"] = 0.1  # Artificially induce a mismatch
     # print("request.method: {}".format(request.method))
@@ -866,8 +867,7 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
         send_email_total = int(post_data["send_email_total"][0]) if ("send_email_total" in post_data) \
                                                                    and (isinstance(post_data['send_email_total'], list)) else 0
 
-        # Variables to return.
-        Play_Sound = 0                                  # To play sound if needed
+
 
         #print("Past Details: {}".format(Past_Details))
         # To Calculate the past (Previous result) Mismatches
