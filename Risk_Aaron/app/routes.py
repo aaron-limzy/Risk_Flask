@@ -760,16 +760,16 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
     #mismatch_count_2 = 15   # Second notify when mismatched has lasted a second timessss
 
     # cfh_soap_query_count = [5]   # Want to fully quiery and update from CFH when mismatches reaches this.
-    sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(CFH_Position,0) AS CFH_Lots ,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+ COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
-        ,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(CFH_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy 
+    sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(CFH_Position,0) AS CFH_lot ,COALESCE(GP_Position,0) AS GP_lot ,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+ COALESCE(CFH_Position,0)+COALESCE(GP_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
+        ,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(CFH_Position,0)+COALESCE(GP_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy 
         FROM test.core_symbol
         LEFT JOIN
         (SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM 
             (SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades` 
             LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol 
             LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL 
-            WHERE CONTRACT_SIZE>0) 
-        AS B GROUP BY mt4_symbol) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
+            WHERE CONTRACT_SIZE>0) AS B GROUP BY mt4_symbol 
+        ) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
 		    LEFT JOIN
         (SELECT cfh_bgi_symbol.mt4_symbol as `CFH_Symbol`, position * (1/core_symbol.CONTRACT_SIZE) AS CFH_Position
             FROM aaron.`cfh_live_position_fix` 
@@ -777,6 +777,10 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
             LEFT JOIN test.core_symbol ON core_symbol.SYMBOL = cfh_bgi_symbol.mt4_symbol  
             WHERE CONTRACT_SIZE>0
         ) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
+		    LEFT JOIN
+        (SELECT SUBSTRING_INDEX(Symbol,'.',1) as `GM_Symbol`,CASE WHEN Cmd = 0 THEN Lots WHEN Cmd = 1 THEN Lots * (-1) ELSE 0 END AS GP_Position
+            FROM aaron.`live_trade_961884_globalprime_live` WHERE Close_time = '1970-01-01 00:00:00' GROUP BY SUBSTRING_INDEX(Symbol,'.',1)
+        ) as GM ON core_symbol.SYMBOL = GM.GM_Symbol
         LEFT JOIN
         (SELECT coresymbol AS api_SYMBOL,ROUND(SUM(api_LOT),2) AS api_LOT FROM (SELECT bgimargin_live_trades.margin_id,bgimargin_live_trades.coresymbol,position/core_symbol.CONTRACT_SIZE AS api_LOT FROM test.`bgimargin_live_trades` 
         LEFT JOIN test.core_symbol ON bgimargin_live_trades.coresymbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY coresymbol) AS K ON core_symbol.SYMBOL = K.api_SYMBOL

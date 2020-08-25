@@ -392,7 +392,11 @@ $(document).ready(function(){
         for (var x in Table_Data) {
             if (!("Vantage_lot" in Table_Data[x] &&  Table_Data[x]['Vantage_lot'] == 0 &&
                 "MT4_Net_Vol" in Table_Data[x] &&  Table_Data[x]['MT4_Net_Vol'] == 0 &&
-                "CFH_Lots" in Table_Data[x] &&  Table_Data[x]['CFH_Lots'] == 0 &&
+                "CFH_lot" in Table_Data[x] &&  Table_Data[x]['CFH_lot'] == 0 &&
+                "GP_lot" in Table_Data[x] &&  Table_Data[x]['GP_lot'] == 0 &&
+                "API_lot" in Table_Data[x] &&  Table_Data[x]['API_lot'] == 0 &&
+                "Offset_lot" in Table_Data[x] &&  Table_Data[x]['Offset_lot'] == 0 &&
+                "Lp_Net_Vol" in Table_Data[x] &&  Table_Data[x]['Lp_Net_Vol'] == 0 &&
                 "Discrepancy" in Table_Data[x] &&  Table_Data[x]['Discrepancy'] == 0 )) {
                 Table_Data_Updated.push(Table_Data[x]);	// Push it in if its non-empty.
             }
