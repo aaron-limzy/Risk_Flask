@@ -41,10 +41,10 @@ server = create_app()
 # print(effectivehandlers(logger))
 #
 # Need to uncomment the serve for it to work on production level.
-serve(server, host='0.0.0.0', port=5000, threads=12)
+#serve(server, host='0.0.0.0', port=5000, threads=12)
 
 
 #server.run()
-#server.app_context().push()
+server.app_context().push()
 
 

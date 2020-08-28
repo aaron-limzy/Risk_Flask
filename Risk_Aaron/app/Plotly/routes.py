@@ -1426,6 +1426,22 @@ def symbol_all_open_trades(symbol="", book="B"):
     symbol_condition = " AND SYMBOL Like '%{}%' ".format(symbol)
     country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
     book_condition = " AND group_table.BOOK = '{}'".format(book)
+
+    if book.lower() == "a":
+        # Additional SQL query if a book
+        Live2_book_query = """ AND	(
+		(mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live2.a_group))
+		OR (LOGIN IN(SELECT LOGIN FROM live2.a_login))
+		OR LOGIN = '9583'
+		OR LOGIN = '9615'
+		OR LOGIN = '9618'
+		OR(mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501)
+	) """
+    else:
+        Live2_book_query = book_condition
+
+
+
     sql_statement = """(SELECT 'live1' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
         SYMBOL, CMD,
         VOLUME*0.01 as LOTS, OPEN_PRICE,
@@ -1470,7 +1486,7 @@ def symbol_all_open_trades(symbol="", book="B"):
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live2' 
             AND LENGTH(mt4_trades.LOGIN)>4
-            {symbol_condition} {country_condition} {book_condition})
+            {symbol_condition} {country_condition} {Live2_book_query})
     UNION 
         (SELECT 'live3' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
         SYMBOL, CMD,
@@ -1516,10 +1532,11 @@ def symbol_all_open_trades(symbol="", book="B"):
             AND group_table.LIVE = 'live5' 
             AND LENGTH(mt4_trades.LOGIN)>4
             {symbol_condition} {country_condition} {book_condition})""".format(symbol_condition=symbol_condition, ServerTimeDiff_Query=6, \
-                                                                               book_condition=book_condition, country_condition=country_condition)
+                                                                               book_condition=book_condition, country_condition=country_condition,\
+                                                                               Live2_book_query=Live2_book_query)
 
 
-    sql_query = text(sql_statement.replace("\n", " "))
+    sql_query = text(sql_statement.replace("\n", " ").replace("\t", " "))
     raw_result = db.engine.execute(sql_query)   # Insert select..
     result_data = raw_result.fetchall()     # Return Result
     result_col = raw_result.keys()          # Column names
