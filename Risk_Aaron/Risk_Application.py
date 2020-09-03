@@ -16,6 +16,7 @@ def effectivehandlers(logger):
             break
     return handlers
 
+
 from flask.logging import default_handler
 
 # dictConfig({
