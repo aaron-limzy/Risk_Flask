@@ -975,9 +975,6 @@ def Error_ajax():
 
 
 
-
-
-
 @analysis.route('/BGI_Symbol_Float', methods=['GET', 'POST'])
 @roles_required()
 def BGI_Symbol_Float():
@@ -1221,6 +1218,7 @@ def symbol_float_trades(symbol="", book="b"):
                                         "Bottom Floating Groups (Client Side)": "Hs2",
                                         "Top Floating Accounts (Client Side)": "H1",
                                         "Bottom Floating Accounts (Client Side)": "H2",
+                                        "Largest Floating Accounts (Client Side)": "H5",
                                         "Total Floating (BGI Side)": "V1",
                                         "Line": "Hr1",
                                         "Top Realised Accounts Today (Client Side)": "H3",
@@ -1258,11 +1256,12 @@ def symbol_float_trades_ajax(symbol="", book="b"):
     col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS', 'CONVERTED_REVENUE']
 
     if len(df_open_trades) <= 0:    # If there are no closed trades for the day.
-        top_groups = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
-        bottom_groups = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
-        top_accounts = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
-        bottom_accounts =pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
-        total_sum = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
+        top_groups = pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
+        bottom_groups = pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
+        top_accounts = pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
+        bottom_accounts =pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
+        total_sum = pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
+        largest_login = pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
 
     else:
         # Use for calculating net volume.
@@ -1291,17 +1290,23 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                                     Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
 
 
-
         # Want Top and winning accounts. If there are none. we will reflect accordingly.
         top_accounts = live_login_sum[live_login_sum['CONVERTED_REVENUE'] >= 0 ].sort_values('CONVERTED_REVENUE', ascending=False)[col2].head(20)
         top_accounts = pd.DataFrame([{"Comment": "There are currently no client with floating profit for {}".format(symbol)}]) \
                         if len(top_accounts) <= 0 else top_accounts
+
+        # Color the CONVERTED_REVENUE
+        top_accounts["CONVERTED_REVENUE"] = top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+
 
         # Want bottom and Loosing accounts. If there are none, we will reflect it accordingly.
         bottom_accounts = live_login_sum[live_login_sum['CONVERTED_REVENUE'] < 0 ].sort_values('CONVERTED_REVENUE', ascending=True)[col2].head(20)
         bottom_accounts = pd.DataFrame(
             [{"Comment": "There are currently no client with floating losses for {}".format(symbol)}]) \
             if len(bottom_accounts) <= 0 else bottom_accounts
+
+        # Color the CONVERTED_REVENUE
+        bottom_accounts["CONVERTED_REVENUE"] = bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
 
         # Get the live, login and group, since sum would remove those.
@@ -1314,21 +1319,37 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         group_sum['LOTS'] = round(group_sum['LOTS'], 2)
         group_sum['NET_LOTS'] = round(group_sum['NET_LOTS'], 2)
 
+
         # Only want those that are profitable
         top_groups = group_sum[group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE',
                                                                               ascending=False)[col3].head(20)
         top_groups = pd.DataFrame([{"Comment": "There are currently no groups with floating profit for {}".format(symbol)}]) if \
             len(top_groups) <= 0 else top_groups
+        # Color the CONVERTED_REVENUE
+        top_groups["CONVERTED_REVENUE"] = top_groups["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+
+
         # Only want those that are making a loss
         bottom_groups = group_sum[group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', ascending=True)[col3].head(20)
         bottom_groups = pd.DataFrame(
             [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
             len(bottom_groups) <= 0 else bottom_groups
+        # Color the CONVERTED_REVENUE
+        bottom_groups["CONVERTED_REVENUE"] = bottom_groups["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
         # Total sum Floating
         total_sum = df_open_trades[['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]].sum()
         total_sum =  total_sum.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
         total_sum["LOTS"] = abs(total_sum["LOTS"])  # Since it's Total lots, we only want the abs value
+
+        # Largest (lots) Floating Account.
+        largest_login = live_login_sum.sort_values('LOTS', ascending=False)[col2].head(20)
+        largest_login = pd.DataFrame(
+            [{"Comment": "There are currently no login with open trades for {}".format(symbol)}]) if \
+            len(largest_login) <= 0 else largest_login
+        # Color the CONVERTED_REVENUE
+        largest_login["CONVERTED_REVENUE"] = largest_login["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+
 
 
     # Closed trades for today!
@@ -1336,11 +1357,11 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 
     # There are no closed trades for the day yet
     if len(df_closed_trades) <=0:
-        closed_top_accounts = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
-        closed_bottom_accounts =  pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
-        total_sum_closed = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
-        top_closed_groups = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
-        bottom_closed_groups = pd.DataFrame([{"Error": "There are no closed trades for the day for {} yet".format(symbol)}])
+        closed_top_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        closed_bottom_accounts =  pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        total_sum_closed = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        top_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        bottom_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
     else:
         # Use for calculating net volume.
         df_closed_trades["LOTS"] =  df_closed_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
@@ -1362,7 +1383,9 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                                                                 'CONVERTED_REVENUE', ascending=False)[col2].head(20)
         closed_bottom_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] < 0].sort_values(\
                                                                 'CONVERTED_REVENUE', ascending=True)[col2].head(20)
-
+        # Color the CONVERTED_REVENUE
+        closed_bottom_accounts["CONVERTED_REVENUE"] = closed_bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+        closed_top_accounts["CONVERTED_REVENUE"] = closed_top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
         # If there are either no winning Accounts, or no losing accounts.
         # No winning accounts with closed trades for today
@@ -1384,12 +1407,16 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         # Only want those that are profitable
         top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE', \
                                                                               ascending=False)[col3].head(20)
+        top_closed_groups["CONVERTED_REVENUE"] = top_closed_groups["CONVERTED_REVENUE"].apply(
+            lambda x: profit_red_green(x))
         top_closed_groups = pd.DataFrame([{"Comment": "There are currently no groups with closed profit for {}".format(symbol)}]) if \
             len(top_closed_groups) <= 0 else top_closed_groups
 
         # Only want those that are making a loss
         bottom_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', \
                                                                                                       ascending=True)[col3].head(20)
+        bottom_closed_groups["CONVERTED_REVENUE"] = bottom_closed_groups["CONVERTED_REVENUE"].apply(
+            lambda x: profit_red_green(x))
         bottom_closed_groups = pd.DataFrame(
             [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
             len(bottom_closed_groups) <= 0 else bottom_closed_groups
@@ -1406,6 +1433,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                        "Hs2": bottom_groups.to_dict("record"),
                        "H1": top_accounts.to_dict("record"),
                        "H2" : bottom_accounts.to_dict("record"),
+                       "H5" : largest_login.to_dict("record"),
                        "V1": [total_sum.to_dict()],
                        "H3": closed_top_accounts.to_dict("record"),
                        "H4": closed_bottom_accounts.to_dict("record"),
@@ -1413,9 +1441,6 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                        "Hs4" : bottom_closed_groups.to_dict("record"),
                        "V2": [total_sum_closed.to_dict()]
                        })
-
-
-
 
 
 # Get all open trades of a particular symbol.
@@ -1426,6 +1451,7 @@ def symbol_all_open_trades(symbol="", book="B"):
     symbol_condition = " AND SYMBOL Like '%{}%' ".format(symbol)
     country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
     book_condition = " AND group_table.BOOK = '{}'".format(book)
+
 
     if book.lower() == "a":
         # Additional SQL query if a book

@@ -221,3 +221,12 @@ def Symbol_Trades_url(symbol, book):
 
     url = url_for("analysis.symbol_float_trades", symbol=symbol, book=book, _external=True)
     return '<a href="{url}" target="_blank">{symbol}</a>'.format(url=url,  symbol=symbol)
+
+# color the text green if positive, red if positive.
+def profit_red_green(x):
+    color="black" # By default the color is black
+    if float(x) > 0:
+        color = "green"
+    elif float(x) < 0:
+        color = "red"
+    return "<span style='color:{color}'>{x:,.2f}</span>".format(color=color,x=float(x))

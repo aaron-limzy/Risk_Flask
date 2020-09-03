@@ -45,6 +45,6 @@ server = create_app()
 
 
 #server.run()
-server.app_context().push()
+# server.app_context().push()
 
 
