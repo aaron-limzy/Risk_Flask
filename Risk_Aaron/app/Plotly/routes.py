@@ -1220,6 +1220,7 @@ def symbol_float_trades(symbol="", book="b"):
                                         "Bottom Floating Accounts (Client Side)": "H2",
                                         "Largest Floating Accounts (Client Side)": "H5",
                                         "Total Floating (BGI Side)": "V1",
+                                        "Total Volume Snapshot" : "P1",
                                         "Line": "Hr1",
                                         "Top Realised Accounts Today (Client Side)": "H3",
                                         "Bottom Realised Accounts Today (Client Side)": "H4",
@@ -1427,6 +1428,42 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         total_sum_closed["LOTS"] = abs(total_sum_closed["LOTS"])  # Since it's Total lots, we only want the abs value
 
 
+    # Want to plot the Graph of open volume
+
+    # This is the table that is Cleated every hour
+    # We put in a failsaf of getting it 1 day only.
+
+    SQL_Query_Volume_Recent = """SELECT COUNTRY, NET_FLOATING_VOLUME, FLOATING_VOLUME, FLOATING_REVENUE, DATETIME 
+        FROM aaron.bgi_float_history_save 
+        WHERE SYMBOL like '%{symbol}%'
+        AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "{book}") 
+        AND DATETIME >= NOW() - INTERVAL 1 DAY
+        AND COUNTRY not like 'HK' """.format(symbol=symbol, book=book)
+
+    # [res, col] = Query_SQL(SQL_Query)
+
+    # Get past data for X days.
+    day_backwards = 10
+
+    SQL_Query_Volume_Days = """SELECT COUNTRY, NET_FLOATING_VOLUME, FLOATING_VOLUME, FLOATING_REVENUE, DATETIME 
+        FROM aaron.bgi_float_history_past 
+        WHERE SYMBOL like '%{symbol}%'
+        AND datetime >= NOW() - INTERVAL {day_backwards} DAY
+        AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "{book}") 
+        AND COUNTRY not like 'HK' """.format(day_backwards=day_backwards, symbol=symbol, book=book)
+
+    SQL_Volume_Query = " UNION ".join([SQL_Query_Volume_Recent, SQL_Query_Volume_Days])
+    #
+    sql_vol_statement = SQL_Volume_Query.replace("\n", "").replace("\t", "")
+    result = Query_SQL_db_engine(text(sql_vol_statement))
+    df_data_vol = pd.DataFrame(result)
+    vol_fig = plot_symbol_book_total(df_data_vol, "{sym} Total Volume Snapshot ({book} Book)".format(sym=symbol, book=book.upper()))
+    #vol_fig.show()
+    #print(df_data_vol)
+
+    # Want to get the open time of trades for the symbol
+    print(pd.DataFrame(symbol_open_trade_by_timing(symbol=symbol,book=book)))
+
     # Return the values as json.
     # Each item in the returned dict will become a table, or a plot
     return json.dumps({"Hs1": top_groups.to_dict("record"),
@@ -1435,12 +1472,13 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                        "H2" : bottom_accounts.to_dict("record"),
                        "H5" : largest_login.to_dict("record"),
                        "V1": [total_sum.to_dict()],
+                       "P1" : vol_fig,
                        "H3": closed_top_accounts.to_dict("record"),
                        "H4": closed_bottom_accounts.to_dict("record"),
                        "Hs3": top_closed_groups.to_dict("record"),
                        "Hs4" : bottom_closed_groups.to_dict("record"),
                        "V2": [total_sum_closed.to_dict()]
-                       })
+                       }, cls=plotly.utils.PlotlyJSONEncoder)
 
 
 # Get all open trades of a particular symbol.
@@ -1570,6 +1608,116 @@ def symbol_all_open_trades(symbol="", book="B"):
     return [dict(zip(result_col, r)) for r in result_data]
 
 
+# Want to get the open trades by timing.
+def symbol_open_trade_by_timing(symbol="", book=""):
+
+    # symbol="XAUUSD"
+    symbol_condition = " AND SYMBOL Like '%{}%' ".format(symbol)
+    country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
+    book_condition = " AND group_table.BOOK = '{}'".format(book)
+
+    if book.lower() == "a":
+        # Additional SQL query if a book
+        Live2_book_query = """ AND	(
+    		(mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live2.a_group))
+    		OR (LOGIN IN(SELECT LOGIN FROM live2.a_login))
+    		OR LOGIN = '9583'
+    		OR LOGIN = '9615'
+    		OR LOGIN = '9618'
+    		OR(mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501)
+    	) """
+    else:
+        Live2_book_query = book_condition
+
+
+    OPEN_TIME_LIMIT = "{} 23:00:00".format(datetime.date.today() - datetime.timedelta(days=3))
+
+
+
+    sql_statement = """ SELECT 	LIVE,
+        COUNTRY,
+        CMD,
+        SUM(LOTS) as 'LOTS',
+        OPEN_PRICE,
+        OPEN_TIME,
+        CLOSE_PRICE,
+        CLOSE_TIME,
+        SUM(SWAPS) as 'SWAPS',
+        SUM(PROFIT) as 'PROFIT',
+        `GROUP` 
+	FROM ((SELECT
+                'live1' AS LIVE, group_table.COUNTRY, CMD,
+                VOLUME * 0.01 AS LOTS, OPEN_PRICE,  OPEN_TIME, CLOSE_PRICE, CLOSE_TIME,
+                SWAPS, PROFIT, mt4_trades.`GROUP`
+            FROM
+                live1.mt4_trades, live5.group_table
+            WHERE
+                mt4_trades.`GROUP` = group_table.`GROUP`
+            AND mt4_trades.OPEN_TIME >= '{OPEN_TIME_LIMIT}'
+            AND LENGTH(mt4_trades.SYMBOL)> 0
+            AND mt4_trades.CMD < 2
+            AND group_table.LIVE = 'live1'
+            AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition} {book_condition}
+        )
+            UNION 
+        (
+            SELECT
+                'live2' AS LIVE, group_table.COUNTRY, CMD,
+                VOLUME * 0.01 AS LOTS, OPEN_PRICE, OPEN_TIME, CLOSE_PRICE, CLOSE_TIME,
+                SWAPS, PROFIT, mt4_trades.`GROUP`
+        
+            FROM
+                live2.mt4_trades, live5.group_table
+            WHERE
+                mt4_trades.`GROUP` = group_table.`GROUP`
+            AND mt4_trades.OPEN_TIME >= '{OPEN_TIME_LIMIT}'
+            AND LENGTH(mt4_trades.SYMBOL)> 0
+            AND mt4_trades.CMD < 2
+            AND group_table.LIVE = 'live2'
+            AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition} {Live2_book_query}
+        )
+            UNION 
+        (
+            SELECT
+                'live3' AS LIVE, group_table.COUNTRY, CMD, VOLUME * 0.01 AS LOTS,
+                OPEN_PRICE, OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+            FROM
+                live3.mt4_trades, live5.group_table
+            WHERE
+                mt4_trades.`GROUP` = group_table.`GROUP`
+            AND mt4_trades.OPEN_TIME >= '{OPEN_TIME_LIMIT}'
+            AND LENGTH(mt4_trades.SYMBOL)> 0
+            AND mt4_trades.CMD < 2
+            AND group_table.LIVE = 'live3'
+            AND LENGTH(mt4_trades.LOGIN)> 4
+            AND mt4_trades.LOGIN NOT IN(SELECT LOGIN FROM live3.cambodia_exclude){symbol_condition} {country_condition} {book_condition}
+        )
+            UNION
+        (
+            SELECT
+                'live5' AS LIVE, group_table.COUNTRY, CMD, VOLUME * 0.01 AS LOTS, OPEN_PRICE,
+                OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+            FROM
+                live5.mt4_trades,
+                live5.group_table
+            WHERE
+                mt4_trades.`GROUP` = group_table.`GROUP`
+            AND mt4_trades.OPEN_TIME >= '{OPEN_TIME_LIMIT}'
+            AND LENGTH(mt4_trades.SYMBOL)> 0
+            AND mt4_trades.CMD < 2
+            AND group_table.LIVE = 'live5'
+            AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition} {book_condition}
+        ))AS A
+        GROUP BY COUNTRY, LEFT(OPEN_TIME, 16), `GROUP`""".format(OPEN_TIME_LIMIT=OPEN_TIME_LIMIT, symbol_condition=symbol_condition,
+                    country_condition=country_condition, book_condition=book_condition,
+                    Live2_book_query=Live2_book_query)
+
+    sql_statement.replace("\n", "").replace("\t", " ")
+    sql_query = text(sql_statement.replace("\n", " ").replace("\t", " "))
+    raw_result = db.engine.execute(sql_query)   # Insert select..
+    result_data = raw_result.fetchall()     # Return Result
+    result_col = raw_result.keys()          # Column names
+    return [dict(zip(result_col, r)) for r in result_data]
 
 @analysis.route('/analysis/cn_live_vol_ajax')
 @roles_required()
@@ -1668,6 +1816,42 @@ def plot_open_position_net(df, chart_title):
     # graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #
     # return graphJSON
+    return fig
+
+
+# Want to plot how the position looks for the past few hours/days
+# Snap shot graph.
+def plot_symbol_book_total(df, chart_title):
+
+    # Sort by datetime, to be able to plot it.
+    df.sort_values(by=['DATETIME'], inplace=True)
+    df_t2 = df.groupby(["COUNTRY", "DATETIME"]).sum().reset_index()
+    fig = px.line(df_t2, x='DATETIME', y='FLOATING_VOLUME', color='COUNTRY')
+
+    # Chart layout
+    fig.update_layout(
+        autosize=False,
+        width=700,
+        height=500,
+        margin=dict(pad=10),
+        yaxis=dict(
+            title_text="FLOATING VOLUME",
+            titlefont=dict(size=20),
+            ticks="outside", tickcolor='white', ticklen=15,
+            layer='below traces'
+        ),
+        yaxis_tickfont_size=14,
+        xaxis=dict(
+            title_text="DATETIME (Server)",
+            titlefont=dict(size=20),layer='below traces'
+        ),
+        xaxis_tickfont_size=15,
+        title_text=chart_title,
+        titlefont=dict(size=20),
+        title_x=0.5
+    )
+
+    #fig.show()
     return fig
 
 
