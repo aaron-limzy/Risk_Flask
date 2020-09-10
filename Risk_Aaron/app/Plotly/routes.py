@@ -1219,8 +1219,9 @@ def symbol_float_trades(symbol="", book="b"):
                                         "Top Floating Accounts (Client Side)": "H1",
                                         "Bottom Floating Accounts (Client Side)": "H2",
                                         "Largest Floating Accounts (Client Side)": "H5",
-                                        "Total Floating (BGI Side)": "V1",
                                         "Total Volume Snapshot" : "P1",
+                                        "Open Time vs Lots": "P2",
+                                        "Total Floating (BGI Side)": "V1",
                                         "Line": "Hr1",
                                         "Top Realised Accounts Today (Client Side)": "H3",
                                         "Bottom Realised Accounts Today (Client Side)": "H4",
@@ -1235,7 +1236,6 @@ def symbol_float_trades(symbol="", book="b"):
                            header=header, symbol=symbol,
                            description=description, no_backgroud_Cover=True,
                            replace_words=Markup(["Today"]))
-
 
 # The Ajax call for the symbols we want to query. B Book.
 @analysis.route('/Open_Symbol/<book>/symbol_float_trades_ajax/<symbol>', methods=['GET', 'POST'])
@@ -1293,21 +1293,23 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 
         # Want Top and winning accounts. If there are none. we will reflect accordingly.
         top_accounts = live_login_sum[live_login_sum['CONVERTED_REVENUE'] >= 0 ].sort_values('CONVERTED_REVENUE', ascending=False)[col2].head(20)
+        # Color the CONVERTED_REVENUE
+        top_accounts["CONVERTED_REVENUE"] = top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+
         top_accounts = pd.DataFrame([{"Comment": "There are currently no client with floating profit for {}".format(symbol)}]) \
                         if len(top_accounts) <= 0 else top_accounts
 
-        # Color the CONVERTED_REVENUE
-        top_accounts["CONVERTED_REVENUE"] = top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
 
         # Want bottom and Loosing accounts. If there are none, we will reflect it accordingly.
         bottom_accounts = live_login_sum[live_login_sum['CONVERTED_REVENUE'] < 0 ].sort_values('CONVERTED_REVENUE', ascending=True)[col2].head(20)
+        # Color the CONVERTED_REVENUE
+        bottom_accounts["CONVERTED_REVENUE"] = bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+
         bottom_accounts = pd.DataFrame(
             [{"Comment": "There are currently no client with floating losses for {}".format(symbol)}]) \
             if len(bottom_accounts) <= 0 else bottom_accounts
 
-        # Color the CONVERTED_REVENUE
-        bottom_accounts["CONVERTED_REVENUE"] = bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
 
         # Get the live, login and group, since sum would remove those.
@@ -1324,10 +1326,11 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         # Only want those that are profitable
         top_groups = group_sum[group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE',
                                                                               ascending=False)[col3].head(20)
-        top_groups = pd.DataFrame([{"Comment": "There are currently no groups with floating profit for {}".format(symbol)}]) if \
-            len(top_groups) <= 0 else top_groups
         # Color the CONVERTED_REVENUE
         top_groups["CONVERTED_REVENUE"] = top_groups["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+
+        top_groups = pd.DataFrame([{"Comment": "There are currently no groups with floating profit for {}".format(symbol)}]) if \
+            len(top_groups) <= 0 else top_groups
 
 
         # Only want those that are making a loss
@@ -1345,11 +1348,12 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 
         # Largest (lots) Floating Account.
         largest_login = live_login_sum.sort_values('LOTS', ascending=False)[col2].head(20)
+        # Color the CONVERTED_REVENUE
+        largest_login["CONVERTED_REVENUE"] = largest_login["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+
         largest_login = pd.DataFrame(
             [{"Comment": "There are currently no login with open trades for {}".format(symbol)}]) if \
             len(largest_login) <= 0 else largest_login
-        # Color the CONVERTED_REVENUE
-        largest_login["CONVERTED_REVENUE"] = largest_login["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
 
 
@@ -1428,7 +1432,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         total_sum_closed["LOTS"] = abs(total_sum_closed["LOTS"])  # Since it's Total lots, we only want the abs value
 
 
-    # Want to plot the Graph of open volume
+    # Want to plot the SNOPSHOT Graph of open volume
 
     # This is the table that is Cleated every hour
     # We put in a failsaf of getting it 1 day only.
@@ -1443,12 +1447,14 @@ def symbol_float_trades_ajax(symbol="", book="b"):
     # [res, col] = Query_SQL(SQL_Query)
 
     # Get past data for X days.
-    day_backwards = 10
+    day_backwards_count = 5
+    day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * day_backwards_count))
+
 
     SQL_Query_Volume_Days = """SELECT COUNTRY, NET_FLOATING_VOLUME, FLOATING_VOLUME, FLOATING_REVENUE, DATETIME 
         FROM aaron.bgi_float_history_past 
         WHERE SYMBOL like '%{symbol}%'
-        AND datetime >= NOW() - INTERVAL {day_backwards} DAY
+        AND datetime >= '{day_backwards}'
         AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "{book}") 
         AND COUNTRY not like 'HK' """.format(day_backwards=day_backwards, symbol=symbol, book=book)
 
@@ -1461,8 +1467,13 @@ def symbol_float_trades_ajax(symbol="", book="b"):
     #vol_fig.show()
     #print(df_data_vol)
 
-    # Want to get the open time of trades for the symbol
-    print(pd.DataFrame(symbol_open_trade_by_timing(symbol=symbol,book=book)))
+    # Want to get data for OPEN TIME on all trades in the symbol
+    # Want to show 2 days back if the hour is less than 10am (SGT), else, shows 1 day only.
+    opentime_day_backwards_count = 2 if datetime.datetime.now().hour < 12 else 1    # Not too many days, else it will be too small.
+    opentime_day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * opentime_day_backwards_count))
+    df_opentiming = pd.DataFrame(symbol_opentime_trades(symbol=symbol, book=book, start_date=opentime_day_backwards))
+    opentime_fig = plot_symbol_opentime(df_opentiming, "{symbol} OpenTime ({book} Book)".format(symbol=symbol, book=book.upper()))
+    #opentime_fig.show()
 
     # Return the values as json.
     # Each item in the returned dict will become a table, or a plot
@@ -1471,8 +1482,9 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                        "H1": top_accounts.to_dict("record"),
                        "H2" : bottom_accounts.to_dict("record"),
                        "H5" : largest_login.to_dict("record"),
-                       "V1": [total_sum.to_dict()],
                        "P1" : vol_fig,
+                       "P2": opentime_fig,
+                       "V1": [total_sum.to_dict()],
                        "H3": closed_top_accounts.to_dict("record"),
                        "H4": closed_bottom_accounts.to_dict("record"),
                        "Hs3": top_closed_groups.to_dict("record"),
@@ -1608,44 +1620,42 @@ def symbol_all_open_trades(symbol="", book="B"):
     return [dict(zip(result_col, r)) for r in result_data]
 
 
-# Want to get the open trades by timing.
-def symbol_open_trade_by_timing(symbol="", book=""):
+# Get trades by open tim and SYMBOLs
+# Want to later use to plot volume vs open_time
+# Can choose A Book or B Book.
+def symbol_opentime_trades(symbol="", book="B", start_date=""):
 
-    # symbol="XAUUSD"
+    #symbol="XAUUSD"
     symbol_condition = " AND SYMBOL Like '%{}%' ".format(symbol)
     country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
     book_condition = " AND group_table.BOOK = '{}'".format(book)
 
+    # Live 1,2,3
+    OPEN_TIME_LIMIT = "{} 22:00:00".format(start_date)
+
+    # Live 5
+    # Also did  DATE_SUB(OPEN_TIME, INTERVAL 1 HOUR)  For the open time.
+    OPEN_TIME_LIMIT_L5 = "{} 23:00:00".format(start_date)
+
     if book.lower() == "a":
         # Additional SQL query if a book
         Live2_book_query = """ AND	(
-    		(mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live2.a_group))
-    		OR (LOGIN IN(SELECT LOGIN FROM live2.a_login))
-    		OR LOGIN = '9583'
-    		OR LOGIN = '9615'
-    		OR LOGIN = '9618'
-    		OR(mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501)
-    	) """
+		(mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live2.a_group))
+		OR (LOGIN IN(SELECT LOGIN FROM live2.a_login))
+		OR LOGIN = '9583'
+		OR LOGIN = '9615'
+		OR LOGIN = '9618'
+		OR(mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501)
+	) """
     else:
         Live2_book_query = book_condition
 
-
-    OPEN_TIME_LIMIT = "{} 23:00:00".format(datetime.date.today() - datetime.timedelta(days=3))
-
-
-
     sql_statement = """ SELECT 	LIVE,
-        COUNTRY,
-        CMD,
-        SUM(LOTS) as 'LOTS',
-        OPEN_PRICE,
-        OPEN_TIME,
-        CLOSE_PRICE,
-        CLOSE_TIME,
-        SUM(SWAPS) as 'SWAPS',
-        SUM(PROFIT) as 'PROFIT',
-        `GROUP` 
-	FROM ((SELECT
+        COUNTRY, CMD, SUM(LOTS) as 'LOTS',
+        OPEN_PRICE, OPEN_TIME, CLOSE_PRICE,
+        CLOSE_TIME, SUM(SWAPS) as 'SWAPS',
+        SUM(PROFIT) as 'PROFIT', `GROUP` 
+        FROM ((SELECT
                 'live1' AS LIVE, group_table.COUNTRY, CMD,
                 VOLUME * 0.01 AS LOTS, OPEN_PRICE,  OPEN_TIME, CLOSE_PRICE, CLOSE_TIME,
                 SWAPS, PROFIT, mt4_trades.`GROUP`
@@ -1665,7 +1675,7 @@ def symbol_open_trade_by_timing(symbol="", book=""):
                 'live2' AS LIVE, group_table.COUNTRY, CMD,
                 VOLUME * 0.01 AS LOTS, OPEN_PRICE, OPEN_TIME, CLOSE_PRICE, CLOSE_TIME,
                 SWAPS, PROFIT, mt4_trades.`GROUP`
-        
+
             FROM
                 live2.mt4_trades, live5.group_table
             WHERE
@@ -1696,28 +1706,142 @@ def symbol_open_trade_by_timing(symbol="", book=""):
         (
             SELECT
                 'live5' AS LIVE, group_table.COUNTRY, CMD, VOLUME * 0.01 AS LOTS, OPEN_PRICE,
-                OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+                DATE_SUB(OPEN_TIME, INTERVAL 1 HOUR) , CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
             FROM
                 live5.mt4_trades,
                 live5.group_table
             WHERE
                 mt4_trades.`GROUP` = group_table.`GROUP`
-            AND mt4_trades.OPEN_TIME >= '{OPEN_TIME_LIMIT}'
+            AND mt4_trades.OPEN_TIME >= '{OPEN_TIME_LIMIT_L5}'
             AND LENGTH(mt4_trades.SYMBOL)> 0
             AND mt4_trades.CMD < 2
             AND group_table.LIVE = 'live5'
             AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition} {book_condition}
         ))AS A
-        GROUP BY COUNTRY, LEFT(OPEN_TIME, 16), `GROUP`""".format(OPEN_TIME_LIMIT=OPEN_TIME_LIMIT, symbol_condition=symbol_condition,
-                    country_condition=country_condition, book_condition=book_condition,
-                    Live2_book_query=Live2_book_query)
+        GROUP BY COUNTRY, LEFT(OPEN_TIME, 16), `GROUP`""".format(OPEN_TIME_LIMIT=OPEN_TIME_LIMIT,
+                                                                 OPEN_TIME_LIMIT_L5=OPEN_TIME_LIMIT_L5,
+                                                                 symbol_condition=symbol_condition,
+                                                                 country_condition=country_condition,
+                                                                 book_condition=book_condition,
+                                                                 Live2_book_query=Live2_book_query)
 
-    sql_statement.replace("\n", "").replace("\t", " ")
     sql_query = text(sql_statement.replace("\n", " ").replace("\t", " "))
     raw_result = db.engine.execute(sql_query)   # Insert select..
     result_data = raw_result.fetchall()     # Return Result
     result_col = raw_result.keys()          # Column names
+
     return [dict(zip(result_col, r)) for r in result_data]
+#
+# # Want to get the open trades by timing.
+# def symbol_open_trade_by_timing(symbol="", book=""):
+#
+#     # symbol="XAUUSD"
+#     symbol_condition = " AND SYMBOL Like '%{}%' ".format(symbol)
+#     country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
+#     book_condition = " AND group_table.BOOK = '{}'".format(book)
+#
+#     if book.lower() == "a":
+#         # Additional SQL query if a book
+#         Live2_book_query = """ AND	(
+#     		(mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live2.a_group))
+#     		OR (LOGIN IN(SELECT LOGIN FROM live2.a_login))
+#     		OR LOGIN = '9583'
+#     		OR LOGIN = '9615'
+#     		OR LOGIN = '9618'
+#     		OR(mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501)
+#     	) """
+#     else:
+#         Live2_book_query = book_condition
+#
+#
+#     OPEN_TIME_LIMIT = "{} 23:00:00".format(datetime.date.today() - datetime.timedelta(days=3))
+#
+#
+#
+#     sql_statement = """ SELECT 	LIVE,
+#         COUNTRY,
+#         CMD,
+#         SUM(LOTS) as 'LOTS',
+#         OPEN_PRICE,
+#         OPEN_TIME,
+#         CLOSE_PRICE,
+#         CLOSE_TIME,
+#         SUM(SWAPS) as 'SWAPS',
+#         SUM(PROFIT) as 'PROFIT',
+#         `GROUP`
+# 	FROM ((SELECT
+#                 'live1' AS LIVE, group_table.COUNTRY, CMD,
+#                 VOLUME * 0.01 AS LOTS, OPEN_PRICE,  OPEN_TIME, CLOSE_PRICE, CLOSE_TIME,
+#                 SWAPS, PROFIT, mt4_trades.`GROUP`
+#             FROM
+#                 live1.mt4_trades, live5.group_table
+#             WHERE
+#                 mt4_trades.`GROUP` = group_table.`GROUP`
+#             AND mt4_trades.OPEN_TIME >= '{OPEN_TIME_LIMIT}'
+#             AND LENGTH(mt4_trades.SYMBOL)> 0
+#             AND mt4_trades.CMD < 2
+#             AND group_table.LIVE = 'live1'
+#             AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition} {book_condition}
+#         )
+#             UNION
+#         (
+#             SELECT
+#                 'live2' AS LIVE, group_table.COUNTRY, CMD,
+#                 VOLUME * 0.01 AS LOTS, OPEN_PRICE, OPEN_TIME, CLOSE_PRICE, CLOSE_TIME,
+#                 SWAPS, PROFIT, mt4_trades.`GROUP`
+#
+#             FROM
+#                 live2.mt4_trades, live5.group_table
+#             WHERE
+#                 mt4_trades.`GROUP` = group_table.`GROUP`
+#             AND mt4_trades.OPEN_TIME >= '{OPEN_TIME_LIMIT}'
+#             AND LENGTH(mt4_trades.SYMBOL)> 0
+#             AND mt4_trades.CMD < 2
+#             AND group_table.LIVE = 'live2'
+#             AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition} {Live2_book_query}
+#         )
+#             UNION
+#         (
+#             SELECT
+#                 'live3' AS LIVE, group_table.COUNTRY, CMD, VOLUME * 0.01 AS LOTS,
+#                 OPEN_PRICE, OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+#             FROM
+#                 live3.mt4_trades, live5.group_table
+#             WHERE
+#                 mt4_trades.`GROUP` = group_table.`GROUP`
+#             AND mt4_trades.OPEN_TIME >= '{OPEN_TIME_LIMIT}'
+#             AND LENGTH(mt4_trades.SYMBOL)> 0
+#             AND mt4_trades.CMD < 2
+#             AND group_table.LIVE = 'live3'
+#             AND LENGTH(mt4_trades.LOGIN)> 4
+#             AND mt4_trades.LOGIN NOT IN(SELECT LOGIN FROM live3.cambodia_exclude){symbol_condition} {country_condition} {book_condition}
+#         )
+#             UNION
+#         (
+#             SELECT
+#                 'live5' AS LIVE, group_table.COUNTRY, CMD, VOLUME * 0.01 AS LOTS, OPEN_PRICE,
+#                 OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+#             FROM
+#                 live5.mt4_trades,
+#                 live5.group_table
+#             WHERE
+#                 mt4_trades.`GROUP` = group_table.`GROUP`
+#             AND mt4_trades.OPEN_TIME >= '{OPEN_TIME_LIMIT}'
+#             AND LENGTH(mt4_trades.SYMBOL)> 0
+#             AND mt4_trades.CMD < 2
+#             AND group_table.LIVE = 'live5'
+#             AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition} {book_condition}
+#         ))AS A
+#         GROUP BY COUNTRY, LEFT(OPEN_TIME, 16), `GROUP`""".format(OPEN_TIME_LIMIT=OPEN_TIME_LIMIT, symbol_condition=symbol_condition,
+#                     country_condition=country_condition, book_condition=book_condition,
+#                     Live2_book_query=Live2_book_query)
+#
+#     sql_statement.replace("\n", "").replace("\t", " ")
+#     sql_query = text(sql_statement.replace("\n", " ").replace("\t", " "))
+#     raw_result = db.engine.execute(sql_query)   # Insert select..
+#     result_data = raw_result.fetchall()     # Return Result
+#     result_col = raw_result.keys()          # Column names
+#     return [dict(zip(result_col, r)) for r in result_data]
 
 @analysis.route('/analysis/cn_live_vol_ajax')
 @roles_required()
@@ -1810,6 +1934,44 @@ def plot_open_position_net(df, chart_title):
         ),
         xaxis_tickfont_size=15,
         title_text='{} (Client Side)'.format(chart_title),
+        titlefont=dict(size=20),
+        title_x=0.5
+    )
+    # graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    #
+    # return graphJSON
+    return fig
+
+
+
+def plot_symbol_opentime(df, chart_title):
+
+    # Lots was saved as decimal. Need to convert to float
+    df["LOTS"] = df["LOTS"].apply(float)
+
+    fd_1min = df.groupby(["COUNTRY"]).resample('5T', on='OPEN_TIME').sum().reset_index()
+    fig = px.bar(fd_1min, x='OPEN_TIME', y='LOTS', color="COUNTRY")
+    #fig.show()
+
+    # Change the bar layout
+    fig.update_layout(
+        autosize=True,
+        width=750,
+        height=500,
+        margin=dict( pad=10),
+        yaxis=dict(
+            title_text="Total Lots",
+            titlefont=dict(size=20),
+            ticks="outside", tickcolor='white', ticklen=15,
+            layer='below traces'
+        ),
+        yaxis_tickfont_size=14,
+        xaxis=dict(
+            title_text="Open Time (Live 1 Time)",
+            titlefont=dict(size=20),layer='below traces'
+        ),
+        xaxis_tickfont_size=15,
+        title_text=chart_title,
         titlefont=dict(size=20),
         title_x=0.5
     )
