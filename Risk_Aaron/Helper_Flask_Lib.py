@@ -176,9 +176,11 @@ def Sum_total_account_details(Live, Login):
     account_details_list = Query_SQL_db_engine(sql_statement)
     account_details=account_details_list[0] # since we only expect 1 reply from SQL
 
-    account_details["% PROFIT"] = 100 * round(account_details["CLIENT PROFIT"] / account_details["DEPOSIT"],2)        # The % of profit from total deposit
-    account_details["PER LOT AVERAGE"] = round(account_details["CLIENT PROFIT"] / account_details["LOTS"],2)    # The Profit per lot.
-    account_details["% WINNING TRADES"] = 100 * round(account_details["NUM PROFIT TRADES"] / (account_details["NUM LOSING TRADES"] + account_details["NUM PROFIT TRADES"]),2)
+    account_details["% PROFIT"] = "No Deposit" if account_details["DEPOSIT"] == 0 else 100 * round(account_details["CLIENT PROFIT"] / account_details["DEPOSIT"],2)        # The % of profit from total deposit
+    account_details["PER LOT AVERAGE"] = "No Lots" if account_details["LOTS"] == 0 else  \
+            round(account_details["CLIENT PROFIT"] / account_details["LOTS"],2)    # The Profit per lot.
+    account_details["% WINNING TRADES"] = "No Trades Found" if  (account_details["NUM LOSING TRADES"] + account_details["NUM PROFIT TRADES"]) == 0 else \
+        100 * round(account_details["NUM PROFIT TRADES"] / (account_details["NUM LOSING TRADES"] + account_details["NUM PROFIT TRADES"]),2)
 
 
     return [account_details]
