@@ -1469,25 +1469,27 @@ def symbol_float_trades_ajax(symbol="", book="b"):
     query_start_time = datetime.datetime.now()
     df_opentiming = pd.DataFrame(symbol_opentime_trades_unsync.result())
 
-    print("symbol_opentime_trades() Took: {sec}s".format(sec=(datetime.datetime.now() - query_start_time).total_seconds()))
+    if len(df_opentiming) :
+        opentime_fig = plot_symbol_opentime(df_opentiming, "{symbol} OpenTime ({book} Book)".format(symbol=symbol, book=book.upper()))
+        #opentime_fig.show()
+    else:
+        opentime_fig={}
 
 
-    opentime_fig = plot_symbol_opentime(df_opentiming, "{symbol} OpenTime ({book} Book)".format(symbol=symbol, book=book.upper()))
-    #opentime_fig.show()
-
-
-    print("Symbol {sym} ({book} Book) took: {sec}s".format(sym=symbol, book=book,
-                                                sec=(datetime.datetime.now() - start_time).total_seconds()))
 
     # The historical data of the symbol by Country/date
     history_daily_data = pd.DataFrame(Symbol_history_Daily_unsync.result())
-    history_daily_vol_fig = plot_symbol_history(df=history_daily_data,
-                                                by="Volume",
-                               chart_title="History Daily Volume ({symbol})".format(symbol=symbol))
+    if len(history_daily_data) > 0:
+        history_daily_vol_fig = plot_symbol_history(df=history_daily_data,
+                                                    by="Volume",
+                                   chart_title="History Daily Volume ({symbol})".format(symbol=symbol))
 
-    history_daily_rev_fig = plot_symbol_history(df=history_daily_data,
-                                                by="Revenue",
-                                                chart_title="History Daily Volume ({symbol})".format(symbol=symbol))
+        history_daily_rev_fig = plot_symbol_history(df=history_daily_data,
+                                                    by="Revenue",
+                                                    chart_title="History Daily Volume ({symbol})".format(symbol=symbol))
+    else:   # If there are no data. We return an empty chart
+        history_daily_vol_fig = {}
+        history_daily_rev_fig = {}
 
 
 
