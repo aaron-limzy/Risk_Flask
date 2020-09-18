@@ -47,7 +47,7 @@ class User(UserMixin):
 
 @login.user_loader
 def load_user(username):
-    #print("Load User {}".format(username))
+    print("Load User {}".format(username))
     sql_return_obj = db.engine.execute("select * from aaron.flask_login where username='{}'".format(username))
     sql_return_keys = sql_return_obj.keys()
     sql_return_val = sql_return_obj.fetchall()
@@ -61,7 +61,6 @@ def load_user(username):
                     password_hash=user_info["password_hash"],
                     admin_rights=user_info["admin_rights"],
                     role=user_info["role"])
-
 
 
 class flask_users(db.Model, UserMixin):

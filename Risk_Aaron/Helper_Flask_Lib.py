@@ -9,6 +9,7 @@ from flask import url_for
 import decimal
 from Aaron_Lib import *
 import pandas as pd
+from unsync import unsync
 
 
 if get_machine_ip_address() == '192.168.64.73': #Only On Server computer
@@ -93,6 +94,170 @@ def async_Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode=""):
         Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs)
     else:
         Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode = Parse_mode)
+
+@unsync
+def Get_Vol_snapshot(app, symbol="", book="", day_backwards_count=5):
+
+    # Want to plot the SNOPSHOT Graph of open volume
+    # This is the table that is Cleated every hour
+    # We put in a failsaf of getting it 1 day only.
+
+    SQL_Query_Volume_Recent = """SELECT COUNTRY, NET_FLOATING_VOLUME, FLOATING_VOLUME, FLOATING_REVENUE, DATETIME 
+        FROM aaron.bgi_float_history_save 
+        WHERE SYMBOL like '%{symbol}%'
+        AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "{book}") 
+        AND DATETIME >= NOW() - INTERVAL 1 DAY
+        AND COUNTRY not like 'HK' """.format(symbol=symbol, book=book)
+
+    # [res, col] = Query_SQL(SQL_Query)
+
+    day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * day_backwards_count))
+
+
+    SQL_Query_Volume_Days = """SELECT COUNTRY, NET_FLOATING_VOLUME, FLOATING_VOLUME, FLOATING_REVENUE, DATETIME 
+        FROM aaron.bgi_float_history_past 
+        WHERE SYMBOL like '%{symbol}%'
+        AND datetime >= '{day_backwards}'
+        AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "{book}") 
+        AND COUNTRY not like 'HK' """.format(day_backwards=day_backwards, symbol=symbol, book=book)
+
+    SQL_Volume_Query = " UNION ".join([SQL_Query_Volume_Recent, SQL_Query_Volume_Days])
+    #
+    SQL_Volume_Query = SQL_Volume_Query.replace("\n", " ").replace("\t", " ")
+
+    # Use the unsync version to query SQL
+    results = unsync_query_SQL_return_record(SQL_Volume_Query, app)
+    df_data_vol = pd.DataFrame(results)
+
+    return df_data_vol
+
+# Get trades by open tim and SYMBOLs
+# Want to later use to plot volume vs open_time
+# Can choose A Book or B Book.
+@unsync
+def symbol_opentime_trades(app, symbol="", book="B", start_date=""):
+
+    #symbol="XAUUSD"
+    symbol_condition = " AND SYMBOL Like '%{}%' ".format(symbol)
+    country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
+    book_condition = " AND group_table.BOOK = '{}'".format(book)
+
+    # Live 1,2,3
+    OPEN_TIME_LIMIT = "{} 22:00:00".format(start_date)
+
+    # Live 5
+    # Also did  DATE_SUB(OPEN_TIME, INTERVAL 1 HOUR)  For the open time.
+    OPEN_TIME_LIMIT_L5 = "{} 23:00:00".format(start_date)
+
+    if book.lower() == "a":
+        # Additional SQL query if a book
+        Live2_book_query = """ AND	(
+		(mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live2.a_group))
+		OR (LOGIN IN(SELECT LOGIN FROM live2.a_login))
+		OR LOGIN = '9583'
+		OR LOGIN = '9615'
+		OR LOGIN = '9618'
+		OR(mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501)
+	) """
+    else:
+        Live2_book_query = book_condition
+
+    sql_statement = """ SELECT 	LIVE,
+        COUNTRY, CMD, SUM(LOTS) as 'LOTS',
+        OPEN_PRICE, OPEN_TIME, CLOSE_PRICE,
+        CLOSE_TIME, SUM(SWAPS) as 'SWAPS',
+        SUM(PROFIT) as 'PROFIT', `GROUP` 
+        FROM ((SELECT
+                'live1' AS LIVE, group_table.COUNTRY, CMD,
+                VOLUME * 0.01 AS LOTS, OPEN_PRICE,  OPEN_TIME, CLOSE_PRICE, CLOSE_TIME,
+                SWAPS, PROFIT, mt4_trades.`GROUP`
+            FROM
+                live1.mt4_trades, live5.group_table
+            WHERE
+                mt4_trades.`GROUP` = group_table.`GROUP`
+            AND mt4_trades.OPEN_TIME >= '{OPEN_TIME_LIMIT}'
+            AND LENGTH(mt4_trades.SYMBOL)> 0
+            AND mt4_trades.CMD < 2
+            AND group_table.LIVE = 'live1'
+            AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition} {book_condition}
+        )
+            UNION 
+        (
+            SELECT
+                'live2' AS LIVE, group_table.COUNTRY, CMD,
+                VOLUME * 0.01 AS LOTS, OPEN_PRICE, OPEN_TIME, CLOSE_PRICE, CLOSE_TIME,
+                SWAPS, PROFIT, mt4_trades.`GROUP`
+
+            FROM
+                live2.mt4_trades, live5.group_table
+            WHERE
+                mt4_trades.`GROUP` = group_table.`GROUP`
+            AND mt4_trades.OPEN_TIME >= '{OPEN_TIME_LIMIT}'
+            AND LENGTH(mt4_trades.SYMBOL)> 0
+            AND mt4_trades.CMD < 2
+            AND group_table.LIVE = 'live2'
+            AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition} {Live2_book_query}
+        )
+            UNION 
+        (
+            SELECT
+                'live3' AS LIVE, group_table.COUNTRY, CMD, VOLUME * 0.01 AS LOTS,
+                OPEN_PRICE, OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+            FROM
+                live3.mt4_trades, live5.group_table
+            WHERE
+                mt4_trades.`GROUP` = group_table.`GROUP`
+            AND mt4_trades.OPEN_TIME >= '{OPEN_TIME_LIMIT}'
+            AND LENGTH(mt4_trades.SYMBOL)> 0
+            AND mt4_trades.CMD < 2
+            AND group_table.LIVE = 'live3'
+            AND LENGTH(mt4_trades.LOGIN)> 4
+            AND mt4_trades.LOGIN NOT IN(SELECT LOGIN FROM live3.cambodia_exclude){symbol_condition} {country_condition} {book_condition}
+        )
+            UNION
+        (
+            SELECT
+                'live5' AS LIVE, group_table.COUNTRY, CMD, VOLUME * 0.01 AS LOTS, OPEN_PRICE,
+                DATE_SUB(OPEN_TIME, INTERVAL 1 HOUR) , CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`
+            FROM
+                live5.mt4_trades,
+                live5.group_table
+            WHERE
+                mt4_trades.`GROUP` = group_table.`GROUP`
+            AND mt4_trades.OPEN_TIME >= '{OPEN_TIME_LIMIT_L5}'
+            AND LENGTH(mt4_trades.SYMBOL)> 0
+            AND mt4_trades.CMD < 2
+            AND group_table.LIVE = 'live5'
+            AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition} {book_condition}
+        ))AS A
+        GROUP BY COUNTRY, LEFT(OPEN_TIME, 16), `GROUP`""".format(OPEN_TIME_LIMIT=OPEN_TIME_LIMIT,
+                                                                 OPEN_TIME_LIMIT_L5=OPEN_TIME_LIMIT_L5,
+                                                                 symbol_condition=symbol_condition,
+                                                                 country_condition=country_condition,
+                                                                 book_condition=book_condition,
+                                                                 Live2_book_query=Live2_book_query)
+
+    sql_query = sql_statement.replace("\n", " ").replace("\t", " ")
+
+    return unsync_query_SQL_return_record(sql_query, app)
+
+
+# Query SQL and return the Zip of the results to get a record.
+def unsync_query_SQL_return_record(SQL_Query, app):
+
+    results = [{}]
+    with app.app_context():  # Need to use original app as this is in the thread
+
+        raw_result = db.engine.execute(text(SQL_Query))
+        result_data = raw_result.fetchall()
+        result_data_decimal = [[float(a) if isinstance(a, decimal.Decimal) else a for a in d] for d in
+                               result_data]  # correct The decimal.Decimal class to float.
+        result_col = raw_result.keys()
+        results = [dict(zip(result_col, d)) for d in result_data_decimal]
+    return results
+
+
+
 
 
 def create_table_fun(table_data, additional_class=[]):
