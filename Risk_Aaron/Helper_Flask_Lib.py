@@ -131,6 +131,23 @@ def Get_Vol_snapshot(app, symbol="", book="", day_backwards_count=5):
 
     return df_data_vol
 
+
+@unsync
+def Symbol_history_Daily(app, symbol="", book="B", day_backwards_count = 15):
+
+    day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * day_backwards_count))
+    sql_statement = """SELECT DATE, COUNTRY, SYMBOL, VOLUME, REVENUE 
+    FROM `bgi_dailypnl_by_country_group`
+    WHERE  COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') 
+    AND COUNTRY IN (Select COUNTRY FROM live5.group_table WHERE Group_table.BOOK = '{book}')
+    AND DATE >= '{day_backwards}'
+    AND SYMBOL LIKE '{symbol}%'
+    ORDER BY DATE""".format(day_backwards=day_backwards, symbol=symbol, book=book)
+
+    sql_query = sql_statement.replace("\n", " ").replace("\t", " ")
+    #query_SQL_return_record(text(sql_statement))
+    return unsync_query_SQL_return_record(sql_query, app)
+
 # Get trades by open tim and SYMBOLs
 # Want to later use to plot volume vs open_time
 # Can choose A Book or B Book.

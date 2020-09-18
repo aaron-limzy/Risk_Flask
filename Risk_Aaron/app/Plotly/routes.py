@@ -1227,6 +1227,8 @@ def symbol_float_trades(symbol="", book="b"):
                                         "Bottom Realised Accounts Today (Client Side)": "H4",
                                         "Top Realised Group Today (Client Side)": "Hs3",
                                         "Bottom Realised Group Today (Client Side)": "Hs4",
+                                        "History Daily Closed Vol": "P3",
+                                        "History Daily Revenue": "P4",
                                         "Total Closed Today (BGI Side)": "V2",
                                         "Line2": "Hr2",
                                         },
@@ -1254,6 +1256,11 @@ def symbol_float_trades_ajax(symbol="", book="b"):
     opentime_day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * opentime_day_backwards_count))
     symbol_opentime_trades_unsync = symbol_opentime_trades(app=current_app._get_current_object(),
                                                            symbol=symbol, book=book, start_date=opentime_day_backwards)
+
+    # Get the history details such as Trade volume and reenue
+    Symbol_history_Daily_unsync = Symbol_history_Daily(symbol=symbol, book=book,
+                                                       app=current_app._get_current_object(),
+                                                       day_backwards_count=15)
 
     all_open_trades_start = datetime.datetime.now()
     all_trades = symbol_all_open_trades(symbol=symbol, book=book)
@@ -1472,6 +1479,18 @@ def symbol_float_trades_ajax(symbol="", book="b"):
     print("Symbol {sym} ({book} Book) took: {sec}s".format(sym=symbol, book=book,
                                                 sec=(datetime.datetime.now() - start_time).total_seconds()))
 
+    # The historical data of the symbol by Country/date
+    history_daily_data = pd.DataFrame(Symbol_history_Daily_unsync.result())
+    history_daily_vol_fig = plot_symbol_history(df=history_daily_data,
+                                                by="Volume",
+                               chart_title="History Daily Volume ({symbol})".format(symbol=symbol))
+
+    history_daily_rev_fig = plot_symbol_history(df=history_daily_data,
+                                                by="Revenue",
+                                                chart_title="History Daily Volume ({symbol})".format(symbol=symbol))
+
+
+
     # Return the values as json.
     # Each item in the returned dict will become a table, or a plot
     return json.dumps({"Hs1": top_groups.to_dict("record"),
@@ -1486,6 +1505,8 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                        "H4": closed_bottom_accounts.to_dict("record"),
                        "Hs3": top_closed_groups.to_dict("record"),
                        "Hs4" : bottom_closed_groups.to_dict("record"),
+                       "P3": history_daily_vol_fig,
+                       "P4": history_daily_rev_fig,
                        "V2": [total_sum_closed.to_dict()]
                        }, cls=plotly.utils.PlotlyJSONEncoder)
 
@@ -1499,7 +1520,6 @@ def symbol_all_open_trades(symbol="", book="B"):
     country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
     book_condition = " AND group_table.BOOK = '{}'".format(book)
 
-
     if book.lower() == "a":
         # Additional SQL query if a book
         Live2_book_query = """ AND	(
@@ -1512,8 +1532,6 @@ def symbol_all_open_trades(symbol="", book="B"):
 	) """
     else:
         Live2_book_query = book_condition
-
-
 
     sql_statement = """(SELECT 'live1' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
         SYMBOL, CMD,
@@ -1821,6 +1839,43 @@ def plot_open_position_net(df, chart_title):
         ),
         xaxis_tickfont_size=15,
         title_text='{} (Client Side)'.format(chart_title),
+        titlefont=dict(size=20),
+        title_x=0.5
+    )
+    # graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    #
+    # return graphJSON
+    return fig
+
+# PLot the historical data of the symbol
+# Either by Revenue, or by Volume.
+def plot_symbol_history(df, by, chart_title):
+    # Lots was saved as decimal. Need to convert to float
+    df[by.upper()] = df[by.upper()].apply(float)
+
+    df_country = df.groupby(["DATE","COUNTRY"]).sum().reset_index()
+    fig = px.bar(df_country, x='DATE', y=by.upper(), color="COUNTRY")
+    #fig.show()
+
+    # Change the bar layout
+    fig.update_layout(
+        autosize=True,
+        width=750,
+        height=500,
+        margin=dict(pad=10),
+        yaxis=dict(
+            title_text="Total {}".format(by),
+            titlefont=dict(size=20),
+            ticks="outside", tickcolor='white', ticklen=15,
+            layer='below traces'
+        ),
+        yaxis_tickfont_size=14,
+        xaxis=dict(
+            title_text="History Daily {}".format(by),
+            titlefont=dict(size=20), layer='below traces'
+        ),
+        xaxis_tickfont_size=15,
+        title_text=chart_title,
         titlefont=dict(size=20),
         title_x=0.5
     )
