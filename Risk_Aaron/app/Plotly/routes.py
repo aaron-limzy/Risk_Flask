@@ -1469,8 +1469,8 @@ def symbol_float_trades_ajax(symbol="", book="b"):
     query_start_time = datetime.datetime.now()
     df_opentiming = pd.DataFrame(symbol_opentime_trades_unsync.result())
     #df_opentiming = pd.DataFrame(res)
-    print(df_opentiming)
-    print("Total Opentiming lots: {}".format(df_opentiming['LOTS'].sum()))
+    #print(df_opentiming)
+    #print("Total Opentiming lots: {}".format(df_opentiming['LOTS'].sum()))
     if len(df_opentiming):
         opentime_fig = plot_symbol_opentime(df_opentiming, "{symbol} OpenTime ({book} Book)".format(symbol=symbol, book=book.upper()))
         #opentime_fig.show()
@@ -1896,7 +1896,7 @@ def plot_symbol_opentime(df, chart_title):
     df["LOTS"] = df["LOTS"].apply(float)
 
     fd_5min = df.groupby(["COUNTRY"]).resample('5T', on='OPEN_TIME').sum().reset_index()
-    print(fd_5min)
+    #print(fd_5min)
     fig = px.bar(fd_5min, x='OPEN_TIME', y='LOTS', color="COUNTRY")
     #fig.show()
     #

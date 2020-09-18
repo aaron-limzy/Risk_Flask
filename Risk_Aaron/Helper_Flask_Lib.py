@@ -155,7 +155,7 @@ def Symbol_history_Daily(app, symbol="", book="B", day_backwards_count = 15):
 def symbol_opentime_trades(app, symbol="", book="B", start_date=""):
 
     #symbol="XAUUSD"
-    print("Querying for symbol_opentime_trades. Symbol:{}, book:{}, start_date:{}".format(symbol,book,start_date))
+    #print("Querying for symbol_opentime_trades. Symbol:{}, book:{}, start_date:{}".format(symbol,book,start_date))
     symbol_condition = " AND SYMBOL Like '%{}%' ".format(symbol)
     country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
     book_condition = " AND group_table.BOOK = '{}'".format(book)
