@@ -1252,7 +1252,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                     symbol=symbol, book=book, day_backwards_count=5)
 
     # Want to show 2 days back if the hour is less than 10am (SGT), else, shows 1 day only.
-    opentime_day_backwards_count = 2 if datetime.datetime.now().hour < 12 else 1    # Not too many days, else it will be too small.
+    opentime_day_backwards_count = 3 if datetime.datetime.now().hour < 12 else 2    # Not too many days, else it will be too small.
     opentime_day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * opentime_day_backwards_count))
     symbol_opentime_trades_unsync = symbol_opentime_trades(app=current_app._get_current_object(),
                                                            symbol=symbol, book=book, start_date=opentime_day_backwards)
@@ -1468,8 +1468,10 @@ def symbol_float_trades_ajax(symbol="", book="b"):
     # Want to get data for OPEN TIME on all trades in the symbol
     query_start_time = datetime.datetime.now()
     df_opentiming = pd.DataFrame(symbol_opentime_trades_unsync.result())
-
-    if len(df_opentiming) :
+    #df_opentiming = pd.DataFrame(res)
+    print(df_opentiming)
+    print("Total Opentiming lots: {}".format(df_opentiming['LOTS'].sum()))
+    if len(df_opentiming):
         opentime_fig = plot_symbol_opentime(df_opentiming, "{symbol} OpenTime ({book} Book)".format(symbol=symbol, book=book.upper()))
         #opentime_fig.show()
     else:
@@ -1893,10 +1895,11 @@ def plot_symbol_opentime(df, chart_title):
     # Lots was saved as decimal. Need to convert to float
     df["LOTS"] = df["LOTS"].apply(float)
 
-    fd_1min = df.groupby(["COUNTRY"]).resample('5T', on='OPEN_TIME').sum().reset_index()
-    fig = px.bar(fd_1min, x='OPEN_TIME', y='LOTS', color="COUNTRY")
+    fd_5min = df.groupby(["COUNTRY"]).resample('5T', on='OPEN_TIME').sum().reset_index()
+    print(fd_5min)
+    fig = px.bar(fd_5min, x='OPEN_TIME', y='LOTS', color="COUNTRY")
     #fig.show()
-
+    #
     # Change the bar layout
     fig.update_layout(
         autosize=True,
