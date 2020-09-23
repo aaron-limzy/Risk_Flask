@@ -860,8 +860,8 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
         # To revert back to a normal Symbol string, instead of a URL.
         df_past_details = pd.DataFrame(Past_Details)
 
-        print("past details")
-        print(df_past_details)
+        #print("past details")
+        #print(df_past_details)
         if "SYMBOL" in df_past_details:
             df_past_details["SYMBOL"] = df_past_details["SYMBOL"].apply(lambda x: BeautifulSoup(x, features="lxml").a.text \
                                                                     if BeautifulSoup(x, features="lxml").a != None else x)
