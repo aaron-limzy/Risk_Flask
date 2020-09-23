@@ -1795,6 +1795,89 @@ def get_country_charts(country, df):
     #print(cn_summary)
     return json.dumps([bar, pnl_bar, heat_map, summary], cls=plotly.utils.PlotlyJSONEncoder)
 
+# Trying to catch players that are Scalping with specific comments
+@analysis.route('/Client_Comment_Scalp', methods=['GET', 'POST'])
+@roles_required()
+def Client_Comment_Scalp():
+
+    title = "Catching Client Comment"
+    header = "Catching Client Comment"
+
+    description = Markup("Catching Client Comment that are like %-%=%")
+
+
+        # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Country_Float.html", backgroud_Filename='css/World_Map.jpg', icon= "css/Globe.png", Table_name="Scalpers", \
+                           title=title, ajax_url=url_for('analysis.Client_Comment_Scalp_ajax', _external=True),
+                           ajax_clear_cookie_url=url_for("analysis.Clear_session_ajax", _external=True), header=header, setinterval=15,
+                           description=description, replace_words=Markup(['(Client Side)']))
+
+
+
+@analysis.route('/Client_Comment_Scalpajax', methods=['GET', 'POST'])
+@roles_required()
+def Client_Comment_Scalp_ajax():
+
+
+    if not cfh_fix_timing():
+        return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
+
+
+    # Want to reduce the overheads.
+    server_time_diff_str = " {} ".format(session["live1_sgt_time_diff"]) if "live1_sgt_time_diff" in session else \
+            "SELECT RESULT FROM aaron.`aaron_misc_data` where item = 'live1_time_diff'"
+
+    sql_statement = """SELECT LOGIN, TICKET, OPEN_TIME, CLOSE_TIME, SYMBOL, SWAPS, PROFIT, `COMMENT`, `GROUP` 
+            FROM live1.mt4_trades
+            WHERE `comment` like '%-%=%'
+            and OPEN_TIME >= NOW()-INTERVAL {ServerTimeDiff_Query} HOUR - INTERVAL 60 MINUTE
+            AND TICKET NOT in (SELECT TICKET FROM aaron.cn_scalp_data)
+            """.format(ServerTimeDiff_Query=server_time_diff_str)
+
+    sql_query = text(sql_statement)
+    return_val = query_SQL_return_record(sql_query)
+
+    if len(return_val) == 0:
+        return_val = [{"Comment":"No Clients Found"}]
+    else:
+
+        df = pd.DataFrame(return_val)
+        df["OPEN_TIME"] = df["OPEN_TIME"].apply(lambda x: "{}".format(x))
+        df["CLOSE_TIME"] = df["CLOSE_TIME"].apply(lambda x: "{}".format(x))
+        col_needed = ["TICKET", "LOGIN", "SYMBOL", "COMMENT"]
+        data_dict  = df[col_needed].to_dict('r')
+        data_list = [list(d.values()) for d in data_dict]   # Get the values
+        data_list_2 = [ ["'{}'".format(str(e)) for e in d] for d in data_list]    # convert to str, add '
+        data_to_insert = [" ({}) ".format(" , ".join(d)) for d in data_list_2]     # Want to insert to SQL
+
+        # Need to alert Risk
+        async_Post_To_Telegram(AARON_BOT, "Scalpers for Bonus hitting [<b>{sym}</b>] on Live 1".format(sym=" ,".join(list(df["SYMBOL"].unique()))),
+                         TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+
+        # inset into SQL
+        async_sql_insert(app=current_app._get_current_object(),
+                        header="INSERT INTO aaron.CN_SCALP_Data (TICKET,LOGIN, SYMBOL, `COMMENT`) VALUES ",
+                        values = data_to_insert,
+                        footer = " ON DUPLICATE KEY UPDATE SYMBOL=VALUES(SYMBOL)")
+
+        async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
+                         Subject="Live 1 Bonus Scalpers",
+                         HTML_Text="""{Email_Header}Hi,<br><br>Clients from Live 1 are hitting {sym}<br>{table}<br>
+                               <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
+                             Email_Header=Email_Header, sym=" ,".join(list(df["SYMBOL"].unique())),
+                             table = Array_To_HTML_Table(Table_Header = col_needed,Table_Data=data_list),
+                             datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                             Email_Footer=Email_Footer), Attachment_Name=[])
+
+        print(df)
+
+
+
+    return json.dumps([return_val, "No Data", "No Data"], cls=plotly.utils.PlotlyJSONEncoder)
+    #return json.dumps([return_val], cls=plotly.utils.PlotlyJSONEncoder)
+
+
+
 
 
 def plot_open_position_net(df, chart_title):
