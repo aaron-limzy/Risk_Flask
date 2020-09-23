@@ -1751,35 +1751,35 @@ def symbol_open_trade_by_timing(symbol="", book=""):
     result_data = raw_result.fetchall()     # Return Result
     result_col = raw_result.keys()          # Column names
     return [dict(zip(result_col, r)) for r in result_data]
-
-@analysis.route('/analysis/cn_live_vol_ajax')
-@roles_required()
-# Gets the cn df, and uses it to plot the various charts.
-def cn_live_vol_ajax():
-
-    # start = datetime.datetime.now()
-    # df = get_cn_df()
-    # bar = plot_open_position_net(df, chart_title = "[CN] Open Position")
-    # bar = plot_open_position_net(df, chart_title = "[CN] Open Position")
-    # cn_pnl_bar = plot_open_position_revenue(df, chart_title="[CN] Open Position Revenue")
-    # cn_heat_map = plot_volVSgroup_heat_map(df,chart_title="[CN] Net Position by Group")
-    # print("Getting cn df and charts {} Seconds.".format((datetime.datetime.now()-start).total_seconds()))
-    # vol_sum = round(sum(df['VOLUME']),2)
-    # net_vol_sum = round(sum(df['NET_VOLUME']),2)
-    # revenue_sum = round(sum(df['REVENUE']),2)
-    # cn_summary = {'COUNTRY' : 'CN', 'VOLUME': vol_sum, "NET VOLUME": net_vol_sum, "REVENUE" : revenue_sum, 'TIME': Get_time_String()}
-    # print(cn_summary)
-    # return json.dumps([bar, cn_pnl_bar, cn_heat_map, cn_summary], cls=plotly.utils.PlotlyJSONEncoder)
-
-    return get_country_charts(country="CN", df= get_cn_df())
-
-
-
-@analysis.route('/analysis/tw_live_vol_ajax')
-@roles_required()
-# Gets the cn df, and uses it to plot the various charts.
-def tw_live_vol_ajax():
-    return get_country_charts(country="TW", df= get_tw_df())
+#
+# @analysis.route('/analysis/cn_live_vol_ajax')
+# @roles_required()
+# # Gets the cn df, and uses it to plot the various charts.
+# def cn_live_vol_ajax():
+#
+#     # start = datetime.datetime.now()
+#     # df = get_cn_df()
+#     # bar = plot_open_position_net(df, chart_title = "[CN] Open Position")
+#     # bar = plot_open_position_net(df, chart_title = "[CN] Open Position")
+#     # cn_pnl_bar = plot_open_position_revenue(df, chart_title="[CN] Open Position Revenue")
+#     # cn_heat_map = plot_volVSgroup_heat_map(df,chart_title="[CN] Net Position by Group")
+#     # print("Getting cn df and charts {} Seconds.".format((datetime.datetime.now()-start).total_seconds()))
+#     # vol_sum = round(sum(df['VOLUME']),2)
+#     # net_vol_sum = round(sum(df['NET_VOLUME']),2)
+#     # revenue_sum = round(sum(df['REVENUE']),2)
+#     # cn_summary = {'COUNTRY' : 'CN', 'VOLUME': vol_sum, "NET VOLUME": net_vol_sum, "REVENUE" : revenue_sum, 'TIME': Get_time_String()}
+#     # print(cn_summary)
+#     # return json.dumps([bar, cn_pnl_bar, cn_heat_map, cn_summary], cls=plotly.utils.PlotlyJSONEncoder)
+#
+#     return get_country_charts(country="CN", df= get_cn_df())
+#
+#
+#
+# @analysis.route('/analysis/tw_live_vol_ajax')
+# @roles_required()
+# # Gets the cn df, and uses it to plot the various charts.
+# def tw_live_vol_ajax():
+#     return get_country_charts(country="TW", df= get_tw_df())
 
 # Generic get the country charts.
 def get_country_charts(country, df):
