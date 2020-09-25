@@ -1781,19 +1781,19 @@ def symbol_open_trade_by_timing(symbol="", book=""):
 # def tw_live_vol_ajax():
 #     return get_country_charts(country="TW", df= get_tw_df())
 
-# Generic get the country charts.
-def get_country_charts(country, df):
-
-    start = datetime.datetime.now()
-    bar = plot_open_position_net(df, chart_title = "[{}] Open Position".format(country))
-    pnl_bar = plot_open_position_revenue(df, chart_title="[{}] Open Position Revenue".format(country))
-    heat_map = plot_volVSgroup_heat_map(df,chart_title="[{}] Net Position by Group".format(country))
-    #print("Getting {} df and charts {} Seconds.".format(country,(datetime.datetime.now()-start).total_seconds()))
-    vol_sum = '{:,.2f}'.format(round(sum(df['VOLUME']),2))
-    revenue_sum = '{:,.2f}'.format(round(sum(df['REVENUE']),2))
-    summary = {'COUNTRY' : country, 'VOLUME': vol_sum, 'REVENUE' : revenue_sum, 'TIME': Get_time_String()}
-    #print(cn_summary)
-    return json.dumps([bar, pnl_bar, heat_map, summary], cls=plotly.utils.PlotlyJSONEncoder)
+# # Generic get the country charts.
+# def get_country_charts(country, df):
+#
+#     start = datetime.datetime.now()
+#     bar = plot_open_position_net(df, chart_title = "[{}] Open Position".format(country))
+#     pnl_bar = plot_open_position_revenue(df, chart_title="[{}] Open Position Revenue".format(country))
+#     heat_map = plot_volVSgroup_heat_map(df,chart_title="[{}] Net Position by Group".format(country))
+#     #print("Getting {} df and charts {} Seconds.".format(country,(datetime.datetime.now()-start).total_seconds()))
+#     vol_sum = '{:,.2f}'.format(round(sum(df['VOLUME']),2))
+#     revenue_sum = '{:,.2f}'.format(round(sum(df['REVENUE']),2))
+#     summary = {'COUNTRY' : country, 'VOLUME': vol_sum, 'REVENUE' : revenue_sum, 'TIME': Get_time_String()}
+#     #print(cn_summary)
+#     return json.dumps([bar, pnl_bar, heat_map, summary], cls=plotly.utils.PlotlyJSONEncoder)
 
 # Trying to catch players that are Scalping with specific comments
 @analysis.route('/Client_Comment_Scalp', methods=['GET', 'POST'])
@@ -2113,7 +2113,6 @@ def plot_open_position_revenue(df, chart_title):
 @analysis.route('/analysis/plotly_index')
 @roles_required()
 def cn_index():
-
     return render_template('index_plotly.html', title="Float Country")
 
 
@@ -2447,6 +2446,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     # If it's still opened, we want to know how long..
     # We don't care about the BALANCE, CREDIT, and the sell/buy stop/limit
 
+    # TODO: Should take into account server time - open_time
     df_data["DURATION"] = df_data.apply(lambda x: "-" if int(x['CMD']) >= 2 else \
                         (x["CLOSE_TIME"] - x["OPEN_TIME"] \
                         if x["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00') else \
@@ -2474,7 +2474,8 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     open_position_dict = open_position.to_dict("record")
 
     # Want to get the duration string
-    df_data["DURATION_STR"] = df_data.apply(lambda x: (x["OPEN_TIME"] - x["CLOSE_TIME"]).seconds, axis=1)
+    df_data["DURATION_STR"] = df_data.apply(lambda x: trade_duration_bin((x["CLOSE_TIME"] - x["OPEN_TIME"]).seconds), axis=1)
+
 
     # Overwrite df_data to consist of only the closed trades
     df_data = df_data[df_data["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')]  # Only open trades
