@@ -175,7 +175,9 @@ def save_BGI_float_Ajax(update_tool_time=1):
     server_time_diff_str = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session \
                 else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
 
-    sql_statement = """SELECT LIVE, COUNTRY, SYMBOL1 as SYMBOL, NET_FLOATING_VOLUME, SUM_FLOATING_VOLUME, FLOATING_PROFIT*-1 AS FLOATING_REVENUE,SUM_CLOSED_VOLUME, -1*CLOSED_PROFIT, DATE_SUB(now(),INTERVAL ({ServerTimeDiff_Query}) HOUR) as DATETIME FROM(
+    sql_statement = """SELECT LIVE, COUNTRY, SYMBOL1 as SYMBOL, NET_FLOATING_VOLUME, SUM_FLOATING_VOLUME, 
+    FLOATING_PROFIT*-1 AS FLOATING_REVENUE,SUM_CLOSED_VOLUME,
+     -1*CLOSED_PROFIT, DATE_SUB(now(),INTERVAL ({ServerTimeDiff_Query}) HOUR) as DATETIME FROM(
     (SELECT 'live1' AS LIVE,group_table.COUNTRY, 
     CASE WHEN LEFT(SYMBOL,1) = "." then SYMBOL ELSE LEFT(SYMBOL,6) END as SYMBOL1,
     SUM(CASE WHEN mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' THEN mt4_trades.VOLUME ELSE 0 END)*0.01 AS SUM_FLOATING_VOLUME,
@@ -1214,19 +1216,19 @@ def symbol_float_trades(symbol="", book="b"):
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/double-bubble.png', icon="",
-                           Table_name={ "Top Floating Groups (Client Side)": "Hs1",
-                                        "Bottom Floating Groups (Client Side)": "Hs2",
-                                        "Top Floating Accounts (Client Side)": "H1",
-                                        "Bottom Floating Accounts (Client Side)": "H2",
-                                        "Largest Floating Accounts (Client Side)": "H5",
+                           Table_name={ "Winning Floating Groups (Client Side)": "Hs1",
+                                        "Losing Floating Groups (Client Side)": "Hs2",
+                                        "Winning Floating Accounts (Client Side)": "H1",
+                                        "Losing Floating Accounts (Client Side)": "H2",
+                                        "Largest Lots Floating Accounts (Client Side)": "H5",
                                         "Total Volume Snapshot" : "P1",
                                         "Open Time vs Lots": "P2",
                                         "Total Floating (BGI Side)": "V1",
                                         "Line": "Hr1",
-                                        "Top Realised Accounts Today (Client Side)": "H3",
-                                        "Bottom Realised Accounts Today (Client Side)": "H4",
-                                        "Top Realised Group Today (Client Side)": "Hs3",
-                                        "Bottom Realised Group Today (Client Side)": "Hs4",
+                                        "Winning Realised Accounts Today (Client Side)": "H3",
+                                        "Losing Realised Accounts Today (Client Side)": "H4",
+                                        "Winning Realised Group Today (Client Side)": "Hs3",
+                                        "Losing Realised Group Today (Client Side)": "Hs4",
                                         "History Daily Closed Vol": "P3",
                                         "History Daily Revenue": "P4",
                                         "Total Closed Today (BGI Side)": "V2",
