@@ -1224,9 +1224,11 @@ def symbol_float_trades(symbol="", book="b"):
                                         "Total Volume Snapshot" : "P1",
                                         "Open Time vs Lots": "P2",
                                         "Total Floating (BGI Side)": "V1",
+                                        "Country Floating (BGI Side)": "Hs5",
                                         "Line": "Hr1",
                                         "Winning Realised Accounts Today (Client Side)": "H3",
                                         "Losing Realised Accounts Today (Client Side)": "H4",
+                                        "Largest Lots Realised Accounts Today (Client Side)": "H6",
                                         "Winning Realised Group Today (Client Side)": "Hs3",
                                         "Losing Realised Group Today (Client Side)": "Hs4",
                                         "History Daily Closed Vol": "P3",
@@ -1289,6 +1291,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         bottom_accounts =pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
         total_sum = pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
         largest_login = pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
+        open_by_country =  pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
 
     else:
         # Use for calculating net volume.
@@ -1361,16 +1364,37 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 
         # Only want those that are making a loss
         bottom_groups = group_sum[group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', ascending=True)[col3].head(20)
-        bottom_groups = pd.DataFrame(
-            [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
-            len(bottom_groups) <= 0 else bottom_groups
         # Color the CONVERTED_REVENUE
         bottom_groups["CONVERTED_REVENUE"] = bottom_groups["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
+        bottom_groups = pd.DataFrame(
+            [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
+            len(bottom_groups) <= 0 else bottom_groups
         # Total sum Floating
-        total_sum = df_open_trades[['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]].sum()
+        total_sum_Col = ['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]       # The columns that we want to show
+        total_sum = df_open_trades[total_sum_Col].sum()
         total_sum =  total_sum.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
         total_sum["LOTS"] = abs(total_sum["LOTS"])  # Since it's Total lots, we only want the abs value
+
+        for c in total_sum_Col: # Want to print it properly.
+            if isfloat(total_sum[c]):
+                total_sum[c] = "{:,}".format(total_sum[c])
+
+        # Want the table by country.
+        open_by_country = df_open_trades.groupby(["COUNTRY"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE' ]].sum().reset_index()
+        open_by_country["NET_LOTS"] = -1 * open_by_country["NET_LOTS"]
+        open_by_country["CONVERTED_REVENUE"] = open_by_country["CONVERTED_REVENUE"].apply(lambda x: profit_red_green( -1 * x ))
+        open_by_country["LOTS"] = abs(open_by_country["LOTS"])
+        open_by_country["PROFIT"] = -1 * open_by_country["PROFIT"]
+        open_by_country.sort_values(["NET_LOTS"], inplace=True)    # Sort it by Net_Lots
+
+        open_by_country = pd.DataFrame(
+            [{"Comment": "There are currently no Country with floating PnL for {}".format(symbol)}]) if \
+            len(open_by_country) <= 0 else open_by_country
+
+
+
+
 
         # Largest (lots) Floating Account.
         largest_login = live_login_sum.sort_values('LOTS', ascending=False)[col2].head(20)
@@ -1414,9 +1438,14 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                                                                 'CONVERTED_REVENUE', ascending=False)[col2].head(20)
         closed_bottom_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] < 0].sort_values(\
                                                                 'CONVERTED_REVENUE', ascending=True)[col2].head(20)
+
+        closed_largest_lot_accounts = closed_login_sum.sort_values('LOTS', ascending=False)[col2].head(20)
+
+
         # Color the CONVERTED_REVENUE
         closed_bottom_accounts["CONVERTED_REVENUE"] = closed_bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
         closed_top_accounts["CONVERTED_REVENUE"] = closed_top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+        closed_largest_lot_accounts["CONVERTED_REVENUE"] = closed_largest_lot_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
         # If there are either no winning Accounts, or no losing accounts.
         # No winning accounts with closed trades for today
@@ -1427,6 +1456,10 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         closed_bottom_accounts = pd.DataFrame(
             [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
             len(closed_bottom_accounts) <= 0 else closed_bottom_accounts
+
+        closed_largest_lot_accounts = pd.DataFrame(
+            [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
+            len(closed_largest_lot_accounts) <= 0 else closed_largest_lot_accounts
 
         # Closed Trades for today
         # Group PnL
@@ -1453,15 +1486,20 @@ def symbol_float_trades_ajax(symbol="", book="b"):
             len(bottom_closed_groups) <= 0 else bottom_closed_groups
 
         # Total sum Floating
-        total_sum_closed = df_closed_trades[['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]].sum()
+        total_sum_closed_col = ['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]
+        total_sum_closed = df_closed_trades[total_sum_closed_col].sum()
         total_sum_closed =  total_sum_closed.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
         total_sum_closed["LOTS"] = abs(total_sum_closed["LOTS"])  # Since it's Total lots, we only want the abs value
+        for c in total_sum_closed_col: # Want to print it properly.
+            if isfloat(total_sum_closed[c]):
+                total_sum_closed[c] = "{:,}".format(total_sum_closed[c])
 
 
     # Get the results from unsync
+    # Want to plot the 30 mins-ish Snapshot Open lots of
     df_data_vol= df_data_vol_unsync.result()
     #print(df_data_vol_unsync)
-    vol_fig = plot_symbol_book_total(df_data_vol, "{sym} Total Volume Snapshot ({book} Book)".format(sym=symbol,
+    vol_fig = plot_symbol_book_total(df_data_vol, "{sym} Total Lots Snapshot ({book} Book)".format(sym=symbol,
                                            book=book.upper()))
 
     #vol_fig.show()
@@ -1507,8 +1545,10 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                        "P1" : vol_fig,
                        "P2": opentime_fig,
                        "V1": [total_sum.to_dict()],
+                       "Hs5" : open_by_country.to_dict("record"),
                        "H3": closed_top_accounts.to_dict("record"),
                        "H4": closed_bottom_accounts.to_dict("record"),
+                       "H6" : closed_largest_lot_accounts.to_dict("record"),
                        "Hs3": top_closed_groups.to_dict("record"),
                        "Hs4" : bottom_closed_groups.to_dict("record"),
                        "P3": history_daily_vol_fig,
@@ -2029,14 +2069,14 @@ def plot_symbol_book_total(df, chart_title):
         height=500,
         margin=dict(pad=10),
         yaxis=dict(
-            title_text="FLOATING VOLUME",
+            title_text="Floating Lots",
             titlefont=dict(size=20),
             ticks="outside", tickcolor='white', ticklen=15,
             layer='below traces'
         ),
         yaxis_tickfont_size=14,
         xaxis=dict(
-            title_text="DATETIME (Server)",
+            title_text="Datetime (Server - Live 1)",
             titlefont=dict(size=20),layer='below traces'
         ),
         xaxis_tickfont_size=15,
