@@ -755,8 +755,8 @@ def check_session_live1_timing():
                     live1_server_difference=session['live1_sgt_time_diff'], hour_from_2300=0) + \
                                            datetime.timedelta(hours=session['live1_sgt_time_diff'], minutes=10)
         session['live1_sgt_time_update'] = min(time_refresh_next, server_nextday_time)
-        Post_To_Telegram(AARON_BOT, "Clearing cookies and retrieving new cookies for: {}".format(current_user.id),
-                         TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+        # Post_To_Telegram(AARON_BOT, "Clearing cookies and retrieving new cookies for: {}".format(current_user.id),
+        #                  TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
         #print(session)
 
     return return_val
@@ -992,7 +992,17 @@ def BGI_Symbol_Float():
     description = Markup("<b>Floating PnL By Symbol.</b><br> Revenue = Profit + Swaps<br>"+
                          "Includes B book Groups. Includes HK as well.<br>"+
                          'Using Live5.group_table where book = "B"<br>' +
-                          'HK Is excluded from all symbols <br>'  +
+                         'HK Is excluded from all symbols <br>'  +
+                         '<br><br>' +
+                         'NETVOL : Net Lots BGI is holding. (Buy +ve, Sell -ve)<br>' +
+                         'VOLUME : Total Open Lots (Regardless of Buy or sell)<br>' +
+
+                         'Revenue : Floating USD Converted Profit + Swaps. (BGI SIde)<br>' +
+                         'TODAY VOL : Lots closed today.<br>' +
+                         'TODAY REVENUE : Closed Revenue for today<br>' +
+                         'YESTERDAY VOLUME : Total Lots closed in the last trading day<br>' +
+                         'YESTERDAY REVENUE : REVENUE of all closed trades in the last trading day<br>' +
+                         '<br><br>' +
                          'Values are all on <b>BGI Side</b>. <br>' +
                          'Sort by absolute net volume.<br>'+
                          "Yesterday Data saved in cookies.<br>" +
@@ -1278,7 +1288,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                            })
 
     # Want only those open trades.
-    df_open_trades = df_all_trades[df_all_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]  # Only open trades.
+    df_open_trades = df_all_trades[df_all_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only open trades.
 
     col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE']
     col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS', 'CONVERTED_REVENUE']
@@ -1408,7 +1418,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 
 
     # Closed trades for today!
-    df_closed_trades = df_all_trades[df_all_trades["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')]  # Only Closed trades.
+    df_closed_trades = df_all_trades[df_all_trades["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only Closed trades.
 
     # There are no closed trades for the day yet
     if len(df_closed_trades) <=0:
