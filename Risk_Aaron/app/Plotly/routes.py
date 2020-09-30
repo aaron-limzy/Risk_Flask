@@ -1417,6 +1417,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         total_sum_closed = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
         top_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
         bottom_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        closed_largest_lot_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
     else:
         # Use for calculating net volume.
         df_closed_trades["LOTS"] =  df_closed_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
