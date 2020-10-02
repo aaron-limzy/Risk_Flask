@@ -994,13 +994,13 @@ def BGI_Symbol_Float():
                          'Using Live5.group_table where book = "B"<br>' +
                          'HK Is excluded from all symbols <br>'  +
                          '<br><br>' +
-                         'NETVOL : Net Lots BGI is holding. (Buy +ve, Sell -ve)<br>' +
-                         'VOLUME : Total Open Lots (Regardless of Buy or sell)<br>' +
 
-                         'Revenue : Floating USD Converted Profit + Swaps. (BGI SIde)<br>' +
-                         'TODAY VOL : Lots closed today.<br>' +
+                         'NET LOTS : Net Lots BGI is holding. (Buy +ve, Sell -ve)<br>' +
+                         'FLOATING LOTS : Total Open Lots (Regardless of Buy or sell)<br>' +
+                         'REVENUE : Floating USD Converted Profit + Swaps. (BGI SIde)<br>' +
+                         'TODAY LOTS : Lots closed today.<br>' +
                          'TODAY REVENUE : Closed Revenue for today<br>' +
-                         'YESTERDAY VOLUME : Total Lots closed in the last trading day<br>' +
+                         'YESTERDAY LOTS : Total Lots closed in the last trading day<br>' +
                          'YESTERDAY REVENUE : REVENUE of all closed trades in the last trading day<br>' +
                          '<br><br>' +
                          'Values are all on <b>BGI Side</b>. <br>' +
@@ -1164,8 +1164,13 @@ def BGI_Symbol_Float_ajax():
     df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{symbol}</a>'.format(symbol=x,
                                                                     url=url_for('analysis.symbol_float_trades', _external=True, symbol=x, book="b")))
 
+
+    #Rename the VOLUME to LOTs
+    df_to_table.rename(columns={"NETVOL": "NET_LOTS", "VOLUME": "FLOATING_LOTS",
+                                "TODAY_VOL" : "TODAY_LOTS", "YESTERDAY_VOLUME": "YESTERDAY_LOTS"}, inplace=True)
+
     # Pandas return list of dicts.
-    return_val = df_to_table[col_of_df].to_dict("record")
+    return_val = df_to_table[["SYMBOL", "NET_LOTS", "FLOATING_LOTS", "REVENUE", "TODAY_LOTS", "TODAY_REVENUE", "BID", "ASK","YESTERDAY_LOTS", "YESTERDAY_REVENUE"]].to_dict("record")
 
 
 
@@ -1403,9 +1408,6 @@ def symbol_float_trades_ajax(symbol="", book="b"):
             len(open_by_country) <= 0 else open_by_country
 
 
-
-
-
         # Largest (lots) Floating Account.
         largest_login = live_login_sum.sort_values('LOTS', ascending=False)[col2].head(20)
         # Color the CONVERTED_REVENUE
@@ -1432,8 +1434,20 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         # Use for calculating net volume.
         df_closed_trades["LOTS"] =  df_closed_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
         df_closed_trades["NET_LOTS"] = df_closed_trades.apply(lambda x: x["LOTS"] if x['CMD']==0 else -1*x["LOTS"] , axis=1)
+        df_closed_trades["DURATION_(AVG)"] = df_closed_trades.apply(
+            lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).seconds, axis=1)
         # Uses the same col2 as the open trades
-        closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
+        #closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
+
+        #col2 To add in DURATION_SEC
+        col2.append("DURATION_(AVG)")
+        # Want to take the mean duration, by trade.
+        closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).agg({'LOTS': 'sum',
+                                                                                          'NET_LOTS': 'sum',
+                                                                                          'CONVERTED_REVENUE': 'sum',
+                                                                                          'PROFIT': 'sum',
+                                                                                          'SWAPS': 'sum',
+                                                                                            'DURATION_(AVG)' : 'mean'}).reset_index()
 
         # Round off the values that is not needed.
         closed_login_sum["LOTS"] = round(closed_login_sum['LOTS'],2)
@@ -1443,6 +1457,8 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         closed_login_sum["SWAPS"] = round(closed_login_sum['SWAPS'], 2)
         closed_login_sum["LOGIN"] = closed_login_sum.apply(lambda x: live_login_analysis_url( \
             Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
+        # Want to get the average of the duration.
+        closed_login_sum["DURATION_(AVG)"] = closed_login_sum["DURATION_(AVG)"].apply(lambda x: trade_duration_bin(x))
 
         # Want the Closed Top/Bottom accounts. Top = Winning, so no -ve PnL.
         closed_top_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] >= 0].sort_values(\
