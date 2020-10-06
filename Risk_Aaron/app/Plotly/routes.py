@@ -1160,9 +1160,17 @@ def BGI_Symbol_Float_ajax():
     #df_records = [list(a) for a in df_records]
     #return_val = [dict(zip(col_of_df,d)) for d in df_records]
 
+
+    # Want to hyperlink it.
+    df_to_table["YESTERDAY_REVENUE"] = df_to_table.apply(lambda x: """<a  href="{url}" target="_blank">{YESTERDAY_REVENUE}</a>""".format( \
+                                                        url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
+                                                        YESTERDAY_REVENUE=x["YESTERDAY_REVENUE"]),
+                                                        axis=1)
+
     # Want to hyperlink it.
     df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{symbol}</a>'.format(symbol=x,
                                                                     url=url_for('analysis.symbol_float_trades', _external=True, symbol=x, book="b")))
+
 
 
     #Rename the VOLUME to LOTs
@@ -1398,7 +1406,16 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         # Want the table by country.
         open_by_country = df_open_trades.groupby(["COUNTRY"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE' ]].sum().reset_index()
         open_by_country["NET_LOTS"] = -1 * open_by_country["NET_LOTS"]
-        open_by_country["CONVERTED_REVENUE"] = open_by_country["CONVERTED_REVENUE"].apply(lambda x: profit_red_green( -1 * x ))
+
+
+        if book == "b": # Only want to flip sides when it's B book.
+            open_by_country["CONVERTED_REVENUE"] = open_by_country["CONVERTED_REVENUE"].apply(
+                lambda x: profit_red_green(-1 * x))
+        else:   # If it's A book. We don't need to do that.
+            open_by_country["CONVERTED_REVENUE"] = open_by_country["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+
+
+
         open_by_country["LOTS"] = abs(open_by_country["LOTS"])
         open_by_country["PROFIT"] = -1 * open_by_country["PROFIT"]
         open_by_country.sort_values(["NET_LOTS"], inplace=True)    # Sort it by Net_Lots
@@ -1516,6 +1533,12 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         total_sum_closed_col = ['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]
         total_sum_closed = df_closed_trades[total_sum_closed_col].sum()
         total_sum_closed =  total_sum_closed.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
+
+        if book == "b":  # Only want to flip sides when it's B book.
+            total_sum_closed = total_sum_closed.apply(lambda x: round(x * -1, 2))  # Flip it to be on BGI Side.
+        else:  # If it's A book. We don't need to do that.
+            total_sum_closed = total_sum_closed.apply(lambda x: round(x , 2))  # Flip it to be on BGI Side.
+
         total_sum_closed["LOTS"] = abs(total_sum_closed["LOTS"])  # Since it's Total lots, we only want the abs value
         for c in total_sum_closed_col: # Want to print it properly.
             if isfloat(total_sum_closed[c]):
@@ -1606,6 +1629,10 @@ def symbol_all_open_trades(symbol="", book="B"):
     else:
         Live2_book_query = book_condition
 
+    # Want to reduce the overheads
+    ServerTimeDiff_Query = "{}".format(session["live1_sgt_time_diff"]) if "live1_sgt_time_diff" in session \
+        else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
+
     sql_statement = """(SELECT 'live1' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
         SYMBOL, CMD,
         VOLUME*0.01 as LOTS, OPEN_PRICE,
@@ -1622,7 +1649,9 @@ def symbol_all_open_trades(symbol="", book="B"):
         FROM live1.mt4_trades, live5.group_table 
         WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
             (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00'  
-                OR mt4_trades.CLOSE_TIME >= (CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
+                OR mt4_trades.CLOSE_TIME >= (CASE WHEN 
+                    HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') 
+                    ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
         AND LENGTH(mt4_trades.SYMBOL)>0 
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live1' 
@@ -1645,7 +1674,10 @@ def symbol_all_open_trades(symbol="", book="B"):
             ELSE 0 END,2) AS CONVERTED_REVENUE
             FROM live2.mt4_trades,live5.group_table 
             WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
-            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= (CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
+            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' 
+                or mt4_trades.CLOSE_TIME >= (CASE WHEN 
+                    HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') 
+                    ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
         AND LENGTH(mt4_trades.SYMBOL)>0 
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live2' 
@@ -1667,7 +1699,10 @@ def symbol_all_open_trades(symbol="", book="B"):
             ELSE 0 END,2) AS CONVERTED_REVENUE
             FROM live3.mt4_trades,live5.group_table 
             WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
-            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= (CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
+            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' 
+                or mt4_trades.CLOSE_TIME >= (CASE WHEN 
+                    HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') 
+                    ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
         AND LENGTH(mt4_trades.SYMBOL)>0 
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live3' 
@@ -1690,12 +1725,19 @@ def symbol_all_open_trades(symbol="", book="B"):
             ELSE 0 END,2) AS CONVERTED_REVENUE
             FROM live5.mt4_trades,live5.group_table 
             WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
-            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= DATE_ADD(DATE_SUB((CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END),INTERVAL 1 DAY),INTERVAL 1 HOUR))
+            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or 
+            mt4_trades.CLOSE_TIME >= DATE_ADD(
+                DATE_SUB(
+                    (CASE WHEN 
+                        HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') 
+                        ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END),INTERVAL 1 DAY),
+                    INTERVAL 1 HOUR)
+            )
         AND LENGTH(mt4_trades.SYMBOL)>0 
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live5' 
             AND LENGTH(mt4_trades.LOGIN)>4
-            {symbol_condition} {country_condition} {book_condition})""".format(symbol_condition=symbol_condition, ServerTimeDiff_Query=6, \
+            {symbol_condition} {country_condition} {book_condition})""".format(symbol_condition=symbol_condition, ServerTimeDiff_Query=ServerTimeDiff_Query, \
                                                                                book_condition=book_condition, country_condition=country_condition,\
                                                                                Live2_book_query=Live2_book_query)
 
@@ -1706,6 +1748,353 @@ def symbol_all_open_trades(symbol="", book="B"):
     result_col = raw_result.keys()          # Column names
 
     return [dict(zip(result_col, r)) for r in result_data]
+
+
+# # Get all open trades of a particular symbol.
+# # Get it converted as well.
+# # Can choose A Book or B Book.
+@analysis.route('/Past_Trades/<book>/<days>/<symbol>', methods=['GET', 'POST'])
+@roles_required()
+def symbol_closed_trades(symbol="", book="b", days=-1):
+
+    PnL_day = get_working_day_date(datetime.datetime.now(), int(days))
+
+
+    title = "{} {}".format(symbol,  PnL_day.date())
+    header = "{} {} Trades".format(symbol, PnL_day.date())
+
+    if book.lower() == "b":
+        header += "(B 📘)"
+    elif book.lower() == "a":
+        header += "(A 📕)"
+
+
+    description = Markup("Showing Closed trades for {} on {}<br>Details are on Client side.<br>Not showing HK PnL.".format(symbol, PnL_day.date()))
+
+    if symbol == "" :  # There are no information.
+        flash("There were no symbol details.")
+        return redirect(url_for("main_app.index"))
+
+    # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
+    # Will try to do smaller vertical table to put 2 or 3 tables in a row.
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/double-bubble.png', icon="",
+                           Table_name={ "Winning Accounts (Client Side)": "H3",
+                                        "Losing Accounts (Client Side)": "H4",
+                                        "Largest Lots Accounts (Client Side)": "H6",
+                                        "Winning Group (Client Side)": "Hs3",
+                                        "Losing Group (Client Side)": "Hs4",
+                                        "Total Closed (BGI Side)": "V2",
+                                        "Line2": "Hr2"
+                                        },
+                           title=title,
+                           ajax_url=url_for('analysis.symbol_close_trades_ajax', _external=True, symbol=symbol, book=book, days=days),
+                           book = book.upper(),
+                           header=header, symbol=symbol,
+                           description=description, no_backgroud_Cover=True,
+                           replace_words=Markup(["Today"]))
+
+
+
+# The Ajax call for the symbols we want to query. B Book.
+@analysis.route('/Past_Trades/<book>/<days>/<symbol>/symbol_closed_trades_ajax/', methods=['GET', 'POST'])
+@roles_required()
+def symbol_close_trades_ajax(book="b", symbol="" ,days=-1):
+
+    # start_time = datetime.datetime.now() # Want to get the datetime when this request was called.
+    # # Snap shot of the volume.
+    # # Need to pass in the app as this would be using a newly created threadS
+    # df_data_vol_unsync = Get_Vol_snapshot(app=current_app._get_current_object(),
+    #                 symbol=symbol, book=book, day_backwards_count=5)
+    #
+    # # Want to show 2 days back if the hour is less than 10am (SGT), else, shows 1 day only.
+    # opentime_day_backwards_count = 3 if datetime.datetime.now().hour < 12 else 2    # Not too many days, else it will be too small.
+    # opentime_day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * opentime_day_backwards_count))
+    # symbol_opentime_trades_unsync = symbol_opentime_trades(app=current_app._get_current_object(),
+    #                                                        symbol=symbol, book=book, start_date=opentime_day_backwards)
+    #
+    # # Get the history details such as Trade volume and reenue
+    # Symbol_history_Daily_unsync = Symbol_history_Daily(symbol=symbol, book=book,
+    #                                                    app=current_app._get_current_object(),
+    #                                                    day_backwards_count=15)
+    #
+    # all_open_trades_start = datetime.datetime.now()
+    # all_trades = symbol_all_open_trades(symbol=symbol, book=book)
+    # print("all_open_trades_start() Took: {sec}s".format(sec=(datetime.datetime.now() - all_open_trades_start).total_seconds()))
+    #
+    # df_all_trades = pd.DataFrame(all_trades)
+
+
+
+    col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE']
+    col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS', 'CONVERTED_REVENUE']
+
+
+    # Closed trades for today, Make it into a pandas list.
+    df_closed_trades = pd.DataFrame(symbol_get_past_closed_trades(symbol=symbol, book=book, days=days))
+
+    # There are no closed trades for the day yet
+    if len(df_closed_trades) <=0:
+        closed_top_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        closed_bottom_accounts =  pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        total_sum_closed = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        top_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        bottom_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        closed_largest_lot_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    else:
+        # Use for calculating net volume.
+        df_closed_trades["LOTS"] =  df_closed_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
+        df_closed_trades["NET_LOTS"] = df_closed_trades.apply(lambda x: x["LOTS"] if x['CMD']==0 else -1*x["LOTS"] , axis=1)
+        df_closed_trades["DURATION_(AVG)"] = df_closed_trades.apply(
+            lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).seconds, axis=1)
+        # Uses the same col2 as the open trades
+        #closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
+
+        #col2 To add in DURATION_SEC
+        col2.append("DURATION_(AVG)")
+        # Want to take the mean duration, by trade.
+        closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).agg({'LOTS': 'sum',
+                                                                                          'NET_LOTS': 'sum',
+                                                                                          'CONVERTED_REVENUE': 'sum',
+                                                                                          'PROFIT': 'sum',
+                                                                                          'SWAPS': 'sum',
+                                                                                            'DURATION_(AVG)' : 'mean'}).reset_index()
+
+        # Round off the values that is not needed.
+        closed_login_sum["LOTS"] = round(closed_login_sum['LOTS'],2)
+        closed_login_sum["NET_LOTS"] = round(closed_login_sum['NET_LOTS'], 2)
+        closed_login_sum["CONVERTED_REVENUE"] = round(closed_login_sum['CONVERTED_REVENUE'], 2)
+        closed_login_sum["PROFIT"] = round(closed_login_sum['PROFIT'], 2)
+        closed_login_sum["SWAPS"] = round(closed_login_sum['SWAPS'], 2)
+        closed_login_sum["LOGIN"] = closed_login_sum.apply(lambda x: live_login_analysis_url( \
+            Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
+        # Want to get the average of the duration.
+        closed_login_sum["DURATION_(AVG)"] = closed_login_sum["DURATION_(AVG)"].apply(lambda x: trade_duration_bin(x))
+
+        # Want the Closed Top/Bottom accounts. Top = Winning, so no -ve PnL.
+        closed_top_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] >= 0].sort_values(\
+                                                                'CONVERTED_REVENUE', ascending=False)[col2].head(20)
+        closed_bottom_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] < 0].sort_values(\
+                                                                'CONVERTED_REVENUE', ascending=True)[col2].head(20)
+
+        closed_largest_lot_accounts = closed_login_sum.sort_values('LOTS', ascending=False)[col2].head(20)
+
+
+        # Color the CONVERTED_REVENUE
+        closed_bottom_accounts["CONVERTED_REVENUE"] = closed_bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+        closed_top_accounts["CONVERTED_REVENUE"] = closed_top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+        closed_largest_lot_accounts["CONVERTED_REVENUE"] = closed_largest_lot_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+
+        # If there are either no winning Accounts, or no losing accounts.
+        # No winning accounts with closed trades for today
+        closed_top_accounts = pd.DataFrame(
+            [{"Comment": "There are currently no Accounts With Closed Winning PnL for today for {}".format(symbol)}]) if \
+            len(closed_top_accounts) <= 0 else closed_top_accounts
+        # No losing accounts for closed trades for today.
+        closed_bottom_accounts = pd.DataFrame(
+            [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
+            len(closed_bottom_accounts) <= 0 else closed_bottom_accounts
+
+        closed_largest_lot_accounts = pd.DataFrame(
+            [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
+            len(closed_largest_lot_accounts) <= 0 else closed_largest_lot_accounts
+
+        # Closed Trades for today
+        # Group PnL
+        closed_group_sum = df_closed_trades.groupby(by=['COUNTRY', 'GROUP']).sum().reset_index()
+        closed_group_sum["LOTS"] = round(closed_group_sum['LOTS'],2)
+        closed_group_sum["NET_LOTS"] = round(closed_group_sum['NET_LOTS'], 2)
+        closed_group_sum["CONVERTED_REVENUE"] = round(closed_group_sum['CONVERTED_REVENUE'], 2)
+
+        # Only want those that are profitable
+        top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE', \
+                                                                              ascending=False)[col3].head(20)
+        top_closed_groups["CONVERTED_REVENUE"] = top_closed_groups["CONVERTED_REVENUE"].apply(
+            lambda x: profit_red_green(x))
+        top_closed_groups = pd.DataFrame([{"Comment": "There are currently no groups with closed profit for {}".format(symbol)}]) if \
+            len(top_closed_groups) <= 0 else top_closed_groups
+
+        # Only want those that are making a loss
+        bottom_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', \
+                                                                                                      ascending=True)[col3].head(20)
+        bottom_closed_groups["CONVERTED_REVENUE"] = bottom_closed_groups["CONVERTED_REVENUE"].apply(
+            lambda x: profit_red_green(x))
+        bottom_closed_groups = pd.DataFrame(
+            [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
+            len(bottom_closed_groups) <= 0 else bottom_closed_groups
+
+        # Total sum Floating
+        total_sum_closed_col = ['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]
+        total_sum_closed = df_closed_trades[total_sum_closed_col].sum()
+        if book == "b":
+            total_sum_closed =  total_sum_closed.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side if it's B book
+        else:   # If it's A book. We don't need to do that.
+            total_sum_closed = total_sum_closed.apply(
+                lambda x: round(x, 2))  # Flip it to be on BGI Side if it's B book
+
+        total_sum_closed["LOTS"] = abs(total_sum_closed["LOTS"])  # Since it's Total lots, we only want the abs value
+        for c in total_sum_closed_col: # Want to print it properly.
+            if isfloat(total_sum_closed[c]):
+                total_sum_closed[c] = "{:,}".format(total_sum_closed[c])
+
+
+    # Return the values as json.
+    # Each item in the returned dict will become a table, or a plot
+    return json.dumps({"H3": closed_top_accounts.to_dict("record"),
+                       "H4": closed_bottom_accounts.to_dict("record"),
+                       "H6" : closed_largest_lot_accounts.to_dict("record"),
+                       "Hs3": top_closed_groups.to_dict("record"),
+                       "Hs4" : bottom_closed_groups.to_dict("record"),
+                       "V2": [total_sum_closed.to_dict()]
+                       }, cls=plotly.utils.PlotlyJSONEncoder)
+
+
+def symbol_get_past_closed_trades(symbol="", book="B", days=-1):
+    #symbol="XAUUSD"
+
+    backward_days = int(days)   # The backward count days.
+    symbol_condition = " AND SYMBOL Like '%{}%' ".format(symbol)
+    country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
+    book_condition = " AND group_table.BOOK = '{}'".format(book)
+
+    # Want to reduce the overheads
+    # Should be 6 (GMT + 2, 2300-2300) or 7 (GMT + 1, 2200-2200)
+    ServerTimeDiff_Query = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else get_live1_time_difference()
+    #ServerTimeDiff_Query=6
+    # If it's Before SG 5 am or 6am, need to count back 1 more day.
+    if datetime.datetime.now().hour < (ServerTimeDiff_Query -1):
+        backward_days = backward_days -1    # Need to off set by 1 day.
+
+
+    # Want to calculate the start and end date of the trading day
+    start_of_day = get_working_day_date(datetime.datetime.now(), backward_days-1)
+    end_of_day = get_working_day_date(datetime.datetime.now(), backward_days)
+    end_of_day_live5 = get_working_day_date(datetime.datetime.now(), backward_days+1)
+
+    Live1_startofday = " {} {Start_hour}:00:00".format(start_of_day.strftime("%Y-%m-%d"), Start_hour = 23)
+    Live1_endofday = " {} {Start_hour}:00:00".format(end_of_day.strftime("%Y-%m-%d"), Start_hour=23)
+
+    Live5_startofday = " {} 00:00:00".format(end_of_day.strftime("%Y-%m-%d"))
+    Live5_endofday = " {} 00:00:00".format(end_of_day_live5.strftime("%Y-%m-%d"))
+
+
+
+
+    if book.lower() == "a":
+        # Additional SQL query if a book
+        Live2_book_query = """ AND	(
+		(mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live2.a_group))
+		OR (LOGIN IN(SELECT LOGIN FROM live2.a_login))
+		OR LOGIN = '9583'
+		OR LOGIN = '9615'
+		OR LOGIN = '9618'
+		OR(mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501)
+	) """
+    else:
+        Live2_book_query = book_condition
+
+    sql_statement = """(SELECT 'live1' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,
+           ROUND(CASE 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
+        FROM live1.mt4_trades, live5.group_table 
+        WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            mt4_trades.CLOSE_TIME >= '{Live1_startofday}' AND  mt4_trades.CLOSE_TIME < '{Live1_endofday}'
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live1' 
+            AND LENGTH(mt4_trades.LOGIN)>4
+            {symbol_condition} {country_condition} {book_condition}
+            )
+    UNION 
+        (SELECT 'live2' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,
+            ROUND(CASE 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
+            FROM live2.mt4_trades,live5.group_table 
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            mt4_trades.CLOSE_TIME >= '{Live1_startofday}' AND  mt4_trades.CLOSE_TIME < '{Live1_endofday}'
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live2' 
+            AND LENGTH(mt4_trades.LOGIN)>4
+            {symbol_condition} {country_condition} {Live2_book_query})
+    UNION 
+        (SELECT 'live3' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,
+            ROUND(CASE 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
+            FROM live3.mt4_trades,live5.group_table 
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            mt4_trades.CLOSE_TIME >= '{Live1_startofday}' AND  mt4_trades.CLOSE_TIME < '{Live1_endofday}'
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live3' 
+            AND LENGTH(mt4_trades.LOGIN)>4 
+            AND mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM live3.cambodia_exclude) 
+            {symbol_condition} {country_condition} {book_condition})
+    UNION
+        (SELECT 'live5' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,
+            ROUND(CASE 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
+            FROM live5.mt4_trades,live5.group_table 
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            mt4_trades.CLOSE_TIME >= '{Live5_startofday}' AND  mt4_trades.CLOSE_TIME < '{Live5_endofday}'
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live5' 
+            AND LENGTH(mt4_trades.LOGIN)>4
+            {symbol_condition} {country_condition} {book_condition})""".format(symbol_condition=symbol_condition, ServerTimeDiff_Query=ServerTimeDiff_Query, \
+                                                                               book_condition=book_condition, country_condition=country_condition,\
+                                                                               Live2_book_query=Live2_book_query,
+                                                                               Live1_startofday=Live1_startofday, Live1_endofday=Live1_endofday,
+                                                                               Live5_startofday=Live5_startofday,
+                                                                               Live5_endofday=Live5_endofday)
+
+    print(sql_statement)
+    sql_query = text(sql_statement.replace("\n", " ").replace("\t", " "))
+    raw_result = db.engine.execute(sql_query)   # Insert select..
+    result_data = raw_result.fetchall()     # Return Result
+    result_col = raw_result.keys()          # Column names
+
+    return [dict(zip(result_col, r)) for r in result_data]
+
 
 
 
