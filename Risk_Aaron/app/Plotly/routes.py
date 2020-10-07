@@ -1161,8 +1161,11 @@ def BGI_Symbol_Float_ajax():
     #return_val = [dict(zip(col_of_df,d)) for d in df_records]
 
 
-    # Want to hyperlink it.
-    df_to_table["YESTERDAY_REVENUE"] = df_to_table.apply(lambda x: """<a  href="{url}" target="_blank">{YESTERDAY_REVENUE}</a>""".format( \
+    # Want to hyperlink Yesterday Revenue. To show yesterday's date.
+    # Add comma if it's a float.
+    df_to_table["YESTERDAY_REVENUE"] = df_to_table["YESTERDAY_REVENUE"].apply(lambda x: "{:,.2f}".format(x) if isfloat(x) else x)
+    # Hyperlink it.
+    df_to_table["YESTERDAY_REVENUE"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_REVENUE}</a>""".format( \
                                                         url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
                                                         YESTERDAY_REVENUE=x["YESTERDAY_REVENUE"]),
                                                         axis=1)
@@ -2087,7 +2090,7 @@ def symbol_get_past_closed_trades(symbol="", book="B", days=-1):
                                                                                Live5_startofday=Live5_startofday,
                                                                                Live5_endofday=Live5_endofday)
 
-    print(sql_statement)
+    #print(sql_statement)
     sql_query = text(sql_statement.replace("\n", " ").replace("\t", " "))
     raw_result = db.engine.execute(sql_query)   # Insert select..
     result_data = raw_result.fetchall()     # Return Result
