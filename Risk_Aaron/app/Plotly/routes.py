@@ -1227,7 +1227,7 @@ def BGI_Symbol_Float_ajax():
 @roles_required()
 def symbol_float_trades(symbol="", book="b"):
 
-    title = "{}".format(symbol)
+    title = "{} ({})".format(symbol, book.upper())
     header = "{} Floating Trades".format(symbol)
 
     if book.lower() == "b":
@@ -1235,7 +1235,20 @@ def symbol_float_trades(symbol="", book="b"):
     elif book.lower() == "a":
         header += "(A 📕)"
 
-    description = Markup("Showing Open trades for {}<br>Details are on Client side.".format(symbol))
+    table_ledgend = "COUNTRY: Country that Client Group is in.<br>" + \
+                    "GROUP: Client Group.<br>" + \
+                    "LOTS : Lots of trades (Or total sum, where applies).<br>" + \
+                    "NET LOTS : Cross tally of buy (+ve) and sell (-ve).<br>" + \
+                    "CONVERTED REVENUE : SWAPS + PROFIT converted to USD.<br>" + \
+                    "REBATE : Amount (Sum) of rebate paid out.<br>" + \
+                    "SWAPS : Amount(Sum) of swaps for trades.<br>" + \
+                    "PROFIT : PnL (Sum) for trades.<br>" + \
+                    "TOTAL PROFIT: CONVERTED REVENUE - REBATE. This is how much BGI Earns.<br>" + \
+                    "<br><br>" + \
+                    "REBATE will be highlighted if REVENUE is -ve, But REVENUE + REBATE >= 0.<br>" +\
+                    "That's to say, Client is still profitable."
+
+    description = Markup("Showing Open trades for {}<br>Details are on Client side.<br><br>{}".format(symbol, table_ledgend))
 
     if symbol == "" :  # There are no information.
         flash("There were no symbol details.")
@@ -1262,6 +1275,7 @@ def symbol_float_trades(symbol="", book="b"):
                                         "History Daily Closed Vol": "P3",
                                         "History Daily Revenue": "P4",
                                         "Total Closed Today (BGI Side)": "V2",
+                                        "Country Closed (BGI Side)": "Hs6",
                                         "Line2": "Hr2",
                                         },
                            title=title,
@@ -1345,16 +1359,17 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 
         # By Live/Login #,'PROFIT', 'SWAPS'
         live_login_sum = df_open_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
-
+        print(live_login_sum)
         # Round off the values that is not needed.
         live_login_sum["LOTS"] = round(live_login_sum['LOTS'],2)
         live_login_sum["NET_LOTS"] = round(live_login_sum['NET_LOTS'], 2)
+        live_login_sum['REBATE'] = live_login_sum.apply(lambda x: color_rebate(rebate=x['REBATE'], pnl=x["CONVERTED_REVENUE"]), axis=1)
         live_login_sum["CONVERTED_REVENUE"] = round(live_login_sum['CONVERTED_REVENUE'], 2)
         live_login_sum["PROFIT"] = round(live_login_sum['PROFIT'], 2)
         live_login_sum["SWAPS"] = round(live_login_sum['SWAPS'], 2)
         live_login_sum["LOGIN"] = live_login_sum.apply(lambda x: live_login_analysis_url(\
                                     Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
-        live_login_sum["REBATE"] = round(live_login_sum['REBATE'], 2)
+        #live_login_sum["REBATE"] = round(live_login_sum['REBATE'], 2)
         live_login_sum["TOTAL_PROFIT"] = round(live_login_sum['TOTAL_PROFIT'], 2)
 
 
@@ -1384,11 +1399,17 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 
         # By Entity/Group
         group_sum = df_open_trades.groupby(by=['COUNTRY', 'GROUP',])[['LOTS', 'NET_LOTS','CONVERTED_REVENUE', 'SYMBOL', 'REBATE','TOTAL_PROFIT']].sum().reset_index()
+
+        # Want to color the rebate if profit <= 0, but Profit + rebate > 0
+        group_sum['REBATE'] = group_sum.apply(lambda x: color_rebate(rebate=x['REBATE'], pnl=x["CONVERTED_REVENUE"]),
+                                              axis=1)
         # Round it off to be able to be printed better.
         group_sum['CONVERTED_REVENUE'] = round(group_sum['CONVERTED_REVENUE'], 2)
         group_sum['LOTS'] = round(group_sum['LOTS'], 2)
         group_sum['NET_LOTS'] = round(group_sum['NET_LOTS'], 2)
-        group_sum['REBATE'] = round(group_sum['REBATE'], 2)
+        #group_sum['REBATE'] = round(group_sum['REBATE'], 2)
+
+
 
         # Only want those that are profitable
         top_groups = group_sum[group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE',
@@ -1413,6 +1434,8 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         total_sum = df_open_trades[total_sum_Col].sum()
         total_sum =  total_sum.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
         total_sum["LOTS"] = abs(total_sum["LOTS"])  # Since it's Total lots, we only want the abs value
+        total_sum['REBATE'] = color_rebate(rebate=total_sum['REBATE'], pnl=total_sum["CONVERTED_REVENUE"])
+
 
         for c in total_sum_Col: # Want to print it properly.
             if isfloat(total_sum[c]):
@@ -1423,7 +1446,14 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                                                                 'REBATE', 'TOTAL_PROFIT']].sum().reset_index()
 
         open_by_country["NET_LOTS"] = -1 * open_by_country["NET_LOTS"]
-        open_by_country["REBATE"] = -1 * open_by_country["REBATE"]
+        #open_by_country["REBATE"] = -1 * open_by_country["REBATE"]
+
+        open_by_country["REBATE"] = open_by_country.apply(lambda x: color_rebate(rebate=x['REBATE'],
+                                                            pnl=x["CONVERTED_REVENUE"], multiplier=-1),
+                                              axis=1)
+
+        # Want to show BGI Side. Color according to BGI Side
+        open_by_country["TOTAL_PROFIT"] = open_by_country["TOTAL_PROFIT"].apply(lambda x: profit_red_green(x * -1))
 
         if book == "b": # Only want to flip sides when it's B book.
             open_by_country["CONVERTED_REVENUE"] = open_by_country["CONVERTED_REVENUE"].apply(
@@ -1434,6 +1464,9 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 
 
         open_by_country["LOTS"] = abs(open_by_country["LOTS"])
+
+
+
         open_by_country["PROFIT"] = -1 * open_by_country["PROFIT"]
         open_by_country.sort_values(["NET_LOTS"], inplace=True)    # Sort it by Net_Lots
 
@@ -1463,6 +1496,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         top_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
         bottom_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
         closed_largest_lot_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        closed_by_country = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
     else:
         # Use for calculating net volume.
         df_closed_trades["DURATION_(AVG)"] = df_closed_trades.apply(
@@ -1472,7 +1506,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 
         #col2 To add in DURATION_SEC
         col2.append("DURATION_(AVG)")
-        col2.remove("REBATE")
+        #col2.remove("REBATE")
         # Want to take the mean duration, by trade.
         closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).agg({'LOTS': 'sum',
                                                                                           'NET_LOTS': 'sum',
@@ -1480,6 +1514,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                                                                                           'PROFIT': 'sum',
                                                                                           'SWAPS': 'sum',
                                                                                            'TOTAL_PROFIT' : 'sum',
+                                                                                            'REBATE' : 'sum',
                                                                                             'DURATION_(AVG)' : 'mean'}).reset_index()
 
         # Round off the values that is not needed.
@@ -1487,6 +1522,8 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         closed_login_sum["NET_LOTS"] = round(closed_login_sum['NET_LOTS'], 2)
         closed_login_sum["CONVERTED_REVENUE"] = round(closed_login_sum['CONVERTED_REVENUE'], 2)
         closed_login_sum["PROFIT"] = round(closed_login_sum['PROFIT'], 2)
+        closed_login_sum["REBATE"] = closed_login_sum.apply( lambda x: color_rebate(rebate=x['REBATE'], \
+                                                                                    pnl=x["CONVERTED_REVENUE"]), axis=1)
         closed_login_sum["SWAPS"] = round(closed_login_sum['SWAPS'], 2)
         closed_login_sum["LOGIN"] = closed_login_sum.apply(lambda x: live_login_analysis_url( \
             Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
@@ -1527,6 +1564,10 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         closed_group_sum["LOTS"] = round(closed_group_sum['LOTS'],2)
         closed_group_sum["NET_LOTS"] = round(closed_group_sum['NET_LOTS'], 2)
         closed_group_sum["CONVERTED_REVENUE"] = round(closed_group_sum['CONVERTED_REVENUE'], 2)
+        closed_group_sum["REBATE"] = closed_group_sum.apply( lambda x: color_rebate(rebate=x['REBATE'], \
+                                                                                    pnl=x["CONVERTED_REVENUE"]), axis=1)
+
+
 
         # Only want those that are profitable
         top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE', \
@@ -1546,12 +1587,14 @@ def symbol_float_trades_ajax(symbol="", book="b"):
             len(bottom_closed_groups) <= 0 else bottom_closed_groups
 
         # Total sum Floating
-        total_sum_closed_col = ['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]
+        total_sum_closed_col = ['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS', 'REBATE' ]
         total_sum_closed = df_closed_trades[total_sum_closed_col].sum()
-        total_sum_closed =  total_sum_closed.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
+
 
         if book == "b":  # Only want to flip sides when it's B book.
-            total_sum_closed = total_sum_closed.apply(lambda x: round(x * -1, 2))  # Flip it to be on BGI Side.
+            total_sum_closed["REBATE"] = color_rebate(rebate=total_sum_closed['REBATE'],
+                                                      pnl=total_sum_closed["CONVERTED_REVENUE"], multiplier=-1)
+            total_sum_closed = total_sum_closed.apply(lambda x: round(x * -1, 2) if isfloat(x) else x)  # Flip it to be on BGI Side.
         else:  # If it's A book. We don't need to do that.
             total_sum_closed = total_sum_closed.apply(lambda x: round(x , 2))  # Flip it to be on BGI Side.
 
@@ -1559,6 +1602,35 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         for c in total_sum_closed_col: # Want to print it properly.
             if isfloat(total_sum_closed[c]):
                 total_sum_closed[c] = "{:,}".format(total_sum_closed[c])
+
+        # Want the table by country.
+        closed_by_country = df_closed_trades.groupby(["COUNTRY"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE',
+                                                                'REBATE', 'TOTAL_PROFIT']].sum().reset_index()
+
+        # Want to show Net Lots on BGI Side
+        closed_by_country["NET_LOTS"] = -1 * closed_by_country["NET_LOTS"]
+
+        closed_by_country["REBATE"] = closed_by_country.apply(lambda x: color_rebate(rebate=x['REBATE'], pnl=x["CONVERTED_REVENUE"], multiplier=-1),
+                                              axis=1)
+
+        # Want to show BGI Side. Color according to BGI Side
+        closed_by_country["TOTAL_PROFIT"] = closed_by_country["TOTAL_PROFIT"].apply(lambda x: profit_red_green(x * -1))
+
+        if book == "b": # Only want to flip sides when it's B book.
+            closed_by_country["CONVERTED_REVENUE"] = closed_by_country["CONVERTED_REVENUE"].apply(
+                lambda x: profit_red_green(-1 * x))
+        else:   # If it's A book. We don't need to do that.
+            closed_by_country["CONVERTED_REVENUE"] = closed_by_country["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+
+        closed_by_country["LOTS"] = abs(closed_by_country["LOTS"])
+
+        closed_by_country["PROFIT"] = -1 * closed_by_country["PROFIT"]
+        closed_by_country.sort_values(["NET_LOTS"], inplace=True)    # Sort it by Net_Lots
+
+        closed_by_country = pd.DataFrame(
+            [{"Comment": "There are currently no Country with floating PnL for {}".format(symbol)}]) if \
+            len(closed_by_country) <= 0 else closed_by_country
+
 
 
     # Get the results from unsync
@@ -1619,7 +1691,8 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                        "Hs4" : bottom_closed_groups.to_dict("record"),
                        "P3": history_daily_vol_fig,
                        "P4": history_daily_rev_fig,
-                       "V2": [total_sum_closed.to_dict()]
+                       "V2": [total_sum_closed.to_dict()],
+                       "Hs6" : closed_by_country.to_dict("record")
                        }, cls=plotly.utils.PlotlyJSONEncoder)
 
 

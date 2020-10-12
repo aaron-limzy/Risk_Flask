@@ -426,3 +426,16 @@ def profit_red_green(x):
     elif float(x) < 0:
         color = "red"
     return "<span style='color:{color}'>{x:,.2f}</span>".format(color=color,x=float(x))
+
+
+
+# color the rebate.
+# If PnL was -ve, but is +ve after rebate.
+# Will want to flag it out.
+# multiplier is if we need to flip.
+def color_rebate(rebate, pnl, multiplier = 1):
+    style = "" # By default
+    #style = " style='background-color:#FF8065' "
+    if float(pnl) <= 0 and (float(rebate) + float(pnl)) >= 0:
+         style = " style='background-color:#FF8065' "
+    return "<span {style}>{x:,.2f}</span>".format(style=style, x=round(float(rebate) * multiplier,2))
