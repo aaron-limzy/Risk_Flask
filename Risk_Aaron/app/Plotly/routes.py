@@ -1163,12 +1163,14 @@ def BGI_Symbol_Float_ajax():
 
     # Want to hyperlink Yesterday Revenue. To show yesterday's date.
     # Add comma if it's a float.
-    df_to_table["YESTERDAY_REVENUE"] = df_to_table["YESTERDAY_REVENUE"].apply(lambda x: "{:,.2f}".format(x) if isfloat(x) else x)
-    # Hyperlink it.
-    df_to_table["YESTERDAY_REVENUE"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_REVENUE}</a>""".format( \
-                                                        url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
-                                                        YESTERDAY_REVENUE=x["YESTERDAY_REVENUE"]),
-                                                        axis=1)
+
+    if "YESTERDAY_REVENUE" in df_to_table:
+        df_to_table["YESTERDAY_REVENUE"] = df_to_table["YESTERDAY_REVENUE"].apply(lambda x: "{:,.2f}".format(x) if isfloat(x) else x)
+        # Hyperlink it.
+        df_to_table["YESTERDAY_REVENUE"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_REVENUE}</a>""".format( \
+                                                            url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
+                                                            YESTERDAY_REVENUE=x["YESTERDAY_REVENUE"]),
+                                                            axis=1)
 
     # Want to hyperlink it.
     df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{symbol}</a>'.format(symbol=x,
@@ -1303,11 +1305,19 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                            "H2": [{"Error": "No Trades for {} Found".format(symbol)}]
                            })
 
+    # Do transformation for all subsequent dfs.
+    df_all_trades["LOTS"] = df_all_trades["LOTS"].apply(lambda x: float(x))  # Convert from decimal.decimal
+    df_all_trades["NET_LOTS"] = df_all_trades.apply(lambda x: x["LOTS"] if x['CMD'] == 0 else -1 * x["LOTS"], axis=1)
+    df_all_trades["TOTAL_PROFIT"] = df_all_trades.apply(lambda x: x["CONVERTED_REVENUE"] + x['REBATE'], axis=1)
+
+
     # Want only those open trades.
     df_open_trades = df_all_trades[df_all_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only open trades.
 
-    col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE']
-    col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS', 'CONVERTED_REVENUE']
+
+
+    col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE', 'REBATE']
+    col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'REBATE']
 
 
     if len(df_open_trades) <= 0:    # If there are no closed trades for the day.
@@ -1321,8 +1331,8 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 
     else:
         # Use for calculating net volume.
-        df_open_trades["LOTS"] =  df_open_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
-        df_open_trades["NET_LOTS"] = df_open_trades.apply(lambda x: x["LOTS"] if x['CMD']==0 else -1*x["LOTS"] , axis=1)
+
+
 
         # By Trades.
         #col = ['LIVE', 'LOGIN', 'TICKET', 'LOTS', 'CMD', 'CONVERTED_REVENUE', 'COUNTRY',
@@ -1344,6 +1354,8 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         live_login_sum["SWAPS"] = round(live_login_sum['SWAPS'], 2)
         live_login_sum["LOGIN"] = live_login_sum.apply(lambda x: live_login_analysis_url(\
                                     Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
+        live_login_sum["REBATE"] = round(live_login_sum['REBATE'], 2)
+        live_login_sum["TOTAL_PROFIT"] = round(live_login_sum['TOTAL_PROFIT'], 2)
 
 
         # Want Top and winning accounts. If there are none. we will reflect accordingly.
@@ -1371,12 +1383,12 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         #live_login_group = df_open_trades[['LIVE', 'LOGIN', 'COUNTRY','GROUP']].drop_duplicates()
 
         # By Entity/Group
-        group_sum = df_open_trades.groupby(by=['COUNTRY', 'GROUP',])[['LOTS', 'NET_LOTS','CONVERTED_REVENUE', 'SYMBOL']].sum().reset_index()
+        group_sum = df_open_trades.groupby(by=['COUNTRY', 'GROUP',])[['LOTS', 'NET_LOTS','CONVERTED_REVENUE', 'SYMBOL', 'REBATE','TOTAL_PROFIT']].sum().reset_index()
         # Round it off to be able to be printed better.
         group_sum['CONVERTED_REVENUE'] = round(group_sum['CONVERTED_REVENUE'], 2)
         group_sum['LOTS'] = round(group_sum['LOTS'], 2)
         group_sum['NET_LOTS'] = round(group_sum['NET_LOTS'], 2)
-
+        group_sum['REBATE'] = round(group_sum['REBATE'], 2)
 
         # Only want those that are profitable
         top_groups = group_sum[group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE',
@@ -1397,7 +1409,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
             [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
             len(bottom_groups) <= 0 else bottom_groups
         # Total sum Floating
-        total_sum_Col = ['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]       # The columns that we want to show
+        total_sum_Col = ['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' , 'REBATE']       # The columns that we want to show
         total_sum = df_open_trades[total_sum_Col].sum()
         total_sum =  total_sum.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
         total_sum["LOTS"] = abs(total_sum["LOTS"])  # Since it's Total lots, we only want the abs value
@@ -1407,9 +1419,11 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                 total_sum[c] = "{:,}".format(total_sum[c])
 
         # Want the table by country.
-        open_by_country = df_open_trades.groupby(["COUNTRY"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE' ]].sum().reset_index()
-        open_by_country["NET_LOTS"] = -1 * open_by_country["NET_LOTS"]
+        open_by_country = df_open_trades.groupby(["COUNTRY"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE',
+                                                                'REBATE', 'TOTAL_PROFIT']].sum().reset_index()
 
+        open_by_country["NET_LOTS"] = -1 * open_by_country["NET_LOTS"]
+        open_by_country["REBATE"] = -1 * open_by_country["REBATE"]
 
         if book == "b": # Only want to flip sides when it's B book.
             open_by_country["CONVERTED_REVENUE"] = open_by_country["CONVERTED_REVENUE"].apply(
@@ -1438,7 +1452,6 @@ def symbol_float_trades_ajax(symbol="", book="b"):
             len(largest_login) <= 0 else largest_login
 
 
-
     # Closed trades for today!
     df_closed_trades = df_all_trades[df_all_trades["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only Closed trades.
 
@@ -1452,8 +1465,6 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         closed_largest_lot_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
     else:
         # Use for calculating net volume.
-        df_closed_trades["LOTS"] =  df_closed_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
-        df_closed_trades["NET_LOTS"] = df_closed_trades.apply(lambda x: x["LOTS"] if x['CMD']==0 else -1*x["LOTS"] , axis=1)
         df_closed_trades["DURATION_(AVG)"] = df_closed_trades.apply(
             lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).seconds, axis=1)
         # Uses the same col2 as the open trades
@@ -1461,12 +1472,14 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 
         #col2 To add in DURATION_SEC
         col2.append("DURATION_(AVG)")
+        col2.remove("REBATE")
         # Want to take the mean duration, by trade.
         closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).agg({'LOTS': 'sum',
                                                                                           'NET_LOTS': 'sum',
                                                                                           'CONVERTED_REVENUE': 'sum',
                                                                                           'PROFIT': 'sum',
                                                                                           'SWAPS': 'sum',
+                                                                                           'TOTAL_PROFIT' : 'sum',
                                                                                             'DURATION_(AVG)' : 'mean'}).reset_index()
 
         # Round off the values that is not needed.
@@ -1615,7 +1628,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 # # Can choose A Book or B Book.
 def symbol_all_open_trades(symbol="", book="B"):
     #symbol="XAUUSD"
-    symbol_condition = " AND SYMBOL Like '%{}%' ".format(symbol)
+    symbol_condition = " AND mt4_trades.SYMBOL Like '%{}%' ".format(symbol)
     country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
     book_condition = " AND group_table.BOOK = '{}'".format(book)
 
@@ -1636,7 +1649,12 @@ def symbol_all_open_trades(symbol="", book="B"):
     ServerTimeDiff_Query = "{}".format(session["live1_sgt_time_diff"]) if "live1_sgt_time_diff" in session \
         else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
 
-    sql_statement = """(SELECT 'live1' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+    sql_statement = """(SELECT 'live1' AS LIVE,		
+		COUNTRY,		LOGIN,		TICKET,		A1.SYMBOL,		CMD,		LOTS,
+		OPEN_PRICE,		OPEN_TIME,		CLOSE_PRICE,		CLOSE_TIME,		SWAPS,		PROFIT,		`GROUP`, COALESCE(REBATE,0) * LOTS as `REBATE`, CONVERTED_REVENUE
+        FROM (
+        
+        SELECT 'live1' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
         SYMBOL, CMD,
         VOLUME*0.01 as LOTS, OPEN_PRICE,
             OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,
@@ -1649,7 +1667,7 @@ def symbol_all_open_trades(symbol="", book="B"):
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
             ELSE 0 END,2) AS CONVERTED_REVENUE
-        FROM live1.mt4_trades, live5.group_table 
+        FROM live1.mt4_trades, live5.group_table
         WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
             (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00'  
                 OR mt4_trades.CLOSE_TIME >= (CASE WHEN 
@@ -1660,8 +1678,12 @@ def symbol_all_open_trades(symbol="", book="B"):
             AND group_table.LIVE = 'live1' 
             AND LENGTH(mt4_trades.LOGIN)>4
             {symbol_condition} {country_condition} {book_condition}
-            )
+            ) as A1 LEFT JOIN  live1.symbol_rebate as B1 ON A1.SYMBOL = B1.SYMBOL)
     UNION 
+        (SELECT 'live2' AS LIVE,		
+		COUNTRY,		LOGIN,		TICKET,		A2.SYMBOL,		CMD,		LOTS,
+		OPEN_PRICE,		OPEN_TIME,		CLOSE_PRICE,		CLOSE_TIME,		SWAPS,		PROFIT,		`GROUP`, COALESCE(REBATE,0) * LOTS as `REBATE`, CONVERTED_REVENUE
+        FROM 
         (SELECT 'live2' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
         SYMBOL, CMD,
         VOLUME*0.01 as LOTS, OPEN_PRICE,
@@ -1685,8 +1707,12 @@ def symbol_all_open_trades(symbol="", book="B"):
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live2' 
             AND LENGTH(mt4_trades.LOGIN)>4
-            {symbol_condition} {country_condition} {Live2_book_query})
-    UNION 
+            {symbol_condition} {country_condition} {Live2_book_query}) as A2 LEFT JOIN  live2.symbol_rebate as B2 ON A2.SYMBOL = B2.SYMBOL)
+    UNION (
+    SELECT 'live3' AS LIVE,		
+		COUNTRY,		LOGIN,		TICKET,		A3.SYMBOL,		CMD,		LOTS,
+		OPEN_PRICE,		OPEN_TIME,		CLOSE_PRICE,		CLOSE_TIME,		SWAPS,		PROFIT,		`GROUP`, COALESCE(REBATE,0) * LOTS as `REBATE`, CONVERTED_REVENUE
+    FROM 
         (SELECT 'live3' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
         SYMBOL, CMD,
         VOLUME*0.01 as LOTS, OPEN_PRICE,
@@ -1711,8 +1737,12 @@ def symbol_all_open_trades(symbol="", book="B"):
             AND group_table.LIVE = 'live3' 
             AND LENGTH(mt4_trades.LOGIN)>4 
             AND mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM live3.cambodia_exclude) 
-            {symbol_condition} {country_condition} {book_condition})
+            {symbol_condition} {country_condition} {book_condition}) as A3 LEFT JOIN  live3.symbol_rebate as B3 ON A3.SYMBOL = B3.SYMBOL)
     UNION
+        (SELECT 'live5' AS LIVE,		
+		COUNTRY,		LOGIN,		TICKET,		A5.SYMBOL,		CMD,		LOTS,
+		OPEN_PRICE,		OPEN_TIME,		CLOSE_PRICE,		CLOSE_TIME,		SWAPS,		PROFIT,		`GROUP`, COALESCE(REBATE,0) * LOTS as `REBATE`, CONVERTED_REVENUE
+     FROM 
         (SELECT 'live5' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
         SYMBOL, CMD,
         VOLUME*0.01 as LOTS, OPEN_PRICE,
@@ -1740,9 +1770,13 @@ def symbol_all_open_trades(symbol="", book="B"):
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live5' 
             AND LENGTH(mt4_trades.LOGIN)>4
-            {symbol_condition} {country_condition} {book_condition})""".format(symbol_condition=symbol_condition, ServerTimeDiff_Query=ServerTimeDiff_Query, \
-                                                                               book_condition=book_condition, country_condition=country_condition,\
-                                                                               Live2_book_query=Live2_book_query)
+            {symbol_condition} {country_condition} {book_condition}) 
+            as A5 LEFT JOIN  live5.symbol_rebate as B5 ON A5.SYMBOL = B5.SYMBOL)
+            """.format(symbol_condition=symbol_condition,
+                       ServerTimeDiff_Query=ServerTimeDiff_Query,
+                       book_condition=book_condition,
+                       country_condition=country_condition,
+                       Live2_book_query=Live2_book_query)
 
 
     sql_query = text(sql_statement.replace("\n", " ").replace("\t", " "))
@@ -2283,17 +2317,18 @@ def Client_Comment_Scalp_ajax():
     if not cfh_fix_timing():
         return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
-
+    min_backtrace = 60*12
     # Want to reduce the overheads.
     server_time_diff_str = " {} ".format(session["live1_sgt_time_diff"]) if "live1_sgt_time_diff" in session else \
             "SELECT RESULT FROM aaron.`aaron_misc_data` where item = 'live1_time_diff'"
 
+
     sql_statement = """SELECT LOGIN, TICKET, OPEN_TIME, CLOSE_TIME, SYMBOL, SWAPS, PROFIT, `COMMENT`, `GROUP` 
             FROM live1.mt4_trades
             WHERE `comment` like '%-%=%'
-            and OPEN_TIME >= NOW()-INTERVAL {ServerTimeDiff_Query} HOUR - INTERVAL 60 MINUTE
+            and OPEN_TIME >= NOW()-INTERVAL {ServerTimeDiff_Query} HOUR - INTERVAL {min_backtrace} MINUTE
             AND TICKET NOT in (SELECT TICKET FROM aaron.cn_scalp_data)
-            """.format(ServerTimeDiff_Query=server_time_diff_str)
+            """.format(ServerTimeDiff_Query=server_time_diff_str, min_backtrace = min_backtrace)
 
     sql_query = text(sql_statement)
     return_val = query_SQL_return_record(sql_query)
@@ -2305,30 +2340,32 @@ def Client_Comment_Scalp_ajax():
         df = pd.DataFrame(return_val)
         df["OPEN_TIME"] = df["OPEN_TIME"].apply(lambda x: "{}".format(x))
         df["CLOSE_TIME"] = df["CLOSE_TIME"].apply(lambda x: "{}".format(x))
-        col_needed = ["TICKET", "LOGIN", "SYMBOL", "COMMENT"]
+        col_needed = ["TICKET", "LOGIN", "SYMBOL", "PROFIT",  "COMMENT"]
         data_dict  = df[col_needed].to_dict('r')
         data_list = [list(d.values()) for d in data_dict]   # Get the values
         data_list_2 = [ ["'{}'".format(str(e)) for e in d] for d in data_list]    # convert to str, add '
         data_to_insert = [" ({}) ".format(" , ".join(d)) for d in data_list_2]     # Want to insert to SQL
 
         # Need to alert Risk
-        async_Post_To_Telegram(AARON_BOT, "Scalpers for Bonus hitting [<b>{sym}</b>] on Live 1".format(sym=" ,".join(list(df["SYMBOL"].unique()))),
-                         TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+        async_Post_To_Telegram(AARON_BOT, "Scalpers [{Login}] for Bonus hitting [<b>{sym}</b>] on Live 1".format(
+            Login = ", ".join(df["LOGIN"]._values.tolist()),
+            sym=" ,".join(list(df["SYMBOL"].unique()))),
+            TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
 
         # inset into SQL
-        async_sql_insert(app=current_app._get_current_object(),
-                        header="INSERT INTO aaron.CN_SCALP_Data (TICKET,LOGIN, SYMBOL, `COMMENT`) VALUES ",
-                        values = data_to_insert,
-                        footer = " ON DUPLICATE KEY UPDATE SYMBOL=VALUES(SYMBOL)")
+        # async_sql_insert(app=current_app._get_current_object(),
+        #                 header="INSERT INTO aaron.CN_SCALP_Data (TICKET,LOGIN, SYMBOL, `COMMENT`) VALUES ",
+        #                 values = data_to_insert,
+        #                 footer = " ON DUPLICATE KEY UPDATE SYMBOL=VALUES(SYMBOL)")
 
-        async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
-                         Subject="Live 1 Bonus Scalpers",
-                         HTML_Text="""{Email_Header}Hi,<br><br>Clients from Live 1 are hitting {sym}<br>{table}<br>
-                               <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
-                             Email_Header=Email_Header, sym=" ,".join(list(df["SYMBOL"].unique())),
-                             table = Array_To_HTML_Table(Table_Header = col_needed,Table_Data=data_list),
-                             datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                             Email_Footer=Email_Footer), Attachment_Name=[])
+        # async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
+        #                  Subject="Live 1 Bonus Scalpers",
+        #                  HTML_Text="""{Email_Header}Hi,<br><br>Clients from Live 1 are hitting {sym}<br>{table}<br>
+        #                        <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
+        #                      Email_Header=Email_Header, sym=" ,".join(list(df["SYMBOL"].unique())),
+        #                      table = Array_To_HTML_Table(Table_Header = col_needed,Table_Data=data_list),
+        #                      datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        #                      Email_Footer=Email_Footer), Attachment_Name=[])
 
         print(df)
 
@@ -2831,8 +2868,10 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
             FROM live{Live}.mt4_users , live{Live}.mt4_groups 
             WHERE `Login`='{Login}' AND mt4_groups.`GROUP` = mt4_users.`GROUP` """.format(Live=Live, Login=Login)
 
+    print(sql_statement)
     sql_statement = sql_statement.replace("\n", "").replace("\t", "")
     login_details = Query_SQL_db_engine(sql_statement)
+    print(login_details)
 
     # Color the background for Balace to highlight it.
     login_details[0]["BALANCE"] = "<span style = 'background-color:#4af076;' >{}</span> ".format(login_details[0]["BALANCE"])
