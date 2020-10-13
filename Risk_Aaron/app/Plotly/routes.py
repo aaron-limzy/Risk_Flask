@@ -1165,12 +1165,22 @@ def BGI_Symbol_Float_ajax():
     # Add comma if it's a float.
 
     if "YESTERDAY_REVENUE" in df_to_table:
-        df_to_table["YESTERDAY_REVENUE"] = df_to_table["YESTERDAY_REVENUE"].apply(lambda x: "{:,.2f}".format(x) if isfloat(x) else x)
+        #df_to_table["YESTERDAY_REVENUE"] = df_to_table["YESTERDAY_REVENUE"].apply(lambda x: "{:,.2f}".format(x) if isfloat(x) else x)
         # Hyperlink it.
         df_to_table["YESTERDAY_REVENUE"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_REVENUE}</a>""".format( \
                                                             url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
-                                                            YESTERDAY_REVENUE=x["YESTERDAY_REVENUE"]),
+                                                            YESTERDAY_REVENUE=profit_red_green(x["YESTERDAY_REVENUE"]) if isfloat(x["YESTERDAY_REVENUE"]) else x["YESTERDAY_REVENUE"] ),
                                                             axis=1)
+    # Also want to hyperlink this.
+    # Just.. to have more hypterlink. HA ha ha.
+    # Haven changed name yet. So it's still names "volume"
+    if "YESTERDAY_VOLUME" in df_to_table:
+        # Hyperlink it.
+        df_to_table["YESTERDAY_VOLUME"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_VOLUME}</a>""".format( \
+                                                            url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
+                                                            YESTERDAY_VOLUME=x["YESTERDAY_VOLUME"]),
+                                                            axis=1)
+
 
     # Want to hyperlink it.
     df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{symbol}</a>'.format(symbol=x,
@@ -2419,10 +2429,12 @@ def Client_Comment_Scalp_ajax():
         data_list_2 = [ ["'{}'".format(str(e)) for e in d] for d in data_list]    # convert to str, add '
         data_to_insert = [" ({}) ".format(" , ".join(d)) for d in data_list_2]     # Want to insert to SQL
 
+        all_login = ["{}".format(x) for x in list(df["LOGIN"])]
+
         # Need to alert Risk
         async_Post_To_Telegram(AARON_BOT, "Scalpers [{Login}] for Bonus hitting [<b>{sym}</b>] on Live 1".format(
-            Login = ", ".join(df["LOGIN"]._values.tolist()),
-            sym=" ,".join(list(df["SYMBOL"].unique()))),
+            Login = ", ".join(all_login),
+            sym=" ,".join(list(df["SYMBOL"]))),
             TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
 
         # inset into SQL
