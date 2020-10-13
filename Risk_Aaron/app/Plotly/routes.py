@@ -2423,7 +2423,7 @@ def Client_Comment_Scalp_ajax():
         df = pd.DataFrame(return_val)
         df["OPEN_TIME"] = df["OPEN_TIME"].apply(lambda x: "{}".format(x))
         df["CLOSE_TIME"] = df["CLOSE_TIME"].apply(lambda x: "{}".format(x))
-        col_needed = ["TICKET", "LOGIN", "SYMBOL", "PROFIT",  "COMMENT"]
+        col_needed = ["TICKET", "LOGIN", "SYMBOL",  "COMMENT"]
         data_dict  = df[col_needed].to_dict('r')
         data_list = [list(d.values()) for d in data_dict]   # Get the values
         data_list_2 = [ ["'{}'".format(str(e)) for e in d] for d in data_list]    # convert to str, add '
@@ -2452,7 +2452,7 @@ def Client_Comment_Scalp_ajax():
         #                      datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         #                      Email_Footer=Email_Footer), Attachment_Name=[])
 
-        print(df)
+        #print(df)
 
 
 
