@@ -2438,10 +2438,10 @@ def Client_Comment_Scalp_ajax():
             TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
 
         # inset into SQL
-        # async_sql_insert(app=current_app._get_current_object(),
-        #                 header="INSERT INTO aaron.CN_SCALP_Data (TICKET,LOGIN, SYMBOL, `COMMENT`) VALUES ",
-        #                 values = data_to_insert,
-        #                 footer = " ON DUPLICATE KEY UPDATE SYMBOL=VALUES(SYMBOL)")
+        async_sql_insert(app=current_app._get_current_object(),
+                        header="INSERT INTO aaron.CN_SCALP_Data (TICKET,LOGIN, SYMBOL, `COMMENT`) VALUES ",
+                        values = data_to_insert,
+                        footer = " ON DUPLICATE KEY UPDATE SYMBOL=VALUES(SYMBOL)")
 
         # async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
         #                  Subject="Live 1 Bonus Scalpers",
