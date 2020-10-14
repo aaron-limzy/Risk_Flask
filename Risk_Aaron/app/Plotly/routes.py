@@ -2434,7 +2434,7 @@ def Client_Comment_Scalp_ajax():
             FROM live1.mt4_trades, live1.symbol_rebate
             WHERE `comment` like '%-%=%'
             and mt4_trades.SYMBOL = symbol_rebate.SYMBOL 
-            and OPEN_TIME >= NOW()-INTERVAL {ServerTimeDiff_Query} HOUR - INTERVAL {min_backtrace} MINUTE
+            and OPEN_TIME >= NOW()-INTERVAL ({ServerTimeDiff_Query}) HOUR - INTERVAL {min_backtrace} MINUTE
             AND TICKET NOT in (SELECT TICKET FROM aaron.cn_scalp_data)
             """.format(ServerTimeDiff_Query=server_time_diff_str, min_backtrace = min_backtrace)
 
