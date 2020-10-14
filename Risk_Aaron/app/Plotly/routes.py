@@ -727,7 +727,7 @@ def check_session_live1_timing():
 
     return_val = False  # If session timing is outdated, or needs to be updated.
     # Might need to set the session life time. I think?
-    # Want to save some stuff in session so that we don't have to keep querying for it.
+    # Saving some stuff in session so that we don't have to keep querying for it.
     if "live1_sgt_time_diff" in session and \
         "live1_sgt_time_update" in session and  \
         datetime.datetime.now() < session["live1_sgt_time_update"] and \
@@ -755,8 +755,8 @@ def check_session_live1_timing():
                     live1_server_difference=session['live1_sgt_time_diff'], hour_from_2300=0) + \
                                            datetime.timedelta(hours=session['live1_sgt_time_diff'], minutes=10)
         session['live1_sgt_time_update'] = min(time_refresh_next, server_nextday_time)
-        # Post_To_Telegram(AARON_BOT, "Clearing cookies and retrieving new cookies for: {}".format(current_user.id),
-        #                  TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+        Post_To_Telegram(AARON_BOT, "Clearing cookies and retrieving new cookies for: {}".format(current_user.id),
+                          TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
         #print(session)
 
     return return_val
@@ -774,14 +774,14 @@ def BGI_Country_Float_ajax():
     if not cfh_fix_timing():
         return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
-
-    #check_session_live1_timing()
     # Will check the timing
-    if check_session_live1_timing() == True and "yesterday_pnl_by_country" in session:
+    # Need to ensure that there is something there, in case of a race condition where the PnL is still saving but it's been queried.
+    if check_session_live1_timing() == True and \
+            "yesterday_pnl_by_country" in session:
         #print("From in memory")
         # From in memory of session
         #print("live1_sgt_time_update ' {}".format(session["live1_sgt_time_update"]))
-
+        #print(len(session["yesterday_pnl_by_country"]))
         df_yesterday_country_float = pd.DataFrame.from_dict(session["yesterday_pnl_by_country"])
         #print(df_yesterday_country_float)
     else:       # If session timing is outdated, or needs to be updated.
@@ -1021,14 +1021,14 @@ def BGI_Symbol_Float():
 def BGI_Symbol_Float_ajax():
 
 
-
     #start = datetime.datetime.now()
     # TODO: Only want to save during trading hours.
     # TODO: Want to write a custom function, and not rely on using CFH timing.
     if not cfh_fix_timing():
         return json.dumps([[{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}]])
 
-    if check_session_live1_timing() == True and "yesterday_pnl_by_symbol" in session:
+    if check_session_live1_timing() == True and "yesterday_pnl_by_symbol" in session \
+            and  len(session["yesterday_pnl_by_symbol"]) > 0:
         # From "in memory" of session
         #print(session)
         df_yesterday_symbol_pnl = pd.DataFrame.from_dict(session["yesterday_pnl_by_symbol"])
@@ -1040,6 +1040,8 @@ def BGI_Symbol_Float_ajax():
             #print("DATE IN")
             df_yesterday_symbol_pnl['DATE'] = df_yesterday_symbol_pnl['DATE'].apply(
                 lambda x: x.strftime("%Y-%m-%d") if isinstance(x, datetime.date) else x)
+
+
         session["yesterday_pnl_by_symbol"] =  df_yesterday_symbol_pnl.to_dict()
 
     # Want to get the Unique date for the "Yesterday" date.
@@ -1144,13 +1146,29 @@ def BGI_Symbol_Float_ajax():
         df_to_table["ASK"] = df_to_table["ASK"].apply(lambda x: "{:2.5f}".format(x) if (isfloat(decimal.Decimal(str(x)).as_tuple().exponent)
                                                                                         and (decimal.Decimal(str(x)).as_tuple().exponent < -5)) else x)
 
-    # Go ahead to merge the tables.
+    # Go ahead to merge the tables, and add the hyperlink
     if "SYMBOL" in df_to_table and "SYMBOL" in df_yesterday_symbol_pnl:
         df_to_table = df_to_table.merge(df_yesterday_symbol_pnl, on="SYMBOL", how='left')
         df_to_table.fillna("-", inplace=True)  # Want to fill up all the empty ones with -
+        # Want to hyperlink Yesterday Revenue. To show yesterday's date.
+        # Add comma if it's a float.
 
-
-
+        if "YESTERDAY_REVENUE" in df_to_table:
+            #df_to_table["YESTERDAY_REVENUE"] = df_to_table["YESTERDAY_REVENUE"].apply(lambda x: "{:,.2f}".format(x) if isfloat(x) else x)
+            # Hyperlink it.
+            df_to_table["YESTERDAY_REVENUE"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_REVENUE}</a>""".format( \
+                                                                url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
+                                                                YESTERDAY_REVENUE=profit_red_green(x["YESTERDAY_REVENUE"]) if isfloat(x["YESTERDAY_REVENUE"]) else x["YESTERDAY_REVENUE"] ),
+                                                                axis=1)
+        # Also want to hyperlink this.
+        # Just.. to have more hypterlink. HA ha ha.
+        # Haven changed name yet. So it's still names "volume"
+        if "YESTERDAY_VOLUME" in df_to_table:
+            # Hyperlink it.
+            df_to_table["YESTERDAY_VOLUME"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_VOLUME}</a>""".format( \
+                                                                url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
+                                                                YESTERDAY_VOLUME=x["YESTERDAY_VOLUME"]),
+                                                                axis=1)
 
     # Need to check if the columns are in the df.
     # taking this chance to re-arrange them as well.
@@ -1161,25 +1179,7 @@ def BGI_Symbol_Float_ajax():
     #return_val = [dict(zip(col_of_df,d)) for d in df_records]
 
 
-    # Want to hyperlink Yesterday Revenue. To show yesterday's date.
-    # Add comma if it's a float.
 
-    if "YESTERDAY_REVENUE" in df_to_table:
-        #df_to_table["YESTERDAY_REVENUE"] = df_to_table["YESTERDAY_REVENUE"].apply(lambda x: "{:,.2f}".format(x) if isfloat(x) else x)
-        # Hyperlink it.
-        df_to_table["YESTERDAY_REVENUE"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_REVENUE}</a>""".format( \
-                                                            url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
-                                                            YESTERDAY_REVENUE=profit_red_green(x["YESTERDAY_REVENUE"]) if isfloat(x["YESTERDAY_REVENUE"]) else x["YESTERDAY_REVENUE"] ),
-                                                            axis=1)
-    # Also want to hyperlink this.
-    # Just.. to have more hypterlink. HA ha ha.
-    # Haven changed name yet. So it's still names "volume"
-    if "YESTERDAY_VOLUME" in df_to_table:
-        # Hyperlink it.
-        df_to_table["YESTERDAY_VOLUME"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_VOLUME}</a>""".format( \
-                                                            url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
-                                                            YESTERDAY_VOLUME=x["YESTERDAY_VOLUME"]),
-                                                            axis=1)
 
 
     # Want to hyperlink it.
@@ -1192,8 +1192,28 @@ def BGI_Symbol_Float_ajax():
     df_to_table.rename(columns={"NETVOL": "NET_LOTS", "VOLUME": "FLOATING_LOTS",
                                 "TODAY_VOL" : "TODAY_LOTS", "YESTERDAY_VOLUME": "YESTERDAY_LOTS"}, inplace=True)
 
+    ## Want to check if YESTERDAY_VOLUME and YESTERDAY_REVENUE are in.
+    # # Ment for debugging the 5.10am to 7.55am issue.
+    if 'YESTERDAY_LOTS' not in df_to_table.columns or 'YESTERDAY_REVENUE' not in df_to_table.columns:
+        # Send email
+        #print(session)
+        session_array = []
+        for u in list(session.keys()):
+            session_array.append("{} : {}".format(u, session[u]))
+        #print("<br><br>".join(session_array))
+        async_send_email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[], Subject="Yesterday_lots or Yesterday_revenue Missing",
+                         HTML_Text="df_to_table <br><br>{}<br><br>session<br><br>{}".format(df_to_table.to_html() , "<br><br>".join(session_array)),
+                         Attachment_Name=[])
+
+
+    # Want only those columns that are in the df
+    # Might be missing cause the PnL could still be saving.
+    col_of_df_return = [c for c in ["SYMBOL", "NET_LOTS", "FLOATING_LOTS", "REVENUE", "TODAY_LOTS", \
+                                    "TODAY_REVENUE", "BID", "ASK","YESTERDAY_LOTS", "YESTERDAY_REVENUE"] \
+                        if c in  list(df_to_table.columns)]
+
     # Pandas return list of dicts.
-    return_val = df_to_table[["SYMBOL", "NET_LOTS", "FLOATING_LOTS", "REVENUE", "TODAY_LOTS", "TODAY_REVENUE", "BID", "ASK","YESTERDAY_LOTS", "YESTERDAY_REVENUE"]].to_dict("record")
+    return_val = df_to_table[col_of_df_return].to_dict("record")
 
 
 
@@ -2385,9 +2405,12 @@ def Client_Comment_Scalp():
 
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Country_Float.html", backgroud_Filename='css/World_Map.jpg', icon= "css/Globe.png", Table_name="Scalpers", \
-                           title=title, ajax_url=url_for('analysis.Client_Comment_Scalp_ajax', _external=True),
-                           ajax_clear_cookie_url=url_for("analysis.Clear_session_ajax", _external=True), header=header, setinterval=15,
+    return render_template("Webworker_Single_Table.html",
+                           backgroud_Filename='css/World_Map.jpg',
+                           icon= "css/Globe.png", Table_name="Scalpers", \
+                           title=title,
+                           ajax_url=url_for('analysis.Client_Comment_Scalp_ajax', _external=True),
+                            header=header, setinterval=15,
                            description=description, replace_words=Markup(['(Client Side)']))
 
 
@@ -2400,15 +2423,17 @@ def Client_Comment_Scalp_ajax():
     if not cfh_fix_timing():
         return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
-    min_backtrace = 60*12
+    min_backtrace = 60*24
     # Want to reduce the overheads.
     server_time_diff_str = " {} ".format(session["live1_sgt_time_diff"]) if "live1_sgt_time_diff" in session else \
             "SELECT RESULT FROM aaron.`aaron_misc_data` where item = 'live1_time_diff'"
 
 
-    sql_statement = """SELECT LOGIN, TICKET, OPEN_TIME, CLOSE_TIME, SYMBOL, SWAPS, PROFIT, `COMMENT`, `GROUP` 
-            FROM live1.mt4_trades
+    sql_statement = """SELECT LOGIN, TICKET, OPEN_TIME, CLOSE_TIME, VOLUME * 0.01 as LOTS, 
+                        mt4_trades.SYMBOL, SWAPS, PROFIT, `COMMENT`, `GROUP`, symbol_rebate.REBATE * VOLUME * 0.01 as REBATE
+            FROM live1.mt4_trades, live1.symbol_rebate
             WHERE `comment` like '%-%=%'
+            and mt4_trades.SYMBOL = symbol_rebate.SYMBOL 
             and OPEN_TIME >= NOW()-INTERVAL {ServerTimeDiff_Query} HOUR - INTERVAL {min_backtrace} MINUTE
             AND TICKET NOT in (SELECT TICKET FROM aaron.cn_scalp_data)
             """.format(ServerTimeDiff_Query=server_time_diff_str, min_backtrace = min_backtrace)
@@ -2417,31 +2442,34 @@ def Client_Comment_Scalp_ajax():
     return_val = query_SQL_return_record(sql_query)
 
     if len(return_val) == 0:
-        return_val = [{"Comment":"No Clients Found"}]
+        return_val = {"Comment":"No Clients Found"}
     else:
 
         df = pd.DataFrame(return_val)
         df["OPEN_TIME"] = df["OPEN_TIME"].apply(lambda x: "{}".format(x))
         df["CLOSE_TIME"] = df["CLOSE_TIME"].apply(lambda x: "{}".format(x))
-        col_needed = ["TICKET", "LOGIN", "SYMBOL",  "COMMENT"]
-        data_dict  = df[col_needed].to_dict('r')
-        data_list = [list(d.values()) for d in data_dict]   # Get the values
-        data_list_2 = [ ["'{}'".format(str(e)) for e in d] for d in data_list]    # convert to str, add '
-        data_to_insert = [" ({}) ".format(" , ".join(d)) for d in data_list_2]     # Want to insert to SQL
+        df["ALERT_TIME"] ="NOW()"   # Want to force this column to input into SQL
+        df["ALERT_TIME"] = "NOW()"  # Want to force this column to input into SQL
 
-        all_login = ["{}".format(x) for x in list(df["LOGIN"])]
+
+        col_needed = ["LOGIN", "SYMBOL", "COMMENT", "PROFIT", "REBATE"]
+
+        df2 = df.copy() # Make a Copy.
+        df2["LOGIN"] = df2["LOGIN"].apply(lambda x: live_login_analysis_url(Live=1, Login=x))
+        data_dict  = df2[col_needed].to_dict('r')
+        data_list = [list(d.values()) for d in data_dict]   # Get the values
+        data_list_2 = [ " | ".join(["{}".format(str(e)) for e in d]) for d in data_list]    # convert to str, add '
+        print(data_list_2)
+
+
+        #all_login = ["{}".format(x) for x in list(df["LOGIN"])]
 
         # Need to alert Risk
-        async_Post_To_Telegram(AARON_BOT, "Scalpers [{Login}] for Bonus hitting [<b>{sym}</b>] on Live 1".format(
-            Login = ", ".join(all_login),
-            sym=" ,".join(list(df["SYMBOL"]))),
+        async_Post_To_Telegram(AARON_BOT, "Scalpers (Live 1) With specific Comment.\n{table_col}\n{data}".format( table_col= " | ".join(col_needed), data="\n".join(data_list_2)),
             TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
 
-        # inset into SQL
-        async_sql_insert(app=current_app._get_current_object(),
-                        header="INSERT INTO aaron.CN_SCALP_Data (TICKET,LOGIN, SYMBOL, `COMMENT`) VALUES ",
-                        values = data_to_insert,
-                        footer = " ON DUPLICATE KEY UPDATE SYMBOL=VALUES(SYMBOL)")
+        async_Post_To_Telegram(AARON_BOT, '<a href="http://www.google.com/">inline URL</a> | Together with something else\nHello',
+                               TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
 
         # async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
         #                  Subject="Live 1 Bonus Scalpers",
@@ -2452,11 +2480,28 @@ def Client_Comment_Scalp_ajax():
         #                      datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         #                      Email_Footer=Email_Footer), Attachment_Name=[])
 
+
+
+        sql_col_needed = ["TICKET", "LOGIN", "SYMBOL", "COMMENT", "ALERT_TIME"]
+        sql_data_dict  = df[sql_col_needed].to_dict('r')
+
+        sql_data_list = [list(d.values()) for d in sql_data_dict]   # Get the values
+        sql_data_list_2 = [ ["'{}'".format(str(e)) if e!= "NOW()" else e for e in d] for d in sql_data_list]    # convert to str, add '
+        data_to_insert = [" ({}) ".format(" , ".join(d)) for d in sql_data_list_2]     # Want to insert to SQL
+
+        # inset into SQL
+        # async_sql_insert(app=current_app._get_current_object(),
+        #                 header="INSERT INTO aaron.CN_SCALP_Data (TICKET,LOGIN, SYMBOL, `COMMENT`, `ALERT_TIME`) VALUES ",
+        #                 values = data_to_insert,
+        #                 footer = " ON DUPLICATE KEY UPDATE SYMBOL=VALUES(SYMBOL)")
+
+
+
         #print(df)
 
 
 
-    return json.dumps([return_val, "No Data", "No Data"], cls=plotly.utils.PlotlyJSONEncoder)
+    return json.dumps(return_val, cls=plotly.utils.PlotlyJSONEncoder)
     #return json.dumps([return_val], cls=plotly.utils.PlotlyJSONEncoder)
 
 
