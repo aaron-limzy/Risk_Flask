@@ -2406,7 +2406,7 @@ def Client_Comment_Scalp():
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html",
-                           backgroud_Filename='css/World_Map.jpg',
+                           backgroud_Filename='css/runner_1.jpg',
                            icon= "css/Globe.png", Table_name="Scalpers", \
                            title=title,
                            ajax_url=url_for('analysis.Client_Comment_Scalp_ajax', _external=True),
@@ -2423,7 +2423,7 @@ def Client_Comment_Scalp_ajax():
     if not cfh_fix_timing():
         return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
-    min_backtrace = 60*24
+    min_backtrace = 60*2
     # Want to reduce the overheads.
     server_time_diff_str = " {} ".format(session["live1_sgt_time_diff"]) if "live1_sgt_time_diff" in session else \
             "SELECT RESULT FROM aaron.`aaron_misc_data` where item = 'live1_time_diff'"
@@ -2442,7 +2442,7 @@ def Client_Comment_Scalp_ajax():
     return_val = query_SQL_return_record(sql_query)
 
     if len(return_val) == 0:
-        return_val = {"Comment":"No Clients Found"}
+        return_val = [{"Comment":"No Clients Found"}]
     else:
 
         df = pd.DataFrame(return_val)
@@ -2468,17 +2468,17 @@ def Client_Comment_Scalp_ajax():
         async_Post_To_Telegram(AARON_BOT, "Scalpers (Live 1) With specific Comment.\n{table_col}\n{data}".format( table_col= " | ".join(col_needed), data="\n".join(data_list_2)),
             TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
 
-        async_Post_To_Telegram(AARON_BOT, '<a href="http://www.google.com/">inline URL</a> | Together with something else\nHello',
-                               TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
-
-        # async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
-        #                  Subject="Live 1 Bonus Scalpers",
-        #                  HTML_Text="""{Email_Header}Hi,<br><br>Clients from Live 1 are hitting {sym}<br>{table}<br>
-        #                        <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
-        #                      Email_Header=Email_Header, sym=" ,".join(list(df["SYMBOL"].unique())),
-        #                      table = Array_To_HTML_Table(Table_Header = col_needed,Table_Data=data_list),
-        #                      datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        #                      Email_Footer=Email_Footer), Attachment_Name=[])
+        # async_Post_To_Telegram(AARON_BOT, '<a href="http://www.google.com/">inline URL</a> | Together with something else\nHello',
+        #                        TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+        #EMAIL_LIST_BGI
+        async_send_email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[],
+                         Subject="Live 1 Bonus Scalpers",
+                         HTML_Text="""{Email_Header}Hi,<br><br>Clients from Live 1 are hitting {sym}<br>{table}<br>
+                               <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
+                             Email_Header=Email_Header, sym=" ,".join(list(df["SYMBOL"].unique())),
+                             table = Array_To_HTML_Table(Table_Header = col_needed,Table_Data=data_list),
+                             datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                             Email_Footer=Email_Footer), Attachment_Name=[])
 
 
 
@@ -2490,10 +2490,10 @@ def Client_Comment_Scalp_ajax():
         data_to_insert = [" ({}) ".format(" , ".join(d)) for d in sql_data_list_2]     # Want to insert to SQL
 
         # inset into SQL
-        # async_sql_insert(app=current_app._get_current_object(),
-        #                 header="INSERT INTO aaron.CN_SCALP_Data (TICKET,LOGIN, SYMBOL, `COMMENT`, `ALERT_TIME`) VALUES ",
-        #                 values = data_to_insert,
-        #                 footer = " ON DUPLICATE KEY UPDATE SYMBOL=VALUES(SYMBOL)")
+        async_sql_insert(app=current_app._get_current_object(),
+                        header="INSERT INTO aaron.CN_SCALP_Data (TICKET,LOGIN, SYMBOL, `COMMENT`, `ALERT_TIME`) VALUES ",
+                        values = data_to_insert,
+                        footer = " ON DUPLICATE KEY UPDATE SYMBOL=VALUES(SYMBOL)")
 
 
 
