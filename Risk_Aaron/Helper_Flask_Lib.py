@@ -404,7 +404,7 @@ def trade_duration_bin(duration):
     for d, s in bin_in_seconds.items():
         if duration <= d:   # If less then or equals to
             return s
-    return "Longer than 1 hour"
+    return "> 1 Month"
 
 # To get the URL for the Live/Login to run client analysis
 def live_login_analysis_url(Live, Login):

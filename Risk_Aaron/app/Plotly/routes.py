@@ -1389,7 +1389,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 
         # By Live/Login #,'PROFIT', 'SWAPS'
         live_login_sum = df_open_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
-        print(live_login_sum)
+        #print(live_login_sum)
         # Round off the values that is not needed.
         live_login_sum["LOTS"] = round(live_login_sum['LOTS'],2)
         live_login_sum["NET_LOTS"] = round(live_login_sum['NET_LOTS'], 2)
@@ -1530,7 +1530,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
     else:
         # Use for calculating net volume.
         df_closed_trades["DURATION_(AVG)"] = df_closed_trades.apply(
-            lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).seconds, axis=1)
+            lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).total_seconds(), axis=1)
         # Uses the same col2 as the open trades
         #closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
 
@@ -1985,7 +1985,7 @@ def symbol_close_trades_ajax(book="b", symbol="" ,days=-1):
         df_closed_trades["LOTS"] =  df_closed_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
         df_closed_trades["NET_LOTS"] = df_closed_trades.apply(lambda x: x["LOTS"] if x['CMD']==0 else -1*x["LOTS"] , axis=1)
         df_closed_trades["DURATION_(AVG)"] = df_closed_trades.apply(
-            lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).seconds, axis=1)
+            lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).total_seconds(), axis=1)
         # Uses the same col2 as the open trades
         #closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
 
@@ -2878,8 +2878,9 @@ def plot_symbol_tradetime_duration(df_data):
 # To show (something like tableau, for people with no access)
 def plot_symbol_tradetime_duration_2(df_data):
 
-    # Want to get the duration string
-    df_data["DURATION_STR"] = df_data.apply(lambda x: trade_duration_bin((x["CLOSE_TIME"] - x["OPEN_TIME"]).seconds), axis=1)
+    # Want to get the duration string if it has not been computed
+    if "DURATION_STR" not in df_data:
+        df_data["DURATION_STR"] = df_data.apply(lambda x: trade_duration_bin((x["CLOSE_TIME"] - x["OPEN_TIME"]).total_seconds()), axis=1)
     df_data_2 = df_data.groupby(by=["SYMBOL", "DURATION_STR"]).count().reset_index()
 
 
@@ -2960,7 +2961,7 @@ def Client_trades_Analysis(Live="", Login=""):
 
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
-    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/pattern5.jpg', icon="",
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/strips_1.png', icon="",
                            Table_name={"Live: {}, Login: {}".format(Live, Login):"V1",
                                        "Profit Calculation":"V2",
                                        "Net Position": "H1",
@@ -2983,13 +2984,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     if Live not in ["1","2","3","5"] or Login == "":   # There are no information.
         return json.dumps([{"Result":"Error in Login or Live"}])
 
-    # sql_statement = """SELECT LOGIN, ENABLE, ENABLE_READONLY, BALANCE, CREDIT, EQUITY, `GROUP`
-    #         FROM live{Live}.mt4_users
-    #         WHERE `Login`='{Login}'""".format(Live=Live, Login=Login)
-    #
-    # result = Query_SQL_db_engine(sql_statement)
-
-
+    # First Query. Want to get the MT4 Group, Loginm Currency, Margin call etc...
     sql_statement = """SELECT LOGIN, mt4_users.`GROUP`,mt4_groups.CURRENCY,mt4_groups.MARGIN_CALL, mt4_groups.MARGIN_STOPOUT, 
                     mt4_users.`ENABLE`, ENABLE_READONLY, `NAME`, LEVERAGE,
                         ROUND(BALANCE,2) as BALANCE, ROUND(mt4_users.CREDIT , 2) as CREDIT,
@@ -2998,36 +2993,58 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
             FROM live{Live}.mt4_users , live{Live}.mt4_groups 
             WHERE `Login`='{Login}' AND mt4_groups.`GROUP` = mt4_users.`GROUP` """.format(Live=Live, Login=Login)
 
-    print(sql_statement)
+    #print(sql_statement)
     sql_statement = sql_statement.replace("\n", "").replace("\t", "")
     login_details = Query_SQL_db_engine(sql_statement)
-    print(login_details)
 
-    # Color the background for Balace to highlight it.
+    # Want to print it propely, with the approperiate commas
+    ignore_col = ["LOGIN", "GROUP", "CURRENCY", "MARGIN_CALL", "MARGIN_STOPOUT", "ENABLE", "ENABLE_READONLY"]
+    login_details = [{k:"{:,.2f}".format(d) if k not in ignore_col and isfloat(d) else d for k,d in l.items()} for l in login_details]
+
+    #print(login_details)
+
+    # Color the background for Balance to highlight it.
     login_details[0]["BALANCE"] = "<span style = 'background-color:#4af076;' >{}</span> ".format(login_details[0]["BALANCE"])
 
     if len(login_details) <= 0:   # There are no information.
         return json.dumps([{"Result":"Error in Login or Live"}])
 
 
+    # # # Write the SQL Statement and Update to disable the Account monitoring.
+    # # # Want the CLOSE TRADES limited to 100
+    # # # AND all the OPEN trades
+    # sql_statement = """(SELECT TICKET, SYMBOL, VOLUME * 0.01 AS LOTS, CMD, OPEN_TIME,
+	# 	CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`
+    #     FROM live{Live}.mt4_trades
+    #     WHERE `Login`='{Login}' AND CLOSE_TIME = "1970-01-01 00:00:00" AND CMD < 2)
+    #
+    #     UNION
+    #
+    #     (SELECT TICKET, SYMBOL, VOLUME * 0.01 AS LOTS, CMD, OPEN_TIME,
+    #             CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`
+    #     FROM live{Live}.mt4_trades
+    #     WHERE `Login`='{Login}' and CLOSE_TIME <> "1970-01-01 00:00:00"  AND CMD < 2
+    #     ORDER BY CLOSE_TIME DESC
+    #     LIMIT 100 )""".format(Live=Live, Login=Login)
+
     # # Write the SQL Statement and Update to disable the Account monitoring.
     # # Want the CLOSE TRADES limited to 100
     # # AND all the OPEN trades
-    sql_statement = """(SELECT TICKET, SYMBOL, VOLUME * 0.01 AS LOTS, CMD, OPEN_TIME, 
-		CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`
-        FROM live{Live}.mt4_trades 
+    sql_statement = """(SELECT TICKET,  mt4_trades.SYMBOL, VOLUME * 0.01 AS LOTS, CMD, OPEN_TIME, 
+		CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`,COALESCE(REBATE* VOLUME * 0.01,0) as REBATE
+        FROM live{Live}.mt4_trades  LEFT JOIN live{Live}.symbol_rebate ON mt4_trades.SYMBOL = symbol_rebate.SYMBOL
         WHERE `Login`='{Login}' AND CLOSE_TIME = "1970-01-01 00:00:00" AND CMD < 2)
         
         UNION
         
-        (SELECT TICKET, SYMBOL, VOLUME * 0.01 AS LOTS, CMD, OPEN_TIME, 
-                CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`
-        FROM live{Live}.mt4_trades 
-        WHERE `Login`='{Login}' and CLOSE_TIME <> "1970-01-01 00:00:00"  AND CMD < 2
-        ORDER BY CLOSE_TIME DESC
-        LIMIT 100 )""".format(Live=Live, Login=Login)
+        (SELECT TICKET, mt4_trades.SYMBOL, VOLUME * 0.01 AS LOTS, CMD, OPEN_TIME, 
+                CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`, COALESCE(REBATE* VOLUME * 0.01,0)  as REBATE
+	FROM live{Live}.mt4_trades LEFT JOIN live{Live}.symbol_rebate ON mt4_trades.SYMBOL = symbol_rebate.SYMBOL
+	WHERE `Login`='{Login}' and CLOSE_TIME <> "1970-01-01 00:00:00"  AND CMD < 2
+	ORDER BY CLOSE_TIME DESC
+	LIMIT 100 )""".format(Live=Live, Login=Login)
 
-    sql_statement = sql_statement.replace("\n", "").replace("\t", "")
+    sql_statement = sql_statement.replace("\n", " ").replace("\t", " ")
     result = Query_SQL_db_engine(sql_statement)
     df_data = pd.DataFrame(result)
 
@@ -3037,7 +3054,14 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     # # average_trade_duration_fig = plot_symbol_tradetime_duration(symbol_average_tradetime)
 
 
-    average_trade_duration_fig = plot_symbol_tradetime_duration_2(df_data)
+
+
+    # Want to get the live 1 to SGT time difference.
+    # Since server is running on SGT (GMT + 8) Time.
+    if not "live1_sgt_time_diff" in session:
+        session["live1_sgt_time_diff"] = get_live1_time_difference()
+        print("Getting live1_sgt_time_diff from SQL")
+
 
     # # Can use Pandas to calculate the average as well...
     # """select SYMBOL, AVG(CLOSE_TIME-OPEN_TIME) as 'AVERAGE DURATION'
@@ -3065,7 +3089,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     Sum_details = Sum_total_account_details(Live, Login)
     deposit_withdrawal_fig = plot_account_details(Sum_details)   # To get the figure to show.
 
-    if "PROFIT" in df_data:     # BOLD the profit
+    if "PROFIT" in df_data:     # Color the profit
         df_data["PROFIT"] =  df_data["PROFIT"].apply(lambda x: '<span style="color:{Color}">{value}</span>'.format(Color=color_negative_red(x), value=x))
 
     if "SWAPS" in df_data:
@@ -3080,7 +3104,19 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     df_data["DURATION"] = df_data.apply(lambda x: "-" if int(x['CMD']) >= 2 else \
                         (x["CLOSE_TIME"] - x["OPEN_TIME"] \
                         if x["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00') else \
-                        pd.Timestamp.now() - x["OPEN_TIME"]), axis=1)
+                        pd.Timestamp.now() - datetime.timedelta(hours = float(session["live1_sgt_time_diff"])) - x["OPEN_TIME"]), axis=1)
+
+    if "DURATION" in df_data:
+        # Want to get the duration string
+        #df_data["DURATION_SEC"] = df_data["DURATION"].apply(lambda x: x.total_seconds() if isinstance(x, datetime.timedelta) else x)
+        df_data["DURATION_STR"] =  df_data["DURATION"].apply(lambda x: trade_duration_bin(x.total_seconds()) \
+                            if isinstance(x, datetime.timedelta) else x)
+    else:
+        df_data["DURATION_STR"] = ""
+
+    # Plot the graph. Would e best to use the df_data["DURATION"] that was already calculated.
+    # Want only CLOSED trades.
+    average_trade_duration_fig = plot_symbol_tradetime_duration_2(df_data[df_data["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')])
 
     # Want to see which trades are below 3 mins..
     df_data["DURATION"] =  df_data["DURATION"].apply(lambda x: '<span style="color:red">{value}</span>'.format(value=x)  \
@@ -3093,18 +3129,19 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     if "CMD" in df_data:
         df_data["CMD"] = df_data["CMD"].apply(lambda x: cmd[x] if x in cmd else x)
 
+    # df_data["DURATION_SEC"] = df_data["DURATION"] .apply(lambda x: x.total_seconds())
+
     # Re-arrange the index
     df_data = df_data[[ 'TICKET', 'SYMBOL', 'CMD','LOTS', 'OPEN_TIME',
-                        'CLOSE_TIME',"DURATION",'SWAPS', 'PROFIT','GROUP',
+                        'CLOSE_TIME',"DURATION",'SWAPS', 'PROFIT', 'REBATE' ,'GROUP',
                         'COMMENT', 'DURATION_STR']]
 
     # Want to get the open trades.
-    open_position =  df_data[df_data["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')] # Only open trades.
+    open_position =  df_data[df_data["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]  # Only open trades.
+    open_position["OPEN_TIME"] = open_position["OPEN_TIME"].apply(lambda x: "{}".format(x)) # Format OPEN_TIME to be something printable.
     open_position.drop(columns=['CLOSE_TIME', 'DURATION'], inplace=True)
     open_position_dict = open_position.to_dict("record")
 
-    # Want to get the duration string
-    df_data["DURATION_STR"] = df_data.apply(lambda x: trade_duration_bin((x["CLOSE_TIME"] - x["OPEN_TIME"]).seconds), axis=1)
 
 
     # Overwrite df_data to consist of only the closed trades
