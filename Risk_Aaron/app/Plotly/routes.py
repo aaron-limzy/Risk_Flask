@@ -2988,8 +2988,8 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     sql_statement = """SELECT LOGIN, mt4_users.`GROUP`,mt4_groups.CURRENCY,mt4_groups.MARGIN_CALL, mt4_groups.MARGIN_STOPOUT, 
                     mt4_users.`ENABLE`, ENABLE_READONLY, `NAME`, LEVERAGE,
                         ROUND(BALANCE,2) as BALANCE, ROUND(mt4_users.CREDIT , 2) as CREDIT,
-                        ROUND(EQUITY, 2) as EQUITY, ROUND(MARGIN, 2) as `MARGIN (E/M)`, 
-                        ROUND(MARGIN_LEVEL,2) as MARGIN_LEVEL, ROUND(MARGIN_FREE, 2) as MARGIN_FREE
+                        ROUND(EQUITY, 2) as EQUITY, ROUND(MARGIN, 2) as `MARGIN`, 
+                        ROUND(MARGIN_LEVEL,2) as 'MARGIN_LEVEL  (E/M)', ROUND(MARGIN_FREE, 2) as MARGIN_FREE
             FROM live{Live}.mt4_users , live{Live}.mt4_groups 
             WHERE `Login`='{Login}' AND mt4_groups.`GROUP` = mt4_users.`GROUP` """.format(Live=Live, Login=Login)
 
