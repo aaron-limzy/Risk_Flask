@@ -1518,149 +1518,153 @@ def symbol_float_trades_ajax(symbol="", book="b"):
     # Closed trades for today!
     df_closed_trades = df_all_trades[df_all_trades["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only Closed trades.
 
-    # There are no closed trades for the day yet
-    if len(df_closed_trades) <=0:
-        closed_top_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-        closed_bottom_accounts =  pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-        total_sum_closed = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-        top_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-        bottom_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-        closed_largest_lot_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-        closed_by_country = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-    else:
-        # Use for calculating net volume.
-        df_closed_trades["DURATION_(AVG)"] = df_closed_trades.apply(
-            lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).total_seconds(), axis=1)
-        # Uses the same col2 as the open trades
-        #closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
 
-        #col2 To add in DURATION_SEC
-        col2.append("DURATION_(AVG)")
-        #col2.remove("REBATE")
-        # Want to take the mean duration, by trade.
-        closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).agg({'LOTS': 'sum',
-                                                                                          'NET_LOTS': 'sum',
-                                                                                          'CONVERTED_REVENUE': 'sum',
-                                                                                          'PROFIT': 'sum',
-                                                                                          'SWAPS': 'sum',
-                                                                                           'TOTAL_PROFIT' : 'sum',
-                                                                                            'REBATE' : 'sum',
-                                                                                            'DURATION_(AVG)' : 'mean'}).reset_index()
+    # List unpacking from the return of the function.
+    [closed_top_accounts, closed_bottom_accounts, total_sum_closed, top_closed_groups,
+     bottom_closed_groups, closed_largest_lot_accounts, closed_by_country] = symbol_closed_trades_analysis(df_closed_trades, book, symbol)
 
-        # Round off the values that is not needed.
-        closed_login_sum["LOTS"] = round(closed_login_sum['LOTS'],2)
-        closed_login_sum["NET_LOTS"] = round(closed_login_sum['NET_LOTS'], 2)
-        closed_login_sum["CONVERTED_REVENUE"] = round(closed_login_sum['CONVERTED_REVENUE'], 2)
-        closed_login_sum["PROFIT"] = round(closed_login_sum['PROFIT'], 2)
-        closed_login_sum["REBATE"] = closed_login_sum.apply( lambda x: color_rebate(rebate=x['REBATE'], \
-                                                                                    pnl=x["CONVERTED_REVENUE"]), axis=1)
-        closed_login_sum["SWAPS"] = round(closed_login_sum['SWAPS'], 2)
-        closed_login_sum["LOGIN"] = closed_login_sum.apply(lambda x: live_login_analysis_url( \
-            Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
-        # Want to get the average of the duration.
-        closed_login_sum["DURATION_(AVG)"] = closed_login_sum["DURATION_(AVG)"].apply(lambda x: trade_duration_bin(x))
-
-        # Want the Closed Top/Bottom accounts. Top = Winning, so no -ve PnL.
-        closed_top_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] >= 0].sort_values(\
-                                                                'CONVERTED_REVENUE', ascending=False)[col2].head(20)
-        closed_bottom_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] < 0].sort_values(\
-                                                                'CONVERTED_REVENUE', ascending=True)[col2].head(20)
-
-        closed_largest_lot_accounts = closed_login_sum.sort_values('LOTS', ascending=False)[col2].head(20)
-
-
-        # Color the CONVERTED_REVENUE
-        closed_bottom_accounts["CONVERTED_REVENUE"] = closed_bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-        closed_top_accounts["CONVERTED_REVENUE"] = closed_top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-        closed_largest_lot_accounts["CONVERTED_REVENUE"] = closed_largest_lot_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-
-        # If there are either no winning Accounts, or no losing accounts.
-        # No winning accounts with closed trades for today
-        closed_top_accounts = pd.DataFrame(
-            [{"Comment": "There are currently no Accounts With Closed Winning PnL for today for {}".format(symbol)}]) if \
-            len(closed_top_accounts) <= 0 else closed_top_accounts
-        # No losing accounts for closed trades for today.
-        closed_bottom_accounts = pd.DataFrame(
-            [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
-            len(closed_bottom_accounts) <= 0 else closed_bottom_accounts
-
-        closed_largest_lot_accounts = pd.DataFrame(
-            [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
-            len(closed_largest_lot_accounts) <= 0 else closed_largest_lot_accounts
-
-        # Closed Trades for today
-        # Group PnL
-        closed_group_sum = df_closed_trades.groupby(by=['COUNTRY', 'GROUP']).sum().reset_index()
-        closed_group_sum["LOTS"] = round(closed_group_sum['LOTS'],2)
-        closed_group_sum["NET_LOTS"] = round(closed_group_sum['NET_LOTS'], 2)
-        closed_group_sum["CONVERTED_REVENUE"] = round(closed_group_sum['CONVERTED_REVENUE'], 2)
-        closed_group_sum["REBATE"] = closed_group_sum.apply( lambda x: color_rebate(rebate=x['REBATE'], \
-                                                                                    pnl=x["CONVERTED_REVENUE"]), axis=1)
-
-
-
-        # Only want those that are profitable
-        top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE', \
-                                                                              ascending=False)[col3].head(20)
-        top_closed_groups["CONVERTED_REVENUE"] = top_closed_groups["CONVERTED_REVENUE"].apply(
-            lambda x: profit_red_green(x))
-        top_closed_groups = pd.DataFrame([{"Comment": "There are currently no groups with closed profit for {}".format(symbol)}]) if \
-            len(top_closed_groups) <= 0 else top_closed_groups
-
-        # Only want those that are making a loss
-        bottom_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', \
-                                                                                                      ascending=True)[col3].head(20)
-        bottom_closed_groups["CONVERTED_REVENUE"] = bottom_closed_groups["CONVERTED_REVENUE"].apply(
-            lambda x: profit_red_green(x))
-        bottom_closed_groups = pd.DataFrame(
-            [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
-            len(bottom_closed_groups) <= 0 else bottom_closed_groups
-
-        # Total sum Floating
-        total_sum_closed_col = ['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS', 'REBATE' ]
-        total_sum_closed = df_closed_trades[total_sum_closed_col].sum()
-
-
-        if book == "b":  # Only want to flip sides when it's B book.
-            total_sum_closed["REBATE"] = color_rebate(rebate=total_sum_closed['REBATE'],
-                                                      pnl=total_sum_closed["CONVERTED_REVENUE"], multiplier=-1)
-            total_sum_closed = total_sum_closed.apply(lambda x: round(x * -1, 2) if isfloat(x) else x)  # Flip it to be on BGI Side.
-        else:  # If it's A book. We don't need to do that.
-            total_sum_closed = total_sum_closed.apply(lambda x: round(x , 2))  # Flip it to be on BGI Side.
-
-        total_sum_closed["LOTS"] = abs(total_sum_closed["LOTS"])  # Since it's Total lots, we only want the abs value
-        for c in total_sum_closed_col: # Want to print it properly.
-            if isfloat(total_sum_closed[c]):
-                total_sum_closed[c] = "{:,}".format(total_sum_closed[c])
-
-        # Want the table by country.
-        closed_by_country = df_closed_trades.groupby(["COUNTRY"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE',
-                                                                'REBATE', 'TOTAL_PROFIT']].sum().reset_index()
-
-        # Want to show Net Lots on BGI Side
-        closed_by_country["NET_LOTS"] = -1 * closed_by_country["NET_LOTS"]
-
-        closed_by_country["REBATE"] = closed_by_country.apply(lambda x: color_rebate(rebate=x['REBATE'], pnl=x["CONVERTED_REVENUE"], multiplier=-1),
-                                              axis=1)
-
-        # Want to show BGI Side. Color according to BGI Side
-        closed_by_country["TOTAL_PROFIT"] = closed_by_country["TOTAL_PROFIT"].apply(lambda x: profit_red_green(x * -1))
-
-        if book == "b": # Only want to flip sides when it's B book.
-            closed_by_country["CONVERTED_REVENUE"] = closed_by_country["CONVERTED_REVENUE"].apply(
-                lambda x: profit_red_green(-1 * x))
-        else:   # If it's A book. We don't need to do that.
-            closed_by_country["CONVERTED_REVENUE"] = closed_by_country["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-
-        closed_by_country["LOTS"] = abs(closed_by_country["LOTS"])
-
-        closed_by_country["PROFIT"] = -1 * closed_by_country["PROFIT"]
-        closed_by_country.sort_values(["NET_LOTS"], inplace=True)    # Sort it by Net_Lots
-
-        closed_by_country = pd.DataFrame(
-            [{"Comment": "There are currently no Country with floating PnL for {}".format(symbol)}]) if \
-            len(closed_by_country) <= 0 else closed_by_country
-
+    # if len(df_closed_trades) <=0:
+    #     closed_top_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    #     closed_bottom_accounts =  pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    #     total_sum_closed = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    #     top_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    #     bottom_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    #     closed_largest_lot_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    #     closed_by_country = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    # else:
+    #     # Use for calculating net volume.
+    #     df_closed_trades["DURATION_(AVG)"] = df_closed_trades.apply(
+    #         lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).total_seconds(), axis=1)
+    #     # Uses the same col2 as the open trades
+    #     #closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
+    #
+    #     #col2 To add in DURATION_SEC
+    #     col2.append("DURATION_(AVG)")
+    #     #col2.remove("REBATE")
+    #     # Want to take the mean duration, by trade.
+    #     closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).agg({'LOTS': 'sum',
+    #                                                                                       'NET_LOTS': 'sum',
+    #                                                                                       'CONVERTED_REVENUE': 'sum',
+    #                                                                                       'PROFIT': 'sum',
+    #                                                                                       'SWAPS': 'sum',
+    #                                                                                        'TOTAL_PROFIT' : 'sum',
+    #                                                                                         'REBATE' : 'sum',
+    #                                                                                         'DURATION_(AVG)' : 'mean'}).reset_index()
+    #
+    #     # Round off the values that is not needed.
+    #     closed_login_sum["LOTS"] = round(closed_login_sum['LOTS'],2)
+    #     closed_login_sum["NET_LOTS"] = round(closed_login_sum['NET_LOTS'], 2)
+    #     closed_login_sum["CONVERTED_REVENUE"] = round(closed_login_sum['CONVERTED_REVENUE'], 2)
+    #     closed_login_sum["PROFIT"] = round(closed_login_sum['PROFIT'], 2)
+    #     closed_login_sum["REBATE"] = closed_login_sum.apply( lambda x: color_rebate(rebate=x['REBATE'], \
+    #                                                                                 pnl=x["CONVERTED_REVENUE"]), axis=1)
+    #     closed_login_sum["SWAPS"] = round(closed_login_sum['SWAPS'], 2)
+    #     closed_login_sum["LOGIN"] = closed_login_sum.apply(lambda x: live_login_analysis_url( \
+    #         Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
+    #     # Want to get the average of the duration.
+    #     closed_login_sum["DURATION_(AVG)"] = closed_login_sum["DURATION_(AVG)"].apply(lambda x: trade_duration_bin(x))
+    #
+    #     # Want the Closed Top/Bottom accounts. Top = Winning, so no -ve PnL.
+    #     closed_top_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] >= 0].sort_values(\
+    #                                                             'CONVERTED_REVENUE', ascending=False)[col2].head(20)
+    #     closed_bottom_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] < 0].sort_values(\
+    #                                                             'CONVERTED_REVENUE', ascending=True)[col2].head(20)
+    #
+    #     closed_largest_lot_accounts = closed_login_sum.sort_values('LOTS', ascending=False)[col2].head(20)
+    #
+    #
+    #     # Color the CONVERTED_REVENUE
+    #     closed_bottom_accounts["CONVERTED_REVENUE"] = closed_bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+    #     closed_top_accounts["CONVERTED_REVENUE"] = closed_top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+    #     closed_largest_lot_accounts["CONVERTED_REVENUE"] = closed_largest_lot_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+    #
+    #     # If there are either no winning Accounts, or no losing accounts.
+    #     # No winning accounts with closed trades for today
+    #     closed_top_accounts = pd.DataFrame(
+    #         [{"Comment": "There are currently no Accounts With Closed Winning PnL for today for {}".format(symbol)}]) if \
+    #         len(closed_top_accounts) <= 0 else closed_top_accounts
+    #     # No losing accounts for closed trades for today.
+    #     closed_bottom_accounts = pd.DataFrame(
+    #         [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
+    #         len(closed_bottom_accounts) <= 0 else closed_bottom_accounts
+    #
+    #     closed_largest_lot_accounts = pd.DataFrame(
+    #         [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
+    #         len(closed_largest_lot_accounts) <= 0 else closed_largest_lot_accounts
+    #
+    #     # Closed Trades for today
+    #     # Group PnL
+    #     closed_group_sum = df_closed_trades.groupby(by=['COUNTRY', 'GROUP']).sum().reset_index()
+    #     closed_group_sum["LOTS"] = round(closed_group_sum['LOTS'],2)
+    #     closed_group_sum["NET_LOTS"] = round(closed_group_sum['NET_LOTS'], 2)
+    #     closed_group_sum["CONVERTED_REVENUE"] = round(closed_group_sum['CONVERTED_REVENUE'], 2)
+    #     closed_group_sum["REBATE"] = closed_group_sum.apply( lambda x: color_rebate(rebate=x['REBATE'], \
+    #                                                                                 pnl=x["CONVERTED_REVENUE"]), axis=1)
+    #
+    #
+    #
+    #     # Only want those that are profitable
+    #     top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE', \
+    #                                                                           ascending=False)[col3].head(20)
+    #     top_closed_groups["CONVERTED_REVENUE"] = top_closed_groups["CONVERTED_REVENUE"].apply(
+    #         lambda x: profit_red_green(x))
+    #     top_closed_groups = pd.DataFrame([{"Comment": "There are currently no groups with closed profit for {}".format(symbol)}]) if \
+    #         len(top_closed_groups) <= 0 else top_closed_groups
+    #
+    #     # Only want those that are making a loss
+    #     bottom_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', \
+    #                                                                                                   ascending=True)[col3].head(20)
+    #     bottom_closed_groups["CONVERTED_REVENUE"] = bottom_closed_groups["CONVERTED_REVENUE"].apply(
+    #         lambda x: profit_red_green(x))
+    #     bottom_closed_groups = pd.DataFrame(
+    #         [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
+    #         len(bottom_closed_groups) <= 0 else bottom_closed_groups
+    #
+    #     # Total sum Floating
+    #     total_sum_closed_col = ['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS', 'REBATE' ]
+    #     total_sum_closed = df_closed_trades[total_sum_closed_col].sum()
+    #
+    #
+    #     if book == "b":  # Only want to flip sides when it's B book.
+    #         total_sum_closed["REBATE"] = color_rebate(rebate=total_sum_closed['REBATE'],
+    #                                                   pnl=total_sum_closed["CONVERTED_REVENUE"], multiplier=-1)
+    #         total_sum_closed = total_sum_closed.apply(lambda x: round(x * -1, 2) if isfloat(x) else x)  # Flip it to be on BGI Side.
+    #     else:  # If it's A book. We don't need to do that.
+    #         total_sum_closed = total_sum_closed.apply(lambda x: round(x , 2))  # Flip it to be on BGI Side.
+    #
+    #     total_sum_closed["LOTS"] = abs(total_sum_closed["LOTS"])  # Since it's Total lots, we only want the abs value
+    #     for c in total_sum_closed_col: # Want to print it properly.
+    #         if isfloat(total_sum_closed[c]):
+    #             total_sum_closed[c] = "{:,}".format(total_sum_closed[c])
+    #
+    #     # Want the table by country.
+    #     closed_by_country = df_closed_trades.groupby(["COUNTRY"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE',
+    #                                                             'REBATE', 'TOTAL_PROFIT']].sum().reset_index()
+    #
+    #     # Want to show Net Lots on BGI Side
+    #     closed_by_country["NET_LOTS"] = -1 * closed_by_country["NET_LOTS"]
+    #
+    #     closed_by_country["REBATE"] = closed_by_country.apply(lambda x: color_rebate(rebate=x['REBATE'], pnl=x["CONVERTED_REVENUE"], multiplier=-1),
+    #                                           axis=1)
+    #
+    #     # Want to show BGI Side. Color according to BGI Side
+    #     closed_by_country["TOTAL_PROFIT"] = closed_by_country["TOTAL_PROFIT"].apply(lambda x: profit_red_green(x * -1))
+    #
+    #     if book == "b": # Only want to flip sides when it's B book.
+    #         closed_by_country["CONVERTED_REVENUE"] = closed_by_country["CONVERTED_REVENUE"].apply(
+    #             lambda x: profit_red_green(-1 * x))
+    #     else:   # If it's A book. We don't need to do that.
+    #         closed_by_country["CONVERTED_REVENUE"] = closed_by_country["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+    #
+    #     closed_by_country["LOTS"] = abs(closed_by_country["LOTS"])
+    #
+    #     closed_by_country["PROFIT"] = -1 * closed_by_country["PROFIT"]
+    #     closed_by_country.sort_values(["NET_LOTS"], inplace=True)    # Sort it by Net_Lots
+    #
+    #     closed_by_country = pd.DataFrame(
+    #         [{"Comment": "There are currently no Country with floating PnL for {}".format(symbol)}]) if \
+    #         len(closed_by_country) <= 0 else closed_by_country
+    #
 
 
     # Get the results from unsync
@@ -1724,6 +1728,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
                        "V2": [total_sum_closed.to_dict()],
                        "Hs6" : closed_by_country.to_dict("record")
                        }, cls=plotly.utils.PlotlyJSONEncoder)
+
 
 
 # # Get all open trades of a particular symbol.
@@ -1890,6 +1895,161 @@ def symbol_all_open_trades(symbol="", book="B"):
     return [dict(zip(result_col, r)) for r in result_data]
 
 
+
+
+# Consolidated function to use for closed trades (All logins for the same symbol)
+def symbol_closed_trades_analysis(df, book, symbol):
+
+
+    # Column that we need.
+    col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE', 'REBATE', 'DURATION_(AVG)']
+    col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'REBATE']
+
+    # There are no closed trades for the day yet
+    if len(df) <=0:
+        empty_return  = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        return [empty_return] * 7
+        # closed_top_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        # closed_bottom_accounts =  pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        # total_sum_closed = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        # top_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        # bottom_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        # closed_largest_lot_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+        # closed_by_country = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    else:
+        # Use for calculating the total seconds that the trades are opened for.
+        df["DURATION_(AVG)"] = df.apply(lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).total_seconds(), axis=1)
+
+
+        # Want to take the mean duration, by trade.
+        closed_login_sum = df.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).agg({'LOTS': 'sum',
+                                                                            'NET_LOTS': 'sum',
+                                                                            'CONVERTED_REVENUE': 'sum',
+                                                                            'PROFIT': 'sum',
+                                                                            'SWAPS': 'sum',
+                                                                            'TOTAL_PROFIT' : 'sum',
+                                                                            'REBATE' : 'sum',
+                                                                            'DURATION_(AVG)' : 'mean'}).reset_index()
+
+        # Round off the values that is not needed.
+        closed_login_sum["LOTS"] = round(closed_login_sum['LOTS'],2)
+        closed_login_sum["NET_LOTS"] = round(closed_login_sum['NET_LOTS'], 2)
+        closed_login_sum["CONVERTED_REVENUE"] = round(closed_login_sum['CONVERTED_REVENUE'], 2)
+        closed_login_sum["PROFIT"] = round(closed_login_sum['PROFIT'], 2)
+        closed_login_sum["REBATE"] = closed_login_sum.apply( lambda x: color_rebate(rebate=x['REBATE'], \
+                                                                                    pnl=x["CONVERTED_REVENUE"]), axis=1)
+        closed_login_sum["SWAPS"] = round(closed_login_sum['SWAPS'], 2)
+        closed_login_sum["LOGIN"] = closed_login_sum.apply(lambda x: live_login_analysis_url( \
+            Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
+        # Want to get the average of the duration.
+        closed_login_sum["DURATION_(AVG)"] = closed_login_sum["DURATION_(AVG)"].apply(lambda x: trade_duration_bin(x))
+
+        # Want the Closed Top/Bottom accounts. Top = Winning, so no -ve PnL.
+        closed_top_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] >= 0].sort_values(\
+                                                                'CONVERTED_REVENUE', ascending=False)[col2].head(20)
+        closed_bottom_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] < 0].sort_values(\
+                                                                'CONVERTED_REVENUE', ascending=True)[col2].head(20)
+
+        closed_largest_lot_accounts = closed_login_sum.sort_values('LOTS', ascending=False)[col2].head(20)
+
+
+        # Color the CONVERTED_REVENUE
+        closed_bottom_accounts["CONVERTED_REVENUE"] = closed_bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+        closed_top_accounts["CONVERTED_REVENUE"] = closed_top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+        closed_largest_lot_accounts["CONVERTED_REVENUE"] = closed_largest_lot_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+
+        # If there are either no winning Accounts, or no losing accounts.
+        # No winning accounts with closed trades for today
+        closed_top_accounts = pd.DataFrame(
+            [{"Comment": "There are currently no Accounts With Closed Winning PnL for today for {}".format(symbol)}]) if \
+            len(closed_top_accounts) <= 0 else closed_top_accounts
+        # No losing accounts for closed trades for today.
+        closed_bottom_accounts = pd.DataFrame(
+            [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
+            len(closed_bottom_accounts) <= 0 else closed_bottom_accounts
+
+        closed_largest_lot_accounts = pd.DataFrame(
+            [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
+            len(closed_largest_lot_accounts) <= 0 else closed_largest_lot_accounts
+
+        # Closed Trades for today, Group by client Group and Country
+        closed_group_sum = df.groupby(by=['COUNTRY', 'GROUP']).sum().reset_index()
+        closed_group_sum["LOTS"] = round(closed_group_sum['LOTS'],2)
+        closed_group_sum["NET_LOTS"] = round(closed_group_sum['NET_LOTS'], 2)
+        closed_group_sum["CONVERTED_REVENUE"] = round(closed_group_sum['CONVERTED_REVENUE'], 2)
+        closed_group_sum["REBATE"] = closed_group_sum.apply( lambda x: color_rebate(rebate=x['REBATE'], \
+                                                                                    pnl=x["CONVERTED_REVENUE"]), axis=1)
+
+
+
+        # Only want those that are profitable
+        top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE', \
+                                                                              ascending=False)[col3].head(20)
+        top_closed_groups["CONVERTED_REVENUE"] = top_closed_groups["CONVERTED_REVENUE"].apply(
+            lambda x: profit_red_green(x))
+        top_closed_groups = pd.DataFrame([{"Comment": "There are currently no groups with closed profit for {}".format(symbol)}]) if \
+            len(top_closed_groups) <= 0 else top_closed_groups
+
+        # Only want those that are making a loss
+        bottom_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', \
+                                                                                                      ascending=True)[col3].head(20)
+        bottom_closed_groups["CONVERTED_REVENUE"] = bottom_closed_groups["CONVERTED_REVENUE"].apply(
+            lambda x: profit_red_green(x))
+        bottom_closed_groups = pd.DataFrame(
+            [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
+            len(bottom_closed_groups) <= 0 else bottom_closed_groups
+
+        # Total sum Floating
+        total_sum_closed_col = ['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS', 'REBATE' ]
+        total_sum_closed = df[total_sum_closed_col].sum()
+
+
+        if book == "b":  # Only want to flip sides when it's B book.
+            total_sum_closed["REBATE"] = color_rebate(rebate=total_sum_closed['REBATE'],
+                                                      pnl=total_sum_closed["CONVERTED_REVENUE"], multiplier=-1)
+            total_sum_closed = total_sum_closed.apply(lambda x: round(x * -1, 2) if isfloat(x) else x)  # Flip it to be on BGI Side.
+        else:  # If it's A book. We don't need to do that.
+            total_sum_closed = total_sum_closed.apply(lambda x: round(x , 2))  # Flip it to be on BGI Side.
+
+        total_sum_closed["LOTS"] = abs(total_sum_closed["LOTS"])  # Since it's Total lots, we only want the abs value
+        for c in total_sum_closed_col: # Want to print it properly.
+            if isfloat(total_sum_closed[c]):
+                total_sum_closed[c] = "{:,}".format(total_sum_closed[c])
+
+        # Want the table by country.
+        closed_by_country = df.groupby(["COUNTRY"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE',
+                                                                'REBATE', 'TOTAL_PROFIT']].sum().reset_index()
+
+        # Want to show Net Lots on BGI Side
+        closed_by_country["NET_LOTS"] = -1 * closed_by_country["NET_LOTS"]
+
+        closed_by_country["REBATE"] = closed_by_country.apply(lambda x: color_rebate(rebate=x['REBATE'], pnl=x["CONVERTED_REVENUE"], multiplier=-1),
+                                              axis=1)
+
+        # Want to show BGI Side. Color according to BGI Side
+        closed_by_country["TOTAL_PROFIT"] = closed_by_country["TOTAL_PROFIT"].apply(lambda x: profit_red_green(x * -1))
+
+        if book == "b": # Only want to flip sides when it's B book.
+            closed_by_country["CONVERTED_REVENUE"] = closed_by_country["CONVERTED_REVENUE"].apply(
+                lambda x: profit_red_green(-1 * x))
+        else:   # If it's A book. We don't need to do that.
+            closed_by_country["CONVERTED_REVENUE"] = closed_by_country["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+
+        closed_by_country["LOTS"] = abs(closed_by_country["LOTS"])
+
+        closed_by_country["PROFIT"] = -1 * closed_by_country["PROFIT"]
+        closed_by_country.sort_values(["NET_LOTS"], inplace=True)    # Sort it by Net_Lots
+
+        closed_by_country = pd.DataFrame(
+            [{"Comment": "There are currently no Country with floating PnL for {}".format(symbol)}]) if \
+            len(closed_by_country) <= 0 else closed_by_country
+
+    return [closed_top_accounts,  closed_bottom_accounts , total_sum_closed, top_closed_groups,
+            bottom_closed_groups, closed_largest_lot_accounts, closed_by_country]
+
+
+
+
 # # Get all open trades of a particular symbol.
 # # Get it converted as well.
 # # Can choose A Book or B Book.
@@ -1898,7 +2058,6 @@ def symbol_all_open_trades(symbol="", book="B"):
 def symbol_closed_trades(symbol="", book="b", days=-1):
 
     PnL_day = get_working_day_date(datetime.datetime.now(), int(days))
-
 
     title = "{} {}".format(symbol,  PnL_day.date())
     header = "{} {} Trades".format(symbol, PnL_day.date())
@@ -1924,6 +2083,7 @@ def symbol_closed_trades(symbol="", book="b", days=-1):
                                         "Winning Group (Client Side)": "Hs3",
                                         "Losing Group (Client Side)": "Hs4",
                                         "Total Closed (BGI Side)": "V2",
+                                        "COUNTRY CLOSED (BGI SIDE)":"Hs6",
                                         "Line2": "Hr2"
                                         },
                            title=title,
@@ -1972,109 +2132,121 @@ def symbol_close_trades_ajax(book="b", symbol="" ,days=-1):
     # Closed trades for today, Make it into a pandas list.
     df_closed_trades = pd.DataFrame(symbol_get_past_closed_trades(symbol=symbol, book=book, days=days))
 
-    # There are no closed trades for the day yet
-    if len(df_closed_trades) <=0:
-        closed_top_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-        closed_bottom_accounts =  pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-        total_sum_closed = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-        top_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-        bottom_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-        closed_largest_lot_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-    else:
-        # Use for calculating net volume.
-        df_closed_trades["LOTS"] =  df_closed_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
-        df_closed_trades["NET_LOTS"] = df_closed_trades.apply(lambda x: x["LOTS"] if x['CMD']==0 else -1*x["LOTS"] , axis=1)
-        df_closed_trades["DURATION_(AVG)"] = df_closed_trades.apply(
-            lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).total_seconds(), axis=1)
-        # Uses the same col2 as the open trades
-        #closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
 
-        #col2 To add in DURATION_SEC
-        col2.append("DURATION_(AVG)")
-        # Want to take the mean duration, by trade.
-        closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).agg({'LOTS': 'sum',
-                                                                                          'NET_LOTS': 'sum',
-                                                                                          'CONVERTED_REVENUE': 'sum',
-                                                                                          'PROFIT': 'sum',
-                                                                                          'SWAPS': 'sum',
-                                                                                            'DURATION_(AVG)' : 'mean'}).reset_index()
+    df_closed_trades["TOTAL_PROFIT"] = df_closed_trades.apply(lambda x: x["CONVERTED_REVENUE"] + x['REBATE'], axis=1)
 
-        # Round off the values that is not needed.
-        closed_login_sum["LOTS"] = round(closed_login_sum['LOTS'],2)
-        closed_login_sum["NET_LOTS"] = round(closed_login_sum['NET_LOTS'], 2)
-        closed_login_sum["CONVERTED_REVENUE"] = round(closed_login_sum['CONVERTED_REVENUE'], 2)
-        closed_login_sum["PROFIT"] = round(closed_login_sum['PROFIT'], 2)
-        closed_login_sum["SWAPS"] = round(closed_login_sum['SWAPS'], 2)
-        closed_login_sum["LOGIN"] = closed_login_sum.apply(lambda x: live_login_analysis_url( \
-            Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
-        # Want to get the average of the duration.
-        closed_login_sum["DURATION_(AVG)"] = closed_login_sum["DURATION_(AVG)"].apply(lambda x: trade_duration_bin(x))
+    df_closed_trades["LOTS"] = df_closed_trades["LOTS"].apply(float)
 
-        # Want the Closed Top/Bottom accounts. Top = Winning, so no -ve PnL.
-        closed_top_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] >= 0].sort_values(\
-                                                                'CONVERTED_REVENUE', ascending=False)[col2].head(20)
-        closed_bottom_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] < 0].sort_values(\
-                                                                'CONVERTED_REVENUE', ascending=True)[col2].head(20)
+    df_closed_trades["NET_LOTS"] = df_closed_trades.apply(lambda x: x["LOTS"] if x['CMD'] == 0 else -1 * x["LOTS"],
+                                                          axis=1)
+    # List unpacking from the return of the function.
+    [closed_top_accounts, closed_bottom_accounts, total_sum_closed, top_closed_groups,
+     bottom_closed_groups, closed_largest_lot_accounts, closed_by_country] = symbol_closed_trades_analysis(df_closed_trades, book, symbol)
 
-        closed_largest_lot_accounts = closed_login_sum.sort_values('LOTS', ascending=False)[col2].head(20)
-
-
-        # Color the CONVERTED_REVENUE
-        closed_bottom_accounts["CONVERTED_REVENUE"] = closed_bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-        closed_top_accounts["CONVERTED_REVENUE"] = closed_top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-        closed_largest_lot_accounts["CONVERTED_REVENUE"] = closed_largest_lot_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-
-        # If there are either no winning Accounts, or no losing accounts.
-        # No winning accounts with closed trades for today
-        closed_top_accounts = pd.DataFrame(
-            [{"Comment": "There are currently no Accounts With Closed Winning PnL for today for {}".format(symbol)}]) if \
-            len(closed_top_accounts) <= 0 else closed_top_accounts
-        # No losing accounts for closed trades for today.
-        closed_bottom_accounts = pd.DataFrame(
-            [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
-            len(closed_bottom_accounts) <= 0 else closed_bottom_accounts
-
-        closed_largest_lot_accounts = pd.DataFrame(
-            [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
-            len(closed_largest_lot_accounts) <= 0 else closed_largest_lot_accounts
-
-        # Closed Trades for today
-        # Group PnL
-        closed_group_sum = df_closed_trades.groupby(by=['COUNTRY', 'GROUP']).sum().reset_index()
-        closed_group_sum["LOTS"] = round(closed_group_sum['LOTS'],2)
-        closed_group_sum["NET_LOTS"] = round(closed_group_sum['NET_LOTS'], 2)
-        closed_group_sum["CONVERTED_REVENUE"] = round(closed_group_sum['CONVERTED_REVENUE'], 2)
-
-        # Only want those that are profitable
-        top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE', \
-                                                                              ascending=False)[col3].head(20)
-        top_closed_groups["CONVERTED_REVENUE"] = top_closed_groups["CONVERTED_REVENUE"].apply(
-            lambda x: profit_red_green(x))
-        top_closed_groups = pd.DataFrame([{"Comment": "There are currently no groups with closed profit for {}".format(symbol)}]) if \
-            len(top_closed_groups) <= 0 else top_closed_groups
-
-        # Only want those that are making a loss
-        bottom_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', \
-                                                                                                      ascending=True)[col3].head(20)
-        bottom_closed_groups["CONVERTED_REVENUE"] = bottom_closed_groups["CONVERTED_REVENUE"].apply(
-            lambda x: profit_red_green(x))
-        bottom_closed_groups = pd.DataFrame(
-            [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
-            len(bottom_closed_groups) <= 0 else bottom_closed_groups
-
-        # Total sum Floating
-        total_sum_closed_col = ['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]
-        total_sum_closed = df_closed_trades[total_sum_closed_col].sum()
-        if book == "b":
-            total_sum_closed =  total_sum_closed.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side if it's B book
-        else:   # If it's A book. We don't need to do that.
-            total_sum_closed = total_sum_closed.apply(
-                lambda x: round(x, 2))  # Flip it to be on BGI Side if it's B book
-
-        total_sum_closed["LOTS"] = abs(total_sum_closed["LOTS"])  # Since it's Total lots, we only want the abs value
-        for c in total_sum_closed_col: # Want to print it properly.
-            if isfloat(total_sum_closed[c]):
-                total_sum_closed[c] = "{:,}".format(total_sum_closed[c])
+    #
+    # # There are no closed trades for the day yet
+    # if len(df_closed_trades) <=0:
+    #     closed_top_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    #     closed_bottom_accounts =  pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    #     total_sum_closed = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    #     top_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    #     bottom_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    #     closed_largest_lot_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
+    # else:
+    #     # Use for calculating net volume.
+    #     df_closed_trades["LOTS"] =  df_closed_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
+    #     df_closed_trades["NET_LOTS"] = df_closed_trades.apply(lambda x: x["LOTS"] if x['CMD']==0 else -1*x["LOTS"] , axis=1)
+    #     df_closed_trades["DURATION_(AVG)"] = df_closed_trades.apply(
+    #         lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).total_seconds(), axis=1)
+    #     # Uses the same col2 as the open trades
+    #     #closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
+    #
+    #     #col2 To add in DURATION_SEC
+    #     col2.append("DURATION_(AVG)")
+    #     # Want to take the mean duration, by trade.
+    #     closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).agg({'LOTS': 'sum',
+    #                                                                                       'NET_LOTS': 'sum',
+    #                                                                                       'CONVERTED_REVENUE': 'sum',
+    #                                                                                       'PROFIT': 'sum',
+    #                                                                                       'SWAPS': 'sum',
+    #                                                                                         'DURATION_(AVG)' : 'mean'}).reset_index()
+    #
+    #     # Round off the values that is not needed.
+    #     closed_login_sum["LOTS"] = round(closed_login_sum['LOTS'],2)
+    #     closed_login_sum["NET_LOTS"] = round(closed_login_sum['NET_LOTS'], 2)
+    #     closed_login_sum["CONVERTED_REVENUE"] = round(closed_login_sum['CONVERTED_REVENUE'], 2)
+    #     closed_login_sum["PROFIT"] = round(closed_login_sum['PROFIT'], 2)
+    #     closed_login_sum["SWAPS"] = round(closed_login_sum['SWAPS'], 2)
+    #     closed_login_sum["LOGIN"] = closed_login_sum.apply(lambda x: live_login_analysis_url( \
+    #         Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
+    #     # Want to get the average of the duration.
+    #     closed_login_sum["DURATION_(AVG)"] = closed_login_sum["DURATION_(AVG)"].apply(lambda x: trade_duration_bin(x))
+    #
+    #     # Want the Closed Top/Bottom accounts. Top = Winning, so no -ve PnL.
+    #     closed_top_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] >= 0].sort_values(\
+    #                                                             'CONVERTED_REVENUE', ascending=False)[col2].head(20)
+    #     closed_bottom_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] < 0].sort_values(\
+    #                                                             'CONVERTED_REVENUE', ascending=True)[col2].head(20)
+    #
+    #     closed_largest_lot_accounts = closed_login_sum.sort_values('LOTS', ascending=False)[col2].head(20)
+    #
+    #
+    #     # Color the CONVERTED_REVENUE
+    #     closed_bottom_accounts["CONVERTED_REVENUE"] = closed_bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+    #     closed_top_accounts["CONVERTED_REVENUE"] = closed_top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+    #     closed_largest_lot_accounts["CONVERTED_REVENUE"] = closed_largest_lot_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+    #
+    #     # If there are either no winning Accounts, or no losing accounts.
+    #     # No winning accounts with closed trades for today
+    #     closed_top_accounts = pd.DataFrame(
+    #         [{"Comment": "There are currently no Accounts With Closed Winning PnL for today for {}".format(symbol)}]) if \
+    #         len(closed_top_accounts) <= 0 else closed_top_accounts
+    #     # No losing accounts for closed trades for today.
+    #     closed_bottom_accounts = pd.DataFrame(
+    #         [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
+    #         len(closed_bottom_accounts) <= 0 else closed_bottom_accounts
+    #
+    #     closed_largest_lot_accounts = pd.DataFrame(
+    #         [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
+    #         len(closed_largest_lot_accounts) <= 0 else closed_largest_lot_accounts
+    #
+    #     # Closed Trades for today
+    #     # Group PnL
+    #     closed_group_sum = df_closed_trades.groupby(by=['COUNTRY', 'GROUP']).sum().reset_index()
+    #     closed_group_sum["LOTS"] = round(closed_group_sum['LOTS'],2)
+    #     closed_group_sum["NET_LOTS"] = round(closed_group_sum['NET_LOTS'], 2)
+    #     closed_group_sum["CONVERTED_REVENUE"] = round(closed_group_sum['CONVERTED_REVENUE'], 2)
+    #
+    #     # Only want those that are profitable
+    #     top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE', \
+    #                                                                           ascending=False)[col3].head(20)
+    #     top_closed_groups["CONVERTED_REVENUE"] = top_closed_groups["CONVERTED_REVENUE"].apply(
+    #         lambda x: profit_red_green(x))
+    #     top_closed_groups = pd.DataFrame([{"Comment": "There are currently no groups with closed profit for {}".format(symbol)}]) if \
+    #         len(top_closed_groups) <= 0 else top_closed_groups
+    #
+    #     # Only want those that are making a loss
+    #     bottom_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', \
+    #                                                                                                   ascending=True)[col3].head(20)
+    #     bottom_closed_groups["CONVERTED_REVENUE"] = bottom_closed_groups["CONVERTED_REVENUE"].apply(
+    #         lambda x: profit_red_green(x))
+    #     bottom_closed_groups = pd.DataFrame(
+    #         [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
+    #         len(bottom_closed_groups) <= 0 else bottom_closed_groups
+    #
+    #     # Total sum Floating
+    #     total_sum_closed_col = ['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]
+    #     total_sum_closed = df_closed_trades[total_sum_closed_col].sum()
+    #     if book == "b":
+    #         total_sum_closed =  total_sum_closed.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side if it's B book
+    #     else:   # If it's A book. We don't need to do that.
+    #         total_sum_closed = total_sum_closed.apply(
+    #             lambda x: round(x, 2))  # Flip it to be on BGI Side if it's B book
+    #
+    #     total_sum_closed["LOTS"] = abs(total_sum_closed["LOTS"])  # Since it's Total lots, we only want the abs value
+    #     for c in total_sum_closed_col: # Want to print it properly.
+    #         if isfloat(total_sum_closed[c]):
+    #             total_sum_closed[c] = "{:,}".format(total_sum_closed[c])
 
 
     # Return the values as json.
@@ -2084,6 +2256,7 @@ def symbol_close_trades_ajax(book="b", symbol="" ,days=-1):
                        "H6" : closed_largest_lot_accounts.to_dict("record"),
                        "Hs3": top_closed_groups.to_dict("record"),
                        "Hs4" : bottom_closed_groups.to_dict("record"),
+                       "Hs6" : closed_by_country.to_dict("record"),
                        "V2": [total_sum_closed.to_dict()]
                        }, cls=plotly.utils.PlotlyJSONEncoder)
 
@@ -2092,7 +2265,7 @@ def symbol_get_past_closed_trades(symbol="", book="B", days=-1):
     #symbol="XAUUSD"
 
     backward_days = int(days)   # The backward count days.
-    symbol_condition = " AND SYMBOL Like '%{}%' ".format(symbol)
+    symbol_condition = " AND mt4_trades.SYMBOL Like '%{}%' ".format(symbol)
     country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
     book_condition = " AND group_table.BOOK = '{}'".format(book)
 
@@ -2133,9 +2306,9 @@ def symbol_get_past_closed_trades(symbol="", book="B", days=-1):
         Live2_book_query = book_condition
 
     sql_statement = """(SELECT 'live1' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
-        SYMBOL, CMD,
+        mt4_trades.SYMBOL, CMD,
         VOLUME*0.01 as LOTS, OPEN_PRICE,
-            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`, VOLUME*0.01 * symbol_rebate.REBATE as REBATE,
            ROUND(CASE 
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
@@ -2145,8 +2318,8 @@ def symbol_get_past_closed_trades(symbol="", book="B", days=-1):
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
             ELSE 0 END,2) AS CONVERTED_REVENUE
-        FROM live1.mt4_trades, live5.group_table 
-        WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+        FROM live1.mt4_trades, live5.group_table, live1.symbol_rebate
+        WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND  symbol_rebate.SYMBOL = mt4_trades.SYMBOL AND
             mt4_trades.CLOSE_TIME >= '{Live1_startofday}' AND  mt4_trades.CLOSE_TIME < '{Live1_endofday}'
         AND LENGTH(mt4_trades.SYMBOL)>0 
             AND mt4_trades.CMD <2 
@@ -2156,9 +2329,9 @@ def symbol_get_past_closed_trades(symbol="", book="B", days=-1):
             )
     UNION 
         (SELECT 'live2' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
-        SYMBOL, CMD,
+        mt4_trades.SYMBOL, CMD,
         VOLUME*0.01 as LOTS, OPEN_PRICE,
-            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,VOLUME*0.01 * symbol_rebate.REBATE as REBATE,
             ROUND(CASE 
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
@@ -2168,8 +2341,8 @@ def symbol_get_past_closed_trades(symbol="", book="B", days=-1):
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
             ELSE 0 END,2) AS CONVERTED_REVENUE
-            FROM live2.mt4_trades,live5.group_table 
-            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            FROM live2.mt4_trades,live5.group_table,  live2.symbol_rebate
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND symbol_rebate.SYMBOL = mt4_trades.SYMBOL AND
             mt4_trades.CLOSE_TIME >= '{Live1_startofday}' AND  mt4_trades.CLOSE_TIME < '{Live1_endofday}'
         AND LENGTH(mt4_trades.SYMBOL)>0 
             AND mt4_trades.CMD <2 
@@ -2178,9 +2351,9 @@ def symbol_get_past_closed_trades(symbol="", book="B", days=-1):
             {symbol_condition} {country_condition} {Live2_book_query})
     UNION 
         (SELECT 'live3' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
-        SYMBOL, CMD,
+        mt4_trades.SYMBOL, CMD,
         VOLUME*0.01 as LOTS, OPEN_PRICE,
-            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,VOLUME*0.01 * symbol_rebate.REBATE as REBATE,
             ROUND(CASE 
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
@@ -2190,8 +2363,8 @@ def symbol_get_past_closed_trades(symbol="", book="B", days=-1):
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
             ELSE 0 END,2) AS CONVERTED_REVENUE
-            FROM live3.mt4_trades,live5.group_table 
-            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            FROM live3.mt4_trades,live5.group_table,  live3.symbol_rebate
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND symbol_rebate.SYMBOL = mt4_trades.SYMBOL AND
             mt4_trades.CLOSE_TIME >= '{Live1_startofday}' AND  mt4_trades.CLOSE_TIME < '{Live1_endofday}'
         AND LENGTH(mt4_trades.SYMBOL)>0 
             AND mt4_trades.CMD <2 
@@ -2201,9 +2374,9 @@ def symbol_get_past_closed_trades(symbol="", book="B", days=-1):
             {symbol_condition} {country_condition} {book_condition})
     UNION
         (SELECT 'live5' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
-        SYMBOL, CMD,
+        mt4_trades.SYMBOL, CMD,
         VOLUME*0.01 as LOTS, OPEN_PRICE,
-            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,VOLUME*0.01 * symbol_rebate.REBATE as REBATE,
             ROUND(CASE 
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
@@ -2213,8 +2386,8 @@ def symbol_get_past_closed_trades(symbol="", book="B", days=-1):
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
                 WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
             ELSE 0 END,2) AS CONVERTED_REVENUE
-            FROM live5.mt4_trades,live5.group_table 
-            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            FROM live5.mt4_trades,live5.group_table,  live5.symbol_rebate 
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND symbol_rebate.SYMBOL = mt4_trades.SYMBOL AND
             mt4_trades.CLOSE_TIME >= '{Live5_startofday}' AND  mt4_trades.CLOSE_TIME < '{Live5_endofday}'
         AND LENGTH(mt4_trades.SYMBOL)>0 
             AND mt4_trades.CMD <2 
