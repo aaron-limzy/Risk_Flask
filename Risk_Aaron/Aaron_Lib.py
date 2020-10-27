@@ -258,6 +258,7 @@ def Check_Float(element):
 def Run_C_Prog(Path, cwd=None):
 
     path = Path  # Need as Buffer, to append the added cwd if needed
+    path = Path  # Need as Buffer, to append the added cwd if needed
 
     if cwd != None:  # We need to append the full (relative) path
         path = cwd + "\\" + path

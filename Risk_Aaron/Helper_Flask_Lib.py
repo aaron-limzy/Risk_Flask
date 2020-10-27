@@ -96,18 +96,33 @@ def async_Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode=""):
         Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode = Parse_mode)
 
 @unsync
-def Get_Vol_snapshot(app, symbol="", book="", day_backwards_count=5):
+def Get_Vol_snapshot(app, symbol="", book="", day_backwards_count=5, entities = []):
 
     # Want to plot the SNOPSHOT Graph of open volume
     # This is the table that is Cleated every hour
     # We put in a failsaf of getting it 1 day only.
+    if symbol != "":    # If we want to filter it by symbols too.
+        symbol_condition = " AND SYMBOL like '%{symbol}%' ".format(symbol=symbol)
+    else:
+        symbol_condition = ""
+
+    book_condition =  '  AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "{book}") '.format(book=book)
+
+    if len(entities) > 0: # there's actually an entity here.
+        country_condition = " AND COUNTRY IN ({})".format(" , ".join(["'{}'".format(c) for c in entities]))
+        book_condition = " "    # No need for book condition.
+    else:
+        country_condition = " AND COUNTRY not like 'HK' "
+
 
     SQL_Query_Volume_Recent = """SELECT COUNTRY, NET_FLOATING_VOLUME, FLOATING_VOLUME, FLOATING_REVENUE, DATETIME 
         FROM aaron.bgi_float_history_save 
-        WHERE SYMBOL like '%{symbol}%'
-        AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "{book}") 
-        AND DATETIME >= NOW() - INTERVAL 1 DAY
-        AND COUNTRY not like 'HK' """.format(symbol=symbol, book=book)
+        WHERE DATETIME >= NOW() - INTERVAL 1 DAY
+        {symbol_condition}
+       {book_condition}
+        {country_condition} """.format(symbol=symbol, book=book,
+                                       country_condition=country_condition,
+                                       symbol_condition=symbol_condition, book_condition=book_condition)
 
     # [res, col] = Query_SQL(SQL_Query)
 
@@ -116,10 +131,13 @@ def Get_Vol_snapshot(app, symbol="", book="", day_backwards_count=5):
 
     SQL_Query_Volume_Days = """SELECT COUNTRY, NET_FLOATING_VOLUME, FLOATING_VOLUME, FLOATING_REVENUE, DATETIME 
         FROM aaron.bgi_float_history_past 
-        WHERE SYMBOL like '%{symbol}%'
-        AND datetime >= '{day_backwards}'
+        WHERE datetime >= '{day_backwards}'
+        {symbol_condition}       
         AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "{book}") 
-        AND COUNTRY not like 'HK' """.format(day_backwards=day_backwards, symbol=symbol, book=book)
+        {country_condition} """.format(symbol=symbol, book=book,
+                                       country_condition=country_condition,
+                                       symbol_condition=symbol_condition, day_backwards=day_backwards)
+
 
     SQL_Volume_Query = " UNION ".join([SQL_Query_Volume_Recent, SQL_Query_Volume_Days])
     #
@@ -128,37 +146,70 @@ def Get_Vol_snapshot(app, symbol="", book="", day_backwards_count=5):
     # Use the unsync version to query SQL
     results = unsync_query_SQL_return_record(SQL_Volume_Query, app)
     df_data_vol = pd.DataFrame(results)
+    #print(df_data_vol)
 
     return df_data_vol
 
 
 @unsync
-def Symbol_history_Daily(app, symbol="", book="B", day_backwards_count = 15):
+def Symbol_history_Daily(app, symbol="", book="B", day_backwards_count = 15, entities=[]):
 
     day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * day_backwards_count))
+
+    book_condition =  "  AND COUNTRY IN (Select COUNTRY FROM live5.group_table WHERE Group_table.BOOK = '{book}') ".format(book=book)
+
+
+    if len(entities) > 0: # there's actually an entity here.
+        country_condition = " AND COUNTRY IN ({})".format(" , ".join(["'{}'".format(c) for c in entities]))
+        book_condition = " "
+    else:
+        country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK')   "
+
+    if symbol != "":    # If we want to filter it by symbols too.
+        symbol_condition = " AND SYMBOL like '%{symbol}%' ".format(symbol=symbol)
+    else:
+        symbol_condition = " "
+
+
     sql_statement = """SELECT DATE, COUNTRY, SYMBOL, VOLUME, REVENUE 
     FROM `bgi_dailypnl_by_country_group`
-    WHERE  COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') 
-    AND COUNTRY IN (Select COUNTRY FROM live5.group_table WHERE Group_table.BOOK = '{book}')
-    AND DATE >= '{day_backwards}'
-    AND SYMBOL LIKE '{symbol}%'
-    ORDER BY DATE""".format(day_backwards=day_backwards, symbol=symbol, book=book)
-
+    WHERE  DATE >= '{day_backwards}' {country_condition} 
+    {book_condition}
+    {symbol_condition} 
+    ORDER BY DATE""".format(day_backwards=day_backwards, symbol=symbol,
+                            country_condition=country_condition,
+                            book_condition=book_condition, symbol_condition=symbol_condition)
+    #print(sql_statement)
     sql_query = sql_statement.replace("\n", " ").replace("\t", " ")
-    #query_SQL_return_record(text(sql_statement))
-    return unsync_query_SQL_return_record(sql_query, app)
+
+    return_val = unsync_query_SQL_return_record(sql_query, app)
+    #print(return_val)
+    return return_val
 
 # Get trades by open tim and SYMBOLs
 # Want to later use to plot volume vs open_time
 # Can choose A Book or B Book.
 @unsync
-def symbol_opentime_trades(app, symbol="", book="B", start_date=""):
+def symbol_opentime_trades(app, symbol="", book="B", start_date="", entities=""):
 
     #symbol="XAUUSD"
     #print("Querying for symbol_opentime_trades. Symbol:{}, book:{}, start_date:{}".format(symbol,book,start_date))
-    symbol_condition = " AND SYMBOL Like '%{}%' ".format(symbol)
-    country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
+
+    if len(symbol) > 0:
+        symbol_condition = " AND SYMBOL Like '%{}%' ".format(symbol)
+    else:
+        symbol_condition = " "
+
     book_condition = " AND group_table.BOOK = '{}'".format(book)
+
+
+    if len(entities) > 0: # there's actually an entity here.
+        country_condition = " AND COUNTRY IN ({})".format(" , ".join(["'{}'".format(c) for c in entities]))
+        book_condition = " "    # No need for book condition anymore.
+    else:
+        country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK')   "
+
+
 
     # Live 1,2,3
     OPEN_TIME_LIMIT = "{} 22:00:00".format(start_date)

@@ -755,8 +755,8 @@ def check_session_live1_timing():
                     live1_server_difference=session['live1_sgt_time_diff'], hour_from_2300=0) + \
                                            datetime.timedelta(hours=session['live1_sgt_time_diff'], minutes=10)
         session['live1_sgt_time_update'] = min(time_refresh_next, server_nextday_time)
-        Post_To_Telegram(AARON_BOT, "Clearing cookies and retrieving new cookies for: {}".format(current_user.id),
-                          TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+        # Post_To_Telegram(AARON_BOT, "Clearing cookies and retrieving new cookies for: {}".format(current_user.id),
+        #                   TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
         #print(session)
 
     return return_val
@@ -1309,37 +1309,54 @@ def symbol_float_trades(symbol="", book="b"):
                                         "Line2": "Hr2",
                                         },
                            title=title,
-                           ajax_url=url_for('analysis.symbol_float_trades_ajax', _external=True, symbol=symbol, book=book),
+                           ajax_url=url_for('analysis.symbol_float_trades_ajax', _external=True, symbol=symbol, book=book, entity="none"),
                            book = book.upper(),
                            header=header, symbol=symbol,
                            description=description, no_backgroud_Cover=True,
                            replace_words=Markup(["Today"]))
 
 # The Ajax call for the symbols we want to query. B Book.
-@analysis.route('/Open_Symbol/<book>/symbol_float_trades_ajax/<symbol>', methods=['GET', 'POST'])
+@analysis.route('/Open_Symbol/<book>/symbol_float_trades_ajax/<symbol>/<entity>', methods=['GET', 'POST'])
+#@analysis.route('/Open_Symbol/<book>/country_float_trades_ajax/<entities>', methods=['GET', 'POST'])
 @roles_required()
-def symbol_float_trades_ajax(symbol="", book="b"):
+def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
     start_time = datetime.datetime.now() # Want to get the datetime when this request was called.
+    # Want to show 2 days back if the hour is less than 10am (SGT), else, shows 1 day only.
+    opentime_day_backwards_count = 3 if datetime.datetime.now().hour < 12 else 2  # Not too many days, else it will be too small.
+    opentime_day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * opentime_day_backwards_count))
+
+
+    #print("symbol_float_trades_ajax Running.. ")
+
+    # TODO: Solve this.
+    entities = "" if entity.lower() == "none" else [entity] # Want to make it into a list.
+    symbol = "" if symbol.lower() == "none" else symbol
+
+
+
 
     # Snap shot of the volume.
     # Need to pass in the app as this would be using a newly created threadS
     df_data_vol_unsync = Get_Vol_snapshot(app=current_app._get_current_object(),
-                    symbol=symbol, book=book, day_backwards_count=5)
+                    symbol=symbol, book=book, day_backwards_count=5, entities=entities)
 
-    # Want to show 2 days back if the hour is less than 10am (SGT), else, shows 1 day only.
-    opentime_day_backwards_count = 3 if datetime.datetime.now().hour < 12 else 2    # Not too many days, else it will be too small.
-    opentime_day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * opentime_day_backwards_count))
+
     symbol_opentime_trades_unsync = symbol_opentime_trades(app=current_app._get_current_object(),
-                                                           symbol=symbol, book=book, start_date=opentime_day_backwards)
+                                                           symbol=symbol, book=book,
+                                                           start_date=opentime_day_backwards,
+                                                           entities=entities)
 
-    # Get the history details such as Trade volume and reenue
+
+    # Get the history details such as Trade volume and revenue
     Symbol_history_Daily_unsync = Symbol_history_Daily(symbol=symbol, book=book,
                                                        app=current_app._get_current_object(),
-                                                       day_backwards_count=15)
+                                                       day_backwards_count=15,entities=entities)
 
     all_open_trades_start = datetime.datetime.now()
-    all_trades = symbol_all_open_trades(symbol=symbol, book=book)
+    print("entities : {}".format(entities))
+    all_trades = symbol_all_open_trades(symbol=symbol, book=book, entities=entities)
+
     print("all_open_trades_start() Took: {sec}s".format(sec=(datetime.datetime.now() - all_open_trades_start).total_seconds()))
 
     df_all_trades = pd.DataFrame(all_trades)
@@ -1427,7 +1444,7 @@ def symbol_float_trades_ajax(symbol="", book="b"):
         # Get the live, login and group, since sum would remove those.
         #live_login_group = df_open_trades[['LIVE', 'LOGIN', 'COUNTRY','GROUP']].drop_duplicates()
 
-        # By Entity/Group
+        # By entities/Group
         group_sum = df_open_trades.groupby(by=['COUNTRY', 'GROUP',])[['LOTS', 'NET_LOTS','CONVERTED_REVENUE', 'SYMBOL', 'REBATE','TOTAL_PROFIT']].sum().reset_index()
 
         # Want to color the rebate if profit <= 0, but Profit + rebate > 0
@@ -1671,8 +1688,10 @@ def symbol_float_trades_ajax(symbol="", book="b"):
     # Want to plot the 30 mins-ish Snapshot Open lots of
     df_data_vol= df_data_vol_unsync.result()
     #print(df_data_vol_unsync)
-    vol_fig = plot_symbol_book_total(df_data_vol, "{sym} Total Lots Snapshot ({book} Book)".format(sym=symbol,
-                                           book=book.upper()))
+
+    plot_title = "{symbol} Total Lots Snapshot".format(symbol=symbol)
+    plot_title = plot_title + " ({book} Book)".format(book=book.upper()) if book.lower() != "none" else plot_title
+    vol_fig = plot_symbol_book_total(df_data_vol, plot_title)
 
     #vol_fig.show()
     #print(df_data_vol)
@@ -1684,27 +1703,35 @@ def symbol_float_trades_ajax(symbol="", book="b"):
     #print(df_opentiming)
     #print("Total Opentiming lots: {}".format(df_opentiming['LOTS'].sum()))
     if len(df_opentiming):
-        opentime_fig = plot_symbol_opentime(df_opentiming, "{symbol} OpenTime ({book} Book)".format(symbol=symbol, book=book.upper()))
+        plot_title = "{symbol} OpenTime".format(symbol=symbol)
+        plot_title = plot_title + " ({book} Book)".format(book=book.upper()) if book.lower() != "none" else plot_title
+        opentime_fig = plot_symbol_opentime(df_opentiming, plot_title)
         #opentime_fig.show()
     else:
         opentime_fig={}
 
 
-
     # The historical data of the symbol by Country/date
     history_daily_data = pd.DataFrame(Symbol_history_Daily_unsync.result())
     if len(history_daily_data) > 0:
+
+        # If it's by symbol. (ie: if it's by country, we want to show all symbols)
+        title_symbol_postfix = "({symbol})".format(symbol=symbol) if len(symbol)>1 else ""
+
+        chart_title_1 = "History Daily Volume" +  title_symbol_postfix
+        chart_1_color = "COUNTRY" #if  len(entities) == 0 else "SYMBOL"
         history_daily_vol_fig = plot_symbol_history(df=history_daily_data,
                                                     by="Volume",
-                                   chart_title="History Daily Volume ({symbol})".format(symbol=symbol))
+                                   chart_title=chart_title_1, color_by=chart_1_color)
 
+        chart_title_2 = "History Daily Revenue" + title_symbol_postfix
+        "({symbol})".format(symbol=symbol) if len(symbol) > 1 else ""
         history_daily_rev_fig = plot_symbol_history(df=history_daily_data,
                                                     by="Revenue",
-                                                    chart_title="History Daily Volume ({symbol})".format(symbol=symbol))
+                                                    chart_title=chart_title_2,  color_by="COUNTRY")
     else:   # If there are no data. We return an empty chart
         history_daily_vol_fig = {}
         history_daily_rev_fig = {}
-
 
 
     # Return the values as json.
@@ -1734,11 +1761,26 @@ def symbol_float_trades_ajax(symbol="", book="b"):
 # # Get all open trades of a particular symbol.
 # # Get it converted as well.
 # # Can choose A Book or B Book.
-def symbol_all_open_trades(symbol="", book="B"):
+def symbol_all_open_trades(symbol="", book="B", entities=[]):
     #symbol="XAUUSD"
-    symbol_condition = " AND mt4_trades.SYMBOL Like '%{}%' ".format(symbol)
-    country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
+
+    if len(symbol) > 0: # If we want to filter by Symbol.
+        symbol_condition = " AND mt4_trades.SYMBOL Like '%{}%' ".format(symbol)
+    else:
+        symbol_condition = " "
+
     book_condition = " AND group_table.BOOK = '{}'".format(book)
+
+    if len(entities) == 0 or entities[0] == "":
+        country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
+
+    else:
+        # want to put the coutries into a comma seperated string, combined with '
+        country_condition = " AND COUNTRY IN ({}) ".format(" , ".join(["'{}'".format(c) for c in entities]))
+        book_condition = " "  # no need Book condition anymore.
+
+    #print("country_condition: {}".format(country_condition))
+
 
     if book.lower() == "a":
         # Additional SQL query if a book
@@ -1887,12 +1929,79 @@ def symbol_all_open_trades(symbol="", book="B"):
                        Live2_book_query=Live2_book_query)
 
 
+    #print(sql_statement)
     sql_query = text(sql_statement.replace("\n", " ").replace("\t", " "))
     raw_result = db.engine.execute(sql_query)   # Insert select..
     result_data = raw_result.fetchall()     # Return Result
     result_col = raw_result.keys()          # Column names
 
     return [dict(zip(result_col, r)) for r in result_data]
+
+
+# To Query for all open trades by a particular symbol
+# Shows the closed trades for the day as well.
+@analysis.route('/BGI_Symbol_Float/Country_Open/<country>', methods=['GET', 'POST'])
+@roles_required()
+def Country_float_trades(country=""):
+
+    title = "{}".format(country.upper())
+    header = "{} Trades".format(country.upper())
+
+    # if book.lower() == "b":
+    #     header += "(B 📘)"
+    # elif book.lower() == "a":
+    #     header += "(A 📕)"
+
+    table_ledgend = "COUNTRY: Country that Client Group is in.<br>" + \
+                    "GROUP: Client Group.<br>" + \
+                    "LOTS : Lots of trades (Or total sum, where applies).<br>" + \
+                    "NET LOTS : Cross tally of buy (+ve) and sell (-ve).<br>" + \
+                    "CONVERTED REVENUE : SWAPS + PROFIT converted to USD.<br>" + \
+                    "REBATE : Amount (Sum) of rebate paid out.<br>" + \
+                    "SWAPS : Amount(Sum) of swaps for trades.<br>" + \
+                    "PROFIT : PnL (Sum) for trades.<br>" + \
+                    "TOTAL PROFIT: CONVERTED REVENUE - REBATE. This is how much BGI Earns.<br>" + \
+                    "<br><br>" + \
+                    "REBATE will be highlighted if REVENUE is -ve, But REVENUE + REBATE >= 0.<br>" +\
+                    "That's to say, Client is still profitable."
+
+    description = Markup("Showing Open trades for {}<br>Details are on Client side.<br><br>{}".format(country, table_ledgend))
+
+    if country == "" :  # There are no information.
+        flash("There were no country details.")
+        return redirect(url_for("main_app.index"))
+
+    # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
+    # Will try to do smaller vertical table to put 2 or 3 tables in a row.
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/france_1.jpg', icon="",
+                           Table_name={ "Winning Floating Groups (Client Side)": "Hs1",
+                                        "Losing Floating Groups (Client Side)": "Hs2",
+                                        "Winning Floating Accounts (Client Side)": "H1",
+                                        "Losing Floating Accounts (Client Side)": "H2",
+                                        "Largest Lots Floating Accounts (Client Side)": "H5",
+                                        "Total Volume Snapshot" : "P1",
+                                        "Open Time vs Lots": "P2",
+                                        "Total Floating (BGI Side)": "V1",
+                                        "Country Floating (BGI Side)": "Hs5",
+                                        "Line": "Hr1",
+                                        "Winning Realised Accounts Today (Client Side)": "H3",
+                                        "Losing Realised Accounts Today (Client Side)": "H4",
+                                        "Largest Lots Realised Accounts Today (Client Side)": "H6",
+                                        "Winning Realised Group Today (Client Side)": "Hs3",
+                                        "Losing Realised Group Today (Client Side)": "Hs4",
+                                        "History Daily Closed Vol": "P3",
+                                        "History Daily Revenue": "P4",
+                                        "Total Closed Today (BGI Side)": "V2",
+                                        "Country Closed (BGI Side)": "Hs6",
+                                        "Line2": "Hr2",
+                                        },
+                           title=title,
+                           ajax_url=url_for('analysis.symbol_float_trades_ajax', _external=True, entity=country, book="none", symbol="none"),
+                           book = "None",
+                           header=header, symbol=country,
+                           description=description, no_backgroud_Cover=True,
+                           replace_words=Markup(["Today"]))
+
 
 
 
@@ -2737,12 +2846,12 @@ def plot_open_position_net(df, chart_title):
 
 # PLot the historical data of the symbol
 # Either by Revenue, or by Volume.
-def plot_symbol_history(df, by, chart_title):
+def plot_symbol_history(df, by, chart_title, color_by):
     # Lots was saved as decimal. Need to convert to float
     df[by.upper()] = df[by.upper()].apply(float)
 
     df_country = df.groupby(["DATE","COUNTRY"]).sum().reset_index()
-    fig = px.bar(df_country, x='DATE', y=by.upper(), color="COUNTRY")
+    fig = px.bar(df_country, x='DATE', y=by.upper(), color=color_by)
     #fig.show()
 
     # Change the bar layout
