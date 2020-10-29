@@ -14,7 +14,6 @@ from app.models import *
 #images = UploadSet('files',  extensions=('xls', 'xlsx', 'csv'))
 
 
-
 # Want to create a SQL insert, for any tables that has Live, Login, Equity_limit
 class Live_Login(FlaskForm):
     Live = IntegerField('Live', validators=[DataRequired(), AnyOf(values=[1,2,3,5], message="Only Live 1,2,3 and 5")], description = "1,2,3 or 5.")

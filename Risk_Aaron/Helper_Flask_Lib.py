@@ -379,14 +379,19 @@ def Calculate_Net_position(df_data):
         return (pd.DataFrame([{"Results": "No Open Trades"}])) # Return empty dataframe
 
 
-    df_data["LOTS"] = df_data.apply(lambda x: x["LOTS"] if x["CMD"] == 0 else -1*x["LOTS"], axis=1)   # -ve for sell
 
-    df_data = df_data[["SYMBOL", "LOTS",  'PROFIT', 'SWAPS' ]]   # Only need these few.
+    df_data["NET_LOTS"] = df_data.apply(lambda x: x["LOTS"] if x["CMD"] == 0 else -1*x["LOTS"], axis=1)   # -ve for sell
+    #df_data["LOTS"] = round(df_data['LOTS'].sum(), 2)
+
+
+    df_data = df_data[['SYMBOL', 'LOTS', 'NET_LOTS', 'PROFIT', 'SWAPS' ]]   # Only need these few.
     ret_val = df_data.groupby(['SYMBOL']).sum()     # Want to group by Symbol, and sum
     ret_val.reset_index(level=0, inplace=True)      # Want to reset the index so that "SYMBOL" becomes the column name
+    ret_val["NET_LOTS"] = ret_val["NET_LOTS"].apply(round, 2)
+    ret_val["PROFIT"] = ret_val["PROFIT"].apply(profit_red_green) # Print in 2 D.P,with color (HTML)
+    ret_val["SWAPS"] = ret_val["SWAPS"].apply(profit_red_green) # Print in 2 D.P,with color (HTML)
 
-    ret_val["PROFIT"] = ret_val["PROFIT"].apply(lambda x: "{:.2f}".format(x))       # Print in 2 D.P.
-    ret_val["SWAPS"] = ret_val["SWAPS"].apply(lambda x: "{:.2f}".format(x))          # Print in 2 D.P.
+
     ret_val["LOTS"] = ret_val["LOTS"].apply(lambda x: "{:.2f}".format(x))  # Print in 2 D.P.
 
     return ret_val
@@ -410,11 +415,14 @@ def Sum_total_account_details(Live, Login):
     account_details_list = Query_SQL_db_engine(sql_statement)
     account_details=account_details_list[0] # since we only expect 1 reply from SQL
 
-    account_details["% PROFIT"] = "No Deposit" if account_details["DEPOSIT"] == 0 else 100 * round(account_details["CLIENT PROFIT"] / account_details["DEPOSIT"],2)        # The % of profit from total deposit
+
+
+    account_details["% PROFIT"] = "No Deposit" if account_details["DEPOSIT"] == 0 else  "{:.2f}%".format(100 * round(account_details["CLIENT PROFIT"] / account_details["DEPOSIT"],4))       # The % of profit from total deposit
     account_details["PER LOT AVERAGE"] = "No Lots" if account_details["LOTS"] == 0 else  \
-            round(account_details["CLIENT PROFIT"] / account_details["LOTS"],2)    # The Profit per lot.
+           round(account_details["CLIENT PROFIT"] / account_details["LOTS"],2)    # The Profit per lot.
     account_details["% WINNING TRADES"] = "No Trades Found" if  (account_details["NUM LOSING TRADES"] + account_details["NUM PROFIT TRADES"]) == 0 else \
-        100 * round(account_details["NUM PROFIT TRADES"] / (account_details["NUM LOSING TRADES"] + account_details["NUM PROFIT TRADES"]),2)
+        "{:.2f}%".format(100 * round(account_details["NUM PROFIT TRADES"] / (account_details["NUM LOSING TRADES"] + account_details["NUM PROFIT TRADES"]),4))
+
 
 
     return [account_details]
@@ -490,3 +498,22 @@ def color_rebate(rebate, pnl, multiplier = 1):
     if float(pnl) <= 0 and (float(rebate) + float(pnl)) >= 0:
          style = " style='background-color:#FF8065' "
     return "<span {style}>{x:,.2f}</span>".format(style=style, x=round(float(rebate) * multiplier,2))
+
+
+
+def color_negative_red(value):
+      # """
+      # Colors elements in a dateframe
+      # green if positive and red if
+      # negative. Does not color NaN
+      # values.
+      # """
+
+    if value < 0:
+        color = 'red'
+    elif value > 0:
+        color = 'green'
+    else:
+        color = 'black'
+    #return 'color: %s' % color
+    return  color
