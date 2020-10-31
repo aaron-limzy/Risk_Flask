@@ -772,7 +772,7 @@ def BGI_Country_Float_ajax():
     # TODO: Only want to save during trading hours.
     # TODO: Want to write a custom function, and not rely on using CFH timing.
     if not cfh_fix_timing():
-        return json.dumps([{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
+        return json.dumps([[{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}]])
 
     # Will check the timing
     # Need to ensure that there is something there, in case of a race condition where the PnL is still saving but it's been queried.
