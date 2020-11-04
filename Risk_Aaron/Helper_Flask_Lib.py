@@ -477,6 +477,14 @@ def Symbol_Trades_url(symbol, book):
     url = url_for("analysis.symbol_float_trades", symbol=symbol, book=book, _external=True)
     return '<a href="{url}" target="_blank">{symbol}</a>'.format(url=url,  symbol=symbol)
 
+
+# To get the URL for the Symbol Trades A/B Book
+def Country_Trades_url(country):
+
+    url = url_for("analysis.Country_float_trades", country=country)
+    return '<a href="{url}" target="_blank">{country}</a>'.format(url=url,  country=country)
+
+
 # color the text green if positive, red if positive.
 def profit_red_green(x):
     color="black" # By default the color is black

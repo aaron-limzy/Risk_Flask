@@ -911,6 +911,9 @@ def BGI_Country_Float_ajax():
 
     # Reduce the number of columns.
     df_to_table = df_to_table[df_show_col]
+    # Want to append the Country URL 
+    df_to_table['COUNTRY'] = df_to_table['COUNTRY'].apply(Country_Trades_url)
+
 
     df_records = df_to_table.to_records(index=False)
     dataframe_col = list(df_to_table.columns)
