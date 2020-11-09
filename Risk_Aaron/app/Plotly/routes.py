@@ -1013,7 +1013,7 @@ def BGI_Symbol_Float():
 
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Symbol_Float.html", backgroud_Filename='css/pattern7.jpg', icon= "", Table_name="Symbol Float (B 📘)", \
+    return render_template("Webworker_Symbol_Float.html", backgroud_Filename='css/leaves.png', icon= "", Table_name="Symbol Float (B 📘)", \
                            title=title, ajax_url=url_for('analysis.BGI_Symbol_Float_ajax', _external=True), header=header, setinterval=15,
                            description=description, no_backgroud_Cover=True, replace_words=Markup(['(Client Side)']))
 
@@ -1068,19 +1068,6 @@ def BGI_Symbol_Float_ajax():
     server_time_diff_str = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session \
                 else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
 
-    #server_time_diff_str = "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
-
-    # sql_statement = """SELECT SYMBOL, SUM(ABS(floating_volume)) AS VOLUME, -1 * SUM(net_floating_volume) AS NETVOL,
-    #                         SUM(floating_revenue) AS REVENUE,
-    #                         SUM(closed_vol_today) as "TODAY_VOL",
-    #                         SUM(closed_revenue_today) as "TODAY_REVENUE",
-    #                         DATE_ADD(DATETIME,INTERVAL ({ServerTimeDiff_Query}) HOUR) AS DATETIME
-    #         FROM aaron.BGI_Float_History_Save
-    #         WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.BGI_Float_History_Save)
-    #         AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "B")
-    #         GROUP BY SYMBOL
-    #         ORDER BY REVENUE DESC
-    #         """.format(ServerTimeDiff_Query=server_time_diff_str)
 
     sql_statement = """SELECT aaron.BGI_Float_History_Save.SYMBOL, SUM(ABS(floating_volume)) AS VOLUME, -1 * SUM(net_floating_volume) AS NETVOL, 
                     SUM(floating_revenue) AS REVENUE, 
@@ -1117,11 +1104,6 @@ def BGI_Symbol_Float_ajax():
     df_to_table['DATETIME'] = df_to_table['DATETIME'].apply(lambda x: Get_time_String(x))
 
 
-    # yesterday_datetime_pull = [c for c in list(df_yesterday_symbol_pnl['DATE'].unique()) if
-    #                            c != 0] if "DATE" in df_yesterday_symbol_pnl else ["No YESTERDAY_DATE in df."]
-    #
-
-
     datetime_pull =  [c for c in list(df_to_table['DATETIME'].unique()) if c != 0] if  "DATETIME" in df_to_table else  ["No Datetime in df."]
 
 
@@ -1156,6 +1138,7 @@ def BGI_Symbol_Float_ajax():
         # Want to hyperlink Yesterday Revenue. To show yesterday's date.
         # Add comma if it's a float.
 
+        # Hyperlink this.
         if "YESTERDAY_REVENUE" in df_to_table:
             #df_to_table["YESTERDAY_REVENUE"] = df_to_table["YESTERDAY_REVENUE"].apply(lambda x: "{:,.2f}".format(x) if isfloat(x) else x)
             # Hyperlink it.
@@ -1175,19 +1158,23 @@ def BGI_Symbol_Float_ajax():
 
     # Need to check if the columns are in the df.
     # taking this chance to re-arrange them as well.
-    col_of_df = [c for c in ["SYMBOL", "NETVOL", "VOLUME", "REVENUE", "TODAY_VOL", "TODAY_REVENUE", "BID", "ASK","YESTERDAY_VOLUME", "YESTERDAY_REVENUE"] if c in  list(df_to_table.columns)]
+    # col_of_df = [c for c in ["SYMBOL", "NETVOL", "VOLUME", "REVENUE", "TODAY_VOL", "TODAY_REVENUE", "BID", "ASK","YESTERDAY_VOLUME", "YESTERDAY_REVENUE"] if c in  list(df_to_table.columns)]
 
     #df_records = df_to_table[col_of_df].to_records(index=False)
     #df_records = [list(a) for a in df_records]
     #return_val = [dict(zip(col_of_df,d)) for d in df_records]
 
 
-
-
-
     # Want to hyperlink it.
     df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{symbol}</a>'.format(symbol=x,
                                                                     url=url_for('analysis.symbol_float_trades', _external=True, symbol=x, book="b")))
+
+   # # # Want to add colors to the words.
+    # Want to color the REVENUE
+    cols = ["REVENUE", "TODAY_REVENUE"]
+    for c in cols:
+        if c in df_to_table:
+            df_to_table[c] = df_to_table[c].apply(lambda x: """{c}""".format(c=profit_red_green(x) if isfloat(x) else x))
 
 
 

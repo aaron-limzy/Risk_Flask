@@ -145,9 +145,9 @@
 
       xhr.onerror = () =>{
         console.log('xmlHTTP Error');
+        //console.log(xhr.responseText);
         console.error(xhr);
         reject(xhr.response);
-
 
       };
 
@@ -192,15 +192,23 @@
 
 
 
-
-
     }).catch(err => {
       //self.postMessage(err);
       Increment_counter = 1;  // Restart the counter.
 
       //TODO: Try to catch the error.
       self.postMessage({Table1_Error: "An Error Occured: " + return_Time_String(), consolidate: true});
-      console.log(err);
+
+      // Want to clear the table so that it dosn't show any outdated output.
+      self.postMessage({Data_table_Div1: Draw_Table(  [{Comment:"Server Error: Server might have stopped or is currently undergoing maintance. Kindly Contact Risk/Aaron."}] , "{{ Table_name }}" , "table compact  table-hover table-sm table-responsive-sm table-bordered bg-light large_text_table basic_table", ["Update Slow"] , {{ replace_words }}, "Data_table_Div1_table" )});
+
+      // Post error to console. Need to pass by the main thread first.
+      self.postMessage({"TO_LOG": err});
+
+
+
+
+      //console.log(err);
 
     });
   }
@@ -349,14 +357,17 @@
                         //sString += "Is Array..." ;
 
                         sString += Draw_Vertical_Table(table_Data[x][xx], "", "table_orange ", Replace_words);
-                    } else  if (typeof(table_Data[x][xx]) === 'number'){  // If it's a number. we want to write it with a comma for easy reading.
-
-                      if (table_Data[x][xx] < 0){
-                        sString += "<font color='red'>" +  numberWithCommas(table_Data[x][xx]) + "</font>";
-                      }else{
-                        sString += numberWithCommas(table_Data[x][xx]);
-                      }
-                    }else
+                    }
+                    // // The coloring of the numbers will be done in pandas.
+                    // else  if (typeof(table_Data[x][xx]) === 'number'){  // If it's a number. we want to write it with a comma for easy reading.
+                    //
+                    //   // if (table_Data[x][xx] < 0){
+                    //   //   sString += "<font color='red'>" +  numberWithCommas(table_Data[x][xx]) + "</font>";
+                    //   // }else{
+                    //   //   sString += numberWithCommas(table_Data[x][xx]);
+                    //   // }
+                    // }
+                    else
                     {
                         sString += string_buffer;
                     }
