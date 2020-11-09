@@ -890,6 +890,14 @@ def BGI_Country_Float_ajax():
     df_to_table['COUNTRY'] = df_to_table.apply(lambda x: '{} (Client Side)'.format(x['COUNTRY']) if (
                 x["COUNTRY"].find("_A") > 0 or x["COUNTRY"].find('Dealing') >= 0) else x['COUNTRY'], axis=1)
 
+    # # # Want to add colors to the words.
+    # Want to color the REVENUE
+    cols = ["FLOAT_REVENUE" , "CLOSED_REVENUE", "YESTERDAY_REVENUE",]
+    for c in cols:
+        if c in df_to_table:
+            df_to_table[c] = df_to_table[c].apply(
+                lambda x: """{c}""".format(c=profit_red_green(x) if isfloat(x) else x))
+
     # Don't want the zeros. 0 is discarded.
     datetime_pull =  [c for c in list(df_to_table['DATETIME'].unique()) if c != 0] if  "DATETIME" in df_to_table else  ["No Datetime in df."]
 
@@ -1171,7 +1179,7 @@ def BGI_Symbol_Float_ajax():
 
    # # # Want to add colors to the words.
     # Want to color the REVENUE
-    cols = ["REVENUE", "TODAY_REVENUE"]
+    cols = ["REVENUE", "TODAY_REVENUE", "NETVOL"]
     for c in cols:
         if c in df_to_table:
             df_to_table[c] = df_to_table[c].apply(lambda x: """{c}""".format(c=profit_red_green(x) if isfloat(x) else x))

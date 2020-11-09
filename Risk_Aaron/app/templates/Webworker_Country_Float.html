@@ -195,6 +195,13 @@
 
       //TODO: Try to catch the error.
       self.postMessage({Table1_Error: "An Error Occured: " + return_Time_String(), consolidate: true});
+
+      // Want to clear the table so that it dosn't show any outdated output.
+      self.postMessage({Data_table_Div1: Draw_Table(  [{Comment:"Server Error: Server might have stopped or is currently undergoing maintance. Kindly Contact Risk/Aaron."}] , "{{ Table_name }}" , "table compact  table-hover table-sm table-responsive-sm table-bordered bg-light large_text_table basic_table", ["Update Slow"] , {{ replace_words }}, "Data_table_Div1_table" )});
+
+      // Post error to console. Need to pass by the main thread first.
+      self.postMessage({"TO_LOG": err});
+
       console.log(err);
 
     });
