@@ -1870,7 +1870,6 @@ def symbol_closed_trades_analysis(df, book, symbol):
         # Use for calculating the total seconds that the trades are opened for.
         df["DURATION_(AVG)"] = df.apply(lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).total_seconds(), axis=1)
 
-
         # Want to take the mean duration, by trade.
         closed_login_sum = df.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).agg({'LOTS': 'sum',
                                                                             'NET_LOTS': 'sum',
@@ -1886,9 +1885,14 @@ def symbol_closed_trades_analysis(df, book, symbol):
         closed_login_sum["NET_LOTS"] = round(closed_login_sum['NET_LOTS'], 2)
         closed_login_sum["CONVERTED_REVENUE"] = round(closed_login_sum['CONVERTED_REVENUE'], 2)
         closed_login_sum["PROFIT"] = round(closed_login_sum['PROFIT'], 2)
+        #closed_login_sum["PROFIT"] = round(closed_login_sum['PROFIT'], 2)
         closed_login_sum["REBATE"] = closed_login_sum.apply( lambda x: color_rebate(rebate=x['REBATE'], \
                                                                                     pnl=x["CONVERTED_REVENUE"]), axis=1)
-        closed_login_sum["SWAPS"] = round(closed_login_sum['SWAPS'], 2)
+        #closed_login_sum["SWAPS"] = round(closed_login_sum['SWAPS'], 2)
+        # Want to color the SWAPS and PROFIT.
+        closed_login_sum["SWAPS"] = closed_login_sum["SWAPS"].apply(profit_red_green)
+        closed_login_sum["PROFIT"] = closed_login_sum["PROFIT"].apply(profit_red_green)
+
         closed_login_sum["LOGIN"] = closed_login_sum.apply(lambda x: live_login_analysis_url( \
             Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
         # Want to get the average of the duration.
@@ -2018,8 +2022,10 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="")
         live_login_sum["NET_LOTS"] = round(live_login_sum['NET_LOTS'], 2)
         live_login_sum['REBATE'] = live_login_sum.apply(lambda x: color_rebate(rebate=x['REBATE'], pnl=x["CONVERTED_REVENUE"]), axis=1)
         live_login_sum["CONVERTED_REVENUE"] = round(live_login_sum['CONVERTED_REVENUE'], 2)
-        live_login_sum["PROFIT"] = round(live_login_sum['PROFIT'], 2)
-        live_login_sum["SWAPS"] = round(live_login_sum['SWAPS'], 2)
+        #live_login_sum["PROFIT"] = round(live_login_sum['PROFIT'], 2)
+        live_login_sum["PROFIT"] = live_login_sum["PROFIT"].apply(profit_red_green)
+        live_login_sum["SWAPS"] = live_login_sum["SWAPS"].apply(profit_red_green)
+            #round(live_login_sum['SWAPS'], 2)
         live_login_sum["LOGIN"] = live_login_sum.apply(lambda x: live_login_analysis_url(\
                                     Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
         live_login_sum["TOTAL_PROFIT"] = round(live_login_sum['TOTAL_PROFIT'], 2)
