@@ -2067,7 +2067,7 @@ def Mismatch_trades_bridge(symbol=[], hours=8, mins=16):
 
 
     # SQ's DB tablenames.
-    sq_tables = ["demo1", "demo2_new", "demo3_new"]
+    sq_tables = ["demo1", "demo2_new", "live3_cambodia"]
 
     time_str_condition = " OR ".join([" TRADETIME like '{}' ".format(t) for t in time_gmt_list])
 
