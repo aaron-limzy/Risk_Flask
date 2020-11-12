@@ -479,10 +479,33 @@ def Symbol_Trades_url(symbol, book):
 
 
 # To get the URL for the Symbol Trades A/B Book
-def Country_Trades_url(country):
+# If we want to hyperlink, but add different text, fill in optional text parameter.
+# Only when text is empty will the word be blue. Else, it will be black.
+def Country_Trades_url(country, text=""):
 
+    # Want to append text, if there is. Else, default to show country.
+    text = text if text != "" else country
+    # Want to add in that the style is black if there are no added text.
+    # ie: Text is black when text != country
+    added_style = 'style = "color:black" ' if text != country else " "
     url = url_for("analysis.Country_float_trades", country=country)
-    return '<a href="{url}" target="_blank">{country}</a>'.format(url=url,  country=country)
+
+    return '<a href="{url}" {added_style} target="_blank">{text}</a>'.format(url=url, added_style=added_style, text=text)
+
+# Attempt to get the root trading Symbol.
+# For FX PM and CFDs
+def split_root_symbol(sym):
+
+    if sym.find(".") == 0: # CFD
+        cfd_list = [".A50", ".AUS200", ".DE30", ".ES35", ".F40", ".HK50", ".JP225",
+            ".STOXX50", ".UK100", ".UKOil",  ".US100", ".US30", ".US500", ".USOil"]
+        for c in cfd_list:
+            if sym.find(c) == 0: # Found that CFD
+                return c
+    else:
+        return sym[:6] if len(sym) >= 6 else sym
+
+    return sym # Cannot find anything. Default to returning the actual symbol
 
 
 # color the text green if positive, red if positive.

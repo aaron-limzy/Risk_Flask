@@ -882,7 +882,7 @@ def BGI_Country_Float_ajax():
 
 
     # Want to show on the chart. Do not need additional info as text it would be too long.
-    chart_Country = list(df_to_table['COUNTRY'].values)
+    # chart_Country = list(df_to_table['COUNTRY'].values)
 
 
 
@@ -919,6 +919,11 @@ def BGI_Country_Float_ajax():
 
     # Reduce the number of columns.
     df_to_table = df_to_table[df_show_col]
+
+    # Want to hyperlink the FLOAT Volume as well.
+    df_to_table['FLOAT_VOLUME'] = df_to_table.apply(lambda x: Country_Trades_url(x['COUNTRY'], "{:,.2f}".format(x['FLOAT_VOLUME'])), axis=1)
+    # Want to hyperlink the CLOSED_VOL as well.
+    df_to_table['CLOSED_VOL'] = df_to_table.apply(lambda x: Country_Trades_url(x['COUNTRY'], "{:,.2f}".format(x['CLOSED_VOL'])), axis=1)
     # Want to append the Country URL 
     df_to_table['COUNTRY'] = df_to_table['COUNTRY'].apply(Country_Trades_url)
 
@@ -930,7 +935,7 @@ def BGI_Country_Float_ajax():
     #print(emoji.emojize('Python is :china: :TW: :NZ: :HK:'))
 
     # Want to clean up the data
-    result_clean = [[Get_time_String(d) if isinstance(d, datetime.datetime) else d for d in r] for r in result_data]
+    # result_clean = [[Get_time_String(d) if isinstance(d, datetime.datetime) else d for d in r] for r in result_data]
 
     return_val = [dict(zip(dataframe_col,d)) for d in df_records]
     #print(return_val)
@@ -1330,6 +1335,10 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
     entities = "" if entity.lower() == "none" else [entity] # Want to make it into a list.
     symbol = "" if symbol.lower() == "none" else symbol
 
+    # If country, we need to manually check if it's a book or B book.
+    if book == "none":
+        book = "a" if entity.find("_A") >= 1 else "b"
+        #print("book: {}".format(book))
 
 
 
@@ -1531,12 +1540,12 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
     # List unpacking from the return of the function.
     [closed_top_accounts, closed_bottom_accounts, total_sum_closed, top_closed_groups,
-     bottom_closed_groups, closed_largest_lot_accounts, closed_by_country] = symbol_closed_trades_analysis(df_closed_trades, book, symbol)
+     bottom_closed_groups, closed_largest_lot_accounts, closed_by_country] = symbol_closed_trades_analysis(df_closed_trades, book, symbol, entity=entity)
 
 
     # Get the results from unsync
     df_data_vol= df_data_vol_unsync.result()
-    #print(df_data_vol_unsync)
+    print(df_data_vol)
 
     # Want to plot the 30 mins-ish Snapshot Open lots of
     plot_title = "{symbol} Total Lots Snapshot".format(symbol=symbol)
@@ -1830,7 +1839,7 @@ def Country_float_trades(country=""):
                                         "Total Volume Snapshot" : "P1",
                                         "Open Time vs Lots": "P2",
                                         "Total Floating (BGI Side)": "V1",
-                                        "Country Floating (BGI Side)": "Hs5",
+                                        "Symbol Floating (BGI Side)": "Hs5",
                                         "Line": "Hr1",
                                         "Winning Realised Accounts Today (Client Side)": "H3",
                                         "Losing Realised Accounts Today (Client Side)": "H4",
@@ -1840,7 +1849,7 @@ def Country_float_trades(country=""):
                                         "History Daily Closed Vol": "P3",
                                         "History Daily Revenue": "P4",
                                         "Total Closed Today (BGI Side)": "V2",
-                                        "Country Closed (BGI Side)": "Hs6",
+                                        "Symbol Closed (BGI Side)": "Hs6",
                                         "Line2": "Hr2",
                                         },
                            title=title,
@@ -1855,12 +1864,19 @@ def Country_float_trades(country=""):
 
 
 # Consolidated function to use for closed trades (All logins for the same symbol)
-def symbol_closed_trades_analysis(df, book, symbol):
+def symbol_closed_trades_analysis(df, book, symbol, entity="none"):
 
 
     # Column that we need.
     col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE', 'REBATE', 'DURATION_(AVG)']
     col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'REBATE']
+
+    # If we are sorting only 1 entity, there is no need to keep showing it.
+    if entity != "none":
+        if "COUNTRY" in col2:
+            col2.remove("COUNTRY")
+        if "COUNTRY" in col3:
+            col3.remove("COUNTRY")
 
     # There are no closed trades for the day yet
     if len(df) <=0:
@@ -1934,8 +1950,6 @@ def symbol_closed_trades_analysis(df, book, symbol):
         closed_group_sum["REBATE"] = closed_group_sum.apply( lambda x: color_rebate(rebate=x['REBATE'], \
                                                                                     pnl=x["CONVERTED_REVENUE"]), axis=1)
 
-
-
         # Only want those that are profitable
         top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE', \
                                                                               ascending=False)[col3].head(20)
@@ -1970,9 +1984,16 @@ def symbol_closed_trades_analysis(df, book, symbol):
             if isfloat(total_sum_closed[c]):
                 total_sum_closed[c] = "{:,}".format(total_sum_closed[c])
 
-        # Want the table by country.
-        closed_by_country = df.groupby(["COUNTRY"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE',
-                                                                'REBATE', 'TOTAL_PROFIT']].sum().reset_index()
+        if entity == "none":
+            # Want the table by country.
+            closed_by_country = df.groupby(["COUNTRY"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE',
+                                                                    'REBATE', 'TOTAL_PROFIT']].sum().reset_index()
+        else:
+            df["SYMBOL"] = df["SYMBOL"].apply(split_root_symbol)
+            # Want the table by country.
+            closed_by_country = df.groupby(["SYMBOL"])[['LOTS', 'NET_LOTS', 'PROFIT', 'CONVERTED_REVENUE',
+                                                         'REBATE', 'TOTAL_PROFIT']].sum().reset_index()
+
 
         # Want to show Net Lots on BGI Side
         closed_by_country["NET_LOTS"] = -1 * closed_by_country["NET_LOTS"]
@@ -1993,6 +2014,7 @@ def symbol_closed_trades_analysis(df, book, symbol):
 
         closed_by_country["PROFIT"] = -1 * closed_by_country["PROFIT"]
         closed_by_country.sort_values(["NET_LOTS"], inplace=True)    # Sort it by Net_Lots
+        closed_by_country = closed_by_country.head(20)  # Want to only show the top 20, by net lots.
 
         closed_by_country = pd.DataFrame(
             [{"Comment": "There are currently no Country with floating PnL for {}".format(symbol)}]) if \
@@ -2002,7 +2024,9 @@ def symbol_closed_trades_analysis(df, book, symbol):
             bottom_closed_groups, closed_largest_lot_accounts, closed_by_country]
 
 # To return the open trades analysis.
-def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity=""):
+# col is for larger tables, showing logins and such
+# col_1 is for grouped 'group' tables,
+def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="none"):
 
     # Want the display line should be.
     display_line = symbol if len(symbol) > 0 else entity
@@ -2012,6 +2036,17 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="")
         return [return_df] * 7   # return 7 empty data frames.
         #[top_groups, bottom_groups, top_accounts , bottom_accounts, total_sum, largest_login , open_by_country]
     else:
+        #print("entity: '{}'".format(entity))
+
+        # If we are already showing by entity, we don't need to keep repeating.
+        # Will remove the COUNTRY column
+        if entity != "none":
+            if "COUNTRY" in col:
+                col.remove("COUNTRY")
+                #print("Removing Country from col")
+            if "COUNTRY" in col_1:
+                col_1.remove("COUNTRY")
+                #print("Removing Country from col_1")
 
         # Group the trades together.
         live_login_sum = df_open_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
@@ -2083,8 +2118,16 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="")
         bottom_groups = pd.DataFrame(
             [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
             len(bottom_groups) <= 0 else bottom_groups
+
         # Total sum Floating
-        total_sum_Col = ['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' , 'REBATE']       # The columns that we want to show
+        if entity == "none":     # By symbol. We can show net lots.
+            total_sum_Col = ['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' , 'REBATE']       # The columns that we want to show
+        else:   # Net volume dosn't make sense when we want to show only by entity/country
+            total_sum_Col = ['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS', 'REBATE']  # The columns that we want to show
+            #print("total_sum_Col: {}".format(total_sum_Col))
+
+        #print("entity: '{}'".format(entity))
+
         total_sum = df_open_trades[total_sum_Col].sum()
         total_sum =  total_sum.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
         total_sum["LOTS"] = abs(total_sum["LOTS"])  # Since it's Total lots, we only want the abs value
@@ -2095,9 +2138,22 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="")
             if isfloat(total_sum[c]):
                 total_sum[c] = "{:,}".format(total_sum[c])
 
-        # Want the table by country.
-        open_by_country = df_open_trades.groupby(["COUNTRY"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE',
-                                                                'REBATE', 'TOTAL_PROFIT']].sum().reset_index()
+        if entity != "none":  # If it's by country.
+            # Want the table by SYMBOL.
+
+            # Make a copy. Don't want to implement changes on the actal.
+            df_open_trades_copy = df_open_trades.copy()
+            df_open_trades_copy['SYMBOL'] = df_open_trades_copy['SYMBOL'].apply(split_root_symbol)
+
+            open_by_country = df_open_trades_copy.groupby(["SYMBOL"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE',
+                                                                    'REBATE', 'TOTAL_PROFIT']].sum().reset_index()
+            # Releases the memory.
+            df_open_trades_copy = pd.DataFrame()
+        else:
+
+            # Want the table by country.
+            open_by_country = df_open_trades.groupby(["COUNTRY"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE',
+                                                                    'REBATE', 'TOTAL_PROFIT']].sum().reset_index()
 
         open_by_country["NET_LOTS"] = -1 * open_by_country["NET_LOTS"]
 
@@ -2118,6 +2174,7 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="")
         open_by_country["LOTS"] = abs(open_by_country["LOTS"])
         open_by_country["PROFIT"] = -1 * open_by_country["PROFIT"]
         open_by_country.sort_values(["NET_LOTS"], inplace=True)    # Sort it by Net_Lots
+        open_by_country = open_by_country.head(20)                  # Want to take only the top 20
 
         open_by_country = pd.DataFrame(
             [{"Comment": "There are currently no Country with floating PnL for {}".format(symbol)}]) if \
