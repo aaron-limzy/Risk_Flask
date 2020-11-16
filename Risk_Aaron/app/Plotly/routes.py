@@ -1545,7 +1545,7 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
     # Get the results from unsync
     df_data_vol= df_data_vol_unsync.result()
-    print(df_data_vol)
+    #print(df_data_vol)
 
     # Want to plot the 30 mins-ish Snapshot Open lots of
     plot_title = "{symbol} Total Lots Snapshot".format(symbol=symbol)
@@ -1576,16 +1576,21 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
         title_symbol_postfix = "({symbol})".format(symbol=symbol) if len(symbol)>1 else ""
 
         chart_title_1 = "History Daily Volume" +  title_symbol_postfix
-        chart_1_color = "COUNTRY" #if  len(entities) == 0 else "SYMBOL"
+        chart_1_color = "COUNTRY" if  len(symbol) != 0 else "SYMBOL"
+        group_by = ["DATE"] + [chart_1_color]   # The columns in which we want to group by.
+
         history_daily_vol_fig = plot_symbol_history(df=history_daily_data,
                                                     by="Volume",
-                                   chart_title=chart_title_1, color_by=chart_1_color)
+                                   chart_title=chart_title_1, color_by=chart_1_color,
+                                                    group_by=group_by)
 
         chart_title_2 = "History Daily Revenue" + title_symbol_postfix
         "({symbol})".format(symbol=symbol) if len(symbol) > 1 else ""
         history_daily_rev_fig = plot_symbol_history(df=history_daily_data,
                                                     by="Revenue",
-                                                    chart_title=chart_title_2,  color_by="COUNTRY")
+                                                    chart_title=chart_title_2,  color_by=chart_1_color,
+                                                    group_by=group_by)
+
     else:   # If there are no data. We return an empty chart
         history_daily_vol_fig = {}
         history_daily_rev_fig = {}
@@ -1830,7 +1835,7 @@ def Country_float_trades(country=""):
 
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
-    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/france_1.jpg', icon="",
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/leaves_2.png', icon="",
                            Table_name={ "Winning Floating Groups (Client Side)": "Hs1",
                                         "Losing Floating Groups (Client Side)": "Hs2",
                                         "Winning Floating Accounts (Client Side)": "H1",
@@ -2882,11 +2887,11 @@ def plot_open_position_net(df, chart_title):
 
 # PLot the historical data of the symbol
 # Either by Revenue, or by Volume.
-def plot_symbol_history(df, by, chart_title, color_by):
+def plot_symbol_history(df, by, chart_title, color_by, group_by = []):
     # Lots was saved as decimal. Need to convert to float
     df[by.upper()] = df[by.upper()].apply(float)
 
-    df_country = df.groupby(["DATE","COUNTRY"]).sum().reset_index()
+    df_country = df.groupby(group_by).sum().reset_index()
     fig = px.bar(df_country, x='DATE', y=by.upper(), color=color_by)
     #fig.show()
 
@@ -2963,8 +2968,14 @@ def plot_symbol_book_total(df, chart_title):
 
     # Sort by datetime, to be able to plot it.
     df.sort_values(by=['DATETIME'], inplace=True)
-    df_t2 = df.groupby(["COUNTRY", "DATETIME"]).sum().reset_index()
-    fig = px.line(df_t2, x='DATETIME', y='FLOATING_VOLUME', color='COUNTRY')
+    if "COUNTRY" in df:
+        df_t2 = df.groupby(["COUNTRY", "DATETIME"]).sum().reset_index()
+        fig = px.line(df_t2, x='DATETIME', y='FLOATING_VOLUME', color='COUNTRY')
+    elif "SYMBOL" in df:
+        df_t2 = df.groupby(["SYMBOL", "DATETIME"]).sum().reset_index()
+        fig = px.line(df_t2, x='DATETIME', y='FLOATING_VOLUME', color='SYMBOL')
+    else:
+        return []
 
     # Chart layout
     fig.update_layout(

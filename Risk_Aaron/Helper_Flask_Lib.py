@@ -95,16 +95,24 @@ def async_Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode=""):
     else:
         Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode = Parse_mode)
 
+# To get the volume snap shot
+# If there is no symbol, we will get the symbol.
+# If there is, we will get the entity.
 @unsync
 def Get_Vol_snapshot(app, symbol="", book="", day_backwards_count=5, entities = []):
 
-    # Want to plot the SNOPSHOT Graph of open volume
+    print("Get_Vol_snapshot symbol: '{}'".format(symbol))
+
+    # Want to plot the SNOP SHOT Graph of open volume
     # This is the table that is Cleated every hour
     # We put in a failsaf of getting it 1 day only.
+    # If there's no symbol, we want to select the symbol as well.
     if symbol != "":    # If we want to filter it by symbols too.
         symbol_condition = " AND SYMBOL like '%{symbol}%' ".format(symbol=symbol)
+        select_column = " COUNTRY, NET_FLOATING_VOLUME, FLOATING_VOLUME, FLOATING_REVENUE, DATETIME  "
     else:
         symbol_condition = ""
+        select_column = " SYMBOL, NET_FLOATING_VOLUME, FLOATING_VOLUME, FLOATING_REVENUE, DATETIME  "
 
     book_condition =  '  AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "{book}") '.format(book=book)
 
@@ -115,12 +123,12 @@ def Get_Vol_snapshot(app, symbol="", book="", day_backwards_count=5, entities = 
         country_condition = " AND COUNTRY not like 'HK' "
 
 
-    SQL_Query_Volume_Recent = """SELECT COUNTRY, NET_FLOATING_VOLUME, FLOATING_VOLUME, FLOATING_REVENUE, DATETIME 
+    SQL_Query_Volume_Recent = """SELECT {select_column} 
         FROM aaron.bgi_float_history_save 
         WHERE DATETIME >= NOW() - INTERVAL 1 DAY
         {symbol_condition}
        {book_condition}
-        {country_condition} """.format(symbol=symbol, book=book,
+        {country_condition} """.format(select_column=select_column, symbol=symbol, book=book,
                                        country_condition=country_condition,
                                        symbol_condition=symbol_condition, book_condition=book_condition)
 
@@ -129,12 +137,12 @@ def Get_Vol_snapshot(app, symbol="", book="", day_backwards_count=5, entities = 
     day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * day_backwards_count))
 
 
-    SQL_Query_Volume_Days = """SELECT COUNTRY, NET_FLOATING_VOLUME, FLOATING_VOLUME, FLOATING_REVENUE, DATETIME 
+    SQL_Query_Volume_Days = """SELECT {select_column} 
         FROM aaron.bgi_float_history_past 
         WHERE datetime >= '{day_backwards}'
         {symbol_condition}       
         AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "{book}") 
-        {country_condition} """.format(symbol=symbol, book=book,
+        {country_condition} """.format(select_column=select_column, symbol=symbol, book=book,
                                        country_condition=country_condition,
                                        symbol_condition=symbol_condition, day_backwards=day_backwards)
 
