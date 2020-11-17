@@ -16,6 +16,7 @@ import json
 
 from app.decorators import roles_required
 from app.Plotly.forms import  Live_Login
+from app.Plotly.tableau_url import *
 #from app.Plotly.table import Client_Trade_Table
 
 import emoji
@@ -1338,8 +1339,8 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
     # If country, we need to manually check if it's a book or B book.
     if book == "none":
         book = "a" if entity.find("_A") >= 1 else "b"
-        #print("book: {}".format(book))
 
+    print("book: {}".format(book))
 
 
     # Snap shot of the volume.
@@ -2221,6 +2222,8 @@ def symbol_closed_trades(symbol="", book="b", days=-1):
         flash("There were no symbol details.")
         return redirect(url_for("main_app.index"))
 
+    tableau_url = Markup(symbol_yesterday_Viz(symbol=symbol, book=book))
+
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/double-bubble.png', icon="",
@@ -2237,6 +2240,7 @@ def symbol_closed_trades(symbol="", book="b", days=-1):
                            ajax_url=url_for('analysis.symbol_close_trades_ajax', _external=True, symbol=symbol, book=book, days=days),
                            book = book.upper(),
                            header=header, symbol=symbol,
+                           tableau_url=tableau_url,
                            description=description, no_backgroud_Cover=True,
                            replace_words=Markup(["Today"]))
 

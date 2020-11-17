@@ -669,19 +669,19 @@
 
   <div class="col-lg-12 col-md-12 col-sm-12" id="Please_wait_Gif">  {% include '_pleaseWait.html' %}  </div>
 
-  {% if symbol %}
-
-   <div class='tableauPlaceholder' style='width: 2560px; height: 1194px;'>
-     <object class='tableauViz' width='2560' height='1194' style='display:none;'>
-       <param name='host_url' value='http%3A%2F%2F202.88.105.5%2F' />
-       <param name='embed_code_version' value='3' />
-       <param name='site_root' value='' />
-       <param name='name' value='Yesterday_Trades_0617&#47;CLUBS&#47;Aaron&#47;a14418cb-188d-45db-8e34-ac92c5952e6c' />
-       <param name='tabs' value='yes' />
-       <param name='toolbar' value='yes' />
-       <param name='filter' value='Type~na={{symbol}}' />
-       <param name='filter' value='BOOK3~na={{ book }}' />
-       <param name='showAppBanner' value='false' /></object></div>
+  {% if tableau_url %}
+  <!-- <script type='text/javascript' src='https://202.88.105.5/javascripts/api/viz_v1.js'></script>
+  <div class='tableauPlaceholder' style='width: 2133px; height: 986px;'><object class='tableauViz' width='2133' height='986' style='display:none;'>
+  <param name='host_url' value='https%3A%2F%2F202.88.105.5%2F' />
+  <param name='embed_code_version' value='3' />
+  <param name='site_root' value='' />
+  <param name='name' value='Yesterday_Trades_0617&#47;YESTERDAY' />
+  <param name='tabs' value='yes' />
+  <param name='toolbar' value='yes' />
+  <param name='filter' value='Type~na={{symbol}}' />
+  <param name='filter' value='BOOK3~na={{book}}' />
+  <param name='showAppBanner' value='false' /></object></div> -->
+  {{tableau_url}}
   {% endif %}
 
 
