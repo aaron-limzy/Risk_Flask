@@ -1834,6 +1834,8 @@ def Country_float_trades(country=""):
         flash("There were no country details.")
         return redirect(url_for("main_app.index"))
 
+    tableau_url = Entity_Float_Viz(Entity=country)
+
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/leaves_2.png', icon="",
@@ -1863,6 +1865,75 @@ def Country_float_trades(country=""):
                            book = "None",
                            header=header, symbol=country,
                            description=description, no_backgroud_Cover=True,
+                           tableau_url=tableau_url,
+                           replace_words=Markup(["Today"]))
+
+
+
+# To Query for all open trades by a particular symbol
+# Shows the closed trades for the day as well.
+@analysis.route('/testing/<country>', methods=['GET', 'POST'])
+@roles_required()
+def Country_float_trades_test_Tableau(country=""):
+
+    title = "{}".format(country.upper())
+    header = "{} Trades".format(country.upper())
+
+    # if book.lower() == "b":
+    #     header += "(B 📘)"
+    # elif book.lower() == "a":
+    #     header += "(A 📕)"
+
+    table_ledgend = "COUNTRY: Country that Client Group is in.<br>" + \
+                    "GROUP: Client Group.<br>" + \
+                    "LOTS : Lots of trades (Or total sum, where applies).<br>" + \
+                    "NET LOTS : Cross tally of buy (+ve) and sell (-ve).<br>" + \
+                    "CONVERTED REVENUE : SWAPS + PROFIT converted to USD.<br>" + \
+                    "REBATE : Amount (Sum) of rebate paid out.<br>" + \
+                    "SWAPS : Amount(Sum) of swaps for trades.<br>" + \
+                    "PROFIT : PnL (Sum) for trades.<br>" + \
+                    "TOTAL PROFIT: CONVERTED REVENUE - REBATE. This is how much BGI Earns.<br>" + \
+                    "<br><br>" + \
+                    "REBATE will be highlighted if REVENUE is -ve, But REVENUE + REBATE >= 0.<br>" +\
+                    "That's to say, Client is still profitable."
+
+    description = Markup("Showing Open trades for {}<br>Details are on Client side.<br><br>{}".format(country, table_ledgend))
+
+    if country == "" :  # There are no information.
+        flash("There were no country details.")
+        return redirect(url_for("main_app.index"))
+
+    tableau_url = Entity_Float_Viz(Symbol="eurusd")
+
+    # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
+    # Will try to do smaller vertical table to put 2 or 3 tables in a row.
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/leaves_2.png', icon="",
+                           Table_name={ "Winning Floating Groups (Client Side)": "Hs1",
+                                        "Losing Floating Groups (Client Side)": "Hs2",
+                                        "Winning Floating Accounts (Client Side)": "H1",
+                                        "Losing Floating Accounts (Client Side)": "H2",
+                                        "Largest Lots Floating Accounts (Client Side)": "H5",
+                                        "Total Volume Snapshot" : "P1",
+                                        "Open Time vs Lots": "P2",
+                                        "Total Floating (BGI Side)": "V1",
+                                        "Symbol Floating (BGI Side)": "Hs5",
+                                        "Line": "Hr1",
+                                        "Winning Realised Accounts Today (Client Side)": "H3",
+                                        "Losing Realised Accounts Today (Client Side)": "H4",
+                                        "Largest Lots Realised Accounts Today (Client Side)": "H6",
+                                        "Winning Realised Group Today (Client Side)": "Hs3",
+                                        "Losing Realised Group Today (Client Side)": "Hs4",
+                                        "History Daily Closed Vol": "P3",
+                                        "History Daily Revenue": "P4",
+                                        "Total Closed Today (BGI Side)": "V2",
+                                        "Symbol Closed (BGI Side)": "Hs6",
+                                        "Line2": "Hr2",
+                                        },
+                           title=title,
+                           book = "None",
+                           header=header, symbol=country,
+                           description=description, no_backgroud_Cover=True,
+                           tableau_url=tableau_url,
                            replace_words=Markup(["Today"]))
 
 
@@ -2222,7 +2293,7 @@ def symbol_closed_trades(symbol="", book="b", days=-1):
         flash("There were no symbol details.")
         return redirect(url_for("main_app.index"))
 
-    tableau_url = Markup(symbol_yesterday_Viz(symbol=symbol, book=book))
+    tableau_url = symbol_yesterday_Viz(symbol=symbol, book=book)
 
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
