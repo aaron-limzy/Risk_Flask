@@ -969,7 +969,10 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
                 ##bridge_trades = Mismatch_trades_bridge(symbol=Current_discrepancy, hours=7, mins=16)
                 ##mt4_trades = Mismatch_trades_mt4(symbol=Current_discrepancy, hours=7, mins=16)
 
+                # Bridge data is in GMT
                 bridge_trades = Mismatch_trades_bridge(symbol=Current_discrepancy, hours=8, mins=15)
+
+                # MT4 Live 1
                 mt4_trades = Mismatch_trades_mt4(symbol=Current_discrepancy, hours=7, mins=15)
 
                 bridge_trades_html_table = Array_To_HTML_Table(Table_Header = bridge_trades[0], Table_Data=bridge_trades[1]) if len(bridge_trades[1]) > 0 else "- No Trades Found for that time perid.\n"
@@ -2013,7 +2016,7 @@ def user_consolidated_trades_to_str(trade_dict):
 def Mismatch_trades_mt4(symbol = [], hours=7, mins=16):
 
 
-    live_server = [1,2,3,5]
+    live_server = [1,2,3]
 
 
     if len(symbol) > 0:
@@ -2024,13 +2027,19 @@ def Mismatch_trades_mt4(symbol = [], hours=7, mins=16):
     # flexi time that we want to query the DB
     time_gmt_query = (datetime.datetime.now()-datetime.timedelta(hours=hours, minutes=mins)).strftime("%Y-%m-%d %H:%M:00")
 
+    # flexi time that we want to query the DB for Live 5
+    time_live_5_gmt_query = (datetime.datetime.now()-datetime.timedelta(hours=hours -1, minutes=mins)).strftime("%Y-%m-%d %H:%M:00")
 
     raw_query = """SELECT '{live}' as LIVE, LOGIN, TICKET, SYMBOL, CMD, VOLUME, OPEN_TIME, CLOSE_TIME, OPEN_PRICE, CLOSE_PRICE, `GROUP`, `COMMENT`  
     FROM live{live}.mt4_trades WHERE (OPEN_TIME >= '{time_query}' or CLOSE_TIME >= '{time_query}')
-    and CMD < 6 and `GROUP` in (select * from live{live}.a_group) {symbol_list}"""
+    and CMD < 2 and `GROUP` in (select * from live{live}.a_group) {symbol_list}"""
     raw_query = raw_query.replace("\n", "")
 
+    # UNION for Live 1,2 and 3 first.
     mt4_query = " UNION ".join([raw_query.format(live=l, time_query = time_gmt_query, symbol_list=symbol_list) for l in live_server])
+
+    # Since Live 5 time is different
+    mt4_query = mt4_query + " UNION " + raw_query.format(live=5, time_query = time_live_5_gmt_query, symbol_list=symbol_list)
 
     sql_query = text(mt4_query)
 
@@ -2084,7 +2093,24 @@ def Mismatch_trades_bridge(symbol=[], hours=8, mins=16):
     # dict of the results
     result_col = raw_result.keys()
     # Clean up the data. Date.
-    result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
+    #result_data_clean = [[a.strftime("%Y-%m-%d %H:%M:%S") if isinstance(a, datetime.datetime) else a for a in d] for d in result_data]
+
+    bridge_df = pd.DataFrame(result_data, columns=result_col)
+    #bridge_df1 = bridge_df.copy()
+    #bridge_df1["TICKET"] = [bridge_df1.duplicated(subset="TICKET")]["TICKET"]
+
+    # Highlight the mismatch that are caused by a duplicate ticket.
+    bridge_df.at[bridge_df.duplicated(subset="TICKET"), 'TICKET'] = \
+            bridge_df[bridge_df.duplicated(subset="TICKET")]["TICKET"].apply( \
+                lambda x: '<span style="background-color: #FFFF00">{}</span>'.format(x))
+
+    # Highlight the mismatch that are caused by a partial fills.
+    bridge_df.at[bridge_df['REQUESTED_VOL'] != bridge_df['FILLED_VOL'], 'FILLED_VOL'] = \
+            bridge_df[bridge_df['REQUESTED_VOL'] == bridge_df['FILLED_VOL']]["FILLED_VOL"].apply( \
+                lambda x: '<span style="background-color: #FFFF00">{}</span>'.format(x))
+
+
+    result_data_clean = bridge_df.values.tolist()
 
     return [result_col, result_data_clean]
 
