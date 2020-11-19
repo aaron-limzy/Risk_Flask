@@ -556,3 +556,18 @@ def color_negative_red(value):
         color = 'black'
     #return 'color: %s' % color
     return  color
+
+# Get live 1 time difference from server.
+# SQL Table where aaron_misc_data` where item = 'live1_time_diff
+def get_live1_time_difference():
+
+    # MYSQL WEEKDAY FUNCTION
+    #0 = Monday, 1 = Tuesday, 2 = Wednesday, 3 = Thursday, 4 = Friday, 5 = Saturday, 6 =Sunday
+
+    server_time_diff_str = "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
+    sql_query = text(server_time_diff_str)
+
+    raw_result = db.engine.execute(sql_query)   # Insert select..
+    result_data = raw_result.fetchall()     # Return Result
+
+    return int(result_data[0][0])   # Return the integer value.

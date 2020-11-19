@@ -889,10 +889,10 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
         #     df_past_discrepancy = df_past_details[df_past_details["Discrepancy"] != 0][["SYMBOL", "Discrepancy"]]
 
 
-        # #To Artificially induce a mismatch
-        # curent_result[0]["Discrepancy"] = 0.01
-        # curent_result[1]["Discrepancy"] = 0.01
-        # curent_result[2]["Discrepancy"] = 0.01
+        # # #To Artificially induce a mismatch
+        # # curent_result[0]["Discrepancy"] = 0.01
+        # # curent_result[1]["Discrepancy"] = 0.01
+        # # curent_result[2]["Discrepancy"] = 0.01
 
 
         # To tally off with current mismatches. If there are, add 1 to count. Else, Zero it.
@@ -969,16 +969,24 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
                 ##bridge_trades = Mismatch_trades_bridge(symbol=Current_discrepancy, hours=7, mins=16)
                 ##mt4_trades = Mismatch_trades_mt4(symbol=Current_discrepancy, hours=7, mins=16)
 
-                # Bridge data is in GMT
-                bridge_trades = Mismatch_trades_bridge(symbol=Current_discrepancy, hours=8, mins=15)
+                # Bridge data is in GMT.
+                # Mins would take the max of mismatch_count + 1 for good measure.
+                bridge_trades = Mismatch_trades_bridge(symbol=Current_discrepancy, hours=8, mins=max(mismatch_count) + 1)
 
-                # MT4 Live 1
-                mt4_trades = Mismatch_trades_mt4(symbol=Current_discrepancy, hours=7, mins=15)
+                # MT4 Live 1 server difference timing.
+                # Mins would take the max of mismatch_count + 1 for good measure.
+                live1_server_difference = session[
+                    "live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else get_live1_time_difference()
+                mt4_trades = Mismatch_trades_mt4(symbol=Current_discrepancy, hours=live1_server_difference, mins=max(mismatch_count) + 1)
 
-                bridge_trades_html_table = Array_To_HTML_Table(Table_Header = bridge_trades[0], Table_Data=bridge_trades[1]) if len(bridge_trades[1]) > 0 else "- No Trades Found for that time perid.\n"
-                mt4_trades_html_table = Array_To_HTML_Table(Table_Header=mt4_trades[0], Table_Data=mt4_trades[1]) if len(mt4_trades[1]) > 0 else "- No Trades Found for that time perid.\n"
+                # Converts it to a HTML table if there are trades. Else, show that there is no trades found.
+                bridge_trades_html_table = Array_To_HTML_Table(Table_Header = bridge_trades[0], Table_Data=bridge_trades[1]) \
+                    if len(bridge_trades[1]) > 0 else "- No Trades Found for that time perid.\n"
 
-                email_html_body += "<br><b><u>MT4 trades</u></b> around the time:<br>{mt4_table}<br><br><b><u>Bridge trades</u></b> around that time:<br>{bridge_table}<br>".format(
+                mt4_trades_html_table = Array_To_HTML_Table(Table_Header=mt4_trades[0], Table_Data=mt4_trades[1]) \
+                    if len(mt4_trades[1]) > 0 else "- No Trades Found for that time perid.\n"
+
+                email_html_body += "<br><b><u>MT4 trades</u></b><br> - Time is Approx<br> - CMD < 2 trades only.<br>{mt4_table}<br><br><b><u>Bridge(SQ) trades</u></b> around that time:<br>{bridge_table}<br>".format(
                     mt4_table=mt4_trades_html_table,bridge_table=bridge_trades_html_table)
 
                 # print(Notify_Mismatch)
@@ -1008,6 +1016,8 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
                     list(api_update_details[0].keys()), [list(api_update_details[0].values())], ["Update Slow"])
                 email_html_body += "This Email was generated at: SGT {}.<br><br>Thanks,<br>Aaron".format(
                     datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+                #print(EMAIL_LIST_ALERT)
 
                 # Send the email
                 async_send_email(EMAIL_LIST_ALERT, [], "A Book Position ({}) ".format("/ ".join(Email_Title_Array)),
