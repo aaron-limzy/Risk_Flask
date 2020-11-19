@@ -827,42 +827,17 @@ def BGI_Country_Float_ajax():
             GROUP BY COUNTRY
             """.format(ServerTimeDiff_Query=server_time_diff_str)
 
-    # sql_statement = """SELECT COUNTRY, SUM(ABS(VOLUME)) AS VOLUME, SUM(REVENUE) AS REVENUE, DATETIME
-    #     FROM aaron.BGI_Float_History_Save,(
-    #     SELECT DISTINCT(datetime) AS DT
-    #     FROM aaron.BGI_Float_History_Save
-    #     WHERE DATETIME >= (NOW() - INTERVAL 2 DAY)
-    #     GROUP BY LEFT(DATETIME, 15)
-    #     ) AS A
-    #     WHERE BGI_Float_History_Save.datetime = A.DT
-    #     GROUP BY COUNTRY, DATETIME
-    #
-    #     UNION
-    #
-    #     SELECT COUNTRY, SUM(ABS(VOLUME)) AS VOLUME, SUM(REVENUE) AS REVENUE, DATETIME
-    #                 FROM aaron.BGI_Float_History_Save
-    #                 WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.BGI_Float_History_Save)
-    #                 GROUP BY COUNTRY"""
-
     sql_query = text(sql_statement)
-
     raw_result = db.engine.execute(sql_query)   # Insert select..
     result_data = raw_result.fetchall()     # Return Result
-
     result_col = raw_result.keys()  # Column names
-
-
-
-    #end = datetime.datetime.now()
-    #print("\nGetting Country PnL tool[After Query]: {}s\n".format((end - start).total_seconds()))
 
     df = pd.DataFrame(result_data, columns=result_col)
 
 
-
     # We want to show Client Side for Dealing as well as A book Clients.
     to_flip_groups = ["_A", "Dealing"]
-    df['FLOAT_REVENUE'] = df.apply(lambda x: -1*x['FLOAT_REVENUE'] \
+    df['FLOAT_REVENUE'] = df.apply(lambda x: -1*x['FLOAT_REVENUE']  \
                                 if any([x["COUNTRY"].find(c) >=0 for c in to_flip_groups])  \
                                 else x['FLOAT_REVENUE'], axis=1)
 
@@ -886,11 +861,6 @@ def BGI_Country_Float_ajax():
     # chart_Country = list(df_to_table['COUNTRY'].values)
 
 
-
-    # Adding words to the country name, to be flagged out by Javascript to color the cell
-    df_to_table['COUNTRY'] = df_to_table.apply(lambda x: '{} (Client Side)'.format(x['COUNTRY']) if (
-                x["COUNTRY"].find("_A") > 0 or x["COUNTRY"].find('Dealing') >= 0) else x['COUNTRY'], axis=1)
-
     # # # Want to add colors to the words.
     # Want to color the REVENUE
     cols = ["FLOAT_REVENUE" , "CLOSED_REVENUE", "YESTERDAY_REVENUE",]
@@ -902,20 +872,12 @@ def BGI_Country_Float_ajax():
     # Don't want the zeros. 0 is discarded.
     datetime_pull =  [c for c in list(df_to_table['DATETIME'].unique()) if c != 0] if  "DATETIME" in df_to_table else  ["No Datetime in df."]
 
-    # if 'YESTERDAY_DATE' in df_to_table:  # Want to get the date as date, without the time!
-    #     print(df_to_table['YESTERDAY_DATE'].apply(type))
-    #     df_to_table['YESTERDAY_DATE'] = df_to_table['YESTERDAY_DATE'].apply(lambda x: x.strftime("%Y-%m-%d") if isinstance(x, datetime.date) else x)
-    #     print( df_to_table['YESTERDAY_DATE'])
-    #     print(df_to_table['YESTERDAY_DATE'].apply(type))
-
+    # Get the date. Don't want to waste space showing it in the columns.
     yesterday_datetime_pull = [c for c in list(df_to_table['YESTERDAY_DATE'].unique()) if c != 0] if "YESTERDAY_DATE" in df_to_table else ["No YESTERDAY_DATE in df."]
-    #print(datetime_pull)
-    #print(yesterday_datetime_pull)
 
     # If we need to rename the columns. We need to change here as well! WE removed "DATETIME", "YESTERDAY_DATE",
     show_col = ["COUNTRY", "FLOAT_VOLUME", "FLOAT_REVENUE" ,"CLOSED_VOL", "CLOSED_REVENUE", "YESTERDAY_REVENUE", "YESTERDAY_VOLUME"]
     df_show_col = [d for d in show_col if d in df_to_table]
-    #print(df_show_col)
 
 
     # Reduce the number of columns.
@@ -927,6 +889,11 @@ def BGI_Country_Float_ajax():
     df_to_table['CLOSED_VOL'] = df_to_table.apply(lambda x: Country_Trades_url(x['COUNTRY'], "{:,.2f}".format(x['CLOSED_VOL'])), axis=1)
     # Want to append the Country URL 
     df_to_table['COUNTRY'] = df_to_table['COUNTRY'].apply(Country_Trades_url)
+
+    # Adding words to the country name, to be flagged out by Javascript to color the cell
+    df_to_table['COUNTRY'] = df_to_table.apply(lambda x: '{} (Client Side)'.format(x['COUNTRY']) if (
+                x["COUNTRY"].find("_A") > 0 or x["COUNTRY"].find('Dealing') >= 0) else x['COUNTRY'], axis=1)
+
 
 
     df_records = df_to_table.to_records(index=False)
@@ -1338,7 +1305,7 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
     # If country, we need to manually check if it's a book or B book.
     if book == "none":
-        book = "a" if entity.find("_A") >= 1 else "b"
+        book = "a" if entity.lower().find("_a") >= 1 else "b"
 
     print("book: {}".format(book))
 
@@ -1870,73 +1837,73 @@ def Country_float_trades(country=""):
 
 
 
-# To Query for all open trades by a particular symbol
-# Shows the closed trades for the day as well.
-@analysis.route('/testing/<country>', methods=['GET', 'POST'])
-@roles_required()
-def Country_float_trades_test_Tableau(country=""):
-
-    title = "{}".format(country.upper())
-    header = "{} Trades".format(country.upper())
-
-    # if book.lower() == "b":
-    #     header += "(B 📘)"
-    # elif book.lower() == "a":
-    #     header += "(A 📕)"
-
-    table_ledgend = "COUNTRY: Country that Client Group is in.<br>" + \
-                    "GROUP: Client Group.<br>" + \
-                    "LOTS : Lots of trades (Or total sum, where applies).<br>" + \
-                    "NET LOTS : Cross tally of buy (+ve) and sell (-ve).<br>" + \
-                    "CONVERTED REVENUE : SWAPS + PROFIT converted to USD.<br>" + \
-                    "REBATE : Amount (Sum) of rebate paid out.<br>" + \
-                    "SWAPS : Amount(Sum) of swaps for trades.<br>" + \
-                    "PROFIT : PnL (Sum) for trades.<br>" + \
-                    "TOTAL PROFIT: CONVERTED REVENUE - REBATE. This is how much BGI Earns.<br>" + \
-                    "<br><br>" + \
-                    "REBATE will be highlighted if REVENUE is -ve, But REVENUE + REBATE >= 0.<br>" +\
-                    "That's to say, Client is still profitable."
-
-    description = Markup("Showing Open trades for {}<br>Details are on Client side.<br><br>{}".format(country, table_ledgend))
-
-    if country == "" :  # There are no information.
-        flash("There were no country details.")
-        return redirect(url_for("main_app.index"))
-
-    tableau_url = Entity_Float_Viz(Symbol="eurusd")
-
-    # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
-    # Will try to do smaller vertical table to put 2 or 3 tables in a row.
-    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/leaves_2.png', icon="",
-                           Table_name={ "Winning Floating Groups (Client Side)": "Hs1",
-                                        "Losing Floating Groups (Client Side)": "Hs2",
-                                        "Winning Floating Accounts (Client Side)": "H1",
-                                        "Losing Floating Accounts (Client Side)": "H2",
-                                        "Largest Lots Floating Accounts (Client Side)": "H5",
-                                        "Total Volume Snapshot" : "P1",
-                                        "Open Time vs Lots": "P2",
-                                        "Total Floating (BGI Side)": "V1",
-                                        "Symbol Floating (BGI Side)": "Hs5",
-                                        "Line": "Hr1",
-                                        "Winning Realised Accounts Today (Client Side)": "H3",
-                                        "Losing Realised Accounts Today (Client Side)": "H4",
-                                        "Largest Lots Realised Accounts Today (Client Side)": "H6",
-                                        "Winning Realised Group Today (Client Side)": "Hs3",
-                                        "Losing Realised Group Today (Client Side)": "Hs4",
-                                        "History Daily Closed Vol": "P3",
-                                        "History Daily Revenue": "P4",
-                                        "Total Closed Today (BGI Side)": "V2",
-                                        "Symbol Closed (BGI Side)": "Hs6",
-                                        "Line2": "Hr2",
-                                        },
-                           title=title,
-                           book = "None",
-                           header=header, symbol=country,
-                           description=description, no_backgroud_Cover=True,
-                           tableau_url=tableau_url,
-                           replace_words=Markup(["Today"]))
-
-
+# # To Query for all open trades by a particular symbol
+# # Shows the closed trades for the day as well.
+# @analysis.route('/testing/<country>', methods=['GET', 'POST'])
+# @roles_required()
+# def Country_float_trades_test_Tableau(country=""):
+#
+#     title = "{}".format(country.upper())
+#     header = "{} Trades".format(country.upper())
+#
+#     # if book.lower() == "b":
+#     #     header += "(B 📘)"
+#     # elif book.lower() == "a":
+#     #     header += "(A 📕)"
+#
+#     table_ledgend = "COUNTRY: Country that Client Group is in.<br>" + \
+#                     "GROUP: Client Group.<br>" + \
+#                     "LOTS : Lots of trades (Or total sum, where applies).<br>" + \
+#                     "NET LOTS : Cross tally of buy (+ve) and sell (-ve).<br>" + \
+#                     "CONVERTED REVENUE : SWAPS + PROFIT converted to USD.<br>" + \
+#                     "REBATE : Amount (Sum) of rebate paid out.<br>" + \
+#                     "SWAPS : Amount(Sum) of swaps for trades.<br>" + \
+#                     "PROFIT : PnL (Sum) for trades.<br>" + \
+#                     "TOTAL PROFIT: CONVERTED REVENUE - REBATE. This is how much BGI Earns.<br>" + \
+#                     "<br><br>" + \
+#                     "REBATE will be highlighted if REVENUE is -ve, But REVENUE + REBATE >= 0.<br>" +\
+#                     "That's to say, Client is still profitable."
+#
+#     description = Markup("Showing Open trades for {}<br>Details are on Client side.<br><br>{}".format(country, table_ledgend))
+#
+#     if country == "" :  # There are no information.
+#         flash("There were no country details.")
+#         return redirect(url_for("main_app.index"))
+#
+#     tableau_url = Entity_Float_Viz(Symbol="eurusd")
+#
+#     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
+#     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
+#     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/leaves_2.png', icon="",
+#                            Table_name={ "Winning Floating Groups (Client Side)": "Hs1",
+#                                         "Losing Floating Groups (Client Side)": "Hs2",
+#                                         "Winning Floating Accounts (Client Side)": "H1",
+#                                         "Losing Floating Accounts (Client Side)": "H2",
+#                                         "Largest Lots Floating Accounts (Client Side)": "H5",
+#                                         "Total Volume Snapshot" : "P1",
+#                                         "Open Time vs Lots": "P2",
+#                                         "Total Floating (BGI Side)": "V1",
+#                                         "Symbol Floating (BGI Side)": "Hs5",
+#                                         "Line": "Hr1",
+#                                         "Winning Realised Accounts Today (Client Side)": "H3",
+#                                         "Losing Realised Accounts Today (Client Side)": "H4",
+#                                         "Largest Lots Realised Accounts Today (Client Side)": "H6",
+#                                         "Winning Realised Group Today (Client Side)": "Hs3",
+#                                         "Losing Realised Group Today (Client Side)": "Hs4",
+#                                         "History Daily Closed Vol": "P3",
+#                                         "History Daily Revenue": "P4",
+#                                         "Total Closed Today (BGI Side)": "V2",
+#                                         "Symbol Closed (BGI Side)": "Hs6",
+#                                         "Line2": "Hr2",
+#                                         },
+#                            title=title,
+#                            book = "None",
+#                            header=header, symbol=country,
+#                            description=description, no_backgroud_Cover=True,
+#                            tableau_url=tableau_url,
+#                            replace_words=Markup(["Today"]))
+#
+#
 
 
 
@@ -2045,7 +2012,7 @@ def symbol_closed_trades_analysis(df, book, symbol, entity="none"):
             len(bottom_closed_groups) <= 0 else bottom_closed_groups
 
         # Total sum Floating
-        total_sum_closed_col = ['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS', 'REBATE' ]
+        total_sum_closed_col = ['LOTS','PROFIT', 'SWAPS', 'CONVERTED_REVENUE',  'REBATE' ]
         total_sum_closed = df[total_sum_closed_col].sum()
 
 
@@ -2057,6 +2024,13 @@ def symbol_closed_trades_analysis(df, book, symbol, entity="none"):
             total_sum_closed = total_sum_closed.apply(lambda x: round(x , 2))  # Flip it to be on BGI Side.
 
         total_sum_closed["LOTS"] = abs(total_sum_closed["LOTS"])  # Since it's Total lots, we only want the abs value
+
+        # Want to print it properly with colors
+        total_sum_closed["CONVERTED_REVENUE"] = profit_red_green(total_sum_closed["CONVERTED_REVENUE"])
+        total_sum_closed["PROFIT"] = profit_red_green(total_sum_closed["PROFIT"])
+        total_sum_closed["SWAPS"] = profit_red_green(total_sum_closed["SWAPS"])
+
+
         for c in total_sum_closed_col: # Want to print it properly.
             if isfloat(total_sum_closed[c]):
                 total_sum_closed[c] = "{:,}".format(total_sum_closed[c])
@@ -2073,23 +2047,21 @@ def symbol_closed_trades_analysis(df, book, symbol, entity="none"):
 
 
         # Want to show Net Lots on BGI Side
-        closed_by_country["NET_LOTS"] = -1 * closed_by_country["NET_LOTS"]
+        closed_by_country["NET_LOTS"] =  closed_by_country["NET_LOTS"] * ( -1 if book.lower() != "a" else 1)
 
         closed_by_country["REBATE"] = closed_by_country.apply(lambda x: color_rebate(rebate=x['REBATE'], pnl=x["CONVERTED_REVENUE"], multiplier=-1),
                                               axis=1)
 
         # Want to show BGI Side. Color according to BGI Side
-        closed_by_country["TOTAL_PROFIT"] = closed_by_country["TOTAL_PROFIT"].apply(lambda x: profit_red_green(x * -1))
+        closed_by_country["TOTAL_PROFIT"] = closed_by_country["TOTAL_PROFIT"].apply(lambda x: profit_red_green(x * ( -1 if book.lower() != "a" else 1)))
 
-        if book == "b": # Only want to flip sides when it's B book.
-            closed_by_country["CONVERTED_REVENUE"] = closed_by_country["CONVERTED_REVENUE"].apply(
-                lambda x: profit_red_green(-1 * x))
-        else:   # If it's A book. We don't need to do that.
-            closed_by_country["CONVERTED_REVENUE"] = closed_by_country["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+        # Only want to flip it if it's -1.
+        closed_by_country["CONVERTED_REVENUE"] = closed_by_country["CONVERTED_REVENUE"].apply( lambda x: profit_red_green(x * ( -1 if book.lower() != "a" else 1)))
+
 
         closed_by_country["LOTS"] = abs(closed_by_country["LOTS"])
 
-        closed_by_country["PROFIT"] = -1 * closed_by_country["PROFIT"]
+        closed_by_country["PROFIT"] = closed_by_country["PROFIT"] * ( -1 if book.lower() != "a" else 1)
         closed_by_country.sort_values(["NET_LOTS"], inplace=True)    # Sort it by Net_Lots
         closed_by_country = closed_by_country.head(20)  # Want to only show the top 20, by net lots.
 
@@ -2201,19 +2173,20 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="no
             total_sum_Col = ['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' , 'REBATE']       # The columns that we want to show
         else:   # Net volume dosn't make sense when we want to show only by entity/country
             total_sum_Col = ['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS', 'REBATE']  # The columns that we want to show
-            #print("total_sum_Col: {}".format(total_sum_Col))
 
-        #print("entity: '{}'".format(entity))
 
         total_sum = df_open_trades[total_sum_Col].sum()
-        total_sum =  total_sum.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
-        total_sum["LOTS"] = abs(total_sum["LOTS"])  # Since it's Total lots, we only want the abs value
+        total_sum =  total_sum.apply(lambda x: round(x * -1 if book.lower() != 'a' else x, 2)) # Flip it to be on BGI Side if it's not a book.
+        total_sum["LOTS"] = "{:,}".format(abs(total_sum["LOTS"]))  # Since it's Total lots, we only want the abs value
         total_sum['REBATE'] = color_rebate(rebate=total_sum['REBATE'], pnl=total_sum["CONVERTED_REVENUE"])
+        total_sum["PROFIT"] = profit_red_green(total_sum["PROFIT"])
+        total_sum["SWAPS"] = profit_red_green(total_sum["SWAPS"])
+        total_sum["CONVERTED_REVENUE"] = profit_red_green(total_sum["CONVERTED_REVENUE"])
 
-
-        for c in total_sum_Col: # Want to print it properly.
-            if isfloat(total_sum[c]):
-                total_sum[c] = "{:,}".format(total_sum[c])
+        #
+        # for c in total_sum_Col: # Want to print it properly.
+        #     if isfloat(total_sum[c]):
+        #         total_sum[c] = "{:,}".format(total_sum[c])
 
         if entity != "none":  # If it's by country.
             # Want the table by SYMBOL.
@@ -2238,18 +2211,20 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="no
                                                             pnl=x["CONVERTED_REVENUE"], multiplier=-1), axis=1)
 
         # Want to show BGI Side. Color according to BGI Side
-        open_by_country["TOTAL_PROFIT"] = open_by_country["TOTAL_PROFIT"].apply(lambda x: profit_red_green(x * -1))
+        ## Flip it to be on BGI Side if it's not A book.
+        open_by_country["TOTAL_PROFIT"] = open_by_country["TOTAL_PROFIT"].apply(lambda x: profit_red_green(x * -1) if \
+                                                        book.lower() != "a" else profit_red_green(x))
 
-        if book == "b": # Only want to flip sides when it's B book.
+        if book.lower() != "a": # Only want to flip sides when it's B book.
             open_by_country["CONVERTED_REVENUE"] = open_by_country["CONVERTED_REVENUE"].apply(
                 lambda x: profit_red_green(-1 * x))
         else:   # If it's A book. We don't need to do that.
             open_by_country["CONVERTED_REVENUE"] = open_by_country["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
 
-
         open_by_country["LOTS"] = abs(open_by_country["LOTS"])
-        open_by_country["PROFIT"] = -1 * open_by_country["PROFIT"]
+        # Flip it to be on BGI Side if it's not A book.
+        open_by_country["PROFIT"] =  open_by_country["PROFIT"] * (-1 if book.lower() != 'a' else 1)
         open_by_country.sort_values(["NET_LOTS"], inplace=True)    # Sort it by Net_Lots
         open_by_country = open_by_country.head(20)                  # Want to take only the top 20
 
