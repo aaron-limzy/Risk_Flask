@@ -52,8 +52,33 @@ def Entity_Float_Viz(Entity="", Symbol=""):
     <param name='name' value='Aaron_Floating&#47;BGIFloating&#47;Aaron&#47;9c41c6b6-7cec-44cf-8099-ac8fb1e0ae2e' />
     <param name='tabs' value='no' />
     <param name='toolbar' value='yes' />
-    {symbol_param} {entity_param}
+    {symbol_param} 
+    {entity_param}
     <param name='showAppBanner' value='false' /></object></div>
     """.format(symbol_param=symbol_param, entity_param=entity_param)
 
     return Markup(url)
+
+
+# yudi's viz on Tableau.
+def individual_client_analysis(live, login):
+
+    live_param = "<param name='filter' value='LIVEP={live}' /> ".format(live=live)
+    login_param = "<param name='filter' value='LOGINP={login}' /> ".format(login=login)
+
+
+    url = """<script type='text/javascript' src='https://202.88.105.5/javascripts/api/viz_v1.js'></script>
+    <div class='tableauPlaceholder' style='width: 1654px; height: 3534px;'><object class='tableauViz' width='1654' height='3534' style='display:none;'>
+    <param name='host_url' value='https%3A%2F%2F202.88.105.5%2F' />
+    <param name='embed_code_version' value='3' />
+    <param name='site_root' value='' />
+    <param name='name' value='ClientAnalysis&#47;Dashboard1' />
+    <param name='tabs' value='no' />
+    <param name='toolbar' value='yes' />
+    <param name='showAppBanner' value='false' />
+    <param name='device' value='desktop' />
+    {live_param} {login_param}
+    <param name='original_view' value='yes' /></object></div>""".format(live_param=live_param,login_param=login_param)
+
+    return Markup(url)
+
