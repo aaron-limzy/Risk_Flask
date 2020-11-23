@@ -3503,5 +3503,45 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
                        "H3": closed_trades,
                         "P1":deposit_withdrawal_fig,
                        "P2": average_trade_duration_fig}, cls=plotly.utils.PlotlyJSONEncoder)
-
-
+#
+#
+# # # To Query for all open trades by a particular symbol
+# # # Shows the closed trades for the day as well.
+# @analysis.route('/testing', methods=['GET', 'POST'])
+# @roles_required()
+# def test_1():
+#     message=cipher_text()
+#     #request.method = "POST"
+#     return redirect("http://192.168.20.66/RISK/test5.php", code=307)
+#
+#
+#
+# import hashlib
+# #pip install pycryptodome==3.4.3
+# from Crypto.Util.Padding import pad
+# from Crypto.Cipher import AES
+# import string, base64
+# from Crypto import Random
+#
+# def cipher_text():
+#     #received redirection from php page with its url destination $_GET['url']
+#
+#     #check token if the user is login if not asked for user validation
+#
+#     #once validated pass create and encryption msg
+#     #-----------------------------------------SECRET SHARED VARIABLE-----------------------------
+#     key="01c527b323c7f5393a1e61d74bbd781e83b48bc94836c58544e1560cf85f831b"
+#     key =  hashlib.sha256((key).encode()).digest()#ensure 32 bytes KEY
+#     word="pqpsnyqakulvtyyqikrkcexqejoapnqt"#16 bytes
+#     #-----------------------------------------------------------------------------------------
+#     iv = Random.new().read(AES.block_size)
+#     #print("key :",key.hex(), len(key))#32 bytes
+#     #print("iv : ",iv.hex(), len(iv))
+#
+#     cipher_text= AES.new(key, AES.MODE_CBC, iv).encrypt(pad(word.encode(),16))
+#     print("encoded: ",base64.b64encode(cipher_text).decode('utf-8'),"size: ",len(cipher_text))
+#
+#     #send over to the $_GET['url']
+#     #$_POST['ciphertext']=base64.b64encode(cipher_text).decode('utf-8')
+#     #$_POST['randomiv']=iv.hex()
+#     return {'ciphertext':base64.b64encode(cipher_text).decode('utf-8'), 'randomiv':iv.hex()}
