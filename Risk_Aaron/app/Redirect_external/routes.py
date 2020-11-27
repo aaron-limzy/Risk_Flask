@@ -18,6 +18,7 @@ re_direct = Blueprint('re_direct', __name__)
 # # # To Query for all open trades by a particular symbol
 # # # Shows the closed trades for the day as well.
 @re_direct.route('/testing', methods=['GET', 'POST'])
+@re_direct.route('/yudi/redirect', methods=['GET', 'POST'])
 @roles_required()
 def yudi_test():
 
