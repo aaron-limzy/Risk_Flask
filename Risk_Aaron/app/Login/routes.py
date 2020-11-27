@@ -147,17 +147,18 @@ def Admin_Edit_User():
             raw_insert_result = db.engine.execute(sql_insert)
             flash("User {} password has been updated.".format(username))  # Put a message out that there is some error.
 
-    # else:
-    #     # Want to select all the roles from the SQL DB. Need to select DISTINCT
-    #     sql_query = """select DISTINCT(username) FROM aaron.flask_login"""
-    #     raw_result = db.engine.execute(sql_query)
-        #
-        # result_data = raw_result.fetchall() # -> [('Admin',), ('Risk_TW',), ('Dealing',), ('Finance',), ('Risk',)]
-        # roles = [r[0] for r in result_data] # -> ['Admin', 'Risk_TW', 'Dealing', 'Finance', 'Risk']
-        #
-        # role_list = [(r, r) for r in roles]
-        # # passing group_list to the form
-        # form.username.choices = role_list
+
+    # Want to populate the bar with all the users.
+    # Want to select all the roles from the SQL DB. Need to select DISTINCT
+    sql_query = """select DISTINCT(username) FROM aaron.flask_login"""
+    raw_result = db.engine.execute(sql_query)
+    #
+    result_data = raw_result.fetchall() # -> [('Admin',), ('Risk_TW',), ('Dealing',), ('Finance',), ('Risk',)]
+    roles = [r[0] for r in result_data] # -> ['Admin', 'Risk_TW', 'Dealing', 'Finance', 'Risk']
+
+    role_list = [(r, r) for r in roles]
+    # passing group_list to the form
+    form.username.choices = role_list
 
         ## form.role.default = "Risk"
         ## form.process()  # calling process() afterwards
