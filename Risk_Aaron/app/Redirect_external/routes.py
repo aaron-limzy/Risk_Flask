@@ -20,11 +20,22 @@ re_direct = Blueprint('re_direct', __name__)
 @re_direct.route('/testing', methods=['GET', 'POST'])
 @roles_required()
 def yudi_test():
+
+
+    url = request.args.get('url')
+
+    if url == None: # There is no url parameter.
+        flash("Redirect URL Parameter missing.")
+        return redirect(url_for("login.login", _external=True))    # Redirect to login page.
+
     message=cipher_text()   # Get the ciptertext and randomiv
     # Want to put these into a string for Yudi's URL
-    url_params = "&".join(["{k}={d}".format(k=k,d=d) for k,d in message.items()])
-    return request
-    #redirect("http://202.88.105.3/yudi/test5.php?{}".format(url_params), code=307)
+
+    url_params = "&".join(["{k}={d}".format(k=k, d=d) for k, d in message.items()])
+
+    #print(url)
+    # Redirect to the page, but this time, add in the cipher.
+    return redirect("{url}?{url_params}".format(url=url, url_params=url_params), code=307)
 
 
 
