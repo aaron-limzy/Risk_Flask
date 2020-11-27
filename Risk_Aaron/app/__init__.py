@@ -115,6 +115,7 @@ def register_blueprints(server):
     from app.Login.routes import login_bp
     from app.Risk_Client_Tools.routes import Risk_Client_Tools_bp
 
+    from app.Redirect_external.routes import re_direct
 
     # # Want to see if we can init the Blueprint db
     # main_app_db.init_app(server)
@@ -128,6 +129,7 @@ def register_blueprints(server):
     server.register_blueprint(errors_bp)
     server.register_blueprint(login_bp, url_prefix='/User')
     server.register_blueprint(main_app)
+    server.register_blueprint(re_direct)
     server.register_blueprint(swaps)
     server.register_blueprint(analysis)
     server.register_blueprint(Risk_Client_Tools_bp, url_prefix='/Risk/Tools')

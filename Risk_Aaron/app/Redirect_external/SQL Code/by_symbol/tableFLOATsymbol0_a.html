@@ -1,0 +1,152 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SYMBOL</title>
+<script type="text/javascript" src="http://192.168.64.73/www/PNL/include/jquery_realtime.min.js"></script>
+<style type="text/css">
+body{ margin: 0 auto;  }
+.count{ text-align: center; margin-top:0px;font-size:28px; margin-bottom: 20px;}
+#number{
+	margin-top: 0px;font-size: 30px;text-shadow: 0 -1px 0 #72a441;color: #FFF;background: #328aa4;height: 23px;}
+#number thead tr th{
+	font-weight: 400;}
+#number tr td{
+	color: #000;background-color: #e5f1f4;width: 200px;height: 23px;padding: 6px;border-bottom: 1px solid #ddd;border-right: 1px solid #ddd;text-align: center;font-size: 30px;}
+#number tr:nth-child(odd) > td{background-color:#FFF;}
+.red {
+	color: red;
+	font-weight: 400;
+}
+.Middle{ margin-top: 30px }
+</style>
+
+
+<form action="tableSHOWsymbol_A.php" id="fx"  enctype="multipart/form-data" method="POST" target="quietUp">
+     <span style="margin-left:20px; margin-top: 10px; position: absolute; font-size:22px; background-color:#FF9;"> B book </span>
+    <span style="margin-left:100px; margin-top: 10px; position: absolute;">
+	<input type="text" class="form-control" placeholder="Symbol" name ="Symbol" id="Symbol"/>
+	<input type="button" class="btn" onclick="fx()" value='submit'/>
+      </span>
+  </form>
+  
+ <form action="tableSHOWsymbolopen_A.php" id="fxopen" enctype="multipart/form-data" method="POST" target="quietUp">
+    &nbsp;&nbsp;
+    <span style="margin-left:400px; margin-top: 10px; position: absolute;">
+	<input type="text" class="form-control" placeholder="Symbol Open Only" name ="Symbol2" id="Symbol2"/>
+	<input type="button" class="btn" onclick="fxopen()" value='submit'/>
+      </span>
+  </form> 
+
+ <form>
+    &nbsp;&nbsp;
+    <span style="margin-left:700px; margin-top: -8px; position: absolute;">
+      </span>
+  </form>
+<script type="text/javascript">
+
+    function fx(obj){
+        var form = document.getElementById("fx");//选中你的表单
+        form.submit();   //执行提交
+    }
+
+	 function fxopen(obj){
+        var form = document.getElementById("fxopen");//选中你的表单
+        form.submit();   //执行提交
+    }
+     
+</script>
+     
+<script type="text/javascript">
+            
+	$(document).ready(function(){
+
+//TW
+	 function add(){
+		       $.ajax({
+
+		       		url:"tableFLOATsymbol0_a.php",
+		       		type:"GET",
+		       		dataType:"json",
+		       		success:function(data){
+		       			var len = data.length;
+		                // alert(len);
+		       			for (var i = 0; i <len; i++) {
+		       				var trhtml = "<tr id='s"+i+"'><td>"+data[i].SYMBOL+"</td><td>"+format(data[i].NET_VOL)+"</td><td>"+format(data[i].PIP_VALUE)+"</td><td>"+format(data[i].SUM_REVENUE)+"</td><td>"+format(data[i].SUM_VOL)+"</td><td>"+format(data[i].AVG_PRICE)+"</td><td>"+data[i].BID_ASK+"</td><td>"+data[i].TIME+"</td><td>"+format(data[i].Daily_REVENUE)+"</td><td>"+format(data[i].Daily_VOL)+"</td></tr>";
+		       				$('#number').append(trhtml);							
+		       			};	       			
+		       		}
+		       });
+		};
+	add();
+	
+	
+	function format(num){
+    var n = num.toString(), p = n.indexOf('.');
+    return n.replace(/\d(?=(?:\d{3})+(?:\.|$))/g, function($0, i){
+        return p<0 || i<p ? ($0+',') : $0;
+    });
+}
+
+
+		setInterval(function(){
+		    $.ajax({
+		        url: "tableFLOATsymbol0_a.php",
+		        type: "GET",
+		        dataType: "json",
+		        success: function(data){
+		          var  Dlen = data.length;
+		        	for (var i = 0; i < Dlen; i++) {
+		        	$('#s'+i).find('td').eq(0).html(data[i].SYMBOL);
+		        	$('#s'+i).find('td').eq(1).html(format(data[i].NET_VOL));
+		        	$('#s'+i).find('td').eq(2).html(format(data[i].PIP_VALUE));
+		        	$('#s'+i).find('td').eq(3).html(format(data[i].SUM_REVENUE));
+		        	$('#s'+i).find('td').eq(4).html(format(data[i].SUM_VOL));					
+		        	$('#s'+i).find('td').eq(5).html(format(data[i].AVG_PRICE));
+					$('#s'+i).find('td').eq(6).html(data[i].BID_ASK);
+					$('#s'+i).find('td').eq(7).html(data[i].TIME);			
+					$('#s'+i).find('td').eq(8).html(format(data[i].Daily_REVENUE));
+					$('#s'+i).find('td').eq(9).html(format(data[i].Daily_VOL));
+//red
+
+	$('#s'+i).find('td').each(function() {                                 
+	var cellvalue = $.trim($(this).html());
+	if ( Number(cellvalue.replace(/,/g, "")) < 0 ) {
+         $(this).wrapInner($("<span class='red'></span>"));
+		}
+	});          
+						
+		      		}
+		       }
+	    	});
+	}, 10000);
+
+
+	
+});
+           
+
+</script>
+
+
+</head>
+
+<body>
+
+   <div class="demo">
+
+
+   <div id="main"> 
+   
+      <table id="number"  border="1" cellpadding="0" cellspacing="0">
+       <tr> <th>SYMBOL</th><th>NET_VOL</th><th>Pip_Value</th><th>REVENUE</th><th>SUM_VOL</th><th>Avg_Price</th><th>BID/ASK</th><th>TIME</th><th>Daily_REVENUE</th><th>Daily_VOL</th></tr>
+      </table> 
+
+       <table id="number1"  border="1" cellpadding="0" cellspacing="0"></table>
+      
+   </div> 
+   </div>
+
+</body>
+</html>

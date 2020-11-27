@@ -1,0 +1,12 @@
+SELECT aaron.BGI_Float_History_Save.SYMBOL, SUM(ABS(floating_volume)) AS VOLUME, -1 * SUM(net_floating_volume) AS NETVOL, 
+                    SUM(floating_revenue) AS REVENUE, 
+                    SUM(closed_vol_today) as "TODAY_VOL",
+                    SUM(closed_revenue_today) as "TODAY_REVENUE",                            
+                                                P.ASK, P.BID,
+                                                DATE_ADD(DATETIME,INTERVAL (6) HOUR) AS DATETIME
+    FROM aaron.BGI_Float_History_Save 
+                    LEFT JOIN live1.mt4_prices as P ON  CONCAT(aaron.BGI_Float_History_Save.SYMBOL, "q") = P.SYMBOL
+    WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.BGI_Float_History_Save)
+    AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "B") and COUNTRY not like "HK"
+    GROUP BY SYMBOL
+    ORDER BY REVENUE DESC

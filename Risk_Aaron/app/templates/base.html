@@ -306,7 +306,6 @@
 
                 <li><a class="dropdown-item" href="https://202.88.105.5/#/views/MARTINGAGROUP/MARTINGALEGROUP">Martingale Group's Performance</a></li>
                 <li><a class="dropdown-item" href="https://202.88.105.5/#/views/DailyPerformanceSummary/DAILYPERFORMANCEREPORTV1">Daily Performance Summary</a></li>
-
                 <div class="dropdown-divider"></div>
                 <li><a class="dropdown-item" href="http://202.88.105.5/#/views/SYMBOLALERTHOURLYVOLUME/AlertBoard?:showAppBanner=false&:display_count=n&:showVizHome=n&:origin=viz_share_link">Symbol Alert</a></li>
                 <li><a class="dropdown-item" href="http://202.88.105.5/#/views/SYMBOLALERTHOURLYVOLUME2/AlertBoard?:showAppBanner=false&:display_count=n&:showVizHome=n&:origin=viz_share_link">Symbol Alert(view all profitable trades)</a></li>
@@ -315,8 +314,76 @@
                 <div class="dropdown-divider"></div>
               </ul>
             </li>
-            <li><a class="dropdown-item" href="{{ url_for('analysis.yudi_test') }}">yudi test Encryption</a></li>
 
+
+            <li class="nav-item dropleft">
+              <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown20" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                🔔 Monitoring Tools
+              </a>
+              <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown20">
+                <li><a class="dropdown-item" href="http://202.88.105.3/RISK/monitoring_tools/login_monitoring_list_new.php">Login Watch List</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/RISK/monitoring_tools/Monitoring_tools_login_group.php">Investigate Trades by Login/Group</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/RISK/monitoring_tools/KH_GROUP_CHECK.php">KH Group Check</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/RISK/monitoring_tools/2_TW_YJ_Cls1_5_tracking.php">2_TW_YJ_Cls1_5 Daily Pnl</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/RISK/monitoring_tools/UEGL_RebatePerLot.php">EUGL Rebate Per Lot</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/RISK/monitoring_tools/trade_Duration_tracking.php">Trades Duration</a></li>
+                <div class="dropdown-divider"></div>
+              </ul>
+            </li>
+
+            <li class="nav-item dropleft">
+              <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown13" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                🕵️ Alerts
+              </a>
+              <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown13">
+                <li><a class="dropdown-item" href="http://202.88.105.3/RISK/monitoring_tools/trade_Duration_tracking.php">Trades Duration</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/Yudi/RISK/alerts/Short_Interval_Trades.php">Short Interval Trades</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/Yudi/RISK/alerts/Short_Interval_Trades_KH.php">Short Interval Trades_KH</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/Yudi/RISK/alerts/MT5_Short_Interval_Trades.php">Short Interval Trades_MT5</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/Yudi/RISK/alerts/Daily_mam_sub_monitoring.php">Daily mam/sub pnl Monitoring</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/Yudi/RISK/alerts/MT5_Daily_mam_sub_monitoring.php">Daily mam/sub pnl Monitoring MT5</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/Yudi/RISK/alerts/martingale_group.php">Martigale Group</a></li>
+                <div class="dropdown-divider"></div>
+              </ul>
+            </li>
+            <li class="nav-item dropleft">
+              <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown14" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                📑 Daily Reports
+              </a>
+              <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown14">
+                <li><a class="dropdown-item" href="http://202.88.105.3/Yudi/RISK/daily_reports/login_monitoring_list.php">Auto: Login Watch List</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/Yudi/RISK/daily_reports/Daily_high_Volume_Trades_Individual.php">Auto: Daily High Volume Trades (Individual)</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/Yudi/RISK/daily_reports/Daily_high_Volume_Trades_byGroup.php">Auto: Daily High Volume Trades (By Group)</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/Yudi/RISK/daily_reports/Weekly_High_Volume_trades_bygroup.php">Auto:  Weekly High Volume Trades (By Group)</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/Yudi/RISK/daily_reports/daily_crypto_pnl.php">Daily Crypto Pnl</a></li>
+                <div class="dropdown-divider"></div>
+              </ul>
+            </li>
+
+            <li class="nav-item dropleft">
+              <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown15" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                📤 Monthly Reports
+              </a>
+              <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown15">
+                <li><a class="dropdown-item" href="http://202.88.105.3/RISK/monthly_reports/HK_GB_REBATE.PHP">HK_GB_REBATE</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/RISK/monthly_reports/2_TW_YJ_Cls1_5_Monthly_Rebate.php">2_TW_YJ_Cls1_5 Monthly Rebate</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/RISK/monthly_reports/UEGL_Monthly_Rebate.php">EUGL Monthly Rebate</a></li>
+                <div class="dropdown-divider"></div>
+              </ul>
+            </li>
+
+            <li class="nav-item dropleft">
+              <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown16" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                🖨️ Extract to Excel
+              </a>
+              <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown16">
+                <li><a class="dropdown-item" href="http://202.88.105.3/RISK/extracttoexcel/floating_trades.php">Floating Position (by trade)</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/RISK/extracttoexcel/floating_groupby_symbol.php">Floating Position (by symbol)</a></li>
+                <li><a class="dropdown-item" href="http://202.88.105.3/RISK/extracttoexcel/daily_position_bygroup.php">Daily Position by Group</a></li>
+
+                <div class="dropdown-divider"></div>
+              </ul>
+            </li>
 
 
 
