@@ -31,7 +31,7 @@ class EditDetailsForm(FlaskForm):
 
 # For Letting user change password
 class Admin_EditDetailsForm(FlaskForm):
-    username = SelectField("Username", validate_choice=False)
+    username = SelectField("Username")#, validate_choice=False)
     password = PasswordField('New Password', [InputRequired(), EqualTo('confirm', message='Passwords must match')])
     confirm  = PasswordField('Repeat Password')
     submit = SubmitField('Submit')
