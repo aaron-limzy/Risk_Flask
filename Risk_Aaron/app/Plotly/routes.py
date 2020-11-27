@@ -3509,7 +3509,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
 # # # Shows the closed trades for the day as well.
 @analysis.route('/testing', methods=['GET', 'POST'])
 @roles_required()
-def test_1():
+def yudi_test():
     message=cipher_text()   # Get the ciptertext and randomiv
     # Want to put these into a string for Yudi's URL
     url_params = "&".join(["{k}={d}".format(k=k,d=d) for k,d in message.items()])
