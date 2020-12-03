@@ -1042,6 +1042,9 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
     df_postion = pd.DataFrame(data=curent_result)
     #print(df_postion)
     df_postion["SYMBOL"] = df_postion.apply(lambda x: Symbol_Trades_url(symbol=x["SYMBOL"], book="a"), axis = 1)
+
+    # Arrange it all in the correct position
+    df_postion = df_postion[[ "SYMBOL", "Vantage_lot", "CFH_lot", "GP_lot", "API_lot", "Offset_lot", "Lp_Net_Vol", "MT4_Net_Vol", "Discrepancy", "Mismatch_count"]]
     curent_result = df_postion.to_dict("record")
 
 

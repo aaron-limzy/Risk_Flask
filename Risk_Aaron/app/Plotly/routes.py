@@ -280,12 +280,14 @@ def save_BGI_float_Ajax(update_tool_time=1):
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME != '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS CLOSED_PROFIT
     FROM live5.mt4_trades,live5.group_table WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
-		(mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= DATE_ADD(DATE_SUB((CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END),INTERVAL 1 DAY),INTERVAL 1 HOUR))
+		(mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or mt4_trades.CLOSE_TIME >= DATE_ADD((CASE WHEN HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END),INTERVAL 1 HOUR))
     AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CMD <2 AND group_table.LIVE = 'live5' AND LENGTH(mt4_trades.LOGIN)>4 GROUP BY group_table.COUNTRY, SYMBOL1)
     ) AS B 
     WHERE COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST')
     ORDER BY COUNTRY, SYMBOL""".format(ServerTimeDiff_Query=server_time_diff_str)
 
+
+    #print(sql_statement)
     # Want to get results for the above query, to get the Floating PnL
     sql_query = text(sql_statement)
     raw_result = db.engine.execute(sql_query)  # Select From DB
@@ -1049,7 +1051,7 @@ def BGI_Symbol_Float_ajax():
     GROUP BY SYMBOL
     ORDER BY REVENUE DESC""".format(ServerTimeDiff_Query=server_time_diff_str)
 
-
+    print(sql_statement)
     sql_query = text(sql_statement)
     raw_result = db.engine.execute(sql_query)   # Insert select..
     result_data = raw_result.fetchall()     # Return Result
@@ -1725,10 +1727,9 @@ def symbol_all_open_trades(symbol="", book="B", entities=[]):
             WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
             (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or 
             mt4_trades.CLOSE_TIME >= DATE_ADD(
-                DATE_SUB(
                     (CASE WHEN 
                         HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') 
-                        ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END),INTERVAL 1 DAY),
+                        ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END),
                     INTERVAL 1 HOUR)
             )
         AND LENGTH(mt4_trades.SYMBOL)>0 
@@ -1744,7 +1745,7 @@ def symbol_all_open_trades(symbol="", book="B", entities=[]):
                        Live2_book_query=Live2_book_query)
 
 
-    #print(sql_statement)
+    print(sql_statement)
     sql_query = text(sql_statement.replace("\n", " ").replace("\t", " "))
     raw_result = db.engine.execute(sql_query)   # Insert select..
     result_data = raw_result.fetchall()     # Return Result
@@ -3503,11 +3504,102 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
                        "H3": closed_trades,
                         "P1":deposit_withdrawal_fig,
                        "P2": average_trade_duration_fig}, cls=plotly.utils.PlotlyJSONEncoder)
-# #
-# #
-# # # # To Query for all open trades by a particular symbol
-# # # # Shows the closed trades for the day as well.
-# @analysis.route('/testing', methods=['GET', 'POST'])
+
+
+@analysis.route('/Large_volume_Login', methods=['GET', 'POST'])
+@roles_required()
+def Large_volume_Login():
+    title = "Large Volume Login"
+    header = "Large Volume Login"
+
+    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+    # For Login in aaron.Risk_autocut and Credit_limit != 0
+
+    description = Markup("<b>Large Volume Login</b><br>")
+
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/city_overview.jpg',
+                           icon="css/save_Filled.png",
+                           Table_name="Large Volume Login", title=title,
+                           ajax_url=url_for('analysis.Large_volume_Login_Ajax', _external=True), header=header,
+                           setinterval=120,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+# Insert into aaron.BGI_Float_History_Save
+# Will select, pull it out into Python, before inserting it into the table.
+# Tried doing Insert.. Select. But there was desdlock situation..
+@analysis.route('/Large_volume_Login_Ajax', methods=['GET', 'POST'])
+@roles_required()
+def Large_volume_Login_Ajax(update_tool_time=1):
+    # start = datetime.datetime.now()
+    # TODO: Only want to save during trading hours.
+    # TODO: Want to write a custom function, and not rely on using CFH timing.
+    if not cfh_fix_timing():
+        return json.dumps([{'Update time': "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
+
+    if check_session_live1_timing() == False:  # If False, It needs an update.
+
+        # TOREMOVE: Comment out the print.
+        print("Saving Previous Day PnL")
+        # TODO: Maybe make this async?
+        save_previous_day_PnL()  # We will take this chance to get the Previous day's PnL as well.
+
+    # Want to reduce the query overheads. So try to use the saved value as much as possible.
+    # server_time_diff_str = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session \
+    #     else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
+
+    raw_sql_statement = """ SELECT '{Live}' as LIVE, t.LOGIN, sum(volume)*0.01 as LOTS, u.`GROUP`,
+                SUM(CASE WHEN OPEN_TIME >= NOW()- INTERVAL 1 DAY THEN VOLUME*0.01 ELSE 0 END) as 'OPENED_LOTS',
+                SUM(CASE WHEN CLOSE_TIME >= NOW()- INTERVAL 1 DAY THEN VOLUME*0.01 ELSE 0 END) as 'CLOSED_LOTS',
+                SUM(CASE WHEN CLOSE_TIME = "1970-01-01 00:00:00" THEN VOLUME*0.01 ELSE 0 END) as 'FLOATING_LOTS',
+                SUM(CASE WHEN CLOSE_TIME >= NOW()- INTERVAL 1 DAY THEN PROFIT+SWAPS ELSE 0 END) as 'CLOSED_PROFIT'
+                FROM Live{Live}.mt4_trades as t, Live{Live}.mt4_users as u 
+                WHERE (OPEN_TIME >= NOW() - INTERVAL 1 DAY or CLOSE_TIME >=  NOW() - INTERVAL 1 DAY)
+                AND CMD < 2 AND t.LOGIN = u.LOGIN AND u.LOGIN>9999
+                AND u.`GROUP` in (SELECT `group` FROM live5.group_table WHERE BOOK = "B" and live="Live{Live}")
+                GROUP BY LOGIN """
+
+    raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", "")
+    # The string name of the live server.
+    live_str = ["1", "2", "3", "5"]
+    sql_statement = " UNION ".join([raw_sql_statement.format(Live=l) for l in live_str])
+    sql_statement += " ORDER BY LOTS DESC "
+
+
+    res = Query_SQL_db_engine(text(sql_statement))
+    df = pd.DataFrame(res)
+
+    # Want to add the URL for Logins
+    df["LOGIN"] = df.apply(lambda x: live_login_analysis_url(Live=x["LIVE"], Login=x["LOGIN"]), axis=1)
+    df["CLOSED_PROFIT"] = df["CLOSED_PROFIT"].apply(lambda x: round(x,2))
+    df = df[["LOGIN", "LIVE", "LOTS", "OPENED_LOTS", "CLOSED_LOTS", "FLOATING_LOTS", "CLOSED_PROFIT", "GROUP"]]
+
+    # Want only those that has equal or more than 10 lots.
+    ## TODO: Put this condition into SQL.
+    df = df[df["LOTS"] >= 10]
+
+    return json.dumps(df.to_dict("r"))
+
+    # # Want to get results for the above query, to get the Floating PnL
+    # sql_query = text(sql_statement)
+    # raw_result = db.engine.execute(sql_query)  # Select From DB
+    # result_data = raw_result.fetchall()  # Return Result
+    #
+    # result_col = raw_result.keys()  # The column names
+    #
+    # # end = datetime.datetime.now()
+    # # print("\nSaving floating PnL tool: {}s\n".format((end - start).total_seconds()))
+    #
+    #
+    # return json.dumps([dict(zip(result_col, r)) for r in result_data])
+
+#
+#
+# # # To Query for all open trades by a particular symbol
+# # # Shows the closed trades for the day as well.
+#@analysis.route('/testing', methods=['GET', 'POST'])
 # @roles_required()
 # def yudi_test():
 #     message=cipher_text()   # Get the ciptertext and randomiv
