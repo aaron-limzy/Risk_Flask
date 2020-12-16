@@ -215,9 +215,23 @@ def symbol_opentime_trades(app, symbol="", book="B", start_date="", entities="")
         country_condition = " AND COUNTRY IN ({})".format(" , ".join(["'{}'".format(c) for c in entities]))
         book_condition = " "    # No need for book condition anymore.
     else:
-        country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK')   "
+        if book.lower() == "b":
+            country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK')   "
+            # country_condition_Live1 = country_condition
+            # country_condition_Live2 = country_condition
+            # country_condition_Live3 = country_condition
+            # country_condition_Live5 = country_condition
+        else:
+            country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK')   "
 
-
+            #
+            # country_condition_raw = """ AND (COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK')
+            #                         OR
+            #                         (mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live{live}.a_group))
+            #                          OR
+            #                          (LOGIN IN( SELECT LOGIN FROM live{live}.a_login))
+            #                          ) """
+            #
 
     # Live 1,2,3
     OPEN_TIME_LIMIT = "{} 22:00:00".format(start_date)
@@ -236,6 +250,13 @@ def symbol_opentime_trades(app, symbol="", book="B", start_date="", entities="")
 		OR LOGIN = '9618'
 		OR(mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501)
 	) """
+
+
+    # """(mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live1.a_group))
+    # OR(LOGIN IN( SELECT LOGIN FROM live1.a_login))"""
+
+
+
     else:
         Live2_book_query = book_condition
 

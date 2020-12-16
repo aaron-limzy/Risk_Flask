@@ -288,6 +288,7 @@ def save_BGI_float_Ajax(update_tool_time=1):
 
 
     #print(sql_statement)
+    #print("--------------------------------")
     # Want to get results for the above query, to get the Floating PnL
     sql_query = text(sql_statement)
     raw_result = db.engine.execute(sql_query)  # Select From DB
@@ -555,6 +556,9 @@ def save_previous_day_PnL(force_update=False):
     GROUP BY B.COUNTRY, B.SYMBOL1
     HAVING COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST')
     ORDER BY COUNTRY, SYMBOL""".format(ServerTimeDiff_Query=ServerTimeDiff_Query, live123_Time_String=live123_Time_String,live5_Time_String=live5_Time_String)
+
+
+    print(sql_query)
 
     sql_query = text(sql_statement)
     raw_result = db.engine.execute(sql_query)  # Select From DB
@@ -1051,7 +1055,7 @@ def BGI_Symbol_Float_ajax():
     GROUP BY SYMBOL
     ORDER BY REVENUE DESC""".format(ServerTimeDiff_Query=server_time_diff_str)
 
-    print(sql_statement)
+    #print(sql_statement)
     sql_query = text(sql_statement)
     raw_result = db.engine.execute(sql_query)   # Insert select..
     result_data = raw_result.fetchall()     # Return Result
@@ -1745,7 +1749,7 @@ def symbol_all_open_trades(symbol="", book="B", entities=[]):
                        Live2_book_query=Live2_book_query)
 
 
-    print(sql_statement)
+    #print(sql_statement)
     sql_query = text(sql_statement.replace("\n", " ").replace("\t", " "))
     raw_result = db.engine.execute(sql_query)   # Insert select..
     result_data = raw_result.fetchall()     # Return Result

@@ -196,7 +196,7 @@ def noopentrades_changegroup():
         new_group = form.New_Group.data
         sql_insert = "INSERT INTO  test.`changed_group_opencheck` (`Live`, `login`, `current_group`, `New_Group`, `Changed`, `Time_Changed`) VALUES" \
             " ({live},{login},'{current_group}','{new_group}',{changed},now() )".format(live=live,login=login, current_group=current_group,new_group=new_group,changed=0)
-        print(sql_insert)
+        #print(sql_insert)
         db.engine.execute(sql_insert)
 
     # elif request.method == 'POST' and form.validate_on_submit() == False:
@@ -298,7 +298,7 @@ def noopentrades_changegroup_ajax(update_tool_time=1):
         sql_update_statement += sql_where_statement
         sql_update_statement += """ ) and `CHANGED` = 0 """
         sql_update_statement = text(sql_update_statement)   # To SQL Friendly Text.
-        print(sql_update_statement)
+        #print(sql_update_statement)
         raw_insert_result = db.engine.execute(sql_update_statement) # TO SQL
 
 
@@ -423,16 +423,131 @@ def USOil_Ticks_ajax(update_tool_time=1):
                         #
                         # print(sql_insert)
                         db.engine.execute(text(sql_insert))  # Insert into DB
-
-
                         print("Tool ran: {tool_ran_result}".format(tool_ran_result=tool_ran_result))
-
-
-
 
     # # Need to update Run time on SQL Update table.
     if update_tool_time ==1:
         async_update_Runtime(app=current_app._get_current_object(), Tool="USOil_Price_alert")
+
+
+    return json.dumps(return_val)
+
+
+
+
+
+
+# Want to check and close off account/trades.
+@main_app.route('/Client_No_Trades', methods=['GET', 'POST'])
+@roles_required()
+def Client_No_Trades():
+
+    title = "Client Close Trades"
+    header = title
+
+
+    description = Markup('Check if client has closed off (to zero) any symbols.')
+
+        # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Oil_Rig_2.jpg', Table_name="Client Net Volume.", \
+                           title=title, ajax_url=url_for('main_app.Client_No_Trades_ajax', _external=True), header=header, setinterval=60,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+@main_app.route('/Client_No_Trades_ajax', methods=['GET', 'POST'])
+@roles_required()
+def Client_No_Trades_ajax(update_tool_time=1):
+
+
+    raw_sql_statement = """SELECT
+	c.LIVE as LIVE, c.LOGIN as LOGIN, c.SYMBOL as SYMBOL, c.DATETIME as DATETIME, COALESCE(t.LOTS,0) as LOTS, COALESCE(t.`GROUP`,'-') as `GROUP`
+    FROM
+        ( SELECT LIVE, LOGIN, SYMBOL, DATETIME FROM aaron.client_zero_position WHERE live = '{live}' AND active='1')AS c
+    LEFT JOIN(
+        SELECT LOGIN, SUM(VOLUME)*0.01 as LOTS, SYMBOL, `GROUP`
+        FROM live{live}.mt4_trades
+        WHERE login IN( SELECT LOGIN FROM aaron.client_zero_position WHERE live = '{live}' and active='1' )
+        AND CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2
+        GROUP BY LOGIN, SYMBOL
+    )AS t ON( t.LOGIN = c.LOGIN AND t.symbol = c.symbol)"""
+
+    # run thru for all live.
+    sql_statement = " UNION ".join([raw_sql_statement.format(live=l) for l in [1,2,3,5]])
+
+    sql_statement = sql_statement.replace("\n", " ").replace("\t", " ")
+    sql_query = text(sql_statement)
+    return_val = Query_SQL_db_engine(sql_query)
+
+    df = pd.DataFrame(return_val)
+
+    # To print out the datetime in str format.
+    df["DATETIME"] = df["DATETIME"].apply(lambda x: "{}".format(x))
+
+    if len(df) == 0: # There is no return.
+        return_val = [{"RESULT": "No SQL Returns. Time Now: {}".format(time_now())}]
+
+
+
+
+
+    #default return val.
+    else:
+        df_no_lots = df[df["LOTS"] == 0]    # Want to get those that have no lots.
+        if len(df_no_lots) > 0: # If there is, we assume the client has closed the position.
+            # Telegram
+            sql_update_values = df_no_lots[["LIVE", "LOGIN", "SYMBOL", "DATETIME"]].values.tolist()
+
+            # For the empty Data
+            telegram_data = df_no_lots[["LIVE", "LOGIN", "LOTS", "SYMBOL"]].values.tolist()
+            telegram_data = [["{}".format(t) for t in td] for td in telegram_data]
+            telegram_data = "\n".join([" | ".join(t) for t in telegram_data])
+
+
+            # For the non-empty Data
+            df_lots =  df[df["LOTS"] != 0]
+            telegram_data_with_lots = df_lots[["LIVE", "LOGIN", "LOTS", "SYMBOL"]].values.tolist()
+            telegram_data_with_lots = [["{}".format(t) for t in td] for td in telegram_data_with_lots]
+            telegram_data_with_lots = "\n".join([" | ".join(t) for t in telegram_data_with_lots])
+
+            async_Post_To_Telegram(TELE_ID_MONITOR,
+                    "<b>Client position closed.</b>\n Live | Login | Lots | Symbol\n{telegram_data} ".format(telegram_data=telegram_data) + \
+                    "\n-----------------------------------------\n Live | Login | Lots | Symbol" + \
+                    "\n{telegram_data_with_lots} \n".format(telegram_data_with_lots=telegram_data_with_lots),
+                                   TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+
+            # Email # TODO
+
+            # async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
+            #           Subject="USOil Below {} Dollars.".format(USOil_Price_Alert),
+            #           HTML_Text="""{Email_Header}Hi,<br><br>USOil Price is at {usoil_mid_price}, and it has dropped below {USOil_Price_Alert} USD. <br>
+            #                       The following is the C output. <br><br>{c_output}<br><br>
+            #                     <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
+            #               Email_Header = Email_Header, USOil_Price_Alert = USOil_Price_Alert, usoil_mid_price = usoil_mid_price, c_output=output, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            #               Email_Footer=Email_Footer), Attachment_Name=[])
+
+
+
+            # Add in quotes to make it into a string
+            sql_update_values = [["'{}'".format(s) for s in s_list] for s_list in sql_update_values]
+
+            for s in range(len(sql_update_values)):
+                sql_update_values[s].append("'0'")
+                #sql_update_values[s].append("NOW()")
+
+            # Put values into brackets, to be ready for SQL insert.
+            sql_update_values = " , ".join([" ({}) ".format(" , ".join(s)) for s in sql_update_values])
+
+            sql_insert = """INSERT INTO aaron.client_zero_position (live, login, symbol, datetime, active) VALUES {values} 
+                ON DUPLICATE KEY UPDATE active = VALUES(active)""".format(values=sql_update_values)
+            sql_insert = text(sql_insert)  # To make it to SQL friendly text.
+
+            raw_insert_result = db.engine.execute(sql_insert)
+
+        return_val = df[["LIVE", "LOGIN", "SYMBOL", "LOTS", "GROUP"]].to_dict("record")
+
+    # # # Need to update Run time on SQL Update table.
+    # if update_tool_time ==1:
+    #     async_update_Runtime(app=current_app._get_current_object(), Tool="USOil_Price_alert")
 
 
     return json.dumps(return_val)
@@ -1557,7 +1672,7 @@ def Exclude_Equity_Below_Credit():
             ('{Live}','{Account}','{Equity}') ON DUPLICATE KEY UPDATE `Equity_Limit`=VALUES(`Equity_Limit`) """.format(Live=Live, Account=Login, Equity=Equity_Limit)
         sql_insert = sql_insert.replace("\t", "").replace("\n", "")
 
-        print(sql_insert)
+        #print(sql_insert)
         db.engine.execute(text(sql_insert))  # Insert into DB
         flash("Live: {live}, Login: {login} Equity limit: {equity_limit} has been added to live1.`balance_equity_exclude`.".format(live=Live, login=Login, equity_limit=Equity_Limit))
 
@@ -1709,7 +1824,7 @@ def Delete_Monitor_Account_Button_Endpoint(Live="", Account="", Tele_name=""):
         AND Live={Live} AND Account={Account} 
             AND Tele_name='{Tele_name}'""".format(Live=Live,Account=Account,Tele_name=Tele_name)
     sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
-    print(sql_update_statement)
+    #print(sql_update_statement)
     sql_update_statement=text(sql_update_statement)
     result = db.engine.execute(sql_update_statement)
 
@@ -1720,7 +1835,7 @@ def Delete_Monitor_Account_Button_Endpoint(Live="", Account="", Tele_name=""):
             WHERE Live={Live} AND Account={Account} 
                 AND Tele_name='{Tele_name}'""".format(Live=Live,Account=Account,Tele_name=Tele_name)
     sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
-    print(sql_update_statement)
+    #print(sql_update_statement)
     sql_update_statement=text(sql_update_statement)
     result = db.engine.execute(sql_update_statement)
 
