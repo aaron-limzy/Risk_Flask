@@ -893,7 +893,7 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
             WHERE CONTRACT_SIZE>0
         ) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
 		    LEFT JOIN
-        (SELECT SUBSTRING_INDEX(Symbol,'.',1) as `GM_Symbol`,CASE WHEN Cmd = 0 THEN Lots WHEN Cmd = 1 THEN Lots * (-1) ELSE 0 END AS GP_Position
+        (SELECT SUBSTRING_INDEX(Symbol,'.',1) as `GM_Symbol`,SUM(CASE WHEN Cmd = 0 THEN Lots WHEN Cmd = 1 THEN Lots * (-1) ELSE 0 END) AS GP_Position
             FROM aaron.`live_trade_961884_globalprime_live` WHERE Close_time = '1970-01-01 00:00:00' GROUP BY SUBSTRING_INDEX(Symbol,'.',1)
         ) as GM ON core_symbol.SYMBOL = GM.GM_Symbol
         LEFT JOIN
