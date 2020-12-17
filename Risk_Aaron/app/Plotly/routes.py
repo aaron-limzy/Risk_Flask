@@ -1253,7 +1253,7 @@ def symbol_float_trades(symbol="", book="b"):
 
     #double-bubble.png
 
-    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/Christmas_vector_11.jpg', icon="",
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/Christmas_vector_13.jpg', icon="",
                            Table_name={ "Winning Floating Groups (Client Side)": "Hs1",
                                         "Losing Floating Groups (Client Side)": "Hs2",
                                         "Winning Floating Accounts (Client Side)": "H1",
