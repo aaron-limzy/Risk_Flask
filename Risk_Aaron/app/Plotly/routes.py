@@ -558,7 +558,7 @@ def save_previous_day_PnL(force_update=False):
     ORDER BY COUNTRY, SYMBOL""".format(ServerTimeDiff_Query=ServerTimeDiff_Query, live123_Time_String=live123_Time_String,live5_Time_String=live5_Time_String)
 
 
-    print(sql_query)
+    #print(sql_query)
 
     sql_query = text(sql_statement)
     raw_result = db.engine.execute(sql_query)  # Select From DB
