@@ -42,6 +42,14 @@ Email_Footer = "</p>"
 ID = "486797751"
 
 
+AARON_BOT = "736426328:AAH90fQZfcovGB8iP617yOslnql5dFyu-M0"		# For Mismatch and LP Margin
+
+TELE_ID_MTLP_MISMATCH = "736426328:AAH90fQZfcovGB8iP617yOslnql5dFyu-M0"		# For Mismatch and LP Margin
+TELE_ID_USDTWF_MISMATCH = "776609726:AAHVrhEffiJ4yWTn1nw0ZBcYttkyY0tuN0s"        # For USDTWF
+TELE_ID_MONITOR = "1055969880:AAHcXIDWlQqrFGU319wYoldv9FJuu4srx_E"      # For BGI Monitor
+TELE_CLIENT_ID = ["486797751"]        # Aaron's Telegram ID.
+
+
 # # token = "736426328:AAH90fQZfcovGB8iP617yOslnql5dFyu-M0"		# For Mismatch and LP Margin
 # # token = "776609726:AAHVrhEffiJ4yWTn1nw0ZBcYttkyY0tuN0s"        # For USDTWF
 

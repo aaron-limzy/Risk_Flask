@@ -78,10 +78,7 @@ from Helper_Flask_Lib import *
 
 TIME_UPDATE_SLOW_MIN = 10
 
-TELE_ID_MTLP_MISMATCH = "736426328:AAH90fQZfcovGB8iP617yOslnql5dFyu-M0"		# For Mismatch and LP Margin
-TELE_ID_USDTWF_MISMATCH = "776609726:AAHVrhEffiJ4yWTn1nw0ZBcYttkyY0tuN0s"        # For USDTWF
-TELE_ID_MONITOR = "1055969880:AAHcXIDWlQqrFGU319wYoldv9FJuu4srx_E"      # For BGI Monitor
-TELE_CLIENT_ID = ["486797751"]        # Aaron's Telegram ID.
+
 
 LP_MARGIN_ALERT_LEVEL = 20            # How much away from MC do we start making noise.
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display the warnings.
@@ -431,127 +428,6 @@ def USOil_Ticks_ajax(update_tool_time=1):
 
 
     return json.dumps(return_val)
-
-
-
-
-
-
-# Want to check and close off account/trades.
-@main_app.route('/Client_No_Trades', methods=['GET', 'POST'])
-@roles_required()
-def Client_No_Trades():
-
-    title = "Client Close Trades"
-    header = title
-
-
-    description = Markup('Check if client has closed off (to zero) any symbols.')
-
-        # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Oil_Rig_2.jpg', Table_name="Client Net Volume.", \
-                           title=title, ajax_url=url_for('main_app.Client_No_Trades_ajax', _external=True), header=header, setinterval=60,
-                           description=description, replace_words=Markup(["Today"]))
-
-
-@main_app.route('/Client_No_Trades_ajax', methods=['GET', 'POST'])
-@roles_required()
-def Client_No_Trades_ajax(update_tool_time=1):
-
-
-    raw_sql_statement = """SELECT
-	c.LIVE as LIVE, c.LOGIN as LOGIN, c.SYMBOL as SYMBOL, c.DATETIME as DATETIME, COALESCE(t.LOTS,0) as LOTS, COALESCE(t.`GROUP`,'-') as `GROUP`
-    FROM
-        ( SELECT LIVE, LOGIN, SYMBOL, DATETIME FROM aaron.client_zero_position WHERE live = '{live}' AND active='1')AS c
-    LEFT JOIN(
-        SELECT LOGIN, SUM(VOLUME)*0.01 as LOTS, SYMBOL, `GROUP`
-        FROM live{live}.mt4_trades
-        WHERE login IN( SELECT LOGIN FROM aaron.client_zero_position WHERE live = '{live}' and active='1' )
-        AND CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2
-        GROUP BY LOGIN, SYMBOL
-    )AS t ON( t.LOGIN = c.LOGIN AND t.symbol = c.symbol)"""
-
-    # run thru for all live.
-    sql_statement = " UNION ".join([raw_sql_statement.format(live=l) for l in [1,2,3,5]])
-
-    sql_statement = sql_statement.replace("\n", " ").replace("\t", " ")
-    sql_query = text(sql_statement)
-    return_val = Query_SQL_db_engine(sql_query)
-
-    df = pd.DataFrame(return_val)
-
-    # To print out the datetime in str format.
-    df["DATETIME"] = df["DATETIME"].apply(lambda x: "{}".format(x))
-
-    if len(df) == 0: # There is no return.
-        return_val = [{"RESULT": "No SQL Returns. Time Now: {}".format(time_now())}]
-
-
-
-
-
-    #default return val.
-    else:
-        df_no_lots = df[df["LOTS"] == 0]    # Want to get those that have no lots.
-        if len(df_no_lots) > 0: # If there is, we assume the client has closed the position.
-            # Telegram
-            sql_update_values = df_no_lots[["LIVE", "LOGIN", "SYMBOL", "DATETIME"]].values.tolist()
-
-            # For the empty Data
-            telegram_data = df_no_lots[["LIVE", "LOGIN", "LOTS", "SYMBOL"]].values.tolist()
-            telegram_data = [["{}".format(t) for t in td] for td in telegram_data]
-            telegram_data = "\n".join([" | ".join(t) for t in telegram_data])
-
-
-            # For the non-empty Data
-            df_lots =  df[df["LOTS"] != 0]
-            telegram_data_with_lots = df_lots[["LIVE", "LOGIN", "LOTS", "SYMBOL"]].values.tolist()
-            telegram_data_with_lots = [["{}".format(t) for t in td] for td in telegram_data_with_lots]
-            telegram_data_with_lots = "\n".join([" | ".join(t) for t in telegram_data_with_lots])
-
-            async_Post_To_Telegram(TELE_ID_MONITOR,
-                    "<b>Client position closed.</b>\n Live | Login | Lots | Symbol\n{telegram_data} ".format(telegram_data=telegram_data) + \
-                    "\n-----------------------------------------\n Live | Login | Lots | Symbol" + \
-                    "\n{telegram_data_with_lots} \n".format(telegram_data_with_lots=telegram_data_with_lots),
-                                   TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
-
-            # Email # TODO
-
-            # async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
-            #           Subject="USOil Below {} Dollars.".format(USOil_Price_Alert),
-            #           HTML_Text="""{Email_Header}Hi,<br><br>USOil Price is at {usoil_mid_price}, and it has dropped below {USOil_Price_Alert} USD. <br>
-            #                       The following is the C output. <br><br>{c_output}<br><br>
-            #                     <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
-            #               Email_Header = Email_Header, USOil_Price_Alert = USOil_Price_Alert, usoil_mid_price = usoil_mid_price, c_output=output, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            #               Email_Footer=Email_Footer), Attachment_Name=[])
-
-
-
-            # Add in quotes to make it into a string
-            sql_update_values = [["'{}'".format(s) for s in s_list] for s_list in sql_update_values]
-
-            for s in range(len(sql_update_values)):
-                sql_update_values[s].append("'0'")
-                #sql_update_values[s].append("NOW()")
-
-            # Put values into brackets, to be ready for SQL insert.
-            sql_update_values = " , ".join([" ({}) ".format(" , ".join(s)) for s in sql_update_values])
-
-            sql_insert = """INSERT INTO aaron.client_zero_position (live, login, symbol, datetime, active) VALUES {values} 
-                ON DUPLICATE KEY UPDATE active = VALUES(active)""".format(values=sql_update_values)
-            sql_insert = text(sql_insert)  # To make it to SQL friendly text.
-
-            raw_insert_result = db.engine.execute(sql_insert)
-
-        return_val = df[["LIVE", "LOGIN", "SYMBOL", "LOTS", "GROUP"]].to_dict("record")
-
-    # # # Need to update Run time on SQL Update table.
-    # if update_tool_time ==1:
-    #     async_update_Runtime(app=current_app._get_current_object(), Tool="USOil_Price_alert")
-
-
-    return json.dumps(return_val)
-
 
 
 # Want to check and close off account/trades.

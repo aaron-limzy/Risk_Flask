@@ -114,6 +114,7 @@ def register_blueprints(server):
     from app.errors import bp as errors_bp
     from app.Login.routes import login_bp
     from app.Risk_Client_Tools.routes import Risk_Client_Tools_bp
+    from app.Notifications.routes import notifications_bp
 
     from app.Redirect_external.routes import re_direct
 
@@ -130,6 +131,8 @@ def register_blueprints(server):
     server.register_blueprint(login_bp, url_prefix='/User')
     server.register_blueprint(main_app)
     server.register_blueprint(re_direct)
+    server.register_blueprint(notifications_bp)
+
     server.register_blueprint(swaps)
     server.register_blueprint(analysis)
     server.register_blueprint(Risk_Client_Tools_bp, url_prefix='/Risk/Tools')
