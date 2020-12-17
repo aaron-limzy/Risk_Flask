@@ -61,7 +61,7 @@ def Client_No_Trades_ajax(update_tool_time=1):
 
 
     raw_sql_statement = """SELECT
-	c.LIVE as LIVE, c.LOGIN as LOGIN, c.SYMBOL as SYMBOL, c.DATETIME as DATETIME, COALESCE(t.LOTS,0) as LOTS,
+	c.LIVE as LIVE, c.LOGIN as LOGIN, c.SYMBOL as SYMBOL, c.DATETIME as `DATETIME`, COALESCE(t.LOTS,0) as LOTS,
 	 t.REVENUE as REVENUE, COALESCE(t.`GROUP`,'-') as `GROUP`
     FROM
         ( SELECT LIVE, LOGIN, SYMBOL, DATETIME FROM aaron.client_zero_position WHERE live = '{live}' AND active='1')AS c
@@ -80,16 +80,18 @@ def Client_No_Trades_ajax(update_tool_time=1):
     sql_query = text(sql_statement)
     return_val = Query_SQL_db_engine(sql_query)
 
-    df = pd.DataFrame(return_val)
 
-    # To print out the datetime in str format.
-    df["DATETIME"] = df["DATETIME"].apply(lambda x: "{}".format(x))
+    df = pd.DataFrame(return_val)
+    #print(df)
 
     if len(df) == 0: # There is no return.
         return_val = [{"RESULT": "No SQL Returns. Time Now: {}".format(time_now())}]
 
     #default return val.
     else:
+        # To print out the datetime in str format.
+        df["DATETIME"] = df["DATETIME"].apply(lambda x: "{}".format(x))
+
         df_no_lots = df[df["LOTS"] == 0]    # Want to get those that have no lots.
         if len(df_no_lots) > 0: # If there is, we assume the client has closed the position.
             # Telegram
@@ -258,11 +260,12 @@ def Large_volume_Login():
     description = Markup("<b>Large Volume Login</b><br>")
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/city_overview.jpg',
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/checked_1.png',
                            icon="css/save_Filled.png",
                            Table_name="Large Volume Login", title=title,
                            ajax_url=url_for('notifications_bp.Large_volume_Login_Ajax', _external=True), header=header,
                            setinterval=120,
+                           no_backgroud_Cover=True,
                            description=description, replace_words=Markup(["Today"]))
 
 
@@ -287,7 +290,8 @@ def Large_volume_Login_Ajax(update_tool_time=1):
                 SUM(CASE WHEN OPEN_TIME >= NOW()- INTERVAL 1 DAY THEN VOLUME*0.01 ELSE 0 END) as 'OPENED_LOTS',
                 SUM(CASE WHEN CLOSE_TIME >= NOW()- INTERVAL 1 DAY THEN VOLUME*0.01 ELSE 0 END) as 'CLOSED_LOTS',
                 SUM(CASE WHEN CLOSE_TIME = "1970-01-01 00:00:00" THEN VOLUME*0.01 ELSE 0 END) as 'FLOATING_LOTS',
-                SUM(CASE WHEN CLOSE_TIME >= NOW()- INTERVAL 1 DAY THEN PROFIT+SWAPS ELSE 0 END) as 'CLOSED_PROFIT'
+                SUM(CASE WHEN CLOSE_TIME >= NOW()- INTERVAL 1 DAY THEN PROFIT+SWAPS ELSE 0 END) as 'CLOSED_PROFIT',
+                SUM(CASE WHEN CLOSE_TIME = "1970-01-01 00:00:00" THEN PROFIT+SWAPS ELSE 0 END) as 'FLOATING_PROFIT'
                 FROM Live{Live}.mt4_trades as t, Live{Live}.mt4_users as u 
                 WHERE (OPEN_TIME >= NOW() - INTERVAL 1 DAY or CLOSE_TIME >=  NOW() - INTERVAL 1 DAY)
                 AND CMD < 2 AND t.LOGIN = u.LOGIN AND u.LOGIN>9999
@@ -307,7 +311,7 @@ def Large_volume_Login_Ajax(update_tool_time=1):
     # Want to add the URL for Logins
     df["LOGIN"] = df.apply(lambda x: live_login_analysis_url(Live=x["LIVE"], Login=x["LOGIN"]), axis=1)
     df["CLOSED_PROFIT"] = df["CLOSED_PROFIT"].apply(lambda x: round(x,2))
-    df = df[["LOGIN", "LIVE", "TOTAL_LOTS", "OPENED_LOTS", "CLOSED_LOTS", "FLOATING_LOTS", "CLOSED_PROFIT", "GROUP"]]
+    df = df[["LOGIN", "LIVE", "TOTAL_LOTS", "OPENED_LOTS", "CLOSED_LOTS", "FLOATING_LOTS", "FLOATING_PROFIT", "CLOSED_PROFIT", "GROUP"]]
 
     # Want only those that has equal or more than 10 lots.
     ## TODO: Put this condition into SQL.

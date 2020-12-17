@@ -1250,7 +1250,10 @@ def symbol_float_trades(symbol="", book="b"):
 
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
-    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/double-bubble.png', icon="",
+
+    #double-bubble.png
+
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/Christmas_vector_11.jpg', icon="",
                            Table_name={ "Winning Floating Groups (Client Side)": "Hs1",
                                         "Losing Floating Groups (Client Side)": "Hs2",
                                         "Winning Floating Accounts (Client Side)": "H1",
