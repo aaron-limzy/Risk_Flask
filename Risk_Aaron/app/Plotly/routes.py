@@ -1163,9 +1163,9 @@ def BGI_Symbol_Float_ajax():
         for u in list(session.keys()):
             session_array.append("{} : {}".format(u, session[u]))
         #print("<br><br>".join(session_array))
-        async_send_email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[], Subject="Yesterday_lots or Yesterday_revenue Missing",
-                         HTML_Text="df_to_table <br><br>{}<br><br>session<br><br>{}".format(df_to_table.to_html() , "<br><br>".join(session_array)),
-                         Attachment_Name=[])
+        # async_send_email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[], Subject="Yesterday_lots or Yesterday_revenue Missing",
+        #                  HTML_Text="df_to_table <br><br>{}<br><br>session<br><br>{}".format(df_to_table.to_html() , "<br><br>".join(session_array)),
+        #                  Attachment_Name=[])
 
 
     # Want only those columns that are in the df
