@@ -240,3 +240,78 @@ def Delete_Risk_Autocut_Include_Button_Endpoint(Live="", Login="", Symbol=""):
     flash("Live:{Live}, Login: {Login}, Symbol: {Symbol} has been set to inactive in aaron.client_zero_position".format(Live=Live,Login=Login, Symbol=Symbol))
     #print("Request URL: {}".format(redirect(request.url)))
     return redirect(request.referrer)
+
+
+
+
+
+@notifications_bp.route('/Large_volume_Login', methods=['GET', 'POST'])
+@roles_required()
+def Large_volume_Login():
+    title = "Large Volume Login"
+    header = "Large Volume Login"
+
+    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+    # For Login in aaron.Risk_autocut and Credit_limit != 0
+
+    description = Markup("<b>Large Volume Login</b><br>")
+
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/city_overview.jpg',
+                           icon="css/save_Filled.png",
+                           Table_name="Large Volume Login", title=title,
+                           ajax_url=url_for('notifications_bp.Large_volume_Login_Ajax', _external=True), header=header,
+                           setinterval=120,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+# Insert into aaron.BGI_Float_History_Save
+# Will select, pull it out into Python, before inserting it into the table.
+# Tried doing Insert.. Select. But there was desdlock situation..
+@notifications_bp.route('/Large_volume_Login_Ajax', methods=['GET', 'POST'])
+@roles_required()
+def Large_volume_Login_Ajax(update_tool_time=1):
+
+
+    if not cfh_fix_timing():
+        return json.dumps([{'Update time': "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
+
+
+
+    # Want to reduce the query overheads. So try to use the saved value as much as possible.
+    # server_time_diff_str = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session \
+    #     else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
+
+    raw_sql_statement = """ SELECT '{Live}' as LIVE, t.LOGIN, sum(volume)*0.01 as TOTAL_LOTS, u.`GROUP`,
+                SUM(CASE WHEN OPEN_TIME >= NOW()- INTERVAL 1 DAY THEN VOLUME*0.01 ELSE 0 END) as 'OPENED_LOTS',
+                SUM(CASE WHEN CLOSE_TIME >= NOW()- INTERVAL 1 DAY THEN VOLUME*0.01 ELSE 0 END) as 'CLOSED_LOTS',
+                SUM(CASE WHEN CLOSE_TIME = "1970-01-01 00:00:00" THEN VOLUME*0.01 ELSE 0 END) as 'FLOATING_LOTS',
+                SUM(CASE WHEN CLOSE_TIME >= NOW()- INTERVAL 1 DAY THEN PROFIT+SWAPS ELSE 0 END) as 'CLOSED_PROFIT'
+                FROM Live{Live}.mt4_trades as t, Live{Live}.mt4_users as u 
+                WHERE (OPEN_TIME >= NOW() - INTERVAL 1 DAY or CLOSE_TIME >=  NOW() - INTERVAL 1 DAY)
+                AND CMD < 2 AND t.LOGIN = u.LOGIN AND u.LOGIN>9999
+                AND u.`GROUP` in (SELECT `group` FROM live5.group_table WHERE BOOK = "B" and live="Live{Live}")
+                GROUP BY LOGIN """
+
+    raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", "")
+    # The string name of the live server.
+    live_str = ["1", "2", "3", "5"]
+    sql_statement = " UNION ".join([raw_sql_statement.format(Live=l) for l in live_str])
+    sql_statement += " ORDER BY TOTAL_LOTS DESC "
+
+
+    res = Query_SQL_db_engine(text(sql_statement))
+    df = pd.DataFrame(res)
+
+    # Want to add the URL for Logins
+    df["LOGIN"] = df.apply(lambda x: live_login_analysis_url(Live=x["LIVE"], Login=x["LOGIN"]), axis=1)
+    df["CLOSED_PROFIT"] = df["CLOSED_PROFIT"].apply(lambda x: round(x,2))
+    df = df[["LOGIN", "LIVE", "TOTAL_LOTS", "OPENED_LOTS", "CLOSED_LOTS", "FLOATING_LOTS", "CLOSED_PROFIT", "GROUP"]]
+
+    # Want only those that has equal or more than 10 lots.
+    ## TODO: Put this condition into SQL.
+    df = df[df["TOTAL_LOTS"] >= 10]
+
+    return json.dumps(df.to_dict("r"))
+

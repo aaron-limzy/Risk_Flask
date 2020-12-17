@@ -984,8 +984,10 @@ def BGI_Symbol_Float():
                          "Taking Live prices from Live 1 q Symbols")
 
 
+
+    # css/leaves.png
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Symbol_Float.html", backgroud_Filename='css/leaves.png', icon= "", Table_name="Symbol Float (B 📘)", \
+    return render_template("Webworker_Symbol_Float.html", backgroud_Filename='css/Christmas_vector_1.jpg', icon= "", Table_name="Symbol Float (B 📘)", \
                            title=title, ajax_url=url_for('analysis.BGI_Symbol_Float_ajax', _external=True), header=header, setinterval=15,
                            description=description, no_backgroud_Cover=True, replace_words=Markup(['(Client Side)']))
 
@@ -2083,36 +2085,10 @@ def symbol_closed_trades(symbol="", book="b", days=-1):
 @roles_required()
 def symbol_close_trades_ajax(book="b", symbol="" ,days=-1):
 
-    # start_time = datetime.datetime.now() # Want to get the datetime when this request was called.
-    # # Snap shot of the volume.
-    # # Need to pass in the app as this would be using a newly created threadS
-    # df_data_vol_unsync = Get_Vol_snapshot(app=current_app._get_current_object(),
-    #                 symbol=symbol, book=book, day_backwards_count=5)
-    #
-    # # Want to show 2 days back if the hour is less than 10am (SGT), else, shows 1 day only.
-    # opentime_day_backwards_count = 3 if datetime.datetime.now().hour < 12 else 2    # Not too many days, else it will be too small.
-    # opentime_day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * opentime_day_backwards_count))
-    # symbol_opentime_trades_unsync = symbol_opentime_trades(app=current_app._get_current_object(),
-    #                                                        symbol=symbol, book=book, start_date=opentime_day_backwards)
-    #
-    # # Get the history details such as Trade volume and reenue
-    # Symbol_history_Daily_unsync = Symbol_history_Daily(symbol=symbol, book=book,
-    #                                                    app=current_app._get_current_object(),
-    #                                                    day_backwards_count=15)
-    #
-    # all_open_trades_start = datetime.datetime.now()
-    # all_trades = symbol_all_open_trades(symbol=symbol, book=book)
-    # print("all_open_trades_start() Took: {sec}s".format(sec=(datetime.datetime.now() - all_open_trades_start).total_seconds()))
-    #
-    # df_all_trades = pd.DataFrame(all_trades)
 
 
-
-    col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE']
-    col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS', 'CONVERTED_REVENUE']
-
-
-
+    #col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE']
+    #col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS', 'CONVERTED_REVENUE']
 
 
     # Closed trades for today, Make it into a pandas list.
@@ -2128,111 +2104,6 @@ def symbol_close_trades_ajax(book="b", symbol="" ,days=-1):
     # List unpacking from the return of the function.
     [closed_top_accounts, closed_bottom_accounts, total_sum_closed, top_closed_groups,
      bottom_closed_groups, closed_largest_lot_accounts, closed_by_country] = symbol_closed_trades_analysis(df_closed_trades, book, symbol)
-
-    #
-    # # There are no closed trades for the day yet
-    # if len(df_closed_trades) <=0:
-    #     closed_top_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-    #     closed_bottom_accounts =  pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-    #     total_sum_closed = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-    #     top_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-    #     bottom_closed_groups = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-    #     closed_largest_lot_accounts = pd.DataFrame([{"Note": "There are no closed trades for the day for {} yet".format(symbol)}])
-    # else:
-    #     # Use for calculating net volume.
-    #     df_closed_trades["LOTS"] =  df_closed_trades["LOTS"].apply(lambda x: float(x))  #Convert from decimal.decimal
-    #     df_closed_trades["NET_LOTS"] = df_closed_trades.apply(lambda x: x["LOTS"] if x['CMD']==0 else -1*x["LOTS"] , axis=1)
-    #     df_closed_trades["DURATION_(AVG)"] = df_closed_trades.apply(
-    #         lambda x: (x["CLOSE_TIME"] - x["OPEN_TIME"]).total_seconds(), axis=1)
-    #     # Uses the same col2 as the open trades
-    #     #closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
-    #
-    #     #col2 To add in DURATION_SEC
-    #     col2.append("DURATION_(AVG)")
-    #     # Want to take the mean duration, by trade.
-    #     closed_login_sum = df_closed_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).agg({'LOTS': 'sum',
-    #                                                                                       'NET_LOTS': 'sum',
-    #                                                                                       'CONVERTED_REVENUE': 'sum',
-    #                                                                                       'PROFIT': 'sum',
-    #                                                                                       'SWAPS': 'sum',
-    #                                                                                         'DURATION_(AVG)' : 'mean'}).reset_index()
-    #
-    #     # Round off the values that is not needed.
-    #     closed_login_sum["LOTS"] = round(closed_login_sum['LOTS'],2)
-    #     closed_login_sum["NET_LOTS"] = round(closed_login_sum['NET_LOTS'], 2)
-    #     closed_login_sum["CONVERTED_REVENUE"] = round(closed_login_sum['CONVERTED_REVENUE'], 2)
-    #     closed_login_sum["PROFIT"] = round(closed_login_sum['PROFIT'], 2)
-    #     closed_login_sum["SWAPS"] = round(closed_login_sum['SWAPS'], 2)
-    #     closed_login_sum["LOGIN"] = closed_login_sum.apply(lambda x: live_login_analysis_url( \
-    #         Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
-    #     # Want to get the average of the duration.
-    #     closed_login_sum["DURATION_(AVG)"] = closed_login_sum["DURATION_(AVG)"].apply(lambda x: trade_duration_bin(x))
-    #
-    #     # Want the Closed Top/Bottom accounts. Top = Winning, so no -ve PnL.
-    #     closed_top_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] >= 0].sort_values(\
-    #                                                             'CONVERTED_REVENUE', ascending=False)[col2].head(20)
-    #     closed_bottom_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] < 0].sort_values(\
-    #                                                             'CONVERTED_REVENUE', ascending=True)[col2].head(20)
-    #
-    #     closed_largest_lot_accounts = closed_login_sum.sort_values('LOTS', ascending=False)[col2].head(20)
-    #
-    #
-    #     # Color the CONVERTED_REVENUE
-    #     closed_bottom_accounts["CONVERTED_REVENUE"] = closed_bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-    #     closed_top_accounts["CONVERTED_REVENUE"] = closed_top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-    #     closed_largest_lot_accounts["CONVERTED_REVENUE"] = closed_largest_lot_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-    #
-    #     # If there are either no winning Accounts, or no losing accounts.
-    #     # No winning accounts with closed trades for today
-    #     closed_top_accounts = pd.DataFrame(
-    #         [{"Comment": "There are currently no Accounts With Closed Winning PnL for today for {}".format(symbol)}]) if \
-    #         len(closed_top_accounts) <= 0 else closed_top_accounts
-    #     # No losing accounts for closed trades for today.
-    #     closed_bottom_accounts = pd.DataFrame(
-    #         [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
-    #         len(closed_bottom_accounts) <= 0 else closed_bottom_accounts
-    #
-    #     closed_largest_lot_accounts = pd.DataFrame(
-    #         [{"Comment": "There are currently no Accounts With Closed Losing PnL for today for {}".format(symbol)}]) if \
-    #         len(closed_largest_lot_accounts) <= 0 else closed_largest_lot_accounts
-    #
-    #     # Closed Trades for today
-    #     # Group PnL
-    #     closed_group_sum = df_closed_trades.groupby(by=['COUNTRY', 'GROUP']).sum().reset_index()
-    #     closed_group_sum["LOTS"] = round(closed_group_sum['LOTS'],2)
-    #     closed_group_sum["NET_LOTS"] = round(closed_group_sum['NET_LOTS'], 2)
-    #     closed_group_sum["CONVERTED_REVENUE"] = round(closed_group_sum['CONVERTED_REVENUE'], 2)
-    #
-    #     # Only want those that are profitable
-    #     top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE', \
-    #                                                                           ascending=False)[col3].head(20)
-    #     top_closed_groups["CONVERTED_REVENUE"] = top_closed_groups["CONVERTED_REVENUE"].apply(
-    #         lambda x: profit_red_green(x))
-    #     top_closed_groups = pd.DataFrame([{"Comment": "There are currently no groups with closed profit for {}".format(symbol)}]) if \
-    #         len(top_closed_groups) <= 0 else top_closed_groups
-    #
-    #     # Only want those that are making a loss
-    #     bottom_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', \
-    #                                                                                                   ascending=True)[col3].head(20)
-    #     bottom_closed_groups["CONVERTED_REVENUE"] = bottom_closed_groups["CONVERTED_REVENUE"].apply(
-    #         lambda x: profit_red_green(x))
-    #     bottom_closed_groups = pd.DataFrame(
-    #         [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
-    #         len(bottom_closed_groups) <= 0 else bottom_closed_groups
-    #
-    #     # Total sum Floating
-    #     total_sum_closed_col = ['LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' ]
-    #     total_sum_closed = df_closed_trades[total_sum_closed_col].sum()
-    #     if book == "b":
-    #         total_sum_closed =  total_sum_closed.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side if it's B book
-    #     else:   # If it's A book. We don't need to do that.
-    #         total_sum_closed = total_sum_closed.apply(
-    #             lambda x: round(x, 2))  # Flip it to be on BGI Side if it's B book
-    #
-    #     total_sum_closed["LOTS"] = abs(total_sum_closed["LOTS"])  # Since it's Total lots, we only want the abs value
-    #     for c in total_sum_closed_col: # Want to print it properly.
-    #         if isfloat(total_sum_closed[c]):
-    #             total_sum_closed[c] = "{:,}".format(total_sum_closed[c])
 
 
     # Return the values as json.
@@ -3126,7 +2997,10 @@ def Client_trades_Analysis(Live="", Login=""):
 
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
-    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/strips_1.png', icon="",
+
+    #strips_1.png
+
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/Christmas_vector_1.jpg', icon="",
                            Table_name={"Live: {}, Login: {}".format(Live, Login):"V1",
                                        "Profit Calculation":"V2",
                                        "Net Position": "H1",
@@ -3338,82 +3212,6 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
                         "P1":deposit_withdrawal_fig,
                        "P2": average_trade_duration_fig}, cls=plotly.utils.PlotlyJSONEncoder)
 
-
-@analysis.route('/Large_volume_Login', methods=['GET', 'POST'])
-@roles_required()
-def Large_volume_Login():
-    title = "Large Volume Login"
-    header = "Large Volume Login"
-
-    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
-    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
-    # For Login in aaron.Risk_autocut and Credit_limit != 0
-
-    description = Markup("<b>Large Volume Login</b><br>")
-
-    # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/city_overview.jpg',
-                           icon="css/save_Filled.png",
-                           Table_name="Large Volume Login", title=title,
-                           ajax_url=url_for('analysis.Large_volume_Login_Ajax', _external=True), header=header,
-                           setinterval=120,
-                           description=description, replace_words=Markup(["Today"]))
-
-
-# Insert into aaron.BGI_Float_History_Save
-# Will select, pull it out into Python, before inserting it into the table.
-# Tried doing Insert.. Select. But there was desdlock situation..
-@analysis.route('/Large_volume_Login_Ajax', methods=['GET', 'POST'])
-@roles_required()
-def Large_volume_Login_Ajax(update_tool_time=1):
-    # start = datetime.datetime.now()
-    # TODO: Only want to save during trading hours.
-    # TODO: Want to write a custom function, and not rely on using CFH timing.
-    if not cfh_fix_timing():
-        return json.dumps([{'Update time': "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
-
-    if check_session_live1_timing() == False:  # If False, It needs an update.
-
-        # TOREMOVE: Comment out the print.
-        print("Saving Previous Day PnL")
-        # TODO: Maybe make this async?
-        save_previous_day_PnL()  # We will take this chance to get the Previous day's PnL as well.
-
-    # Want to reduce the query overheads. So try to use the saved value as much as possible.
-    # server_time_diff_str = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session \
-    #     else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
-
-    raw_sql_statement = """ SELECT '{Live}' as LIVE, t.LOGIN, sum(volume)*0.01 as LOTS, u.`GROUP`,
-                SUM(CASE WHEN OPEN_TIME >= NOW()- INTERVAL 1 DAY THEN VOLUME*0.01 ELSE 0 END) as 'OPENED_LOTS',
-                SUM(CASE WHEN CLOSE_TIME >= NOW()- INTERVAL 1 DAY THEN VOLUME*0.01 ELSE 0 END) as 'CLOSED_LOTS',
-                SUM(CASE WHEN CLOSE_TIME = "1970-01-01 00:00:00" THEN VOLUME*0.01 ELSE 0 END) as 'FLOATING_LOTS',
-                SUM(CASE WHEN CLOSE_TIME >= NOW()- INTERVAL 1 DAY THEN PROFIT+SWAPS ELSE 0 END) as 'CLOSED_PROFIT'
-                FROM Live{Live}.mt4_trades as t, Live{Live}.mt4_users as u 
-                WHERE (OPEN_TIME >= NOW() - INTERVAL 1 DAY or CLOSE_TIME >=  NOW() - INTERVAL 1 DAY)
-                AND CMD < 2 AND t.LOGIN = u.LOGIN AND u.LOGIN>9999
-                AND u.`GROUP` in (SELECT `group` FROM live5.group_table WHERE BOOK = "B" and live="Live{Live}")
-                GROUP BY LOGIN """
-
-    raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", "")
-    # The string name of the live server.
-    live_str = ["1", "2", "3", "5"]
-    sql_statement = " UNION ".join([raw_sql_statement.format(Live=l) for l in live_str])
-    sql_statement += " ORDER BY LOTS DESC "
-
-
-    res = Query_SQL_db_engine(text(sql_statement))
-    df = pd.DataFrame(res)
-
-    # Want to add the URL for Logins
-    df["LOGIN"] = df.apply(lambda x: live_login_analysis_url(Live=x["LIVE"], Login=x["LOGIN"]), axis=1)
-    df["CLOSED_PROFIT"] = df["CLOSED_PROFIT"].apply(lambda x: round(x,2))
-    df = df[["LOGIN", "LIVE", "LOTS", "OPENED_LOTS", "CLOSED_LOTS", "FLOATING_LOTS", "CLOSED_PROFIT", "GROUP"]]
-
-    # Want only those that has equal or more than 10 lots.
-    ## TODO: Put this condition into SQL.
-    df = df[df["LOTS"] >= 10]
-
-    return json.dumps(df.to_dict("r"))
 
     # # Want to get results for the above query, to get the Floating PnL
     # sql_query = text(sql_statement)
