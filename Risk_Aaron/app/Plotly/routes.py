@@ -1585,36 +1585,63 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 def symbol_all_open_trades(symbol="", book="B", entities=[]):
     #symbol="XAUUSD"
 
+
+    # Symbol condition, if query is for specific symbols
     if len(symbol) > 0: # If we want to filter by Symbol.
         symbol_condition = " AND mt4_trades.SYMBOL Like '%{}%' ".format(symbol)
     else:
         symbol_condition = " "
 
+
+    # Default parameters.
+    country_condition = "  "
     book_condition = " AND group_table.BOOK = '{}'".format(book)
 
-    if len(entities) == 0 or entities[0] == "":
+
+    # IF B book, or if there are no entity.
+    # We will need to set the country and book condition
+    if  book.lower() == "b" or len(entities) == 0 or entities[0] == "":
         country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK') "
+        book_condition = " AND group_table.BOOK = '{}'".format(book)
 
+
+    if len(entities) > 0: # there's actually an entity here.
+        country_condition = " AND COUNTRY IN ({})".format(" , ".join(["'{}'".format(c) for c in entities]))
+        book_condition = " "  # No need for book condition.
+
+
+    # A book, with no entity given.
+    if book.lower() == "a" and len(entities) <= 0:
+        print("Will give unique country conditions.")
+        book_condition = " " # No need for this. We will write our own.
+
+        country_condition_raw = """ AND ((mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live{live}.a_group))
+                                 OR
+                                 (LOGIN IN( SELECT LOGIN FROM live{live}.a_login))
+                                 ) """
+
+
+        country_condition_Live1 = country_condition_raw.format(live=1)
+        country_condition_Live2 = """ AND	(
+            (mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live2.a_group))
+            OR (LOGIN IN(SELECT LOGIN FROM live2.a_login))
+            OR LOGIN = '9583'
+            OR LOGIN = '9615'
+            OR LOGIN = '9618'
+            OR(mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501)
+            ) """
+        country_condition_Live3 = country_condition_raw.format(live=3)
+        country_condition_Live5 = country_condition_raw.format(live=5)
     else:
-        # want to put the coutries into a comma seperated string, combined with '
-        country_condition = " AND COUNTRY IN ({}) ".format(" , ".join(["'{}'".format(c) for c in entities]))
-        book_condition = " "  # no need Book condition anymore.
+        # If not a book, or if there is entity in query, we will use the standard country_condition.
+        print("Will give standard country conditions.")
+        country_condition_Live1 = country_condition
+        country_condition_Live2 = country_condition
+        country_condition_Live3 = country_condition
+        country_condition_Live5 = country_condition
 
-    #print("country_condition: {}".format(country_condition))
 
 
-    if book.lower() == "a":
-        # Additional SQL query if a book
-        Live2_book_query = """ AND	(
-		(mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live2.a_group))
-		OR (LOGIN IN(SELECT LOGIN FROM live2.a_login))
-		OR LOGIN = '9583'
-		OR LOGIN = '9615'
-		OR LOGIN = '9618'
-		OR(mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501)
-	) """
-    else:
-        Live2_book_query = book_condition
 
     # Want to reduce the overheads
     ServerTimeDiff_Query = "{}".format(session["live1_sgt_time_diff"]) if "live1_sgt_time_diff" in session \
@@ -1648,7 +1675,7 @@ def symbol_all_open_trades(symbol="", book="B", entities=[]):
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live1' 
             AND LENGTH(mt4_trades.LOGIN)>4
-            {symbol_condition} {country_condition} {book_condition}
+            {symbol_condition} {country_condition_Live1} {book_condition}
             ) as A1 LEFT JOIN  live1.symbol_rebate as B1 ON A1.SYMBOL = B1.SYMBOL)
     UNION 
         (SELECT 'live2' AS LIVE,		
@@ -1678,7 +1705,7 @@ def symbol_all_open_trades(symbol="", book="B", entities=[]):
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live2' 
             AND LENGTH(mt4_trades.LOGIN)>4
-            {symbol_condition} {country_condition} {Live2_book_query}) as A2 LEFT JOIN  live2.symbol_rebate as B2 ON A2.SYMBOL = B2.SYMBOL)
+            {symbol_condition} {country_condition_Live2} {book_condition}) as A2 LEFT JOIN  live2.symbol_rebate as B2 ON A2.SYMBOL = B2.SYMBOL)
     UNION (
     SELECT 'live3' AS LIVE,		
 		COUNTRY,		LOGIN,		TICKET,		A3.SYMBOL,		CMD,		LOTS,
@@ -1708,7 +1735,7 @@ def symbol_all_open_trades(symbol="", book="B", entities=[]):
             AND group_table.LIVE = 'live3' 
             AND LENGTH(mt4_trades.LOGIN)>4 
             AND mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM live3.cambodia_exclude) 
-            {symbol_condition} {country_condition} {book_condition}) as A3 LEFT JOIN  live3.symbol_rebate as B3 ON A3.SYMBOL = B3.SYMBOL)
+            {symbol_condition} {country_condition_Live3} {book_condition}) as A3 LEFT JOIN  live3.symbol_rebate as B3 ON A3.SYMBOL = B3.SYMBOL)
     UNION
         (SELECT 'live5' AS LIVE,		
 		COUNTRY,		LOGIN,		TICKET,		A5.SYMBOL,		CMD,		LOTS,
@@ -1740,13 +1767,15 @@ def symbol_all_open_trades(symbol="", book="B", entities=[]):
             AND mt4_trades.CMD <2 
             AND group_table.LIVE = 'live5' 
             AND LENGTH(mt4_trades.LOGIN)>4
-            {symbol_condition} {country_condition} {book_condition}) 
+            {symbol_condition} {country_condition_Live5} {book_condition}) 
             as A5 LEFT JOIN  live5.symbol_rebate as B5 ON A5.SYMBOL = B5.SYMBOL)
             """.format(symbol_condition=symbol_condition,
                        ServerTimeDiff_Query=ServerTimeDiff_Query,
                        book_condition=book_condition,
-                       country_condition=country_condition,
-                       Live2_book_query=Live2_book_query)
+                       country_condition_Live1=country_condition_Live1,
+                       country_condition_Live2=country_condition_Live2,
+                       country_condition_Live3=country_condition_Live3,
+                       country_condition_Live5=country_condition_Live5)
 
 
     #print(sql_statement)
@@ -2443,8 +2472,6 @@ def symbol_get_past_closed_trades(symbol="", book="B", days=-1):
 
     Live5_startofday = " {} 00:00:00".format(end_of_day.strftime("%Y-%m-%d"))
     Live5_endofday = " {} 00:00:00".format(end_of_day_live5.strftime("%Y-%m-%d"))
-
-
 
 
     if book.lower() == "a":

@@ -101,7 +101,7 @@ def async_Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode=""):
 @unsync
 def Get_Vol_snapshot(app, symbol="", book="", day_backwards_count=5, entities = []):
 
-    print("Get_Vol_snapshot symbol: '{}'".format(symbol))
+    #print("Get_Vol_snapshot symbol: '{}'".format(symbol))
 
     # Want to plot the SNOP SHOT Graph of open volume
     # This is the table that is Cleated every hour
@@ -203,35 +203,57 @@ def symbol_opentime_trades(app, symbol="", book="B", start_date="", entities="")
     #symbol="XAUUSD"
     #print("Querying for symbol_opentime_trades. Symbol:{}, book:{}, start_date:{}".format(symbol,book,start_date))
 
+    # Symbol condition, if query is for specific symbols
     if len(symbol) > 0:
         symbol_condition = " AND SYMBOL Like '%{}%' ".format(symbol)
     else:
         symbol_condition = " "
 
-    book_condition = " AND group_table.BOOK = '{}'".format(book)
+    country_condition = "  "
+
+    # Only need to set if there is no entity, or when book = b
+    if book.lower() == "b" or  len(entities) <= 0:
+        book_condition = " AND group_table.BOOK = '{}'".format(book)
+        country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK')   "
+    else:
+        book_condition = " "  # No need for book condition.
 
 
     if len(entities) > 0: # there's actually an entity here.
         country_condition = " AND COUNTRY IN ({})".format(" , ".join(["'{}'".format(c) for c in entities]))
-        book_condition = " "    # No need for book condition anymore.
-    else:
-        if book.lower() == "b":
-            country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK')   "
-            # country_condition_Live1 = country_condition
-            # country_condition_Live2 = country_condition
-            # country_condition_Live3 = country_condition
-            # country_condition_Live5 = country_condition
-        else:
-            country_condition = " AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK')   "
+        book_condition = " "  # No need for book condition.
 
-            #
-            # country_condition_raw = """ AND (COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK')
-            #                         OR
-            #                         (mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live{live}.a_group))
-            #                          OR
-            #                          (LOGIN IN( SELECT LOGIN FROM live{live}.a_login))
-            #                          ) """
-            #
+
+    # A book, with no entity given.
+    if book.lower() == "a" and len(entities) <= 0:
+        #print("Will give unique country conditions.")
+        book_condition = " " # No need for this. We will write our own.
+
+        country_condition_raw = """ AND ((mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live{live}.a_group))
+                                 OR
+                                 (LOGIN IN( SELECT LOGIN FROM live{live}.a_login))
+                                 ) """
+
+
+        country_condition_Live1 = country_condition_raw.format(live=1)
+        country_condition_Live2 = """ AND	(
+            (mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live2.a_group))
+            OR (LOGIN IN(SELECT LOGIN FROM live2.a_login))
+            OR LOGIN = '9583'
+            OR LOGIN = '9615'
+            OR LOGIN = '9618'
+            OR(mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501)
+            ) """
+        country_condition_Live3 = country_condition_raw.format(live=3)
+        country_condition_Live5 = country_condition_raw.format(live=5)
+    else:
+        # If not a book, or if there is entity in query, we will use the standard country_condition.
+        #print("Will give standard country conditions.")
+        country_condition_Live1 = country_condition
+        country_condition_Live2 = country_condition
+        country_condition_Live3 = country_condition
+        country_condition_Live5 = country_condition
+
 
     # Live 1,2,3
     OPEN_TIME_LIMIT = "{} 22:00:00".format(start_date)
@@ -240,25 +262,7 @@ def symbol_opentime_trades(app, symbol="", book="B", start_date="", entities="")
     # Also did  DATE_SUB(OPEN_TIME, INTERVAL 1 HOUR)  For the open time.
     OPEN_TIME_LIMIT_L5 = "{} 23:00:00".format(start_date)
 
-    if book.lower() == "a":
-        # Additional SQL query if a book
-        Live2_book_query = """ AND	(
-		(mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live2.a_group))
-		OR (LOGIN IN(SELECT LOGIN FROM live2.a_login))
-		OR LOGIN = '9583'
-		OR LOGIN = '9615'
-		OR LOGIN = '9618'
-		OR(mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501)
-	) """
 
-
-    # """(mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live1.a_group))
-    # OR(LOGIN IN( SELECT LOGIN FROM live1.a_login))"""
-
-
-
-    else:
-        Live2_book_query = book_condition
 
     sql_statement = """ SELECT 	LIVE,
         COUNTRY, CMD, SUM(LOTS) as 'LOTS',
@@ -277,7 +281,7 @@ def symbol_opentime_trades(app, symbol="", book="B", start_date="", entities="")
             AND LENGTH(mt4_trades.SYMBOL)> 0
             AND mt4_trades.CMD < 2
             AND group_table.LIVE = 'live1'
-            AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition} {book_condition}
+            AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition_Live1} {book_condition}
         )
             UNION 
         (
@@ -294,7 +298,7 @@ def symbol_opentime_trades(app, symbol="", book="B", start_date="", entities="")
             AND LENGTH(mt4_trades.SYMBOL)> 0
             AND mt4_trades.CMD < 2
             AND group_table.LIVE = 'live2'
-            AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition} {Live2_book_query}
+            AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition_Live2} {book_condition}
         )
             UNION 
         (
@@ -310,7 +314,7 @@ def symbol_opentime_trades(app, symbol="", book="B", start_date="", entities="")
             AND mt4_trades.CMD < 2
             AND group_table.LIVE = 'live3'
             AND LENGTH(mt4_trades.LOGIN)> 4
-            AND mt4_trades.LOGIN NOT IN(SELECT LOGIN FROM live3.cambodia_exclude){symbol_condition} {country_condition} {book_condition}
+            AND mt4_trades.LOGIN NOT IN(SELECT LOGIN FROM live3.cambodia_exclude){symbol_condition} {country_condition_Live3} {book_condition}
         )
             UNION
         (
@@ -326,16 +330,19 @@ def symbol_opentime_trades(app, symbol="", book="B", start_date="", entities="")
             AND LENGTH(mt4_trades.SYMBOL)> 0
             AND mt4_trades.CMD < 2
             AND group_table.LIVE = 'live5'
-            AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition} {book_condition}
+            AND LENGTH(mt4_trades.LOGIN)> 4 {symbol_condition} {country_condition_Live5} {book_condition}
         ))AS A
         GROUP BY COUNTRY, LEFT(OPEN_TIME, 16), `GROUP`""".format(OPEN_TIME_LIMIT=OPEN_TIME_LIMIT,
                                                                  OPEN_TIME_LIMIT_L5=OPEN_TIME_LIMIT_L5,
                                                                  symbol_condition=symbol_condition,
-                                                                 country_condition=country_condition,
-                                                                 book_condition=book_condition,
-                                                                 Live2_book_query=Live2_book_query)
+                                                                 country_condition_Live1=country_condition_Live1,
+                                                                 country_condition_Live2=country_condition_Live2,
+                                                                 country_condition_Live3=country_condition_Live3,
+                                                                 country_condition_Live5=country_condition_Live5,
+                                                                 book_condition=book_condition,)
 
     sql_query = sql_statement.replace("\n", " ").replace("\t", " ")
+    #print(sql_query)
 
     return unsync_query_SQL_return_record(sql_query, app)
 
