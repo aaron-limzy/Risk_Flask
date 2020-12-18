@@ -257,7 +257,7 @@ def Large_volume_Login():
     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
     # For Login in aaron.Risk_autocut and Credit_limit != 0
 
-    description = Markup("<b>Large Volume Login</b><br>")
+    description = Markup("<b>Large Volume Login</b>- Details are on Client side.<br>- Profits has been converted to USD<br><br>")
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/checked_1.png',
@@ -279,70 +279,110 @@ def Large_volume_Login_Ajax(update_tool_time=1):
     if not cfh_fix_timing():
         return json.dumps([{'Update time': "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
-
+    alert_levels = [10, 20, 30, 50, 100, 200, 300, 400, 500]
 
     # Want to reduce the query overheads. So try to use the saved value as much as possible.
     # server_time_diff_str = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session \
     #     else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
 
-    """     ROUND(SUM(CASE 
-                    WHEN (g.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND g.CLOSE_TIME != '1970-01-01 00:00:00') THEN t.PROFIT+t.SWAPS 
-                    WHEN (g.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND g.CLOSE_TIME != '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)/7.78 
-                    WHEN (g.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND g.CLOSE_TIME != '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (g.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND g.CLOSE_TIME != '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (g.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND g.CLOSE_TIME != '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (g.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND g.CLOSE_TIME != '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (g.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND g.CLOSE_TIME != '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) 
-                    AS `CLOSED PROFIT`,
-                ROUND(SUM(CASE 
-                    WHEN (g.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND g.CLOSE_TIME = '1970-01-01 00:00:00') THEN t.PROFIT+t.SWAPS 
-                    WHEN (g.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND g.CLOSE_TIME = '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)/7.78 
-                    WHEN (g.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND g.CLOSE_TIME = '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (g.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND g.CLOSE_TIME = '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (g.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND g.CLOSE_TIME = '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (g.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND g.CLOSE_TIME = '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (g.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND g.CLOSE_TIME = '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) 
-                    AS `FLOATING PROFIT`, """
 
-
-    raw_sql_statement = """ SELECT '{Live}' as LIVE, LOGIN, sum(volume)*0.01 as `TOTAL LOTS`, `GROUP`,
+    raw_sql_statement = """ SELECT X.*, coalesce(L.lots, 0) as `RECORDED LOTS`  FROM (SELECT '{Live}' as LIVE, 
+                LOGIN,  
+                `COUNTRY`, `GROUP`,
+                SUM(`TOTAL LOTS`) as `TOTAL LOTS`, SUM(`OPENED LOTS`) as `OPENED LOTS`, 
+                SUM(`CLOSED LOTS`) AS `CLOSED LOTS`,
+                SUM(`FLOATING LOTS`) as `FLOATING LOTS`,
+                SUM(`CLOSED PROFIT`) AS `CLOSED PROFIT`, 
+                SUM(`FLOATING PROFIT`) AS `FLOATING PROFIT`, 
+                ROUND(SUM( coalesce(REBATE,0) * `TOTAL LOTS`)) AS `REBATE`
+                    
+                FROM (SELECT t.LOGIN AS LOGIN, 
+                t.SYMBOL, 
                 SUM(CASE WHEN OPEN_TIME >= NOW()- INTERVAL 1 DAY THEN VOLUME*0.01 ELSE 0 END) as 'OPENED LOTS',
                 SUM(CASE WHEN CLOSE_TIME >= NOW()- INTERVAL 1 DAY THEN VOLUME*0.01 ELSE 0 END) as 'CLOSED LOTS',
                 SUM(CASE WHEN CLOSE_TIME = "1970-01-01 00:00:00" THEN VOLUME*0.01 ELSE 0 END) as 'FLOATING LOTS',
-                ROUND(SUM( coalesce(REBATE,0) * 0.01 * VOLUME)) AS `REBATE`
-                    
-                    
-                FROM (SELECT t.LOGIN AS LOGIN, t.SYMBOL, t.OPEN_TIME, t.CLOSE_TIME, t.PROFIT, t.SWAPS, t.VOLUME, u.`GROUP` 
-                        FROM Live{Live}.mt4_trades as t, Live{Live}.mt4_users as u
+                sum(VOLUME)*0.01 as `TOTAL LOTS`,
+                ROUND(SUM(CASE 
+                    WHEN (t.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND t.CLOSE_TIME != '1970-01-01 00:00:00') THEN t.PROFIT+t.SWAPS 
+                    WHEN (t.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND t.CLOSE_TIME != '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)/7.78 
+                    WHEN (t.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND t.CLOSE_TIME != '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (t.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND t.CLOSE_TIME != '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (t.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND t.CLOSE_TIME != '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (t.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND t.CLOSE_TIME != '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (t.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND t.CLOSE_TIME != '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) 
+                    AS `CLOSED PROFIT`,
+                ROUND(SUM(CASE 
+                    WHEN (t.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND t.CLOSE_TIME = '1970-01-01 00:00:00') THEN t.PROFIT+t.SWAPS 
+                    WHEN (t.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND t.CLOSE_TIME = '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)/7.78 
+                    WHEN (t.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND t.CLOSE_TIME = '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (t.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND t.CLOSE_TIME = '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (t.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND t.CLOSE_TIME = '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (t.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND t.CLOSE_TIME = '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (t.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND t.CLOSE_TIME = '1970-01-01 00:00:00') THEN (t.PROFIT+t.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) 
+                    AS `FLOATING PROFIT`,
+                
+                g.`COUNTRY` , u.`GROUP`
+                        FROM Live{Live}.mt4_trades as t, Live{Live}.mt4_users as u, Live5.group_table as g
                         WHERE (OPEN_TIME >= NOW() - INTERVAL 1 DAY or CLOSE_TIME >=  NOW() - INTERVAL 1 DAY)
-                        AND CMD < 2 AND t.LOGIN = u.LOGIN AND u.LOGIN>9999 AND u.login=t.login
+                        AND CMD < 2 AND t.LOGIN = u.LOGIN AND u.LOGIN>9999 AND u.login=t.login AND
+                        g.`group` = t.`group` AND g.book in ("A", "B", "HK", "MAM")
+                        GROUP BY LOGIN, SYMBOL
                         ) T LEFT JOIN Live{Live}.symbol_rebate as r ON r.symbol=T.symbol
                 
-                GROUP BY LOGIN """
+                GROUP BY LOGIN ) X LEFT JOIN 
+                (Select * from aaron.large_volume_login WHERE live = {Live} and datetime >= NOW() - INTERVAL 1 DAY) as L 
+                ON X.login = L.login  
+                WHERE `TOTAL LOTS` >= 10 """
 
     raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", "")
     # The string name of the live server.
     live_str = ["1", "2", "3", "5"]
     sql_statement = " UNION ".join([raw_sql_statement.format(Live=l) for l in live_str])
     sql_statement += " ORDER BY `TOTAL LOTS` DESC "
-    print(sql_statement)
+    #print(sql_statement)
 
     res = Query_SQL_db_engine(text(sql_statement))
     df = pd.DataFrame(res)
 
+
+
+    # Want to find out which level of "alert" it belongs to now.
+    df["NEXT LEVEL"] = df["TOTAL LOTS"].apply(lambda x: min([a for a in alert_levels if a>=x ]))
+
+    # Those that we need to send alerts for.
+    to_alert = df[df["NEXT LEVEL"] > df["RECORDED LOTS"]]
+    if len(to_alert):
+        telegram_string = "<b>Large Volume Client Alert</b>\n\n"
+        telegram_string += "Live | Login | Lots | C PnL | F.PnL | Rebate | Group\n"
+        telegram_string += "\n".join([" | ".join(["{}".format(x) for x in l]) for l in to_alert[["LIVE", "LOGIN", "TOTAL LOTS", "CLOSED PROFIT", "FLOATING PROFIT", "REBATE", "COUNTRY"]].values.tolist()])
+        telegram_string += "\n\nDetails are on Client side."
+        #print(telegram_string)
+
+        async_Post_To_Telegram(TELE_ID_MONITOR, telegram_string, TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+        to_alert["DATETIME"] = "NOW()"
+        to_sql_values = ["({})".format(",".join(["{}".format(x) for x in l])) for l in to_alert[["LIVE", "LOGIN", "NEXT LEVEL", "DATETIME"]].values.tolist()]
+
+        sql_insert = """INSERT INTO  aaron.`Large_Volume_Login` (`Live`, `Login`, `Lots`,  `datetime`) VALUES
+           {} ON DUPLICATE KEY UPDATE `lots`=VALUES(`lots`) """.format(" , ".join(to_sql_values))
+        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+
+        #print(sql_insert)
+        db.engine.execute(text(sql_insert))  # Insert into DB
+        #flash("Live: {live}, Login: {login} Symbol: {Symbol} has been added to aaron.`client_zero_position`.".format(live=Live, login=Login, Symbol=Symbol))
+
+
+        #print(to_sql_values)
+
     # Want to add the URL for Logins
     df["LOGIN"] = df.apply(lambda x: live_login_analysis_url(Live=x["LIVE"], Login=x["LOGIN"]), axis=1)
-
-    #df["CLOSED PROFIT"] = df["CLOSED PROFIT"].apply(lambda x: profit_red_green(x))
-    #df["FLOATING PROFIT"] = df["FLOATING PROFIT"].apply(lambda x: profit_red_green(x))
+    # To add color when printed.
+    df["CLOSED PROFIT"] = df["CLOSED PROFIT"].apply(lambda x: profit_red_green(x))
+    df["FLOATING PROFIT"] = df["FLOATING PROFIT"].apply(lambda x: profit_red_green(x))
 
     df = df[["LOGIN", "LIVE", "TOTAL LOTS", "OPENED LOTS", "CLOSED LOTS",
-             "FLOATING LOTS", "REBATE", "GROUP"]]
-#    df = df[["LOGIN", "LIVE", "TOTAL LOTS", "OPENED LOTS", "CLOSED LOTS",
-         #    "FLOATING LOTS", "FLOATING PROFIT", "CLOSED PROFIT", "REBATE", "GROUP"]]
-    # Want only those that has equal or more than 10 lots.
-    ## TODO: Put this condition into SQL.
-    df = df[df["TOTAL LOTS"] >= 10]
+         "FLOATING LOTS", "FLOATING PROFIT", "CLOSED PROFIT", "REBATE", "GROUP", "NEXT LEVEL"]]
+
+
 
     return json.dumps(df.to_dict("r"))
 
