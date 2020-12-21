@@ -1807,8 +1807,12 @@ def Monitor_Account_Trades_Ajax():
 
 
         # Want to create a live-Login column. To find unique and loop over.
+
         # For Display sake.
-        df_trades["LIVE-LOGIN"] = df_trades.apply(lambda x: "Live: {}, Login: {}".format(x["LIVE"], x["LOGIN"]), axis = 1)
+        # Will embed the URL into LOGIN.
+        df_trades["LIVE-LOGIN"] = df_trades.apply(lambda x: "Live: {}, Login: {}".format( \
+            x["LIVE"], live_login_analysis_url_External(Live=x["LIVE"], Login=x["LOGIN"])), \
+                                                  axis = 1)
 
         # Want to get the unique Live/Login of Each
         df_live_login = df_trades[['LIVE', 'LOGIN']]
@@ -1819,7 +1823,8 @@ def Monitor_Account_Trades_Ajax():
 
         # Will be in form of dict.
         # With "LIVE-LOGIN" as KEY
-        user_trades_str_dict = user_consolidated_trades_to_str(user_trades)  if len(user_trades) > 0 else {}  # Consolidated user trades in string
+        user_trades_str_dict = user_consolidated_trades_to_str(user_trades)  \
+            if len(user_trades) > 0 else {}  # Consolidated user trades in string
 
 
         direction = ["+", "-"]
@@ -2077,7 +2082,6 @@ def Mismatch_trades_bridge(symbol=[], hours=8, mins=16):
         if time_gmt not in time_gmt_list:
             time_gmt_list.append(time_gmt)
         time_start = time_start +  datetime.timedelta(minutes=1)
-
 
     # SQ's DB tablenames.
     sq_tables = ["demo1", "demo2_new", "live3_cambodia"]
