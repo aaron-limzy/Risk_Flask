@@ -325,7 +325,7 @@ def Large_volume_Login_Ajax(update_tool_time=1):
                         FROM Live{Live}.mt4_trades as t, Live{Live}.mt4_users as u, Live5.group_table as g
                         WHERE (OPEN_TIME >= NOW() - INTERVAL 1 DAY or CLOSE_TIME >=  NOW() - INTERVAL 1 DAY)
                         AND CMD < 2 AND t.LOGIN = u.LOGIN AND u.LOGIN>9999 AND u.login=t.login AND
-                        g.`group` = t.`group` AND g.book in ("A", "B", "HK", "MAM")
+                        g.`group` = t.`group` AND g.book in ("A", "B", "HK", "MAM") {Added_condition}
                         GROUP BY LOGIN, SYMBOL
                         ) T LEFT JOIN Live{Live}.symbol_rebate as r ON r.symbol=T.symbol
                 
@@ -336,8 +336,11 @@ def Large_volume_Login_Ajax(update_tool_time=1):
 
     raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", "")
     # The string name of the live server.
-    live_str = ["1", "2", "3", "5"]
-    sql_statement = " UNION ".join([raw_sql_statement.format(Live=l) for l in live_str])
+    live_str = ["1", "2", "5"]
+    sql_statement = " UNION ".join([raw_sql_statement.format(Live=l, Added_condition=" ") for l in live_str])
+    sql_statement += " UNION " + raw_sql_statement.format(Live=3, Added_condition=" AND u.LOGIN NOT IN (SELECT LOGIN FROM live3.`cambodia_exclude` )")
+
+
     sql_statement += " ORDER BY `TOTAL LOTS` DESC "
     #print(sql_statement)
 
@@ -352,11 +355,13 @@ def Large_volume_Login_Ajax(update_tool_time=1):
     # Those that we need to send alerts for.
     to_alert = df[df["NEXT LEVEL"] > df["RECORDED LOTS"]]
     if len(to_alert) > 0:
+        to_alert["LOGIN_URL"] = to_alert.apply(lambda x: live_login_analysis_url_External(Live=x["LIVE"], Login=x["LOGIN"]), axis=1)
+
         telegram_string = "<b>Large Volume Client Alert</b>\n\n"
         telegram_string += "<b>Live | Login | Lots | C PnL | F.PnL | Rebate | Group</b>\n"
-        telegram_string += "\n".join([" | ".join(["{}".format(x) for x in l]) for l in to_alert[["LIVE", "LOGIN", "TOTAL LOTS", "CLOSED PROFIT", "FLOATING PROFIT", "REBATE", "COUNTRY"]].values.tolist()])
+        telegram_string += "\n".join([" | ".join(["{}".format(x) for x in l]) for l in to_alert[["LIVE", "LOGIN_URL", "TOTAL LOTS", "CLOSED PROFIT", "FLOATING PROFIT", "REBATE", "COUNTRY"]].values.tolist()])
         telegram_string += "\n\nDetails are on Client side."
-        #print(telegram_string)
+        print(telegram_string)
 
         async_Post_To_Telegram(TELE_ID_MONITOR, telegram_string, TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
         to_alert["DATETIME"] = "NOW()"
@@ -370,7 +375,6 @@ def Large_volume_Login_Ajax(update_tool_time=1):
         db.engine.execute(text(sql_insert))  # Insert into DB
         #flash("Live: {live}, Login: {login} Symbol: {Symbol} has been added to aaron.`client_zero_position`.".format(live=Live, login=Login, Symbol=Symbol))
 
-
         #print(to_sql_values)
 
     # Want to add the URL for Logins
@@ -381,7 +385,6 @@ def Large_volume_Login_Ajax(update_tool_time=1):
 
     df = df[["LOGIN", "LIVE", "TOTAL LOTS", "OPENED LOTS", "CLOSED LOTS",
          "FLOATING LOTS", "FLOATING PROFIT", "CLOSED PROFIT", "REBATE", "GROUP", "NEXT LEVEL"]]
-
 
 
     return json.dumps(df.to_dict("r"))
