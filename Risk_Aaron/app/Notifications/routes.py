@@ -330,7 +330,7 @@ def Large_volume_Login_Ajax(update_tool_time=1):
                         ) T LEFT JOIN Live{Live}.symbol_rebate as r ON r.symbol=T.symbol
                 
                 GROUP BY LOGIN ) X LEFT JOIN 
-                (Select * from aaron.large_volume_login WHERE live = {Live} and datetime >= NOW() - INTERVAL 1 DAY) as L 
+                (Select live, login, max(lots) as lots, datetime from aaron.large_volume_login WHERE live = {Live} and datetime >= NOW() - INTERVAL 1 DAY GROUP BY LIVE, LOGIN) as L 
                 ON X.login = L.login  
                 WHERE `TOTAL LOTS` >= 10 """
 
@@ -351,9 +351,9 @@ def Large_volume_Login_Ajax(update_tool_time=1):
 
     # Those that we need to send alerts for.
     to_alert = df[df["NEXT LEVEL"] > df["RECORDED LOTS"]]
-    if len(to_alert):
+    if len(to_alert) > 0:
         telegram_string = "<b>Large Volume Client Alert</b>\n\n"
-        telegram_string += "Live | Login | Lots | C PnL | F.PnL | Rebate | Group\n"
+        telegram_string += "<b>Live | Login | Lots | C PnL | F.PnL | Rebate | Group</b>\n"
         telegram_string += "\n".join([" | ".join(["{}".format(x) for x in l]) for l in to_alert[["LIVE", "LOGIN", "TOTAL LOTS", "CLOSED PROFIT", "FLOATING PROFIT", "REBATE", "COUNTRY"]].values.tolist()])
         telegram_string += "\n\nDetails are on Client side."
         #print(telegram_string)
