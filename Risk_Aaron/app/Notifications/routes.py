@@ -344,6 +344,9 @@ def Large_volume_Login_Ajax(update_tool_time=1):
     res = Query_SQL_db_engine(text(sql_statement))
     df = pd.DataFrame(res)
 
+    # Just in case there are no open trades. 
+    if len(df) <= 0:
+        return [{"Comment":"No trades."}]
 
 
     # Want to find out which level of "alert" it belongs to now.
