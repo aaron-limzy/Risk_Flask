@@ -349,7 +349,7 @@ def Large_volume_Login_Ajax(update_tool_time=1):
 
     # Just in case there are no open trades. 
     if len(df) <= 0:
-        return [{"Comment":"No trades."}]
+        return  json.dumps([{"Comment":"No trades."}])
 
 
     # Want to find out which level of "alert" it belongs to now.
