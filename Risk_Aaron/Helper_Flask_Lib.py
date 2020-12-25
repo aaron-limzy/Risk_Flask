@@ -707,6 +707,16 @@ def live_login_analysis_url(Live, Login):
     url = url_for("analysis.Client_trades_Analysis", Live=int(Live),  Login=int(Login), _external=True)
     return '<a href="{url}">{Login}</a>'.format(url=url,  Login=Login)
 
+
+# To get the URL for the Live/Login to run client analysis
+# For telegram. Will replace localhost with the external IP
+#TODO: Need to put external IP into a seperate File for easy change.
+def live_login_analysis_url_External(Live, Login):
+
+    url = url_for("analysis.Client_trades_Analysis", Live=int(Live),  Login=int(Login), _external=True)
+    return '<a href="{url}">{Login}</a>'.format(url=url,  Login=Login).replace("localhost", "202.88.105.3")
+
+
 # To get the URL for the Symbol Trades A/B Book
 def Symbol_Trades_url(symbol, book):
 
@@ -799,3 +809,5 @@ def get_live1_time_difference():
     result_data = raw_result.fetchall()     # Return Result
 
     return int(result_data[0][0])   # Return the integer value.
+
+
