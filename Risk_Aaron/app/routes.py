@@ -78,12 +78,8 @@ from Helper_Flask_Lib import *
 
 TIME_UPDATE_SLOW_MIN = 10
 
-
-
 LP_MARGIN_ALERT_LEVEL = 20            # How much away from MC do we start making noise.
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display the warnings.
-
-
 
 
 # db = SQLAlchemy()  # <--- The db object belonging to the blueprint
@@ -1034,8 +1030,12 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
     #print(df_postion)
     df_postion["SYMBOL"] = df_postion.apply(lambda x: Symbol_Trades_url(symbol=x["SYMBOL"], book="a"), axis = 1)
 
+
+    col_needed = [ "SYMBOL", "Vantage_lot", "CFH_lot", "GP_lot", "API_lot", "Offset_lot", "Lp_Net_Vol", "MT4_Net_Vol", "Discrepancy", "Mismatch_count"]
+    col_to_use = [c for c in col_needed if c in df_postion]     # Just in case the column is not in the df.
+
     # Arrange it all in the correct position
-    df_postion = df_postion[[ "SYMBOL", "Vantage_lot", "CFH_lot", "GP_lot", "API_lot", "Offset_lot", "Lp_Net_Vol", "MT4_Net_Vol", "Discrepancy", "Mismatch_count"]]
+    df_postion = df_postion[col_to_use]
     curent_result = df_postion.to_dict("record")
 
 
