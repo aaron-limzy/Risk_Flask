@@ -20,6 +20,7 @@ from app.Plotly.tableau_url import *
 #from app.Plotly.table import Client_Trade_Table
 
 from app.background import *
+from app.tableau_embed import *
 
 import emoji
 import flag
@@ -992,8 +993,12 @@ def BGI_Symbol_Float():
 
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Symbol_Float.html", backgroud_Filename=background_pic("BGI_Symbol_Float"), icon= "", Table_name="Symbol Float (B 📘)", \
-                           title=title, ajax_url=url_for('analysis.BGI_Symbol_Float_ajax', _external=True), header=header, setinterval=15,
+    return render_template("Webworker_Symbol_Float.html", backgroud_Filename=background_pic("BGI_Symbol_Float"),
+                           icon= "",
+                           Table_name="Symbol Float (B 📘)", \
+                           title=title, ajax_url=url_for('analysis.BGI_Symbol_Float_ajax', _external=True),
+                           header=header, setinterval=15,
+                           tableau_url=Markup(symbol_float_tableau()),
                            description=description, no_backgroud_Cover=True, replace_words=Markup(['(Client Side)']))
 
 

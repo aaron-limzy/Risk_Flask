@@ -738,7 +738,8 @@ def Risk_Download_Page():    # To upload the Files, or post which trades to dele
 @main_app.route('/ABook_Match_Trades')
 @roles_required(["Risk", "Admin", "Dealing", "Risk_TW"])
 def ABook_Matching():
-    return render_template("A_Book_Matching.html",header="A Book Matching", title="LP/MT4 Position")
+    return render_template("A_Book_Matching.html", header="A Book Matching", title="LP/MT4 Position", \
+                           backgroud_Filename=background_pic("ABook_Matching"))
 
 
 @main_app.route('/ABook_Match_Trades_Position', methods=['GET', 'POST'])
@@ -758,7 +759,7 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
                     COALESCE(offset_LOT, 0)AS Offset_lot,
                     COALESCE(vantage_LOT, 0)+ COALESCE(CFH_Position, 0)+ COALESCE(GP_Position, 0)+ COALESCE(offset_LOT, 0)AS Lp_Net_lot,
                     COALESCE(S.mt4_NET_LOT, 0)AS MT4_Net_lot,
-                    COALESCE(s.REVENUE, 0) as Revenue,
+                    COALESCE(s.REVENUE, 0) as MT4_Revenue,
                     COALESCE(vantage_LOT, 0)+ COALESCE(CFH_Position, 0)+ COALESCE(GP_Position, 0)+ COALESCE(offset_LOT, 0)- COALESCE(S.mt4_NET_LOT, 0)AS Discrepancy
                 FROM
                     test.core_symbol
@@ -1450,15 +1451,15 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
     df_postion["SYMBOL"] = df_postion.apply(lambda x: Symbol_Trades_url(symbol=x["SYMBOL"], book="a"), axis = 1)
 
 
-    col_needed = [ "SYMBOL", "Vantage_lot", "CFH_lot", "GP_lot", "API_lot", "Offset_lot", "Lp_Net_lot", "MT4_Net_lot", "Revenue", "Discrepancy", "Mismatch_count"]
+    col_needed = [ "SYMBOL", "Vantage_lot", "CFH_lot", "GP_lot", "API_lot", "Offset_lot", "Lp_Net_lot", "MT4_Net_lot", "MT4_Revenue", "Discrepancy", "Mismatch_count"]
     col_to_use = [c for c in col_needed if c in df_postion]     # Just in case the column is not in the df.
 
     # Arrange it all in the correct position
     df_postion = df_postion[col_to_use]
 
     # Want to color the Revenue column
-    if "Revenue" in df_postion:
-        df_postion["Revenue"] = df_postion["Revenue"].apply(profit_red_green)
+    if "MT4_Revenue" in df_postion:
+        df_postion["MT4_Revenue"] = df_postion["MT4_Revenue"].apply(profit_red_green)
 
 
     curent_result = df_postion.to_dict("record")
