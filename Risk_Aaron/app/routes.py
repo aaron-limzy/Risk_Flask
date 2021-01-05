@@ -747,69 +747,482 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
     #mismatch_count_2 = 15   # Second notify when mismatched has lasted a second timessss
 
     # cfh_soap_query_count = [5]   # Want to fully quiery and update from CFH when mismatches reaches this.
-    sql_query = text("""SELECT SYMBOL,COALESCE(vantage_LOT,0) AS Vantage_lot,COALESCE(CFH_Position,0) AS CFH_lot ,COALESCE(GP_Position,0) AS GP_lot ,COALESCE(api_LOT,0) AS API_lot,COALESCE(offset_LOT,0) AS Offset_lot,COALESCE(vantage_LOT,0)+ COALESCE(CFH_Position,0)+COALESCE(GP_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0) AS Lp_Net_Vol
-        ,COALESCE(S.mt4_NET_VOL,0) AS MT4_Net_Vol,COALESCE(vantage_LOT,0)+COALESCE(CFH_Position,0)+COALESCE(GP_Position,0)-COALESCE(api_LOT,0)+COALESCE(offset_LOT,0)-COALESCE(S.mt4_NET_VOL,0) AS Discrepancy 
-        FROM test.core_symbol
-        LEFT JOIN
-        (SELECT mt4_symbol AS vantage_SYMBOL,ROUND(SUM(vantage_LOT),2) AS vantage_LOT FROM 
-            (SELECT coresymbol,position/core_symbol.CONTRACT_SIZE AS vantage_LOT,mt4_symbol FROM test.`vantage_live_trades` 
-            LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol 
-            LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL 
-            WHERE CONTRACT_SIZE>0) AS B GROUP BY mt4_symbol 
-        ) AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
-		    LEFT JOIN
-        (SELECT cfh_bgi_symbol.mt4_symbol as `CFH_Symbol`, position * (1/core_symbol.CONTRACT_SIZE) AS CFH_Position
-            FROM aaron.`cfh_live_position_fix` 
-            LEFT JOIN aaron.cfh_bgi_symbol ON cfh_live_position_fix.Symbol = cfh_bgi_symbol.CFH_Symbol
-            LEFT JOIN test.core_symbol ON core_symbol.SYMBOL = cfh_bgi_symbol.mt4_symbol  
-            WHERE CONTRACT_SIZE>0
-        ) as CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
-		    LEFT JOIN
-        (SELECT SUBSTRING_INDEX(Symbol,'.',1) as `GM_Symbol`,SUM(CASE WHEN Cmd = 0 THEN Lots WHEN Cmd = 1 THEN Lots * (-1) ELSE 0 END) AS GP_Position
-            FROM aaron.`live_trade_961884_globalprime_live` WHERE Close_time = '1970-01-01 00:00:00' GROUP BY SUBSTRING_INDEX(Symbol,'.',1)
-        ) as GM ON core_symbol.SYMBOL = GM.GM_Symbol
-        LEFT JOIN
-        (SELECT coresymbol AS api_SYMBOL,ROUND(SUM(api_LOT),2) AS api_LOT FROM (SELECT bgimargin_live_trades.margin_id,bgimargin_live_trades.coresymbol,position/core_symbol.CONTRACT_SIZE AS api_LOT FROM test.`bgimargin_live_trades` 
-        LEFT JOIN test.core_symbol ON bgimargin_live_trades.coresymbol = core_symbol.SYMBOL WHERE CONTRACT_SIZE>0) AS B GROUP BY coresymbol) AS K ON core_symbol.SYMBOL = K.api_SYMBOL
-        LEFT JOIN
-        (SELECT SYMBOL AS offset_SYMBOL,ROUND(SUM(LOTS),2) AS offset_LOT FROM test.offset_live_trades GROUP BY SYMBOL) AS P ON core_symbol.SYMBOL = P.offset_SYMBOL
-        LEFT JOIN
-        (SELECT SYMBOL AS mt4_SYMBOL,ROUND(SUM(VOL),2) AS mt4_NET_VOL FROM
-        (SELECT 'live1' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL, 
-        (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL` 
-        FROM live1.mt4_trades WHERE ((mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live1.a_group)) OR (LOGIN IN (SELECT LOGIN FROM live1.a_login )))
-        AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2
-        GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-        UNION
-        SELECT 'live2' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL, 
-        (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL` 
-        FROM live2.mt4_trades WHERE ((mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live2.a_group)) OR (LOGIN IN (SELECT LOGIN FROM live2.a_login )) OR LOGIN = '9583' OR LOGIN = '9615' OR LOGIN = '9618' OR (mt4_trades.`GROUP` LIKE 'A_ATG%' AND VOLUME > 1501))
-        AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-        UNION
-        SELECT 'live3' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL, 
-        (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL` 
-        FROM live3.mt4_trades WHERE (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live3.a_group)) 
-        AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-        UNION
-        SELECT 'live5' AS LIVE,SUM(CASE WHEN (mt4_trades.CMD = 0) THEN mt4_trades.VOLUME*0.01 WHEN (mt4_trades.CMD = 1) THEN mt4_trades.VOLUME*(-1)*0.01 ELSE 0 END) AS VOL, 
-        (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END) AS `SYMBOL` 
-        FROM live5.mt4_trades WHERE (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.a_group))
-        AND LENGTH(mt4_trades.SYMBOL)>0 AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' AND CMD < 2 GROUP BY (CASE WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%y' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'y',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%q' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'q',1) 
-        WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%`' THEN SUBSTRING_INDEX(SUBSTRING_INDEX(SYMBOL,'.',2),'`',1) WHEN SUBSTRING_INDEX(SYMBOL,'.',2) LIKE '.%' THEN SUBSTRING_INDEX(SYMBOL,'.',2) ELSE LEFT(SYMBOL,6) END)
-        ) AS X GROUP BY SYMBOL) S ON core_symbol.SYMBOL = S.mt4_SYMBOL ORDER BY ABS(Discrepancy) DESC, ABS(MT4_Net_Vol) DESC, SYMBOL""")
+    sql_query = text("""SELECT
+                    SYMBOL,
+                    COALESCE(vantage_LOT, 0)AS Vantage_lot,
+                    COALESCE(CFH_Position, 0)AS CFH_lot,
+                    COALESCE(GP_Position, 0)AS GP_lot,
+                    COALESCE(offset_LOT, 0)AS Offset_lot,
+                    COALESCE(vantage_LOT, 0)+ COALESCE(CFH_Position, 0)+ COALESCE(GP_Position, 0)+ COALESCE(offset_LOT, 0)AS Lp_Net_lot,
+                    COALESCE(S.mt4_NET_LOT, 0)AS MT4_Net_lot,
+                    COALESCE(s.REVENUE, 0) as Revenue,
+                    COALESCE(vantage_LOT, 0)+ COALESCE(CFH_Position, 0)+ COALESCE(GP_Position, 0)+ COALESCE(offset_LOT, 0)- COALESCE(S.mt4_NET_LOT, 0)AS Discrepancy
+                FROM
+                    test.core_symbol
+                LEFT JOIN(
+                    SELECT
+                        mt4_symbol AS vantage_SYMBOL,
+                        ROUND(SUM(vantage_LOT), 2)AS vantage_LOT
+                    FROM
+                        (
+                            SELECT
+                                coresymbol,
+                                position / core_symbol.CONTRACT_SIZE AS vantage_LOT,
+                                mt4_symbol
+                            FROM
+                                test.`vantage_live_trades`
+                            LEFT JOIN test.vantage_margin_symbol ON vantage_live_trades.coresymbol = vantage_margin_symbol.margin_symbol
+                            LEFT JOIN test.core_symbol ON vantage_margin_symbol.mt4_symbol = core_symbol.SYMBOL
+                            WHERE
+                                CONTRACT_SIZE > 0
+                        )AS B
+                    GROUP BY
+                        mt4_symbol
+                )AS Y ON core_symbol.SYMBOL = Y.vantage_SYMBOL
+                LEFT JOIN(
+                    SELECT
+                        cfh_bgi_symbol.mt4_symbol AS `CFH_Symbol`,
+                        position *(
+                            1 / core_symbol.CONTRACT_SIZE
+                        )AS CFH_Position
+                    FROM
+                        aaron.`cfh_live_position_fix`
+                    LEFT JOIN aaron.cfh_bgi_symbol ON cfh_live_position_fix.Symbol = cfh_bgi_symbol.CFH_Symbol
+                    LEFT JOIN test.core_symbol ON core_symbol.SYMBOL = cfh_bgi_symbol.mt4_symbol
+                    WHERE
+                        CONTRACT_SIZE > 0
+                )AS CFH ON core_symbol.SYMBOL = CFH.CFH_Symbol
+                LEFT JOIN(
+                    SELECT
+                        SUBSTRING_INDEX(Symbol, '.', 1)AS `GM_Symbol`,
+                        SUM(
+                            CASE
+                            WHEN Cmd = 0 THEN
+                                Lots
+                            WHEN Cmd = 1 THEN
+                                Lots *(- 1)
+                            ELSE
+                                0
+                            END
+                        )AS GP_Position
+                    FROM
+                        aaron.`live_trade_961884_globalprime_live`
+                    WHERE
+                        Close_time = '1970-01-01 00:00:00'
+                    GROUP BY
+                        SUBSTRING_INDEX(Symbol, '.', 1)
+                )AS GM ON core_symbol.SYMBOL = GM.GM_Symbol
+                LEFT JOIN(
+                    SELECT
+                        SYMBOL AS offset_SYMBOL,
+                        ROUND(SUM(LOTS), 2)AS offset_LOT
+                    FROM
+                        test.offset_live_trades
+                    GROUP BY
+                        SYMBOL
+                )AS P ON core_symbol.SYMBOL = P.offset_SYMBOL
+                LEFT JOIN(
+                    SELECT
+                        SYMBOL AS mt4_SYMBOL,
+                        ROUND(SUM(VOL), 2)AS mt4_NET_LOT,
+                        SUM(FLOATING_PROFIT) as REVENUE
+                    FROM
+                        (
+                            SELECT
+                                'live1' AS LIVE,
+                                SUM(
+                                    CASE
+                                    WHEN(mt4_trades.CMD = 0)THEN
+                                        mt4_trades.VOLUME * 0.01
+                                    WHEN(mt4_trades.CMD = 1)THEN
+                                        mt4_trades.VOLUME *(- 1)* 0.01
+                                    ELSE
+                                        0
+                                    END
+                                )AS VOL,
+                    ROUND(SUM(CASE 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS FLOATING_PROFIT,
+                                (
+                                    CASE
+                                    WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%y' THEN
+                                        SUBSTRING_INDEX(
+                                            SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                            'y',
+                                            1
+                                        )
+                                    WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%q' THEN
+                                        SUBSTRING_INDEX(
+                                            SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                            'q',
+                                            1
+                                        )
+                                    WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%`' THEN
+                                        SUBSTRING_INDEX(
+                                            SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                            '`',
+                                            1
+                                        )
+                                    WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%' THEN
+                                        SUBSTRING_INDEX(SYMBOL, '.', 2)
+                                    ELSE
+                                        LEFT(SYMBOL, 6)
+                                    END
+                                )AS `SYMBOL`
+                            FROM
+                                live1.mt4_trades
+                            WHERE
+                                (
+                                    (
+                                        mt4_trades.`GROUP` IN(
+                                            SELECT
+                                                `GROUP`
+                                            FROM
+                                                live1.a_group
+                                        )
+                                    )
+                                    OR(
+                                        LOGIN IN(
+                                            SELECT
+                                                LOGIN
+                                            FROM
+                                                live1.a_login
+                                        )
+                                    )
+                                )
+                            AND LENGTH(mt4_trades.SYMBOL)> 0
+                            AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00'
+                            AND CMD < 2
+                            GROUP BY
+                                (
+                                    CASE
+                                    WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%y' THEN
+                                        SUBSTRING_INDEX(
+                                            SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                            'y',
+                                            1
+                                        )
+                                    WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%q' THEN
+                                        SUBSTRING_INDEX(
+                                            SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                            'q',
+                                            1
+                                        )
+                                    WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%`' THEN
+                                        SUBSTRING_INDEX(
+                                            SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                            '`',
+                                            1
+                                        )
+                                    WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%' THEN
+                                        SUBSTRING_INDEX(SYMBOL, '.', 2)
+                                    ELSE
+                                        LEFT(SYMBOL, 6)
+                                    END
+                                )
+                
+                            UNION
+                                SELECT
+                                    'live2' AS LIVE,
+                                    SUM(
+                                        CASE
+                                        WHEN(mt4_trades.CMD = 0)THEN
+                                            mt4_trades.VOLUME * 0.01
+                                        WHEN(mt4_trades.CMD = 1)THEN
+                                            mt4_trades.VOLUME *(- 1)* 0.01
+                                        ELSE
+                                            0
+                                        END
+                                    )AS VOL,
+                    ROUND(SUM(CASE 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS FLOATING_PROFIT,
+                                    (
+                                        CASE
+                                        WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%y' THEN
+                                            SUBSTRING_INDEX(
+                                                SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                'y',
+                                                1
+                                            )
+                                        WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%q' THEN
+                                            SUBSTRING_INDEX(
+                                                SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                'q',
+                                                1
+                                            )
+                                        WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%`' THEN
+                                            SUBSTRING_INDEX(
+                                                SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                '`',
+                                                1
+                                            )
+                                        WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%' THEN
+                                            SUBSTRING_INDEX(SYMBOL, '.', 2)
+                                        ELSE
+                                            LEFT(SYMBOL, 6)
+                                        END
+                                    )AS `SYMBOL`
+                                FROM
+                                    live2.mt4_trades
+                                WHERE
+                                    (
+                                        (
+                                            mt4_trades.`GROUP` IN(
+                                                SELECT
+                                                    `GROUP`
+                                                FROM
+                                                    live2.a_group
+                                            )
+                                        )
+                                        OR(
+                                            LOGIN IN(
+                                                SELECT
+                                                    LOGIN
+                                                FROM
+                                                    live2.a_login
+                                            )
+                                        )
+                                        OR LOGIN = '9583'
+                                        OR LOGIN = '9615'
+                                        OR LOGIN = '9618'
+                                        OR(
+                                            mt4_trades.`GROUP` LIKE 'A_ATG%'
+                                            AND VOLUME > 1501
+                                        )
+                                    )
+                                AND LENGTH(mt4_trades.SYMBOL)> 0
+                                AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00'
+                                AND CMD < 2
+                                GROUP BY
+                                    (
+                                        CASE
+                                        WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%y' THEN
+                                            SUBSTRING_INDEX(
+                                                SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                'y',
+                                                1
+                                            )
+                                        WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%q' THEN
+                                            SUBSTRING_INDEX(
+                                                SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                'q',
+                                                1
+                                            )
+                                        WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%`' THEN
+                                            SUBSTRING_INDEX(
+                                                SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                '`',
+                                                1
+                                            )
+                                        WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%' THEN
+                                            SUBSTRING_INDEX(SYMBOL, '.', 2)
+                                        ELSE
+                                            LEFT(SYMBOL, 6)
+                                        END
+                                    )
+                                UNION
+                                    SELECT
+                                        'live3' AS LIVE,
+                                        SUM(
+                                            CASE
+                                            WHEN(mt4_trades.CMD = 0)THEN
+                                                mt4_trades.VOLUME * 0.01
+                                            WHEN(mt4_trades.CMD = 1)THEN
+                                                mt4_trades.VOLUME *(- 1)* 0.01
+                                            ELSE
+                                                0
+                                            END
+                                        )AS VOL,
+                    ROUND(SUM(CASE 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS FLOATING_PROFIT,
+                                        (
+                                            CASE
+                                            WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%y' THEN
+                                                SUBSTRING_INDEX(
+                                                    SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                    'y',
+                                                    1
+                                                )
+                                            WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%q' THEN
+                                                SUBSTRING_INDEX(
+                                                    SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                    'q',
+                                                    1
+                                                )
+                                            WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%`' THEN
+                                                SUBSTRING_INDEX(
+                                                    SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                    '`',
+                                                    1
+                                                )
+                                            WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%' THEN
+                                                SUBSTRING_INDEX(SYMBOL, '.', 2)
+                                            ELSE
+                                                LEFT(SYMBOL, 6)
+                                            END
+                                        )AS `SYMBOL`
+                                    FROM
+                                        live3.mt4_trades
+                                    WHERE
+                                        (
+                                            mt4_trades.`GROUP` IN(
+                                                SELECT
+                                                    `GROUP`
+                                                FROM
+                                                    live3.a_group
+                                            )
+                                        )
+                                    AND LENGTH(mt4_trades.SYMBOL)> 0
+                                    AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00'
+                                    AND CMD < 2
+                                    GROUP BY
+                                        (
+                                            CASE
+                                            WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%y' THEN
+                                                SUBSTRING_INDEX(
+                                                    SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                    'y',
+                                                    1
+                                                )
+                                            WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%q' THEN
+                                                SUBSTRING_INDEX(
+                                                    SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                    'q',
+                                                    1
+                                                )
+                                            WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%`' THEN
+                                                SUBSTRING_INDEX(
+                                                    SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                    '`',
+                                                    1
+                                                )
+                                            WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%' THEN
+                                                SUBSTRING_INDEX(SYMBOL, '.', 2)
+                                            ELSE
+                                                LEFT(SYMBOL, 6)
+                                            END
+                                        )
+                                    UNION
+                                        SELECT
+                                            'live5' AS LIVE,
+                                            SUM(
+                                                CASE
+                                                WHEN(mt4_trades.CMD = 0)THEN
+                                                    mt4_trades.VOLUME * 0.01
+                                                WHEN(mt4_trades.CMD = 1)THEN
+                                                    mt4_trades.VOLUME *(- 1)* 0.01
+                                                ELSE
+                                                    0
+                                                END
+                                            )AS VOL,
+                    ROUND(SUM(CASE 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS FLOATING_PROFIT,
+                                            (
+                                                CASE
+                                                WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%y' THEN
+                                                    SUBSTRING_INDEX(
+                                                        SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                        'y',
+                                                        1
+                                                    )
+                                                WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%q' THEN
+                                                    SUBSTRING_INDEX(
+                                                        SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                        'q',
+                                                        1
+                                                    )
+                                                WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%`' THEN
+                                                    SUBSTRING_INDEX(
+                                                        SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                        '`',
+                                                        1
+                                                    )
+                                                WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%' THEN
+                                                    SUBSTRING_INDEX(SYMBOL, '.', 2)
+                                                ELSE
+                                                    LEFT(SYMBOL, 6)
+                                                END
+                                            )AS `SYMBOL`
+                                        FROM
+                                            live5.mt4_trades
+                                        WHERE
+                                            (
+                                                mt4_trades.`GROUP` IN(
+                                                    SELECT
+                                                        `GROUP`
+                                                    FROM
+                                                        live5.a_group
+                                                )
+                                            )
+                                        AND LENGTH(mt4_trades.SYMBOL)> 0
+                                        AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00'
+                                        AND CMD < 2
+                                        GROUP BY
+                                            (
+                                                CASE
+                                                WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%y' THEN
+                                                    SUBSTRING_INDEX(
+                                                        SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                        'y',
+                                                        1
+                                                    )
+                                                WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%q' THEN
+                                                    SUBSTRING_INDEX(
+                                                        SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                        'q',
+                                                        1
+                                                    )
+                                                WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%`' THEN
+                                                    SUBSTRING_INDEX(
+                                                        SUBSTRING_INDEX(SYMBOL, '.', 2),
+                                                        '`',
+                                                        1
+                                                    )
+                                                WHEN SUBSTRING_INDEX(SYMBOL, '.', 2)LIKE '.%' THEN
+                                                    SUBSTRING_INDEX(SYMBOL, '.', 2)
+                                                ELSE
+                                                    LEFT(SYMBOL, 6)
+                                                END
+                                            )
+                        )AS X
+                    GROUP BY
+                        SYMBOL
+                )S ON core_symbol.SYMBOL = S.mt4_SYMBOL
+                ORDER BY
+                    ABS(Discrepancy)DESC,
+                    ABS(MT4_Net_lot)DESC,
+                    SYMBOL""")
 
 
     curent_result = Query_SQL_db_engine(sql_query)  # Function to do the Query and return zip dict.
 
     # Variables to return.
     Play_Sound = 0  # To play sound if needed
+
+
 
     # curent_result[10]["Discrepancy"] = 0.1  # Artificially induce a mismatch
     # print("request.method: {}".format(request.method))
@@ -846,6 +1259,9 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
 
         # To revert back to a normal Symbol string, instead of a URL.
         df_past_details = pd.DataFrame(Past_Details)
+
+
+
 
         #print("past details")
         #print(df_past_details)
@@ -1031,11 +1447,17 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
     df_postion["SYMBOL"] = df_postion.apply(lambda x: Symbol_Trades_url(symbol=x["SYMBOL"], book="a"), axis = 1)
 
 
-    col_needed = [ "SYMBOL", "Vantage_lot", "CFH_lot", "GP_lot", "API_lot", "Offset_lot", "Lp_Net_Vol", "MT4_Net_Vol", "Discrepancy", "Mismatch_count"]
+    col_needed = [ "SYMBOL", "Vantage_lot", "CFH_lot", "GP_lot", "API_lot", "Offset_lot", "Lp_Net_lot", "MT4_Net_lot", "Revenue", "Discrepancy", "Mismatch_count"]
     col_to_use = [c for c in col_needed if c in df_postion]     # Just in case the column is not in the df.
 
     # Arrange it all in the correct position
     df_postion = df_postion[col_to_use]
+
+    # Want to color the Revenue column
+    if "Revenue" in df_postion:
+        df_postion["Revenue"] = df_postion["Revenue"].apply(profit_red_green)
+
+
     curent_result = df_postion.to_dict("record")
 
 
@@ -1261,11 +1683,9 @@ def LP_Margin_UpdateTime():     # To query for LP/Margin Update time to check th
 
     sql_query = text("""select
     COALESCE(Vantage_Update_Time, 'No Open Trades') as Vantage_Update_Time,
-    COALESCE(BGI_Margin_Updated_Time, 'No Open Trades') as BGI_Margin_Update_Time,
     COALESCE(CFH_Updated_Time, 'No Open Trades') as CFH_Updated_Time
     from
     (select min(updated_time) as Vantage_Update_Time from test.vantage_live_trades where position != 0) as V,
-    (select updated_time as BGI_Margin_Updated_Time from test.bgimargin_live_trades where coresymbol = 'update') as BGI,
     (select min(updated_time) as CFH_Updated_Time from aaron.cfh_live_position_fix) as CFH""")
 
     raw_result = db.engine.execute(sql_query)

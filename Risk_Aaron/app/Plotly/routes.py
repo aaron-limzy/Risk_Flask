@@ -19,6 +19,8 @@ from app.Plotly.forms import  Live_Login
 from app.Plotly.tableau_url import *
 #from app.Plotly.table import Client_Trade_Table
 
+from app.background import *
+
 import emoji
 import flag
 
@@ -145,9 +147,9 @@ def save_BGI_float():
                          "Revenue has been all flipped (*-1) regardless of A or B book.<br><br>")
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/city_overview.jpg', icon="css/save_Filled.png",
-                           Table_name="Save Floating 💾", title=title,
-                            ajax_url=url_for('analysis.save_BGI_float_Ajax', _external=True), header=header, setinterval=12,
+    return render_template("Webworker_Single_Table.html", backgroud_Filename = background_pic("save_BGI_float"),
+                           icon="css/save_Filled.png", Table_name="Save Floating 💾", title=title,
+                           ajax_url=url_for('analysis.save_BGI_float_Ajax', _external=True), header=header, setinterval=12,
                            description=description, replace_words=Markup(["Today"]))
 
 
@@ -346,8 +348,10 @@ def save_BGI_float_Ajax(update_tool_time=1):
     # Want to insert into the Table.
     insert_into_table = text("INSERT INTO aaron.BGI_Float_History_Save (`country`, `symbol`, `floating_volume`, " +
                              "`floating_revenue`, `net_floating_volume`, `closed_revenue_today`, `closed_vol_today`," +
-                             "`datetime`) VALUES {}".format(" , ".join(result_array)))
-
+                             "`datetime`) VALUES {} ON DUPLICATE KEY UPDATE ".format(" , ".join(result_array)) +
+                             " `floating_volume` = VALUES(`floating_volume`) , " +
+                             " `floating_revenue` = VALUES(`floating_revenue`), `net_floating_volume` = VALUES(`net_floating_volume`), " +
+                             " `closed_revenue_today` = VALUES(`closed_revenue_today`), `closed_vol_today` = VALUES(`closed_vol_today`)")
 
     #print(insert_into_table)
     raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.

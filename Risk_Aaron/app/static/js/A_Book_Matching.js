@@ -278,7 +278,7 @@ $(document).ready(function(){
             var string_buffer = "";
             string_buffer += table_Data[x];
 
-            sString += '<td><b>' + x + '</b></td>';
+            sString += '<td><b>' + x.replace(/_/g, " ") + '</b></td>';
 
             if (string_buffer.search("ERROR") >= 0) {
                 // If there is an error, change the color of the cell
@@ -318,7 +318,7 @@ $(document).ready(function(){
             //For table header.
             for (var xx in table_Data[x]) {
                 sString += '<th>';
-                sString += xx;
+                sString += xx.replace(/_/g, " ");
                 sString += '</th>';
             }
             break;
@@ -391,12 +391,11 @@ $(document).ready(function(){
         Table_Data_Updated = [];
         for (var x in Table_Data) {
             if (!("Vantage_lot" in Table_Data[x] &&  Table_Data[x]['Vantage_lot'] == 0 &&
-                "MT4_Net_Vol" in Table_Data[x] &&  Table_Data[x]['MT4_Net_Vol'] == 0 &&
+                "MT4_Net_lot" in Table_Data[x] &&  Table_Data[x]['MT4_Net_lot'] == 0 &&
                 "CFH_lot" in Table_Data[x] &&  Table_Data[x]['CFH_lot'] == 0 &&
                 "GP_lot" in Table_Data[x] &&  Table_Data[x]['GP_lot'] == 0 &&
-                "API_lot" in Table_Data[x] &&  Table_Data[x]['API_lot'] == 0 &&
                 "Offset_lot" in Table_Data[x] &&  Table_Data[x]['Offset_lot'] == 0 &&
-                "Lp_Net_Vol" in Table_Data[x] &&  Table_Data[x]['Lp_Net_Vol'] == 0 &&
+                "Lp_Net_lot" in Table_Data[x] &&  Table_Data[x]['Lp_Net_lot'] == 0 &&
                 "Discrepancy" in Table_Data[x] &&  Table_Data[x]['Discrepancy'] == 0 )) {
                 Table_Data_Updated.push(Table_Data[x]);	// Push it in if its non-empty.
             }
