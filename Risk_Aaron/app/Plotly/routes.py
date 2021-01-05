@@ -393,8 +393,9 @@ def BGI_Country_Float():
                          "Tableau Viz will auto refresh every 2 mins.")
 
 
+
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Country_Float.html", backgroud_Filename='css/World_Map.jpg', icon= "css/Globe.png", Table_name="Country Float 🌎", \
+    return render_template("Webworker_Country_Float.html", backgroud_Filename=background_pic("BGI_Country_Float"), icon="css/Globe.png", Table_name="Country Float 🌎", \
                            title=title, ajax_url=url_for('analysis.BGI_Country_Float_ajax', _external=True), ajax_clear_cookie_url=url_for("analysis.Clear_session_ajax", _external=True), header=header, setinterval=15,
                            description=description, replace_words=Markup(['(Client Side)']))
 
@@ -989,9 +990,9 @@ def BGI_Symbol_Float():
 
 
 
-    # css/leaves.png
+
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Symbol_Float.html", backgroud_Filename='css/Christmas_vector_1.jpg', icon= "", Table_name="Symbol Float (B 📘)", \
+    return render_template("Webworker_Symbol_Float.html", backgroud_Filename=background_pic("BGI_Symbol_Float"), icon= "", Table_name="Symbol Float (B 📘)", \
                            title=title, ajax_url=url_for('analysis.BGI_Symbol_Float_ajax', _external=True), header=header, setinterval=15,
                            description=description, no_backgroud_Cover=True, replace_words=Markup(['(Client Side)']))
 
@@ -1255,9 +1256,9 @@ def symbol_float_trades(symbol="", book="b"):
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
 
-    #double-bubble.png
+    #
 
-    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/Christmas_vector_13.jpg', icon="",
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("symbol_float_trades"), icon="",
                            Table_name={ "Winning Floating Groups (Client Side)": "Hs1",
                                         "Losing Floating Groups (Client Side)": "Hs2",
                                         "Winning Floating Accounts (Client Side)": "H1",
@@ -1635,7 +1636,7 @@ def Country_float_trades(country=""):
 
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
-    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/leaves_2.png', icon="",
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("Country_float_trades"), icon="",
                            Table_name={ "Winning Floating Groups (Client Side)": "Hs1",
                                         "Losing Floating Groups (Client Side)": "Hs2",
                                         "Winning Floating Accounts (Client Side)": "H1",
@@ -2067,7 +2068,8 @@ def symbol_closed_trades(symbol="", book="b", days=-1):
 
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
-    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/double-bubble.png', icon="",
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("symbol_closed_trades"),
+                           icon="",
                            Table_name={ "Winning Accounts (Client Side)": "H3",
                                         "Losing Accounts (Client Side)": "H4",
                                         "Largest Lots Accounts (Client Side)": "H6",
@@ -2441,7 +2443,7 @@ def Client_Comment_Scalp():
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html",
-                           backgroud_Filename='css/runner_1.jpg',
+                           backgroud_Filename=background_pic("Client_Comment_Scalp"),
                            icon= "css/Globe.png", Table_name="Scalpers", \
                            title=title,
                            ajax_url=url_for('analysis.Client_Comment_Scalp_ajax', _external=True),
@@ -2981,8 +2983,11 @@ def Client_trades_form(Live="", Login=""):
 
 
     return render_template("General_Form.html",
-                           title=title, header=header,
-                           form=form, description=description)
+                           backgroud_Filename=background_pic("Client_trades_form"),
+                           title=title,
+                           header=header,
+                           form=form, no_backgroud_Cover=True,
+                           description=description)
 
 
 # To Have a look at the client's trades and details
@@ -3005,9 +3010,8 @@ def Client_trades_Analysis(Live="", Login=""):
     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
 
-    #strips_1.png
 
-    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/Christmas_vector_1.jpg', icon="",
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("Client_trades_Analysis"), icon="",
                            Table_name={"Live: {}, Login: {}".format(Live, Login):"V1",
                                        "Profit Calculation":"V2",
                                        "Net Position": "H1",
@@ -3220,60 +3224,3 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
                        "P2": average_trade_duration_fig}, cls=plotly.utils.PlotlyJSONEncoder)
 
 
-    # # Want to get results for the above query, to get the Floating PnL
-    # sql_query = text(sql_statement)
-    # raw_result = db.engine.execute(sql_query)  # Select From DB
-    # result_data = raw_result.fetchall()  # Return Result
-    #
-    # result_col = raw_result.keys()  # The column names
-    #
-    # # end = datetime.datetime.now()
-    # # print("\nSaving floating PnL tool: {}s\n".format((end - start).total_seconds()))
-    #
-    #
-    # return json.dumps([dict(zip(result_col, r)) for r in result_data])
-
-#
-#
-# # # To Query for all open trades by a particular symbol
-# # # Shows the closed trades for the day as well.
-#@analysis.route('/testing', methods=['GET', 'POST'])
-# @roles_required()
-# def yudi_test():
-#     message=cipher_text()   # Get the ciptertext and randomiv
-#     # Want to put these into a string for Yudi's URL
-#     url_params = "&".join(["{k}={d}".format(k=k,d=d) for k,d in message.items()])
-#     return redirect("http://202.88.105.3/yudi/test5.php?{}".format(url_params), code=307)
-#
-#
-# 
-# import hashlib
-# #pip install pycryptodome==3.4.3
-# from Crypto.Util.Padding import pad
-# from Crypto.Cipher import AES
-# import  base64
-# from Crypto import Random
-#
-# def cipher_text():
-#     # received redirection from php page with its url destination $_GET['url']
-#
-#     # check token if the user is login if not asked for user validation
-#
-#     # once validated pass create and encryption msg
-#     # -----------------------------------------SECRET SHARED VARIABLE-----------------------------
-#     key = "01c527b323c7f5393a1e61d74bbd781e83b48bc94836c58544e1560cf85f831b"
-#     key = hashlib.sha256((key).encode()).digest()  # ensure 32 bytes KEY
-#     word = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-#     #print("date and time =", word)
-#     # -----------------------------------------------------------------------------------------
-#     iv = Random.new().read(AES.block_size)
-#     # print("key :",key.hex(), len(key))#32 bytes
-#     #print("iv : ", iv.hex(), len(iv))
-#
-#     cipher_text = AES.new(key, AES.MODE_CBC, iv).encrypt(pad(word.encode(), 16))
-#     #print("encoded: ", base64.b64encode(cipher_text).decode('utf-8'), "size: ", len(cipher_text))
-#
-#     # send over to the $_GET['url']
-#     # $_POST['ciphertext']=base64.b64encode(cipher_text).decode('utf-8')
-#     # $_POST['randomiv']=iv.hex()
-#     return {'ciphertext':base64.b64encode(cipher_text).decode('utf-8'), 'randomiv':iv.hex()}

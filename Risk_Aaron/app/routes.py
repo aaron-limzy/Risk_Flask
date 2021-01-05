@@ -13,6 +13,8 @@ from app.table import Delete_Risk_ABook_Offset_Table
 from app.Plotly.routes import save_BGI_float_Ajax
 from app.Scrape_Futures import *
 
+from app.background import *
+
 from flask_table import create_table, Col
 
 import urllib3
@@ -317,7 +319,7 @@ def USOil_Ticks():
     description = Markup('Check ticks from 64.56 db.<br>Will need to check if USOil falls below 5.')
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Oil_Rig_2.jpg', Table_name="USOil Ticks", \
+    return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic( "USOil_Ticks" ), Table_name="USOil Ticks", \
                            title=title, ajax_url=url_for('main_app.USOil_Ticks_ajax', _external=True), header=header, setinterval=20,
                            description=description, replace_words=Markup(["Today"]))
 
@@ -435,7 +437,7 @@ def CFH_Soap_Position():
     header = "CFH_Live_Position"
     description = Markup("Getting CFH Live Position from CFH BO via CFH's SOAP API.<br>Results will be inserted/updated to aaron.cfh_live_trades.<br>Update time in table is GMT.")
 
-    return render_template("Standard_Single_Table.html", backgroud_Filename='css/notebook_pen.jpg', Table_name="CFH Live Position", \
+    return render_template("Standard_Single_Table.html", backgroud_Filename= background_pic("CFH_Soap_Position"), Table_name="CFH Live Position", \
                            title=title, ajax_url=url_for('main_app.CFH_Soap_Position_ajax'), header=header, setinterval=60*60*12,
                            description=description, replace_words=Markup(["Today"]))
 
@@ -549,7 +551,8 @@ def CFH_Soap_Symbol():
     header = "CFH Symbol Update"
     description = Markup("Getting CFH Symbol Details from CFH BO via CFH's SOAP API.<br>Results will be inserted/updated to aaron.cfh_symbol.<br>Update time in table is GMT.")
 
-    return render_template("Standard_Single_Table.html", backgroud_Filename='css/notebook_pen.jpg', Table_name="CFH Symbols", \
+    return render_template("Standard_Single_Table.html", backgroud_Filename=background_pic("CFH_Symbol_Update"),
+                           Table_name="CFH Symbols", \
                            title=title, ajax_url=url_for('main_app.CFH_Soap_Symbol_ajax'), header=header,
                            description=description, replace_words=Markup(["Today"]))
 
@@ -1719,7 +1722,8 @@ def try_string_to_datetime(sstr):
 @roles_required()
 def Changed_readonly():
     description = Markup("Showing Clients that has been changed to read only in the last 2 working days.")
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/Mac_Coffee.jpg', Table_name="Changed Read Only", \
+    return render_template("Webworker_Single_Table.html", backgroud_Filename= background_pic("Changed_readonly"),
+                           Table_name="Changed Read Only", \
                            title="Read Only Clients", ajax_url=url_for('main_app.Changed_readonly_ajax', _external=True),
                            description=description, replace_words=Markup(["Today"]))
 
@@ -1752,7 +1756,8 @@ def Changed_readonly_ajax():
 @roles_required()
 def Monitor_Risk_Tools():
     description = Markup("Monitor Risk tools.")
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/clock_left.jpg', Table_name="Risk tools", \
+    return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("Monitor_Risk_Tools"),
+                           Table_name="Risk tools", \
                            title="Risk Tools", ajax_url=url_for('main_app.Monitor_Risk_Tools_ajax', _external=True), setinterval=60,
                            description=description, replace_words=Markup(["Time Slow"]))
 
@@ -1868,7 +1873,8 @@ def Monitor_Risk_Tools_ajax():
 def Computer_Usage():
     description = Markup("Reflects the Server Usage.<br>")
     header = "Server Usage Details."
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/mac_keyboard_side.jpg', Table_name="Server Computer Usage", \
+    return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("Computer_Usage"),
+                           Table_name="Server Computer Usage", \
                            title="Server Usage", ajax_url=url_for('main_app.Computer_Usage_Ajax', _external=True), header=header, setinterval=30,
                            description=description, replace_words=Markup(["Today"]))
 
@@ -1896,7 +1902,8 @@ def Computer_Usage_Ajax():
 def BGI_Convert_Rate():
     description = Markup("BGI Convert Rate.<br>")
     header = "BGI_Convert Rate."
-    return render_template("Webworker_Single_Table.html", backgroud_Filename='css/autumn.jpg', Table_name="BGI Convert Rate", \
+    return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("BGI_Convert_Rate"),
+                           Table_name="BGI Convert Rate", \
                            title="BGI Convert Rate", ajax_url=url_for('main_app.BGI_Convert_Rate_Ajax', _external=True), header=header,
                            description=description, replace_words=Markup(["Today"]))
 
@@ -1995,7 +2002,7 @@ def Scrape_futures():
 
     # Template will take in an json dict and display a few tables, depending on how many is needed.
     return render_template("Webworker_1_table_Boderless_excel.html",
-                           backgroud_Filename='css/Color-Pencil.jpg', \
+                           backgroud_Filename=background_pic("Scrape_futures"), \
                            title="Futures Scrape",
                            header="Scrape Futures",
                            excel_file_name = "Futures.xlsx",
@@ -2084,7 +2091,7 @@ def Monitor_Account_Trades_Settings():
     return render_template("General_Form.html",
                            title=title, header=header,
                            form=form, description=description, table=table,
-                           backgroud_Filename='css/Glasses_3.jpeg')
+                           backgroud_Filename=background_pic("Monitor_Account_Trades_Settings"))
 
 
 def Delete_Monitor_Account_Table_fun():
@@ -2154,7 +2161,8 @@ def Monitor_Account_Trades():
     varibles = {"Monitor Account": Delete_Monitor_Account_Table_fun()}
 
 
-    return render_template("Webworker_Single_Table.html",  backgroud_Filename='css/Glasses_3.jpeg', Table_name="Account Trades", \
+    return render_template("Webworker_Single_Table.html",  backgroud_Filename=background_pic("Monitor_Account_Trades"),
+                           Table_name="Account Trades", \
                            title="Monitor Account Trades", ajax_url=url_for('main_app.Monitor_Account_Trades_Ajax', _external=True),
                            header=header, setinterval=10, varibles=varibles,
                            description=description, replace_words=Markup(["None"]))
@@ -2199,6 +2207,8 @@ def Monitor_Account_Trades_Ajax():
                                                    monitor_account_table=monitor_account_table,
                                                    monitor_account_trades_table=monitor_account_trades_table))
 
+    #print(" UNION ".join(sql_query_array))
+
     sql_query = text(" UNION ".join(sql_query_array))
 
     sql_record = query_SQL_return_record(sql_query)
@@ -2220,10 +2230,10 @@ def Monitor_Account_Trades_Ajax():
 
         #if not testing:    # If we are not testing, we will go ahead to append these into the table to stop the notifications.
         async_sql_insert(app=current_app._get_current_object(),
-                         header="""INSERT INTO {monitor_account_trades_table} (`live`,`account`, `ticket`, `trade_close_notify`, `tele_name`, `datetime`) VALUES """.format(monitor_account_trades_table=monitor_account_trades_table),
-                         values=list(all_open_trade_values.values) + list(all_close_trade_values.values),
-                         footer=" ON DUPLICATE KEY UPDATE `Trade_Close_Notify`=VALUES(`Trade_Close_Notify`), `datetime`=VALUES(`datetime`) ",
-                         sql_max_insert=20)
+                             header="""INSERT INTO {monitor_account_trades_table} (`live`,`account`, `ticket`, `trade_close_notify`, `tele_name`, `datetime`) VALUES """.format(monitor_account_trades_table=monitor_account_trades_table),
+                             values=list(all_open_trade_values.values) + list(all_close_trade_values.values),
+                             footer=" ON DUPLICATE KEY UPDATE `Trade_Close_Notify`=VALUES(`Trade_Close_Notify`), `datetime`=VALUES(`datetime`) ",
+                             sql_max_insert=20)
 
 
         # Want to create a live-Login column. To find unique and loop over.
@@ -2246,11 +2256,12 @@ def Monitor_Account_Trades_Ajax():
         user_trades_str_dict = user_consolidated_trades_to_str(user_trades)  \
             if len(user_trades) > 0 else {}  # Consolidated user trades in string
 
+        #print(user_trades_str_dict)
 
         direction = ["+", "-"]
         direction_full = ["BUY", "SELL"]
 
-        for tele_id in df_trades["TELE_ID"].unique():                        # Want to find out which TELEGRAM ID are unique.
+        for tele_id in df_trades["TELE_ID"].unique():       # Want to find out which TELEGRAM ID are unique.
 
             df_unique_teleID = df_trades[df_trades["TELE_ID"] == tele_id]
             df_open_trades = df_unique_teleID[df_unique_teleID["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]
@@ -2287,14 +2298,14 @@ def Monitor_Account_Trades_Ajax():
                         # for each unique live/login pair.
                         # We want to show the Closed Trades
                         close_trades_str += "{}\n".format(live_login)
-                        close_trades_str += "<pre>  {:^5}|{:^7}|{:^7}|{:^6}</pre>\n".format("LOT",
+                        close_trades_str += "<pre>  {:^5}|{:^7}|{:^7}|{:^6}</pre>\n".format("LOT", \
                                                                                           "SYMBOL", "CLOSE $", "Rev")
 
                     # Want to get the open trades into a line of string.
                     # Want to get the revenue. Revenue = PnL + Swaps
 
-                    close_trades = df_close_trades.apply(
-                        lambda x: "    {Direction:<1}{Lots:2.2f}|{Symbol:^9}|{Close_price:^7}|${Profit}".format(
+                    close_trades = df_close_trades.apply( \
+                        lambda x: "    {Direction:<1}{Lots:2.2f}|{Symbol:^9}|{Close_price:^7}|${Profit:.2f}".format(
                             Direction=direction[x["CMD"]], Lots=x["VOLUME"] / 100,
                             Symbol=x["SYMBOL"], Profit=float(x["PROFIT"]) + float(x["SWAPS"]),
                             Close_price=x["CLOSE_PRICE"]), axis=1)
@@ -2306,6 +2317,7 @@ def Monitor_Account_Trades_Ajax():
             # Want to consolidate total lots of the open trades
             consolidated_trades = "<b><u>Consolidated position</u></b>\n\n"
             for live_login in df_unique_teleID["LIVE-LOGIN"].unique():
+                #print("Looking for {}".format(live_login))
                 if live_login in user_trades_str_dict:
                     consolidated_trades += "{}".format(user_trades_str_dict[live_login])
                 else: # Not inside. No more open trades.
@@ -2313,11 +2325,13 @@ def Monitor_Account_Trades_Ajax():
 
 
             total_tele_mesage = "<b>Account Monitoring</b>\n\n" +  open_trades_str + close_trades_str + consolidated_trades +\
-                                "Tool that monitors newly open/closed trades for selected accounts. Positions are on client side."
+                                "Tool that monitors newly open/closed trades for selected accounts. Positions are on client side." + \
+                                "Revenue are based on client account currency."
 
             # Need to send the Tele Messages.
-            #async_Post_To_Telegram("1055969880:AAHcXIDWlQqrFGU319wYoldv9FJuu4srx_E", total_tele_mesage, ["486797751"], Parse_mode=telegram.ParseMode.HTML)
-            async_Post_To_Telegram(TELE_ID_MONITOR, total_tele_mesage, [tele_id],  Parse_mode=telegram.ParseMode.HTML)
+            async_Post_To_Telegram("1055969880:AAHcXIDWlQqrFGU319wYoldv9FJuu4srx_E", total_tele_mesage, ["486797751"], Parse_mode=telegram.ParseMode.HTML)
+            #Post_To_Telegram(TELE_ID_MONITOR, total_tele_mesage, [tele_id], Parse_mode=telegram.ParseMode.HTML)
+            #async_Post_To_Telegram(TELE_ID_MONITOR, total_tele_mesage, [tele_id],  Parse_mode=telegram.ParseMode.HTML)
             #TELE_ID_MONITOR
 
         # If we need to email Risk.
@@ -2425,14 +2439,19 @@ def user_consolidated_trades_to_str(trade_dict):
 
     df_user_trades = pd.DataFrame(trade_dict)
     #print(df_user_trades)
-    df_user_trades["LIVE-LOGIN"] = df_user_trades.apply(lambda x: "Live: {}, Login: {}".format(x["LIVE"], x["LOGIN"]), axis=1)
+    #df_user_trades["LIVE-LOGIN"] = df_user_trades.apply(lambda x: "Live: {}, Login: {}".format(x["LIVE"], x["LOGIN"]), axis=1)
+
+    df_user_trades["LIVE-LOGIN"] = df_user_trades.apply(lambda x: "Live: {}, Login: {}".format( \
+        x["LIVE"], live_login_analysis_url_External(Live=x["LIVE"], Login=x["LOGIN"])), \
+                                              axis=1)
+
     df_user_trades.sort_values(by="SYMBOL",inplace=True)    # Sort by Synbols
 
     return_dict = {}
     for live_login in list(df_user_trades["LIVE-LOGIN"].unique()):    # Loop thru each unique user
 
         df_specific_user = df_user_trades[df_user_trades["LIVE-LOGIN"] == live_login]
-        open_position = df_specific_user.apply(lambda x: "    {Symbol:<7} : {Lots:>2.2f} Lots at ${Revenue}".format(Symbol=x["SYMBOL"],
+        open_position = df_specific_user.apply(lambda x: "    {Symbol:<7} : {Lots:>2.2f} Lots. F.PnL: ${Revenue}".format(Symbol=x["SYMBOL"],
                                                                         Lots=x["LOTS"], Revenue=x["REVENUE"]), axis=1)
 
         login_trade_string = "{}\n".format(live_login) + "\n".join(open_position.values) + "\n\n"

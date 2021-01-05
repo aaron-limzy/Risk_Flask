@@ -36,7 +36,7 @@ def async_sql_insert(app, header="", values = [" "], footer = "", sql_max_insert
             # To construct the sql statement. header + values + footer.
             sql_trades_insert = header + " , ".join(values[i * sql_max_insert:(i + 1) * sql_max_insert]) + footer
             sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
-            print(sql_trades_insert)
+            #print(sql_trades_insert)
             sql_trades_insert = text(sql_trades_insert)  # To make it to SQL friendly text.
             raw_insert_result = db.engine.execute(sql_trades_insert)
     return
