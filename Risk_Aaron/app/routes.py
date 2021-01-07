@@ -2177,7 +2177,7 @@ def Monitor_Account_Trades_Ajax():
 
     # Get the Trades that are newly opened, or just closed.
     sql_query_array = []
-    testing = False # Set to True when Testing.
+    testing = True # Set to True when Testing.
 
     if testing :
         monitor_account_table = "aaron.`monitor_account_copy`"
@@ -2229,8 +2229,8 @@ def Monitor_Account_Trades_Ajax():
             Live=x["LIVE"], Login=x['LOGIN'], Ticket=x["TICKET"], Tele_name=x["TELE_NAME"]), axis=1)
 
 
-        #if not testing:    # If we are not testing, we will go ahead to append these into the table to stop the notifications.
-        async_sql_insert(app=current_app._get_current_object(),
+        if not testing:    # If we are not testing, we will go ahead to append these into the table to stop the notifications.
+            async_sql_insert(app=current_app._get_current_object(),
                              header="""INSERT INTO {monitor_account_trades_table} (`live`,`account`, `ticket`, `trade_close_notify`, `tele_name`, `datetime`) VALUES """.format(monitor_account_trades_table=monitor_account_trades_table),
                              values=list(all_open_trade_values.values) + list(all_close_trade_values.values),
                              footer=" ON DUPLICATE KEY UPDATE `Trade_Close_Notify`=VALUES(`Trade_Close_Notify`), `datetime`=VALUES(`datetime`) ",
@@ -2338,7 +2338,6 @@ def Monitor_Account_Trades_Ajax():
         # If we need to email Risk.
         df_Email_Risk = df_trades[df_trades["EMAIL_RISK"] == 1]
         if len(df_Email_Risk) > 0:
-
 
             # Want to get the User consolidated trades to be sent via email.
             if len(user_trades) > 0: # If there are still open position
