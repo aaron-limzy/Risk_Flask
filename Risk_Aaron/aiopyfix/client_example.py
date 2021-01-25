@@ -3,7 +3,7 @@ from enum import Enum
 import logging
 import random
 from aiopyfix.connection import ConnectionState, MessageDirection
-from aiopyfix.client_connection import FIXClient
+from client_connection import FIXClient
 from aiopyfix.engine import FIXEngine
 from aiopyfix.message import FIXMessage
 from sqlalchemy import create_engine, text
@@ -187,7 +187,7 @@ class Client(FIXEngine):
         fix_position_values = ["('{}', '{}', now()) ".format(k, d) for k, d in CFH_Position.items()]
         fix_position_footer = """ ON DUPLICATE KEY UPDATE position=VALUES(position), Updated_time=VALUES(Updated_time)"""
 
-        #print("{} {} {}".format(fix_position_header, " , ".join(fix_position_values), fix_position_footer))
+        print("{} {} {}".format(fix_position_header, " , ".join(fix_position_values), fix_position_footer))
         self.db.engine.execute(text("{} {} {}".format(fix_position_header, " , ".join(fix_position_values), fix_position_footer)))  # Insert into DB
 
         # Async update SQL to save runtime
