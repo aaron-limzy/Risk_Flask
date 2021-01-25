@@ -7,10 +7,10 @@ def background_pic(website):
     default = "css/Mac_Coffee.jpg"
     gb_return = {"save_BGI_float" :         "css/city_overview.jpg",
                  "BGI_Country_Float":       "css/World_Map.jpg",
-                 "BGI_Symbol_Float" :       "css/leaves.png",
-                 "symbol_float_trades" :    "css/double-bubble.png",
+                 #"BGI_Symbol_Float" :       "css/leaves.png",
+                 #"symbol_float_trades" :    "css/double-bubble.png",
                  "Country_float_trades" :   "css/leaves_2.png",
-                 "symbol_closed_trades" :   "css/double-bubble.png",
+                 #"symbol_closed_trades" :   "css/double-bubble.png",
                  "Client_Comment_Scalp" :   "css/runner_1.jpg",
                  "Client_trades_form" :     "css/cactus.jpg",
                  "Client_trades_Analysis" : "css/strips_1.png",
@@ -25,7 +25,11 @@ def background_pic(website):
                  "Scrape_futures" :                     "css/Color-Pencil.jpg",
                  "Monitor_Account_Trades_Settings" :    "css/Glasses_3.jpeg",
                  "Monitor_Account_Trades" :             "css/Glasses_3.jpeg",
-                 "ABook_Matching" :                     "css/tic-tac-toe.png",
+                 #"ABook_Matching" :                     "css/tic-tac-toe.png",
+                 "ABook_Matching" :                     "css/cny4.jpg",
+                 "BGI_Symbol_Float": "css/cny5.png",
+                 "symbol_closed_trades": "css/cny9.jpg",
+                 "symbol_float_trades": "css/cny9.jpg",
      }
 
     #background_pic("Monitor_Account_Trades")

@@ -3,7 +3,7 @@ from enum import Enum
 import logging
 import random
 from aiopyfix.connection import ConnectionState, MessageDirection
-from client_connection import FIXClient
+from aiopyfix.client_connection import FIXClient
 from aiopyfix.engine import FIXEngine
 from aiopyfix.message import FIXMessage
 from sqlalchemy import create_engine, text
