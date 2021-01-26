@@ -660,7 +660,10 @@ def get_broker_swaps(db=False):
     # Will need to .result() to get the returned data
     # Doing it this way would cause it to be threaded.
     # Wait when it's calling .result()
-    cfh_unsync = CFH_Soap_Swaps(divide_by_days=True, df_cfd_conversion=get_MT4_cfd_Digits(db), cfd_conversion=True)
+
+    #cfh_unsync = CFH_Soap_Swaps(divide_by_days=True, df_cfd_conversion=get_MT4_cfd_Digits(db), cfd_conversion=True)
+
+
     fxdd_unsync = get_swaps_fxdd()
     forexDotCom_unsync = get_swaps_forexDotCom()
     saxo_unsync = get_swaps_saxo()
@@ -697,11 +700,15 @@ def get_broker_swaps(db=False):
     df_fpmarkets = df_fpmarkets.rename(columns={"Long": "fpm Long", "Short": "fpm Short"})
 
 
+    #df_cfh = pd.DataFrame(cfh_unsync.result())
+    #df_cfh = df_cfh.rename(columns={"Long": "cfh Long", "Short": "cfh Short"})
 
-    df_cfh = pd.DataFrame(cfh_unsync.result())
-    df_cfh = df_cfh.rename(columns={"Long": "cfh Long", "Short": "cfh Short"})
+    #swaps_array = [df_fxdd, df_fdc, df_saxo, df_tradeview, df_global_prime,df_ebhforex, df_fpmarkets, df_cfh]
 
-    swaps_array = [df_fxdd, df_fdc, df_saxo, df_tradeview, df_global_prime,df_ebhforex, df_fpmarkets, df_cfh]
+
+    swaps_array = [df_fxdd, df_fdc, df_saxo, df_tradeview, df_global_prime,df_ebhforex, df_fpmarkets]
+
+
     df_return = pd.DataFrame([], columns=["Symbol"])
     how = "outer"
     for s in swaps_array:
