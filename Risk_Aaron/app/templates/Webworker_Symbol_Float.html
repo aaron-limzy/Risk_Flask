@@ -375,6 +375,21 @@
                 }
                 sString += '</tr>';
             }
+
+            // Want to write a table footer.
+            sString += "<tfoot align='right'><tr>";
+
+            for (var x in table_Data) {
+                //For table footer.
+                for (var xx in table_Data[x]) {
+                    sString += '<th>';
+                    sString += '</th>';
+                }
+                break;
+            }
+            sString += "</tr></tfoot>";
+
+
             sString += '</table>';
             return sString;
           }
@@ -484,6 +499,7 @@
       function refresh_datatable(div_id, data){
         //'#' + key + '_table'
         var table_id = div_id + "_table";
+        //alert(table_id);
         if ( $.fn.dataTable.isDataTable( table_id ) != true) { // If not a datatable
           var order = [];
           //console.log( table_id + ' is NOT data table' );
@@ -494,8 +510,52 @@
           var search = table.search()
           //console.log( 'Column '+order+' is the ordering column' );
         }
+
         $(div_id).html(data);
         table = $( table_id ).DataTable( {
+            "footerCallback": function (row, data, start, end, display) {
+              var api = this.api(), data;
+
+
+              var numberWithCommas = function(x) {
+                return x.toLocaleString(undefined, {maximumFractionDigits:4})
+              }
+
+
+              // converting to interger to find total
+               var intVal = function ( i ) {
+                if (typeof i === 'string'){
+                  //sstr = i.replace( /[^\d\.|-]*/g, '');
+
+                  // Prob can be a better regax if there was enough time to rewrite
+                  sstr = i.replace(/(<([^>]+)>)/gi, "").replace( /[^\d\.|-]*/g, '');
+                  return isNaN(Number(sstr)) ?
+                  0 : Number(sstr);
+                }else {
+                  return isNaN(Number(i)) ? 0 : Number(i);
+                }
+              };
+              //alert(intVal("77.81"));
+
+               nb_cols = api.columns().nodes().length;
+
+              // Want to write to the footer of the table as a summation
+              $( api.column( 0 ).footer() ).html("Total");
+               var j = 1; // Want to ignore the first column.
+
+               while(j < nb_cols){
+       					var pageTotal = api.column( j, { page: 'current'} )
+                       .data().reduce( function (a, b) {
+                           //alert("a: " + a + " : " + intVal(a) + "b: " + b + " : "  + intVal(b));
+                           return intVal(a) + intVal(b);
+                       }, 0 );
+                 // Update footer
+                 $( api.column( j ).footer() ).html(numberWithCommas(Number(pageTotal.toFixed(2))));
+       					j++;
+       				}
+
+
+            } ,
         paging: false,
         searching: true,
         "aaSorting": order, // Don't want to sort initially
