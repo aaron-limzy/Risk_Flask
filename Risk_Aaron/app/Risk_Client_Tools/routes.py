@@ -36,6 +36,29 @@ from app.Risk_Client_Tools.forms import *
 Risk_Client_Tools_bp = Blueprint('Risk_Client_Tools_bp', __name__)
 
 
+# Want to log the use of the page.
+@Risk_Client_Tools_bp.before_request
+def before_request():
+
+    # Don't want to record any ajax calls.
+    endpoint = "{}".format(request.endpoint)
+    if endpoint.lower().find("ajax") >=0:
+        return
+    else:
+
+        # check if the user is logged.
+        if not current_user.is_authenticated:
+            return
+        raw_sql = "INSERT INTO aaron.Aaron_Page_History (login, IP, full_path, datetime) VALUES ('{login}', '{IP}', '{full_path}', now()) ON DUPLICATE KEY UPDATE datetime=now()"
+        sql_statement = raw_sql.format(login=current_user.id,
+                                       IP=request.remote_addr,
+                                       full_path=request.full_path)
+
+        async_sql_insert_raw(app=current_app._get_current_object(),
+                             sql_insert=sql_statement)
+
+
+
 # Want to check and close off account/trades.
 @Risk_Client_Tools_bp.route('/Risk_auto_cut', methods=['GET', 'POST'])
 @roles_required()

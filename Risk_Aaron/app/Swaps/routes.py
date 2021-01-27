@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, Markup, url_for, request, current_
 from flask_login import current_user, login_user, logout_user, login_required
 
 from Aaron_Lib import *
+from Helper_Flask_Lib import *
 from app.Swaps.A_Utils import *
 from sqlalchemy import text
 from app.extensions import db, excel
@@ -29,6 +30,30 @@ swaps = Blueprint('swaps', __name__)
 
 
     #print("Before each request...")
+
+
+# Want to log the use of the page.
+@swaps.before_request
+def before_request():
+
+    # Don't want to record any ajax calls.
+    endpoint = "{}".format(request.endpoint)
+    if endpoint.lower().find("ajax") >=0:
+        return
+    else:
+
+        # check if the user is logged.
+        if not current_user.is_authenticated:
+            return
+        raw_sql = "INSERT INTO aaron.Aaron_Page_History (login, IP, full_path, datetime) VALUES ('{login}', '{IP}', '{full_path}', now()) ON DUPLICATE KEY UPDATE datetime=now()"
+        sql_statement = raw_sql.format(login=current_user.id,
+                                       IP=request.remote_addr,
+                                       full_path=request.full_path)
+
+        async_sql_insert_raw(app=current_app._get_current_object(),
+                             sql_insert=sql_statement)
+
+
 
 @swaps.route('/Swaps/BGI_Swaps')
 @roles_required()

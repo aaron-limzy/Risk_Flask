@@ -92,6 +92,31 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning) # To Display
 main_app = Blueprint('main_app', __name__)
 
 
+@main_app.before_request
+def before_request():
+
+    # Don't want to record any ajax calls.
+    endpoint = "{}".format(request.endpoint)
+    if endpoint.lower().find("ajax") >=0 or \
+            endpoint in ["main_app.ABook_Matching_Position_Vol",
+                                 "main_app.LP_Margin_UpdateTime",
+                                 "main_app.ABook_LP_Details"] :
+        return
+    else:
+
+        # check if the user is logged.
+        if not current_user.is_authenticated:
+            return
+        raw_sql = "INSERT INTO aaron.Aaron_Page_History (login, IP, full_path, datetime) VALUES ('{login}', '{IP}', '{full_path}', now()) ON DUPLICATE KEY UPDATE datetime=now()"
+        sql_statement = raw_sql.format(login=current_user.id,
+                                       IP=request.remote_addr,
+                                       full_path=request.full_path)
+
+        async_sql_insert_raw(app=current_app._get_current_object(),
+                             sql_insert=sql_statement)
+
+
+
 @main_app.route('/')
 @main_app.route('/index')        # Indexpage. To show the generic page.
 @login_required

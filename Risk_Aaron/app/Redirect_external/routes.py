@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, Markup, url_for, request, session, current_app, flash, redirect
-
+from flask import Blueprint, render_template, Markup, url_for, request, session, current_app, flash, redirect, current_app
+from flask_login import current_user, login_user, logout_user, login_required
 from app.decorators import roles_required
 
 from Helper_Flask_Lib import *
@@ -13,6 +13,28 @@ import  base64
 from Crypto import Random
 
 re_direct = Blueprint('re_direct', __name__)
+
+
+
+@re_direct.before_request
+def before_request():
+
+    # Don't want to record any ajax calls.
+    endpoint = "{}".format(request.endpoint)
+    if endpoint.lower().find("ajax") >=0:
+        return
+    else:
+
+        # check if the user is logged.
+        if not current_user.is_authenticated:
+            return
+        raw_sql = "INSERT INTO aaron.Aaron_Page_History (login, IP, full_path, datetime) VALUES ('{login}', '{IP}', '{full_path}', now()) ON DUPLICATE KEY UPDATE datetime=now()"
+        sql_statement = raw_sql.format(login=current_user.id,
+                                       IP=request.remote_addr,
+                                       full_path=request.full_path)
+
+        async_sql_insert_raw(app=current_app._get_current_object(),
+                             sql_insert=sql_statement)
 
 
 # # # To Query for all open trades by a particular symbol

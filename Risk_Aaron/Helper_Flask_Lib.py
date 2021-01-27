@@ -45,7 +45,7 @@ def async_sql_insert(app, header="", values = [" "], footer = "", sql_max_insert
 @async_fun
 def async_sql_insert_raw(app, sql_insert):
 
-    print("Using async_sql_insert")
+    #print("Using async_sql_insert")
 
     with app.app_context():  # Using current_app._get_current_object()
         # To make it to SQL friendly text.

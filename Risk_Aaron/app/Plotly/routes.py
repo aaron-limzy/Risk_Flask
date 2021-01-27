@@ -136,16 +136,31 @@ def before_request():
     if endpoint.lower().find("ajax") >=0:
         return
     else:
-        print("--------- Before request ------")
-        print(": {}".format(request))
-        print("request access_route: {}".format(request.access_route))
-        print("request base_url: {}".format(request.base_url))
-        print("request endpoint: {}".format(request.endpoint))
-        print("request full_path: {}".format(request.full_path))
-        print("request host: {}".format(request.host))
-        print("request host_url: {}".format(request.host_url))
-        print("request remote_addr: {}".format(request.remote_addr))
 
+        # check if the user is logged.
+        if not current_user.is_authenticated:
+            return
+
+        # IP Address of the client/request-er.
+        # remote_addr = request.remote_addr
+        # endpoint = request.endpoint
+        raw_sql = "INSERT INTO aaron.Aaron_Page_History (login, IP, full_path, datetime) VALUES ('{login}', '{IP}', '{full_path}', now()) ON DUPLICATE KEY UPDATE datetime=now()"
+        sql_statement = raw_sql.format(login=current_user.id,
+                                       IP=request.remote_addr,
+                                       full_path=request.full_path)
+        # #
+        # print("--------- Before request ------")
+        # print(": {}".format(request))
+        # print("request access_route: {}".format(request.access_route))
+        # print("request base_url: {}".format(request.base_url))
+        # print("request endpoint: {}".format(request.endpoint))
+        # print("request full_path: {}".format(request.full_path))
+        # print("request host: {}".format(request.host))
+        # print("request host_url: {}".format(request.host_url))
+        # print("request remote_addr: {}".format(request.remote_addr))
+        # print(sql_statement)
+
+        async_sql_insert_raw(app=current_app._get_current_object(), sql_insert=sql_statement)
 
 
 @analysis.route('/Save_BGI_Float', methods=['GET', 'POST'])
