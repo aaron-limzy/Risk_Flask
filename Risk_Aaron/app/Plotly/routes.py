@@ -3094,13 +3094,12 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
 
     #print(login_details)
 
-    # Color the background for Balance to highlight it.
-    #login_details[0]["BALANCE"] = "<span style = 'background-color:#4af076;' >{}</span> ".format(login_details[0]["BALANCE"])
-    login_details[0]["BALANCE"] = profit_red_green(login_details[0]["BALANCE"])
     if len(login_details) <= 0:   # There are no information.
         return json.dumps([{"Result":"Error in Login or Live"}])
 
-
+    # Color the background for Balance to highlight it.
+    # login_details[0]["BALANCE"] = "<span style = 'background-color:#4af076;' >{}</span> ".format(login_details[0]["BALANCE"])
+    login_details[0]["BALANCE"] = profit_red_green(login_details[0]["BALANCE"])
 
     # # Write the SQL Statement and Update to disable the Account monitoring.
     # # Want the CLOSE TRADES limited to 100

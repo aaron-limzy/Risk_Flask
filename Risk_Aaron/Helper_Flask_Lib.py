@@ -682,11 +682,11 @@ def Average_trade_time_per_symbol(df_data):
 # Gives the duration in seconds
 def trade_duration_bin(duration):
     # Want to do 1 min, 2 mins, 3 mins, 5 mins, 10 mins and an hour
-    bin_in_seconds = {60: "<= 1 min",
-                      120: "1-2 mins",
-                      180 : "2-3 mins",
-                      300: "3-5 mins",
-                      600:"5 mins - 10 Mins",
+    bin_in_seconds = {60: "<span style='background-color:#fc6547'><= 1 min</span>",
+                      120: "<span style='background-color:#fc9547'>1-2 mins</span>",
+                      180 : "<span style='background-color:#fcba47'>2-3 mins</span>",
+                      300: "<span style='background-color:#fcd847'>3-5 mins</span>",
+                      600:"<span style='background-color:#fcf947'>5 mins - 10 Mins</span>",
                       3600 : "10 mins - 1 hour",
                       7200 : "1 hour - 2 hours",
                       14400: "2 hours - 4 hours",
