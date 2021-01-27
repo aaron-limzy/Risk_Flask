@@ -33,6 +33,7 @@ from flask_table import create_table, Col
 from Helper_Flask_Lib import *
 from app.Risk_Client_Tools.table import *
 from app.Risk_Client_Tools.forms import *
+from app.Risk_Tools_Config import email_flag_fun # Global Email flag to switch emails on or off.
 Risk_Client_Tools_bp = Blueprint('Risk_Client_Tools_bp', __name__)
 
 
@@ -245,17 +246,17 @@ def risk_auto_cut_ajax(update_tool_time=1):
 
         # Want to set to test, if it's just test accounts.
         # If it's just TEST account. Send to just Aaron and TW.
-
         email_list = EMAIL_LIST_RISKTW if all([d["GROUP"].lower().find("test") >= 0 for d in To_SQL]) else EMAIL_LIST_BGI
+        email_flag, email_recipients = email_flag_fun("risk_autocut")
 
-
-        async_send_email(To_recipients=email_list, cc_recipients=[],
-                     Subject="AutoCut: Equity Below Credit.",
-                     HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below credit. \
-                                <br><br> {table_data_html} This is done to prevent client from trading on credit. \
-                               <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
-                         Email_Header = Email_Header, table_data_html = table_data_html, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                         Email_Footer=Email_Footer), Attachment_Name=[])
+        if email_flag:
+            async_send_email(To_recipients=email_list, cc_recipients=[],
+                         Subject="AutoCut: Equity Below Credit.",
+                         HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below credit. \
+                                    <br><br> {table_data_html} This is done to prevent client from trading on credit. \
+                                   <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
+                             Email_Header = Email_Header, table_data_html = table_data_html, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                             Email_Footer=Email_Footer), Attachment_Name=[])
 
 
 

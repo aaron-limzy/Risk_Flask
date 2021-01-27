@@ -22,6 +22,8 @@ from app.Plotly.tableau_url import *
 from app.background import *
 from app.tableau_embed import *
 
+from app.Risk_Tools_Config import email_flag_fun
+
 import emoji
 import flag
 
@@ -2547,15 +2549,20 @@ def Client_Comment_Scalp_ajax():
 
         # async_Post_To_Telegram(AARON_BOT, '<a href="http://www.google.com/">inline URL</a> | Together with something else\nHello',
         #                        TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+
+
+        # Will check with config file if email flag is True or False
+        email_flag, email_recipients = email_flag_fun("scalping_comment")
+        if email_flag:
         #EMAIL_LIST_BGI
-        async_send_email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[],
-                         Subject="Live 1 Bonus Scalpers",
-                         HTML_Text="""{Email_Header}Hi,<br><br>Clients from Live 1 are hitting {sym}<br>{table}<br>
-                               <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
-                             Email_Header=Email_Header, sym=" ,".join(list(df["SYMBOL"].unique())),
-                             table = Array_To_HTML_Table(Table_Header = col_needed,Table_Data=data_list),
-                             datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                             Email_Footer=Email_Footer), Attachment_Name=[])
+            async_send_email(To_recipients=email_recipients, cc_recipients=[],
+                             Subject="Live 1 Bonus Scalpers",
+                             HTML_Text="""{Email_Header}Hi,<br><br>Clients from Live 1 are hitting {sym}<br>{table}<br>
+                                   <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
+                                 Email_Header=Email_Header, sym=" ,".join(list(df["SYMBOL"].unique())),
+                                 table = Array_To_HTML_Table(Table_Header = col_needed,Table_Data=data_list),
+                                 datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                                 Email_Footer=Email_Footer), Attachment_Name=[])
 
 
 

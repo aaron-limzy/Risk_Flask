@@ -17,6 +17,8 @@ from app.decorators import roles_required
 from app.Notifications.forms import *
 from app.Notifications.table import *
 
+
+from ..Risk_Tools_Config import email_flag_fun
 import emoji
 import flag
 
@@ -358,26 +360,52 @@ def Large_volume_Login_Ajax(update_tool_time=1):
     # Those that we need to send alerts for.
     to_alert = df[df["NEXT LEVEL"] > df["RECORDED LOTS"]]
     if len(to_alert) > 0:
-        to_alert["LOGIN_URL"] = to_alert.apply(lambda x: live_login_analysis_url_External(Live=x["LIVE"], Login=x["LOGIN"]), axis=1)
 
-        telegram_string = "<b>Large Volume Client Alert</b>\n\n"
-        telegram_string += "<b>Live | Login | Lots | C PnL | F.PnL | Rebate | Group</b>\n"
-        telegram_string += "\n".join([" | ".join(["{}".format(x) for x in l]) for l in to_alert[["LIVE", "LOGIN_URL", "TOTAL LOTS", "CLOSED PROFIT", "FLOATING PROFIT", "REBATE", "COUNTRY"]].values.tolist()])
-        telegram_string += "\n\nDetails are on Client side."
-        print(telegram_string)
-
-        async_Post_To_Telegram(TELE_ID_MONITOR, telegram_string, TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
-        to_alert["DATETIME"] = "NOW()"
+        to_alert["DATETIME"] = "NOW()"  # Force it to be the datetime that MYSQL will insert.
+        # Write to SQL first. After this, the LOGIN will change to LOGIN URL
         to_sql_values = ["({})".format(",".join(["{}".format(x) for x in l])) for l in to_alert[["LIVE", "LOGIN", "NEXT LEVEL", "DATETIME"]].values.tolist()]
 
         sql_insert = """INSERT INTO  aaron.`Large_Volume_Login` (`Live`, `Login`, `Lots`,  `datetime`) VALUES
            {} ON DUPLICATE KEY UPDATE `lots`=VALUES(`lots`) """.format(" , ".join(to_sql_values))
         sql_insert = sql_insert.replace("\t", "").replace("\n", "")
-
         #print(sql_insert)
-        db.engine.execute(text(sql_insert))  # Insert into DB
-        #flash("Live: {live}, Login: {login} Symbol: {Symbol} has been added to aaron.`client_zero_position`.".format(live=Live, login=Login, Symbol=Symbol))
 
+        #
+        db.engine.execute(text(sql_insert))  # Insert into DB
+
+
+
+        to_alert["LOGIN"] = to_alert.apply(lambda x: live_login_analysis_url_External(Live=x["LIVE"], Login=x["LOGIN"]), axis=1)
+
+        telegram_string = "<b>Large Volume Client Alert</b>\n\n"
+        telegram_string += "<b>Live | Login | Lots | C PnL | F.PnL | Rebate | Group</b>\n"
+        telegram_string += "\n".join([" | ".join(["{}".format(x) for x in l]) for l in to_alert[["LIVE", "LOGIN", "TOTAL LOTS", "CLOSED PROFIT", "FLOATING PROFIT", "REBATE", "COUNTRY"]].values.tolist()])
+        telegram_string += "\n\nDetails are on Client side."
+        #print(telegram_string)
+
+        async_Post_To_Telegram(TELE_ID_MONITOR, telegram_string, TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+
+
+        #
+
+        # If we wanna send out the alert as email as well.
+        # email alert flag set in global file, in risk_tool_config
+        email_flag, email_recipients = email_flag_fun("large_volume_alert")
+        if email_flag_fun("large_volume_alert"):
+            to_alert["CLOSED PROFIT"] =  to_alert["CLOSED PROFIT"].apply(profit_red_green)
+            to_alert["FLOATING PROFIT"] = to_alert["FLOATING PROFIT"].apply(profit_red_green)
+            data = to_alert[["LIVE", "LOGIN", "TOTAL LOTS", "FLOATING LOTS", "CLOSED PROFIT", "FLOATING PROFIT", "REBATE", "GROUP", "COUNTRY"]].to_dict("records")
+            html_table = Array_To_HTML_Table( list(data[0].keys()), [list(data[i].values()) for i in range(len(data))], [])
+            email_str = "Hi,<br><br>Kindly find clients that has large volume trades in the table below.<br>Details are on client side.<br><br>"
+            email_str += html_table
+            email_str += "This Email was generated at: SGT {}.<br><br>Thanks,<br>Aaron".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            async_send_email(To_recipients=email_recipients, cc_recipients=[], Subject="Large Volume Traders",
+                             HTML_Text=Email_Header + email_str + Email_Footer, Attachment_Name=[])
+
+        # email_html_body += "This Email was generated at: SGT {}.<br><br>Thanks,<br>Aaron".format(
+        #datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+        #flash("Live: {live}, Login: {login} Symbol: {Symbol} has been added to aaron.`client_zero_position`.".format(live=Live, login=Login, Symbol=Symbol))
         #print(to_sql_values)
 
     # Want to add the URL for Logins
