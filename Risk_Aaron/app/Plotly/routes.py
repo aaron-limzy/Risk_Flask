@@ -128,6 +128,26 @@ def get_country_df(sql_statement):
 
 
 
+@analysis.before_request
+def before_request():
+
+    # Don't want to record any ajax calls.
+    endpoint = "{}".format(request.endpoint)
+    if endpoint.lower().find("ajax") >=0:
+        return
+    else:
+        print("--------- Before request ------")
+        print(": {}".format(request))
+        print("request access_route: {}".format(request.access_route))
+        print("request base_url: {}".format(request.base_url))
+        print("request endpoint: {}".format(request.endpoint))
+        print("request full_path: {}".format(request.full_path))
+        print("request host: {}".format(request.host))
+        print("request host_url: {}".format(request.host_url))
+        print("request remote_addr: {}".format(request.remote_addr))
+
+
+
 @analysis.route('/Save_BGI_Float', methods=['GET', 'POST'])
 @roles_required()
 def save_BGI_float():
