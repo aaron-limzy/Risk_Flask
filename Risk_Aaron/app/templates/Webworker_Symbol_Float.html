@@ -377,7 +377,7 @@
             }
 
             // Want to write a table footer.
-            sString += "<tfoot align='right'><tr>";
+            sString += "<tfoot><tr>";
 
             for (var x in table_Data) {
                 //For table footer.
@@ -543,16 +543,56 @@
               $( api.column( 0 ).footer() ).html("Total");
                var j = 1; // Want to ignore the first column.
 
-               while(j < nb_cols){
+              // The columns that would make sense to sum up.
+              var sum_col = ["lots", "volume", "revenue"];
+
+
+
+              while(j < nb_cols){
+
+                col_name = api.column(j).header().textContent;
+                col_name = col_name.toLowerCase();
+                var string_found = 0; // Init the flag to 0
+
+                // Want to check if it makes sense to do the sum.
+                for (var i = 0; i < sum_col.length; i++) {
+                    if (col_name.search(sum_col[i]) >= 0){  // Loop thru to find. If found, break.
+                      string_found = i+1;// Raise the flag
+                      break;
+                  }
+                }
+                //console.log(string_found);
+                //console.log(col_name);
+
+              if (string_found == 0){  // When it dosn't make sense to sum.
+                // Update footer
+                 $( api.column( j ).footer() ).html("-");
+              }else{  // When we want to sum it up.
        					var pageTotal = api.column( j, { page: 'current'} )
                        .data().reduce( function (a, b) {
                            //alert("a: " + a + " : " + intVal(a) + "b: " + b + " : "  + intVal(b));
                            return intVal(a) + intVal(b);
                        }, 0 );
+
+                // Want to color the text if it's +ve or -ve
+                var span_tag_start = "", span_tag_end = "";
+                if (string_found >= 3) {  // Revenue. Will want to color it.
+                  if (pageTotal > 0){ // +ve
+                    span_tag_start = '<span style="color:green">'
+                      span_tag_end = '</span>'
+                  }else if(pageTotal < 0){
+                    span_tag_start = '<span style="color:red">'
+                      span_tag_end = '</span>'
+                  }
+                }
+                var cell_text = span_tag_start + numberWithCommas(Number(pageTotal.toFixed(2))) + span_tag_end;
+                       
                  // Update footer
-                 $( api.column( j ).footer() ).html(numberWithCommas(Number(pageTotal.toFixed(2))));
-       					j++;
+                 $( api.column( j ).footer() ).html(cell_text);
+
        				}
+              	j++;
+            }
 
 
             } ,

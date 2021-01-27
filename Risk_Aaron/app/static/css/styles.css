@@ -61,9 +61,16 @@ table.basic_table th {
   padding: 8px;
 }
 
+table.basic_table tfoot th{
+  background-color: #dedcdc;
+  color: black;
+}
+
 table.basic_table tr:hover {
   background-color: #f9e3a7;
 }
+
+
 
 caption {
   padding: .75rem;
