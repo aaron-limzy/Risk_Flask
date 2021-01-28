@@ -2534,7 +2534,7 @@ def Client_Comment_Scalp_ajax():
         col_needed = ["LOGIN", "SYMBOL", "COMMENT", "PROFIT", "REBATE"]
 
         df2 = df.copy() # Make a Copy.
-        df2["LOGIN"] = df2["LOGIN"].apply(lambda x: live_login_analysis_url(Live=1, Login=x))
+        df2["LOGIN"] = df2["LOGIN"].apply(lambda x: live_login_analysis_url_External(Live=1, Login=x))
         data_dict  = df2[col_needed].to_dict('r')
         data_list = [list(d.values()) for d in data_dict]   # Get the values
         data_list_2 = [ " | ".join(["{}".format(str(e)) for e in d]) for d in data_list]    # convert to str, add '
@@ -2579,17 +2579,7 @@ def Client_Comment_Scalp_ajax():
                         values = data_to_insert,
                         footer = " ON DUPLICATE KEY UPDATE SYMBOL=VALUES(SYMBOL)")
 
-
-
-        #print(df)
-
-
-
     return json.dumps(return_val, cls=plotly.utils.PlotlyJSONEncoder)
-    #return json.dumps([return_val], cls=plotly.utils.PlotlyJSONEncoder)
-
-
-
 
 
 def plot_open_position_net(df, chart_title):
@@ -3168,9 +3158,11 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     Sum_details[0]["CLIENT PROFIT"] =  '<span style="color:{Color}">${value:,.2f}</span>'.format( \
                                                             Color=color_negative_red(Sum_details[0]["CLIENT PROFIT"] ), \
                                                             value=Sum_details[0]["CLIENT PROFIT"] )
-    Sum_details[0]["PER LOT AVERAGE"] =  '<span style="color:{Color}">${value:,.2f}</span>'.format( \
+    if isfloat(Sum_details[0]["PER LOT AVERAGE"]):
+        Sum_details[0]["PER LOT AVERAGE"] =  '<span style="color:{Color}">${value:,.2f}</span>'.format( \
                                                             Color=color_negative_red(Sum_details[0]["PER LOT AVERAGE"] ), \
                                                             value=Sum_details[0]["PER LOT AVERAGE"] )
+
 
 
 
