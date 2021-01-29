@@ -2262,6 +2262,7 @@ def Monitor_Account_Trades_Ajax():
                              sql_max_insert=20)
 
 
+
         # Want to create a live-Login column. To find unique and loop over.
 
         # For Display sake.
@@ -2350,7 +2351,7 @@ def Monitor_Account_Trades_Ajax():
                     consolidated_trades += "{}\n    No open position.\n\n".format(live_login)
 
 
-            total_tele_mesage = "<b>Account Monitoring</b>\n\n" +  open_trades_str + close_trades_str + consolidated_trades +\
+            total_tele_mesage = "<b>TESTING</b>" + "<b>TESTING</b><b>Account Monitoring</b>\n\n" +  open_trades_str + close_trades_str + consolidated_trades +\
                                 "Tool that monitors newly open/closed trades for selected accounts. Positions are on client side." + \
                                 "Revenue are based on client account currency."
 
@@ -2358,7 +2359,10 @@ def Monitor_Account_Trades_Ajax():
             #print("{} : {} ".format(,total_tele_mesage))
             #async_Post_To_Telegram("1055969880:AAHcXIDWlQqrFGU319wYoldv9FJuu4srx_E", total_tele_mesage, ["486797751"], Parse_mode=telegram.ParseMode.HTML)
             #Post_To_Telegram(TELE_ID_MONITOR, total_tele_mesage, [tele_id], Parse_mode=telegram.ParseMode.HTML)
-            async_Post_To_Telegram(TELE_ID_MONITOR, total_tele_mesage, [tele_id],  Parse_mode=telegram.ParseMode.HTML)
+            if not testing:
+                async_Post_To_Telegram(TELE_ID_MONITOR, total_tele_mesage, [tele_id],  Parse_mode=telegram.ParseMode.HTML)
+            else:
+                print("{} to {}".format(total_tele_mesage, tele_id))
             #TELE_ID_MONITOR
 
         # If we need to email Risk.
