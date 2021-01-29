@@ -2352,7 +2352,7 @@ def Monitor_Account_Trades_Ajax():
 
 
             total_tele_mesage = "<b>TESTING</b>\n\n" + "<b>Account Monitoring</b>\n\n" +  open_trades_str + close_trades_str + consolidated_trades +\
-                                "Tool that monitors newly open/closed trades for selected accounts. Positions are on client side." + \
+                                "Tool that monitors newly open/closed trades for selected accounts. Positions are on client side. " + \
                                 "Revenue are based on client account currency."
 
             # Need to send the Tele Messages.
