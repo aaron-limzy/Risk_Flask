@@ -2351,7 +2351,7 @@ def Monitor_Account_Trades_Ajax():
                     consolidated_trades += "{}\n    No open position.\n\n".format(live_login)
 
 
-            total_tele_mesage = "<b>TESTING</b>" + "<b>TESTING</b><b>Account Monitoring</b>\n\n" +  open_trades_str + close_trades_str + consolidated_trades +\
+            total_tele_mesage = "<b>TESTING</b>\n\n" + "<b>TESTING</b><b>Account Monitoring</b>\n\n" +  open_trades_str + close_trades_str + consolidated_trades +\
                                 "Tool that monitors newly open/closed trades for selected accounts. Positions are on client side." + \
                                 "Revenue are based on client account currency."
 
