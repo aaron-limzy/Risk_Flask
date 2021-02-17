@@ -547,6 +547,157 @@ def symbol_all_open_trades(app, ServerTimeDiff_Query, symbol="", book="B", entit
     return unsync_query_SQL_return_record(sql_query, app)
 
 
+
+
+
+
+@unsync
+# # Get all open trades of a particular symbol.
+# # Get it converted as well.
+# # Can choose A Book or B Book.
+def group_symbol_all_open_trades(app, ServerTimeDiff_Query, group):
+    # symbol="XAUUSD"
+
+
+    group_condition = " AND mt4_trades.`group` like '{}'".format(group)
+
+
+    sql_statement = """(SELECT 'live1' AS LIVE,		
+		COUNTRY,		LOGIN,		TICKET,		A1.SYMBOL,		CMD,		LOTS,
+		OPEN_PRICE,		OPEN_TIME,		CLOSE_PRICE,		CLOSE_TIME,		SWAPS,		PROFIT,		`GROUP`, COALESCE(REBATE,0) * LOTS as `REBATE`, CONVERTED_REVENUE, BOOK
+        FROM (
+
+        SELECT 'live1' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`, BOOK,
+           ROUND(CASE 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
+        FROM live1.mt4_trades, live5.group_table
+        WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00'  
+                OR mt4_trades.CLOSE_TIME >= (CASE WHEN 
+                    HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') 
+                    ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live1' 
+            AND LENGTH(mt4_trades.LOGIN)>4
+            {group_condition} ) as A1 LEFT JOIN  live1.symbol_rebate as B1 ON A1.SYMBOL = B1.SYMBOL)
+    UNION 
+        (SELECT 'live2' AS LIVE,		
+		COUNTRY,		LOGIN,		TICKET,		A2.SYMBOL,		CMD,		LOTS,
+		OPEN_PRICE,		OPEN_TIME,		CLOSE_PRICE,		CLOSE_TIME,		SWAPS,		PROFIT,		`GROUP`, COALESCE(REBATE,0) * LOTS as `REBATE`, CONVERTED_REVENUE, BOOK
+        FROM 
+        (SELECT 'live2' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,BOOK,
+            ROUND(CASE 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
+            FROM live2.mt4_trades,live5.group_table 
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' 
+                or mt4_trades.CLOSE_TIME >= (CASE WHEN 
+                    HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') 
+                    ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live2' 
+            AND LENGTH(mt4_trades.LOGIN)>4
+            {group_condition}) as A2 LEFT JOIN  live2.symbol_rebate as B2 ON A2.SYMBOL = B2.SYMBOL)
+    UNION (
+    SELECT 'live3' AS LIVE,		
+		COUNTRY,		LOGIN,		TICKET,		A3.SYMBOL,		CMD,		LOTS,
+		OPEN_PRICE,		OPEN_TIME,		CLOSE_PRICE,		CLOSE_TIME,		SWAPS,		PROFIT,		`GROUP`, COALESCE(REBATE,0) * LOTS as `REBATE`, CONVERTED_REVENUE, BOOK
+    FROM 
+        (SELECT 'live3' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,BOOK,
+            ROUND(CASE 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
+            FROM live3.mt4_trades,live5.group_table 
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' 
+                or mt4_trades.CLOSE_TIME >= (CASE WHEN 
+                    HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') 
+                    ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END))
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live3' 
+            AND LENGTH(mt4_trades.LOGIN)>4 
+            AND mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM live3.cambodia_exclude) 
+            {group_condition}) as A3 LEFT JOIN  live3.symbol_rebate as B3 ON A3.SYMBOL = B3.SYMBOL)
+    UNION
+        (SELECT 'live5' AS LIVE,		
+		COUNTRY,		LOGIN,		TICKET,		A5.SYMBOL,		CMD,		LOTS,
+		OPEN_PRICE,		OPEN_TIME,		CLOSE_PRICE,		CLOSE_TIME,		SWAPS,		PROFIT,		`GROUP`, COALESCE(REBATE,0) * LOTS as `REBATE`, CONVERTED_REVENUE, BOOK
+     FROM 
+        (SELECT 'live5' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,BOOK,
+            ROUND(CASE 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
+            FROM live5.mt4_trades,live5.group_table 
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND 
+            (mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00' or 
+            mt4_trades.CLOSE_TIME >= DATE_ADD(
+                    (CASE WHEN 
+                        HOUR(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR)) < 23 THEN DATE_FORMAT(DATE_SUB(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),INTERVAL 1 DAY),'%Y-%m-%d 23:00:00') 
+                        ELSE DATE_FORMAT(DATE_SUB(NOW(),INTERVAL ({ServerTimeDiff_Query}) HOUR),'%Y-%m-%d 23:00:00') END),
+                    INTERVAL 1 HOUR)
+            )
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live5' 
+            AND LENGTH(mt4_trades.LOGIN)>4
+            {group_condition}) 
+            as A5 LEFT JOIN  live5.symbol_rebate as B5 ON A5.SYMBOL = B5.SYMBOL)
+            """.format(group_condition=group_condition,
+                       ServerTimeDiff_Query=ServerTimeDiff_Query,
+                       )
+
+    #print(sql_statement)
+    sql_query = sql_statement.replace("\n", " ").replace("\t", " ")
+    #raw_result = db.engine.execute(sql_query)  # Insert select..
+    #result_data = raw_result.fetchall()  # Return Result
+    #result_col = raw_result.keys()  # Column names
+
+    return unsync_query_SQL_return_record(sql_query, app)
+
+
+
+
 # Query SQL and return the Zip of the results to get a record.
 def unsync_query_SQL_return_record(SQL_Query, app):
 
@@ -722,6 +873,12 @@ def Symbol_Trades_url(symbol, book):
 
     url = url_for("analysis.symbol_float_trades", symbol=symbol, book=book, _external=True)
     return '<a href="{url}" target="_blank">{symbol}</a>'.format(url=url,  symbol=symbol)
+
+# To get client Group URL
+def client_group_url(group):
+
+    url = url_for("analysis.group_float_trades", group=group)
+    return '<a href="{url}" target="_blank">{group}</a>'.format(url=url,  group=group)
 
 
 # To get the URL for the Symbol Trades A/B Book

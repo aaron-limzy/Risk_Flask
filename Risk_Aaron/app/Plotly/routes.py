@@ -37,6 +37,7 @@ import pyexcel
 from werkzeug.utils import secure_filename
 
 from Helper_Flask_Lib import *
+from app.Plotly.Client_Trade_Analysis import *
 
 import decimal
 
@@ -129,7 +130,7 @@ def get_country_df(sql_statement):
     return df
 
 
-
+# Want to save the page log into SQL to know who has been using the pages.
 @analysis.before_request
 def before_request():
 
@@ -1390,8 +1391,7 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
     if len(df_all_trades) <= 0:
         return json.dumps({"H1": [{"Error": "No Trades for {} Found".format(symbol)}],
-                           "H2": [{"Error": "No Trades for {} Found".format(symbol)}]
-                           })
+                           "H2": [{"Error": "No Trades for {} Found".format(symbol)}] })
 
     # Do transformation for all subsequent dfs.
     df_all_trades["LOTS"] = df_all_trades["LOTS"].apply(lambda x: float(x))  # Convert from decimal.decimal
@@ -1413,146 +1413,6 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
     [top_groups, bottom_groups, top_accounts, bottom_accounts,
      total_sum, largest_login, open_by_country] = open_trades_analysis(df_open_trades,
                                                                        book, col2, col3, symbol=symbol, entity=entity)
-    #
-    # if len(df_open_trades) <= 0:    # If there are no closed trades for the day.
-    #     top_groups = pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
-    #     bottom_groups = pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
-    #     top_accounts = pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
-    #     bottom_accounts =pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
-    #     total_sum = pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
-    #     largest_login = pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
-    #     open_by_country =  pd.DataFrame([{"Note": "There are no open trades for {} now".format(symbol)}])
-    #
-    # else:
-    #
-    #
-    #     # Group the trades together.
-    #     live_login_sum = df_open_trades.groupby(by=['LIVE', 'LOGIN', 'COUNTRY', 'GROUP', 'SYMBOL']).sum().reset_index()
-    #
-    #     #print(live_login_sum)
-    #     # Round off the values that is not needed.
-    #     live_login_sum["LOTS"] = round(live_login_sum['LOTS'],2)
-    #     live_login_sum["NET_LOTS"] = round(live_login_sum['NET_LOTS'], 2)
-    #     live_login_sum['REBATE'] = live_login_sum.apply(lambda x: color_rebate(rebate=x['REBATE'], pnl=x["CONVERTED_REVENUE"]), axis=1)
-    #     live_login_sum["CONVERTED_REVENUE"] = round(live_login_sum['CONVERTED_REVENUE'], 2)
-    #     live_login_sum["PROFIT"] = round(live_login_sum['PROFIT'], 2)
-    #     live_login_sum["SWAPS"] = round(live_login_sum['SWAPS'], 2)
-    #     live_login_sum["LOGIN"] = live_login_sum.apply(lambda x: live_login_analysis_url(\
-    #                                 Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
-    #     #live_login_sum["REBATE"] = round(live_login_sum['REBATE'], 2)
-    #     live_login_sum["TOTAL_PROFIT"] = round(live_login_sum['TOTAL_PROFIT'], 2)
-    #
-    #
-    #     # Want Top and winning accounts. If there are none. we will reflect accordingly.
-    #     top_accounts = live_login_sum[live_login_sum['CONVERTED_REVENUE'] >= 0 ].sort_values('CONVERTED_REVENUE', ascending=False)[col2].head(20)
-    #     # Color the CONVERTED_REVENUE
-    #     top_accounts["CONVERTED_REVENUE"] = top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-    #
-    #     top_accounts = pd.DataFrame([{"Comment": "There are currently no client with floating profit for {}".format(symbol)}]) \
-    #                     if len(top_accounts) <= 0 else top_accounts
-    #
-    #
-    #
-    #     # Want bottom and Loosing accounts. If there are none, we will reflect it accordingly.
-    #     bottom_accounts = live_login_sum[live_login_sum['CONVERTED_REVENUE'] < 0 ].sort_values('CONVERTED_REVENUE', ascending=True)[col2].head(20)
-    #     # Color the CONVERTED_REVENUE
-    #     bottom_accounts["CONVERTED_REVENUE"] = bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-    #
-    #     bottom_accounts = pd.DataFrame(
-    #         [{"Comment": "There are currently no client with floating losses for {}".format(symbol)}]) \
-    #         if len(bottom_accounts) <= 0 else bottom_accounts
-    #
-    #
-    #
-    #     # Get the live, login and group, since sum would remove those.
-    #     #live_login_group = df_open_trades[['LIVE', 'LOGIN', 'COUNTRY','GROUP']].drop_duplicates()
-    #
-    #     # By entities/Group
-    #     group_sum = df_open_trades.groupby(by=['COUNTRY', 'GROUP',])[['LOTS', 'NET_LOTS','CONVERTED_REVENUE', 'SYMBOL', 'REBATE','TOTAL_PROFIT']].sum().reset_index()
-    #
-    #     # Want to color the rebate if profit <= 0, but Profit + rebate > 0
-    #     group_sum['REBATE'] = group_sum.apply(lambda x: color_rebate(rebate=x['REBATE'], pnl=x["CONVERTED_REVENUE"]),
-    #                                           axis=1)
-    #     # Round it off to be able to be printed better.
-    #     group_sum['CONVERTED_REVENUE'] = round(group_sum['CONVERTED_REVENUE'], 2)
-    #     group_sum['LOTS'] = round(group_sum['LOTS'], 2)
-    #     group_sum['NET_LOTS'] = round(group_sum['NET_LOTS'], 2)
-    #     #group_sum['REBATE'] = round(group_sum['REBATE'], 2)
-    #
-    #
-    #
-    #     # Only want those that are profitable
-    #     top_groups = group_sum[group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE',
-    #                                                                           ascending=False)[col3].head(20)
-    #     # Color the CONVERTED_REVENUE
-    #     top_groups["CONVERTED_REVENUE"] = top_groups["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-    #
-    #     top_groups = pd.DataFrame([{"Comment": "There are currently no groups with floating profit for {}".format(symbol)}]) if \
-    #         len(top_groups) <= 0 else top_groups
-    #
-    #
-    #     # Only want those that are making a loss
-    #     bottom_groups = group_sum[group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', ascending=True)[col3].head(20)
-    #     # Color the CONVERTED_REVENUE
-    #     bottom_groups["CONVERTED_REVENUE"] = bottom_groups["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-    #
-    #     bottom_groups = pd.DataFrame(
-    #         [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
-    #         len(bottom_groups) <= 0 else bottom_groups
-    #     # Total sum Floating
-    #     total_sum_Col = ['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'PROFIT', 'SWAPS' , 'REBATE']       # The columns that we want to show
-    #     total_sum = df_open_trades[total_sum_Col].sum()
-    #     total_sum =  total_sum.apply(lambda x: round(x * -1, 2)) # Flip it to be on BGI Side.
-    #     total_sum["LOTS"] = abs(total_sum["LOTS"])  # Since it's Total lots, we only want the abs value
-    #     total_sum['REBATE'] = color_rebate(rebate=total_sum['REBATE'], pnl=total_sum["CONVERTED_REVENUE"])
-    #
-    #
-    #     for c in total_sum_Col: # Want to print it properly.
-    #         if isfloat(total_sum[c]):
-    #             total_sum[c] = "{:,}".format(total_sum[c])
-    #
-    #     # Want the table by country.
-    #     open_by_country = df_open_trades.groupby(["COUNTRY"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE',
-    #                                                             'REBATE', 'TOTAL_PROFIT']].sum().reset_index()
-    #
-    #     open_by_country["NET_LOTS"] = -1 * open_by_country["NET_LOTS"]
-    #     #open_by_country["REBATE"] = -1 * open_by_country["REBATE"]
-    #
-    #     open_by_country["REBATE"] = open_by_country.apply(lambda x: color_rebate(rebate=x['REBATE'],
-    #                                                         pnl=x["CONVERTED_REVENUE"], multiplier=-1),
-    #                                           axis=1)
-    #
-    #     # Want to show BGI Side. Color according to BGI Side
-    #     open_by_country["TOTAL_PROFIT"] = open_by_country["TOTAL_PROFIT"].apply(lambda x: profit_red_green(x * -1))
-    #
-    #     if book == "b": # Only want to flip sides when it's B book.
-    #         open_by_country["CONVERTED_REVENUE"] = open_by_country["CONVERTED_REVENUE"].apply(
-    #             lambda x: profit_red_green(-1 * x))
-    #     else:   # If it's A book. We don't need to do that.
-    #         open_by_country["CONVERTED_REVENUE"] = open_by_country["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-    #
-    #
-    #
-    #     open_by_country["LOTS"] = abs(open_by_country["LOTS"])
-    #
-    #
-    #
-    #     open_by_country["PROFIT"] = -1 * open_by_country["PROFIT"]
-    #     open_by_country.sort_values(["NET_LOTS"], inplace=True)    # Sort it by Net_Lots
-    #
-    #     open_by_country = pd.DataFrame(
-    #         [{"Comment": "There are currently no Country with floating PnL for {}".format(symbol)}]) if \
-    #         len(open_by_country) <= 0 else open_by_country
-    #
-    #
-    #     # Largest (lots) Floating Account.
-    #     largest_login = live_login_sum.sort_values('LOTS', ascending=False)[col2].head(20)
-    #     # Color the CONVERTED_REVENUE
-    #     largest_login["CONVERTED_REVENUE"] = largest_login["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
-    #
-    #     largest_login = pd.DataFrame(
-    #         [{"Comment": "There are currently no login with open trades for {}".format(symbol)}]) if \
-    #         len(largest_login) <= 0 else largest_login
 
 
     # Closed trades for today!
@@ -1709,37 +1569,296 @@ def Country_float_trades(country=""):
                            replace_words=Markup(["Today"]))
 
 
-#
-# # # To Query for all open trades by a particular symbol
-# # # Shows the closed trades for the day as well.
-# @analysis.route('/testing', methods=['GET', 'POST'])
-# @roles_required()
-# def test_Tableau():
-#
-#     title = "testing"
-#     header = "testing"
-#
-#     # if book.lower() == "b":
-#     #     header += "(B 📘)"
-#     # elif book.lower() == "a":
-#     #     header += "(A 📕)"
-#
-#     table_ledgend = "TESTING page"
-#
-#     description = Markup("TESTING PAGE")
-#
-#     tableau_url = individual_client_analysis(1, 111230)
-#
-#     # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
-#     # Will try to do smaller vertical table to put 2 or 3 tables in a row.
-#     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename='css/leaves_2.png', icon="",
-#                            Table_name={ "Winning Floating Groups (Client Side)": "Hs1"},
-#                            title=title,
-#                            book = "None",
-#                            header=header, symbol="TESTING",
-#                            description=description, no_backgroud_Cover=True,
-#                            tableau_url=tableau_url,
-#                            replace_words=Markup(["Today"]))
+
+
+
+
+# To Query for all open trades by a particular symbol
+# Shows the closed trades for the day as well.
+@analysis.route('/BGI_Symbol_Float/Group_Open/<group>', methods=['GET', 'POST'])
+@roles_required()
+def group_float_trades(group=""):
+
+    title = "{}".format(group.upper())
+    header = "{} Trades".format(group.upper())
+
+    # if book.lower() == "b":
+    #     header += "(B 📘)"
+    # elif book.lower() == "a":
+    #     header += "(A 📕)"
+
+    table_ledgend = "COUNTRY: Country that Client Group is in.<br>" + \
+                    "GROUP: Client Group.<br>" + \
+                    "LOTS : Lots of trades (Or total sum, where applies).<br>" + \
+                    "NET LOTS : Cross tally of buy (+ve) and sell (-ve).<br>" + \
+                    "CONVERTED REVENUE : SWAPS + PROFIT converted to USD.<br>" + \
+                    "REBATE : Amount (Sum) of rebate paid out.<br>" + \
+                    "SWAPS : Amount(Sum) of swaps for trades.<br>" + \
+                    "PROFIT : PnL (Sum) for trades.<br>" + \
+                    "TOTAL PROFIT: CONVERTED REVENUE - REBATE. This is how much BGI Earns.<br>" + \
+                    "<br><br>" + \
+                    "REBATE will be highlighted if REVENUE is -ve, But REVENUE + REBATE >= 0.<br>" +\
+                    "That's to say, Client is still profitable."
+
+    description = Markup("Showing Open trades for {}<br>Details are on Client side.<br><br>{}".format(group.upper(), table_ledgend))
+
+    if group == "" :  # There are no information.
+        flash("There were no group details.")
+        return redirect(url_for("main_app.index"))
+
+    #tableau_url = Entity_Float_Viz(group=group)
+
+    # Table names will need be in a dict, identifying if the table should be horizontal or vertical.
+    # Will try to do smaller vertical table to put 2 or 3 tables in a row.
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("group_float_trades"), icon="",
+
+                           Table_name={
+                                    "Client Group Details": "V2",
+                                    "Past Month PnL (Client Side)": "Hs3",
+                                    "Winning Floating Accounts (Client Side)": "Hs1",
+                                    "Losing Floating Accounts (Client Side)": "Hs2",
+                                    "Largest Lots Floating Accounts (Client Side)": "H5",
+                                    "Symbol Floating (BGI Side)": "Hs5",
+                                    "Total Floating (BGI Side)": "V1",
+                                    "Line": "Hr1"
+                                        },
+                           title=title,
+                           ajax_url=url_for('analysis.group_float_trades_ajax', _external=True, group=group),
+                           book = "None",
+                           header=header, symbol=group,
+                           description=description, no_backgroud_Cover=True,
+                           replace_words=Markup(["Today"]))
+
+
+
+# The Ajax call for the symbols we want to query. B Book.
+@analysis.route('/Open_Symbol/symbol_float_trades_ajax/<group>', methods=['GET', 'POST'])
+@roles_required()
+def group_float_trades_ajax(group=""):
+
+    start_time = datetime.datetime.now() # Want to get the datetime when this request was called.
+    # Want to show 2 days back if the hour is less than 10am (SGT), else, shows 1 day only.
+    opentime_day_backwards_count = 3 if datetime.datetime.now().hour < 12 else 2  # Not too many days, else it will be too small.
+    opentime_day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * opentime_day_backwards_count))
+
+
+    #print("symbol_float_trades_ajax Running.. ")
+
+
+
+    all_open_trades_start = datetime.datetime.now()
+
+    # Want to reduce the overheads
+    # We can't do this in the threads.
+    ServerTimeDiff_Query = "{}".format(session["live1_sgt_time_diff"]) if "live1_sgt_time_diff" in session \
+        else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
+
+
+    ## Want to find out if the client Group exist.
+    sql_query = """SELECT *  FROM live5.`group_table` WHERE `GROUP` = '{}'""".format(group)
+    group_details = Query_SQL_db_engine(sql_query)
+    if len(group_details) == 0:
+        #print("Group Does not exist")
+        return json.dumps({"Hs1": [{"Error" : "Client Group Does not Exists. "}]},  cls=plotly.utils.PlotlyJSONEncoder)
+    elif  len(group_details) > 1:
+        #print("There are more than 1 Client group with that name.")
+        return json.dumps({"Hs1": [{"Error": "There are more than 1 Client group with that name."}]}, cls=plotly.utils.PlotlyJSONEncoder)
+    # else:
+    #     print(group_details)
+
+
+
+
+
+    all_trades_unsync = group_symbol_all_open_trades(app=current_app._get_current_object(), ServerTimeDiff_Query=ServerTimeDiff_Query,group=group)
+
+
+
+    # live here = "live1", not just the number, since the SQL returns such.
+    Client_Group_unsync = Client_Group_Details(app=current_app._get_current_object(), live=group_details[0]["LIVE"], group=group)
+
+    Client_Group_Past_PnL_unsync = Client_Group_past_trades(app=current_app._get_current_object(), live=group_details[0]["LIVE"], group=group)
+
+    # # Snap shot of the volume.
+    # # Need to pass in the app as this would be using a newly created threadS
+    # df_data_vol_unsync = Get_Vol_snapshot(app=current_app._get_current_object(),
+    #                 symbol=symbol, book=book, day_backwards_count=5, entities=entities)
+
+
+    # # Want to use the open_times to plot a chart. So that we know around what time are the trades opened.
+    # symbol_opentime_trades_unsync = symbol_opentime_trades(app=current_app._get_current_object(),
+    #                                                        symbol=symbol, book=book,
+    #                                                        start_date=opentime_day_backwards,
+    #                                                        entities=entities)
+    #
+    #
+    # # Get the history details such as Trade volume and revenue
+    # Symbol_history_Daily_unsync = Symbol_history_Daily(symbol=symbol, book=book,
+    #                                                    app=current_app._get_current_object(),
+    #                                                    day_backwards_count=15,entities=entities)
+
+    all_trades=all_trades_unsync.result()
+    #print("all_open_trades_start() Took: {sec}s".format(sec=(datetime.datetime.now() - all_open_trades_start).total_seconds()))
+    df_all_trades = pd.DataFrame(all_trades)
+
+    # To make it more printable.
+    # df_all_trades["OPEN_TIME"] = df_all_trades["OPEN_TIME"].apply(lambda x: "{}".format(x))
+    # df_all_trades["CLOSE_TIME"] = df_all_trades["CLOSE_TIME"].apply(lambda x: "{}".format(x))
+    #print(df_all_trades.columns)
+    #print(df_all_trades)
+
+
+    df_all_trades["LOTS"] = df_all_trades["LOTS"].apply(lambda x: float(x))  # Convert from decimal.decimal
+    # Use for calculating net volume. Want to know if net buy or sell
+    df_all_trades["NET_LOTS"] = df_all_trades.apply(lambda x: x["LOTS"] if x['CMD'] == 0 else -1 * x["LOTS"], axis=1)
+
+    df_all_trades["TOTAL_PROFIT"] = df_all_trades.apply(lambda x: x["CONVERTED_REVENUE"] + x['REBATE'], axis=1)
+
+
+    # Want only those open trades.
+    df_open_trades = df_all_trades[df_all_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only open trades.
+
+
+    col2 = ['LIVE', 'LOGIN', "LOTS", 'NET_LOTS', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE', 'REBATE'] #'COUNTRY', 'GROUP',
+    col3 = ['LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'REBATE']  #'COUNTRY', 'GROUP',
+
+
+    # Information from the previous SQL call.
+    # We want to determine if the client group is A book or B book.
+    book = "b" if group_details[0]["BOOK"].lower() not in ("a", "dealing") else "a"
+
+    client_details_data = Client_Group_unsync.result()
+    #print(client_details_data)
+
+    Client_Group_Past_PnL = Client_Group_Past_PnL_unsync.result()
+
+    [top_accounts, bottom_accounts,
+     total_sum, largest_login, open_by_country] = group_open_trades_analysis(df_open_trades, book, col2, col3, group=group)
+
+
+
+    return json.dumps({"V2": client_details_data,
+                       "Hs3" : Client_Group_Past_PnL.to_dict("record"),
+                      "Hs1": top_accounts.to_dict("record"),
+                      "Hs2" : bottom_accounts.to_dict("record"),
+                      "H5" : largest_login.to_dict("record"),
+                       "V1": [total_sum.to_dict()],
+                      "Hs5" : open_by_country.to_dict("record")
+                        },  cls=plotly.utils.PlotlyJSONEncoder)
+    #
+    # if len(df_all_trades) <= 0:
+    #     return json.dumps({"H1": [{"Error": "No Trades for {} Found".format(symbol)}],
+    #                        "H2": [{"Error": "No Trades for {} Found".format(symbol)}] })
+    #
+    # # Do transformation for all subsequent dfs.
+    # df_all_trades["LOTS"] = df_all_trades["LOTS"].apply(lambda x: float(x))  # Convert from decimal.decimal
+    # # Use for calculating net volume. Want to know if net buy or sell
+    # df_all_trades["NET_LOTS"] = df_all_trades.apply(lambda x: x["LOTS"] if x['CMD'] == 0 else -1 * x["LOTS"], axis=1)
+    #
+    # df_all_trades["TOTAL_PROFIT"] = df_all_trades.apply(lambda x: x["CONVERTED_REVENUE"] + x['REBATE'], axis=1)
+    #
+    #
+    # # Want only those open trades.
+    # df_open_trades = df_all_trades[df_all_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only open trades.
+    #
+    #
+    #
+    # col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE', 'REBATE']
+    # col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'REBATE']
+    #
+    #
+    # [top_groups, bottom_groups, top_accounts, bottom_accounts,
+    #  total_sum, largest_login, open_by_country] = open_trades_analysis(df_open_trades,
+    #                                                                    book, col2, col3, symbol=symbol, entity=entity)
+    #
+    #
+    # # Closed trades for today!
+    # df_closed_trades = df_all_trades[df_all_trades["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only Closed trades.
+    #
+    #
+    # # List unpacking from the return of the function.
+    # [closed_top_accounts, closed_bottom_accounts, total_sum_closed, top_closed_groups,
+    #  bottom_closed_groups, closed_largest_lot_accounts, closed_by_country] = symbol_closed_trades_analysis(df_closed_trades, book, symbol, entity=entity)
+    #
+    #
+    # # Get the results from unsync
+    # df_data_vol= df_data_vol_unsync.result()
+    # #print(df_data_vol)
+    #
+    # # Want to plot the 30 mins-ish Snapshot Open lots of
+    # plot_title = "{symbol} Total Lots Snapshot".format(symbol=symbol)
+    # plot_title = plot_title + " ({book} Book)".format(book=book.upper()) if book.lower() != "none" else plot_title
+    # vol_fig = plot_symbol_book_total(df_data_vol, plot_title)
+    #
+    #
+    # # Want to get data for OPEN TIME on all trades in the symbol
+    # query_start_time = datetime.datetime.now()
+    # df_opentiming = pd.DataFrame(symbol_opentime_trades_unsync.result())
+    # #df_opentiming = pd.DataFrame(res)
+    # #print(df_opentiming)
+    # #print("Total Opentiming lots: {}".format(df_opentiming['LOTS'].sum()))
+    # if len(df_opentiming):
+    #     plot_title = "{symbol} OpenTime".format(symbol=symbol)
+    #     plot_title = plot_title + " ({book} Book)".format(book=book.upper()) if book.lower() != "none" else plot_title
+    #     opentime_fig = plot_symbol_opentime(df_opentiming, plot_title)
+    #     #opentime_fig.show()
+    # else:
+    #     opentime_fig={}
+    #
+    #
+    # # The historical data of the symbol by Country/date
+    # history_daily_data = pd.DataFrame(Symbol_history_Daily_unsync.result())
+    # if len(history_daily_data) > 0:
+    #
+    #     # If it's by symbol. (ie: if it's by country, we want to show all symbols)
+    #     title_symbol_postfix = "({symbol})".format(symbol=symbol) if len(symbol)>1 else ""
+    #
+    #     chart_title_1 = "History Daily Volume" +  title_symbol_postfix
+    #     chart_1_color = "COUNTRY" if  len(symbol) != 0 else "SYMBOL"
+    #     group_by = ["DATE"] + [chart_1_color]   # The columns in which we want to group by.
+    #
+    #     history_daily_vol_fig = plot_symbol_history(df=history_daily_data,
+    #                                                 by="Volume",
+    #                                chart_title=chart_title_1, color_by=chart_1_color,
+    #                                                 group_by=group_by)
+    #
+    #     chart_title_2 = "History Daily Revenue" + title_symbol_postfix
+    #     "({symbol})".format(symbol=symbol) if len(symbol) > 1 else ""
+    #     history_daily_rev_fig = plot_symbol_history(df=history_daily_data,
+    #                                                 by="Revenue",
+    #                                                 chart_title=chart_title_2,  color_by=chart_1_color,
+    #                                                 group_by=group_by)
+    #
+    # else:   # If there are no data. We return an empty chart
+    #     history_daily_vol_fig = {}
+    #     history_daily_rev_fig = {}
+    #
+    #
+    # # Return the values as json.
+    # # Each item in the returned dict will become a table, or a plot
+    # return json.dumps({"Hs1": top_groups.to_dict("record"),
+    #                    "Hs2": bottom_groups.to_dict("record"),
+    #                    "H1": top_accounts.to_dict("record"),
+    #                    "H2" : bottom_accounts.to_dict("record"),
+    #                    "H5" : largest_login.to_dict("record"),
+    #                    "P1" : vol_fig,
+    #                    "P2": opentime_fig,
+    #                    "V1": [total_sum.to_dict()],
+    #                    "Hs5" : open_by_country.to_dict("record"),
+    #                    "H3": closed_top_accounts.to_dict("record"),
+    #                    "H4": closed_bottom_accounts.to_dict("record"),
+    #                    "H6" : closed_largest_lot_accounts.to_dict("record"),
+    #                    "Hs3": top_closed_groups.to_dict("record"),
+    #                    "Hs4" : bottom_closed_groups.to_dict("record"),
+    #                    "P3": history_daily_vol_fig,
+    #                    "P4": history_daily_rev_fig,
+    #                    "V2": [total_sum_closed.to_dict()],
+    #                    "Hs6" : closed_by_country.to_dict("record")
+    #                    }, cls=plotly.utils.PlotlyJSONEncoder)
+
+
+
+
 
 
 
@@ -1796,6 +1915,8 @@ def symbol_closed_trades_analysis(df, book, symbol, entity="none"):
         # Want to get the average of the duration.
         closed_login_sum["DURATION_(AVG)"] = closed_login_sum["DURATION_(AVG)"].apply(lambda x: trade_duration_bin(x))
 
+        closed_login_sum["GROUP"] = closed_login_sum["GROUP"].apply(client_group_url)    # Get the client Group URL link
+
         # Want the Closed Top/Bottom accounts. Top = Winning, so no -ve PnL.
         closed_top_accounts = closed_login_sum[closed_login_sum['CONVERTED_REVENUE'] >= 0].sort_values(\
                                                                 'CONVERTED_REVENUE', ascending=False)[col2].head(20)
@@ -1831,6 +1952,9 @@ def symbol_closed_trades_analysis(df, book, symbol, entity="none"):
         closed_group_sum["CONVERTED_REVENUE"] = round(closed_group_sum['CONVERTED_REVENUE'], 2)
         closed_group_sum["REBATE"] = closed_group_sum.apply( lambda x: color_rebate(rebate=x['REBATE'], \
                                                                                     pnl=x["CONVERTED_REVENUE"]), axis=1)
+
+        # Get the Client Group URL link.
+        closed_group_sum["GROUP"] = closed_group_sum["GROUP"].apply(client_group_url)
 
         # Only want those that are profitable
         top_closed_groups = closed_group_sum[closed_group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE', \
@@ -1913,10 +2037,18 @@ def symbol_closed_trades_analysis(df, book, symbol, entity="none"):
 # To return the open trades analysis.
 # col is for larger tables, showing logins and such
 # col_1 is for grouped 'group' tables,
-def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="none"):
+def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="none", group=""):
 
     # Want the display line should be.
-    display_line = symbol if len(symbol) > 0 else entity
+    display_line = ""
+    #symbol if len(symbol) > 0 else entity
+    if len(symbol) > 0:
+        display_line = symbol
+    elif entity != "none":
+        display_line = entity
+    else:
+        display_line = group
+
 
     if len(df_open_trades) <= 0:    # If there are no closed trades for the day.
         return_df = pd.DataFrame([{"Note": "There are no open trades for {} now".format(display_line)}])
@@ -1952,6 +2084,9 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="no
                                     Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
         live_login_sum["TOTAL_PROFIT"] = round(live_login_sum['TOTAL_PROFIT'], 2)
 
+        live_login_sum["GROUP"] =  live_login_sum["GROUP"].apply(client_group_url)
+
+
 
         # Want Top and winning accounts. If there are none. we will reflect accordingly.
         top_accounts = live_login_sum[live_login_sum['CONVERTED_REVENUE'] >= 0 ].sort_values('CONVERTED_REVENUE', ascending=False)[col].head(20)
@@ -1985,6 +2120,9 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="no
         group_sum['CONVERTED_REVENUE'] = round(group_sum['CONVERTED_REVENUE'], 2)
         group_sum['LOTS'] = round(group_sum['LOTS'], 2)
         group_sum['NET_LOTS'] = round(group_sum['NET_LOTS'], 2)
+
+        # Get the Group URL link
+        group_sum["GROUP"] = group_sum["GROUP"].apply(client_group_url)
 
 
         # Only want those that are profitable
@@ -2313,6 +2451,145 @@ def symbol_get_past_closed_trades(symbol="", book="B", days=-1):
     result_col = raw_result.keys()          # Column names
 
     return [dict(zip(result_col, r)) for r in result_data]
+
+
+
+
+
+
+def get_group_closed_trades(group, days=-1):
+    #symbol="XAUUSD"
+
+    backward_days = int(days)   # The backward count days.
+
+    # Want to reduce the overheads
+    # Should be 6 (GMT + 2, 2300-2300) or 7 (GMT + 1, 2200-2200)
+    ServerTimeDiff_Query = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else get_live1_time_difference()
+    #ServerTimeDiff_Query=6
+    # If it's Before SG 5 am or 6am, need to count back 1 more day.
+    if datetime.datetime.now().hour < (ServerTimeDiff_Query -1):
+        backward_days = backward_days -1    # Need to off set by 1 day.
+
+
+    # Want to calculate the start and end date of the trading day
+    start_of_day = get_working_day_date(datetime.datetime.now(), backward_days-1)
+    end_of_day = get_working_day_date(datetime.datetime.now(), backward_days)
+    end_of_day_live5 = get_working_day_date(datetime.datetime.now(), backward_days+1)
+
+    Live1_startofday = " {} {Start_hour}:00:00".format(start_of_day.strftime("%Y-%m-%d"), Start_hour = 23)
+    Live1_endofday = " {} {Start_hour}:00:00".format(end_of_day.strftime("%Y-%m-%d"), Start_hour=23)
+
+    Live5_startofday = " {} 00:00:00".format(end_of_day.strftime("%Y-%m-%d"))
+    Live5_endofday = " {} 00:00:00".format(end_of_day_live5.strftime("%Y-%m-%d"))
+
+    group_condition = " and mt4_trades.`GROUP` like '%{}%' ".format(group)
+
+    sql_statement = """(SELECT 'live1' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        mt4_trades.SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`, VOLUME*0.01 * symbol_rebate.REBATE as REBATE,
+           ROUND(CASE 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
+        FROM live1.mt4_trades, live5.group_table, live1.symbol_rebate
+        WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND  symbol_rebate.SYMBOL = mt4_trades.SYMBOL AND
+            mt4_trades.CLOSE_TIME >= '{Live1_startofday}' AND  mt4_trades.CLOSE_TIME < '{Live1_endofday}'
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live1' 
+            AND LENGTH(mt4_trades.LOGIN)>4 
+            {group_condition} 
+            )
+    UNION 
+        (SELECT 'live2' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        mt4_trades.SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,VOLUME*0.01 * symbol_rebate.REBATE as REBATE,
+            ROUND(CASE 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live2.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
+            FROM live2.mt4_trades,live5.group_table,  live2.symbol_rebate
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND symbol_rebate.SYMBOL = mt4_trades.SYMBOL AND
+            mt4_trades.CLOSE_TIME >= '{Live1_startofday}' AND  mt4_trades.CLOSE_TIME < '{Live1_endofday}'
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live2' 
+            AND LENGTH(mt4_trades.LOGIN)>4
+            {group_condition})
+    UNION 
+        (SELECT 'live3' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        mt4_trades.SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,VOLUME*0.01 * symbol_rebate.REBATE as REBATE,
+            ROUND(CASE 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live3.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
+            FROM live3.mt4_trades,live5.group_table,  live3.symbol_rebate
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND symbol_rebate.SYMBOL = mt4_trades.SYMBOL AND
+            mt4_trades.CLOSE_TIME >= '{Live1_startofday}' AND  mt4_trades.CLOSE_TIME < '{Live1_endofday}'
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live3' 
+            AND LENGTH(mt4_trades.LOGIN)>4 
+            AND mt4_trades.LOGIN NOT IN (SELECT LOGIN FROM live3.cambodia_exclude) 
+            {group_condition})
+    UNION
+        (SELECT 'live5' AS LIVE,group_table.COUNTRY, LOGIN, TICKET,
+        mt4_trades.SYMBOL, CMD,
+        VOLUME*0.01 as LOTS, OPEN_PRICE,
+            OPEN_TIME, CLOSE_PRICE, CLOSE_TIME, SWAPS, PROFIT, mt4_trades.`GROUP`,VOLUME*0.01 * symbol_rebate.REBATE as REBATE,
+            ROUND(CASE 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                WHEN mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live5.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) 
+            ELSE 0 END,2) AS CONVERTED_REVENUE
+            FROM live5.mt4_trades,live5.group_table,  live5.symbol_rebate 
+            WHERE mt4_trades.`GROUP` = group_table.`GROUP` AND symbol_rebate.SYMBOL = mt4_trades.SYMBOL AND
+            mt4_trades.CLOSE_TIME >= '{Live5_startofday}' AND  mt4_trades.CLOSE_TIME < '{Live5_endofday}'
+        AND LENGTH(mt4_trades.SYMBOL)>0 
+            AND mt4_trades.CMD <2 
+            AND group_table.LIVE = 'live5' 
+            AND LENGTH(mt4_trades.LOGIN)>4
+            {group_condition})""".format(group_condition=group_condition, ServerTimeDiff_Query=ServerTimeDiff_Query,
+    Live1_startofday = Live1_startofday, Live1_endofday = Live1_endofday, Live5_startofday = Live5_startofday,
+    Live5_endofday = Live5_endofday)
+
+    #print(sql_statement)
+    sql_query = text(sql_statement.replace("\n", " ").replace("\t", " "))
+    raw_result = db.engine.execute(sql_query)   # Insert select..
+    result_data = raw_result.fetchall()     # Return Result
+    result_col = raw_result.keys()          # Column names
+
+    return [dict(zip(result_col, r)) for r in result_data]
+
+
+
+
+
+
+
 
 
 
@@ -3097,6 +3374,8 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     # Color the background for Balance to highlight it.
     # login_details[0]["BALANCE"] = "<span style = 'background-color:#4af076;' >{}</span> ".format(login_details[0]["BALANCE"])
     login_details[0]["BALANCE"] = profit_red_green(login_details[0]["BALANCE"])
+    login_details[0]["GROUP"] = client_group_url(login_details[0]["GROUP"])
+
 
     # # Write the SQL Statement and Update to disable the Account monitoring.
     # # Want the CLOSE TRADES limited to 100
@@ -3212,6 +3491,9 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     df_data = df_data[[ 'TICKET', 'SYMBOL', 'CMD','LOTS', 'OPEN_TIME',
                         'CLOSE_TIME',"DURATION",'SWAPS', 'PROFIT', 'REBATE' ,'GROUP',
                         'COMMENT', 'DURATION_STR']]
+
+    # Want to write in the Client Group URL
+    df_data["GROUP"] =  df_data["GROUP"].apply(client_group_url)
 
     # Want to get the open trades.
     open_position =  df_data[df_data["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')]  # Only open trades.

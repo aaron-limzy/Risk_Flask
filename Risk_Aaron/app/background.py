@@ -10,10 +10,12 @@ def background_pic(website):
                  #"BGI_Symbol_Float" :       "css/leaves.png",
                  #"symbol_float_trades" :    "css/double-bubble.png",
                  "Country_float_trades" :   "css/leaves_2.png",
+                 "group_float_trades"  :    "css/webb.png",
                  #"symbol_closed_trades" :   "css/double-bubble.png",
                  "Client_Comment_Scalp" :   "css/runner_1.jpg",
                  "Client_trades_form" :     "css/cactus.jpg",
                  #"Client_trades_Analysis" : "css/strips_1.png",
+
 
                  "USOil_Ticks" :                        "css/Oil_Rig_2.jpg",
                  "CFH_Soap_Position" :                  "css/notebook_pen.jpg",
