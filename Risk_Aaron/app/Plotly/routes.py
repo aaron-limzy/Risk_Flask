@@ -1727,8 +1727,8 @@ def group_float_trades_ajax(group=""):
     # We want to determine if the client group is A book or B book.
     book = "b" if group_details[0]["BOOK"].lower() not in ("a", "dealing") else "a"
 
-    client_details_data = Client_Group_unsync.result()
-    #print(client_details_data)
+    client_group_details_data = Client_Group_unsync.result()
+    #print(client_group_details_data)
 
     Client_Group_Past_PnL = Client_Group_Past_PnL_unsync.result()
 
@@ -1737,7 +1737,7 @@ def group_float_trades_ajax(group=""):
 
 
 
-    return json.dumps({"V2": client_details_data,
+    return json.dumps({"V2": client_group_details_data,
                        "Hs3" : Client_Group_Past_PnL.to_dict("record"),
                       "Hs1": top_accounts.to_dict("record"),
                       "Hs2" : bottom_accounts.to_dict("record"),

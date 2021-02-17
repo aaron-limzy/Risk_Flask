@@ -175,7 +175,7 @@ def Client_Group_Details(app, live, group):
     col = ["TOTAL_DEPOSIT", "TOTAL_CREDIT", "TOTAL_EQUITY"]
     if len(ret_data) > 0:
         for c in col:
-            if c in ret_data[0]:
+            if c in ret_data[0] and isfloat(ret_data[0][c]):
                 ret_data[0][c] = profit_red_green(ret_data[0][c])
 
     return ret_data
@@ -203,12 +203,24 @@ def Client_Group_past_trades(app, live, group):
           sum(VOLUME) * 0.01 as LOTS, ROUND(sum(SWAPS),2) as SWAPS, ROUND(sum(PROFIT),2) as PROFIT,
             SYMBOL
         From {live}.mt4_trades
-        where `group` = "{group}" 
-        and CLOSE_TIME >= DATE_SUB(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 8 MONTH), "%Y-%m-01 00:00:00"), INTERVAL {hour} HOUR)
+        where `group` = "{group}"
+        and CLOSE_TIME >= DATE_SUB(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 3 MONTH), "%Y-%m-01 00:00:00"), INTERVAL {hour} HOUR)
         AND CMD < 2
         GROUP BY `CLOSE_MONTH`, SYMBOL) AS A, {live}.symbol_rebate
         WHERE A.SYMBOL = symbol_rebate.SYMBOL
     GROUP BY A.`CLOSE_MONTH`""".format(live=live, group=group, hour=hour_add_interval)
+
+    # SQL_Query = """SELECT CLOSE_MONTH, SUM(LOTS) AS LOTS, SUM(SWAPS) AS SWAPS, SUM(PROFIT) AS PROFIT FROM (
+    # select DATE_FORMAT( DATE_ADD(CLOSE_TIME, INTERVAL {hour} HOUR), "%Y-%m-01 00:00:00") as "CLOSE_MONTH",
+    #       sum(VOLUME) * 0.01 as LOTS, ROUND(sum(SWAPS),2) as SWAPS, ROUND(sum(PROFIT),2) as PROFIT,
+    #         SYMBOL
+    #     From {live}.mt4_trades
+    #     where `group` = "{group}"
+    #     and CLOSE_TIME >= DATE_SUB(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 2 MONTH), "%Y-%m-01 00:00:00"), INTERVAL {hour} HOUR)
+    #     AND CMD < 2
+    #     GROUP BY `CLOSE_MONTH`, SYMBOL) AS A
+    # GROUP BY A.`CLOSE_MONTH`""".format(live=live, group=group, hour=hour_add_interval)
+
 
     #print(SQL_Query)
 
@@ -219,7 +231,7 @@ def Client_Group_past_trades(app, live, group):
         df["TOTAL"] =  df["PROFIT"] +  df["SWAPS"] +  df["REBATE"]
         df["SWAPS"] = df["SWAPS"].apply(profit_red_green)
         df["PROFIT"] = df["PROFIT"].apply(profit_red_green)
-        df["TOTAL"] = df["TOTAL"].apply(profit_red_green)
+        #df["TOTAL"] = df["TOTAL"].apply(profit_red_green)
         #df["REBATE"] = df["REBATE"].apply(profit_red_green)
 
         # Want to try and print the date(Month) nicely
@@ -227,7 +239,8 @@ def Client_Group_past_trades(app, live, group):
         df.sort_values(by=["CLOSE_MONTH"], ascending=False, inplace=True)
         df["CLOSE_MONTH"] =  df["CLOSE_MONTH"].apply(lambda x: x.strftime('%B %Y'))
 
-        df = df[["CLOSE_MONTH", "LOTS", "SWAPS", "PROFIT", "REBATE", "TOTAL"]] # Order the column
+
+        df = df[["CLOSE_MONTH", "LOTS", "SWAPS", "PROFIT", "REBATE",  "TOTAL"]] # Order the column "REBATE",  "TOTAL"
         #pd.to_datetime(df.columns, format='%b %y')
 
         #df.sort_values(by=["YEAR"])
