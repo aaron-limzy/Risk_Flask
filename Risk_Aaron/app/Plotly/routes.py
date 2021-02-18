@@ -1705,7 +1705,7 @@ def group_float_trades_ajax(group=""):
     # df_all_trades["OPEN_TIME"] = df_all_trades["OPEN_TIME"].apply(lambda x: "{}".format(x))
     # df_all_trades["CLOSE_TIME"] = df_all_trades["CLOSE_TIME"].apply(lambda x: "{}".format(x))
     #print(df_all_trades.columns)
-    print(df_all_trades)
+    #print(df_all_trades)
 
 
     df_all_trades["LOTS"] = df_all_trades["LOTS"].apply(lambda x: float(x))  # Convert from decimal.decimal

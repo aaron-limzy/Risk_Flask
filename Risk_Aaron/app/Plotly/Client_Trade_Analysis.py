@@ -165,11 +165,12 @@ def Client_Group_Details(app, live, group):
     SQL_Query = """select count(*) as 'CLIENT_COUNT', SUM(BALANCE) as 'TOTAL_DEPOSIT',
     sum(mt4_users.CREDIT) AS 'TOTAL_CREDIT', SUM(EQUITY) AS 'TOTAL_EQUITY',
     SUM(CASE WHEN BALANCE > 0  THEN 1 ELSE 0 END) as 'CLIENT (BALANCE > 0)',
-    SUM(CASE WHEN ENABLE_READONLY = 1  THEN 1 ELSE 0 END) as 'ACTIVE_CLIENT (READONLY = FALSE)',
+    SUM(CASE WHEN ENABLE_READONLY = 0  THEN 1 ELSE 0 END) as 'ACTIVE_CLIENT (READONLY = FALSE)',
     mt4_groups.CURRENCY, mt4_groups.MARGIN_CALL, mt4_groups.MARGIN_STOPOUT
     From {live}.mt4_users, {live}.mt4_groups
-    where mt4_users.`group` = "{group}" AND mt4_users.`GROUP` = mt4_groups.`GROUP`
+    where mt4_users.`group` like "{group}" AND mt4_users.`GROUP` = mt4_groups.`GROUP`
     """.format(live=live, group=group)
+    #print(SQL_Query)
     ret_data = unsync_query_SQL_return_record(SQL_Query, app)
 
     col = ["TOTAL_DEPOSIT", "TOTAL_CREDIT", "TOTAL_EQUITY"]
@@ -203,8 +204,8 @@ def Client_Group_past_trades(app, live, group):
           sum(VOLUME) * 0.01 as LOTS, ROUND(sum(SWAPS),2) as SWAPS, ROUND(sum(PROFIT),2) as PROFIT,
             SYMBOL
         From {live}.mt4_trades
-        where `group` = "{group}"
-        and CLOSE_TIME >= DATE_SUB(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 3 MONTH), "%Y-%m-01 00:00:00"), INTERVAL {hour} HOUR)
+        where `group` like "{group}"
+        and CLOSE_TIME >= DATE_SUB(DATE_FORMAT(DATE_SUB(NOW(), INTERVAL 1 MONTH), "%Y-%m-01 00:00:00"), INTERVAL {hour} HOUR)
         AND CMD < 2
         GROUP BY `CLOSE_MONTH`, SYMBOL) AS A, {live}.symbol_rebate
         WHERE A.SYMBOL = symbol_rebate.SYMBOL
@@ -244,5 +245,5 @@ def Client_Group_past_trades(app, live, group):
         #pd.to_datetime(df.columns, format='%b %y')
 
         #df.sort_values(by=["YEAR"])
-        #print(ret_data)
+        #print(df)
     return df
