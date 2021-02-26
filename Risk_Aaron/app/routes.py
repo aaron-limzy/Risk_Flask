@@ -1477,6 +1477,13 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
 
 
     col_needed = [ "SYMBOL", "Vantage_lot", "CFH_lot", "GP_lot", "API_lot", "Offset_lot", "Lp_Net_lot", "MT4_Net_lot", "MT4_Revenue", "Discrepancy", "Mismatch_count"]
+
+    # If there is no lots in CFH at all, we don't need to show the column
+    if "CFH_lot" in df_postion and df_postion["CFH_lot"].abs().sum() == 0 :
+        #print(df_postion["CFH_lot"].abs().sum())
+        col_needed.remove("CFH_lot")
+        #df_postion["CFH_lot"] = 1
+
     col_to_use = [c for c in col_needed if c in df_postion]     # Just in case the column is not in the df.
 
     # Arrange it all in the correct position

@@ -385,20 +385,53 @@ $(document).ready(function(){
     // Function to delete all the rows that has it all as 0.
     function Table_Zero_Out(Table_Data){
 
-        if (Show_Mt4_Zero == 1) {	// If want to show. Nothing to do.
+        if ((Show_Mt4_Zero == 1) || (Object.keys(Table_Data).length == 0)) {	// If want to show. Nothing to do.
             return Table_Data;
         }
+
+        // Want to get all the keys that are not SYMBOL
+        all_keys = Object.keys(Table_Data[0]);
+        keys_to_check = [];
+        for (var x in all_keys ){
+          //console.log(all_keys[x].toLowerCase());
+          //console.log(all_keys[x].toLowerCase().includes('symbol'));
+          if ((all_keys[x].toLowerCase().includes('symbol') == false) &&
+            (all_keys[x].toLowerCase().includes('mt4_revenue') == false)) {
+            keys_to_check.push(all_keys[x]);
+          }
+        }
+
+        console.log(keys_to_check.length);
+        //console.log(Table_Data.length);
+
         Table_Data_Updated = [];
         for (var x in Table_Data) {
-            if (!("Vantage_lot" in Table_Data[x] &&  Table_Data[x]['Vantage_lot'] == 0 &&
-                "MT4_Net_lot" in Table_Data[x] &&  Table_Data[x]['MT4_Net_lot'] == 0 &&
-                "CFH_lot" in Table_Data[x] &&  Table_Data[x]['CFH_lot'] == 0 &&
-                "GP_lot" in Table_Data[x] &&  Table_Data[x]['GP_lot'] == 0 &&
-                "Offset_lot" in Table_Data[x] &&  Table_Data[x]['Offset_lot'] == 0 &&
-                "Lp_Net_lot" in Table_Data[x] &&  Table_Data[x]['Lp_Net_lot'] == 0 &&
-                "Discrepancy" in Table_Data[x] &&  Table_Data[x]['Discrepancy'] == 0 )) {
-                Table_Data_Updated.push(Table_Data[x]);	// Push it in if its non-empty.
+          var zero_count = 0;
+          for (var c in keys_to_check){
+            // Want to check if the keys are in the object. And if it's 0
+            if ((keys_to_check[c] in Table_Data[x]) && (Table_Data[x][keys_to_check[c]] == 0)){
+              zero_count = zero_count + 1;
+            }else{
+              //console.log(keys_to_check[c]);
+              //console.log(Table_Data[x][keys_to_check[c]]);
             }
+          }
+          // If it's not the same, we push it in
+          if (zero_count != keys_to_check.length){
+            console.log(zero_count);
+            Table_Data_Updated.push(Table_Data[x]);	// Push it in if its non-empty.
+          }
+
+            // // Removed for now. CFH lots == 0 and we don't show.
+            // // //   "CFH_lot" in Table_Data[x] &&  Table_Data[x]['CFH_lot'] == 0 &&
+            // if (!("Vantage_lot" in Table_Data[x] &&  Table_Data[x]['Vantage_lot'] == 0 &&
+            //     "MT4_Net_lot" in Table_Data[x] &&  Table_Data[x]['MT4_Net_lot'] == 0 &&
+            //     "GP_lot" in Table_Data[x] &&  Table_Data[x]['GP_lot'] == 0 &&
+            //     "Offset_lot" in Table_Data[x] &&  Table_Data[x]['Offset_lot'] == 0 &&
+            //     "Lp_Net_lot" in Table_Data[x] &&  Table_Data[x]['Lp_Net_lot'] == 0 &&
+            //     "Discrepancy" in Table_Data[x] &&  Table_Data[x]['Discrepancy'] == 0 )) {
+            //     Table_Data_Updated.push(Table_Data[x]);	// Push it in if its non-empty.
+            // }
         }
         return Table_Data_Updated;
     }
