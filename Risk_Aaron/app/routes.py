@@ -181,9 +181,9 @@ def Delete_Risk_ABook_Offset_Button_Endpoint(Symbol=""):
 
     # # # Write the SQL Statement to write the values into SQL to clear the offset, By Symbols.
     # # # It will write -1 * consolidated value into SQL.
-    sql_insert_statement = """INSERT INTO test.`offset_live_trades` (`SYMBOL`, `TICKET`, `LOTS`, `COMMENT`, `DATETIME`, `LP`) 
-    SELECT SYMBOL, "000" as TICKET, -1 *SUM(LOTS) as `LOTS`, "Clear Offset" as `COMMENT`, 
-    NOW() AS `DATETIME`, "CLEAR off set" as `LP` 
+    sql_insert_statement = """INSERT INTO test.`offset_live_trades` (`SYMBOL`, `TICKET`, `LOTS`, `COMMENT`, `DATETIME`, `LP`)
+    SELECT SYMBOL, "000" as TICKET, -1 *SUM(LOTS) as `LOTS`, "Clear Offset" as `COMMENT`,
+    NOW() AS `DATETIME`, "CLEAR off set" as `LP`
     FROM test.`offset_live_trades`
     WHERE SYMBOL='{Symbol}'
     GROUP BY SYMBOL""".format(Symbol=Symbol)
@@ -235,8 +235,8 @@ def noopentrades_changegroup_ajax(update_tool_time=1):
 
     # Raw SQL Statement. Will have to use .format(live=1) for example.
     raw_sql_statement = """SELECT mt4_users.LOGIN, X.LIVE, X.CURRENT_GROUP as `CURRENT_GROUP[CHECK]`, X.NEW_GROUP, mt4_users.`GROUP` as USER_CURRENT_GROUP,
-            CASE WHEN mt4_users.`GROUP` = X.CURRENT_GROUP THEN 'Yes' ELSE 'No' END as CURRENT_GROUP_TALLY, 
-            CASE WHEN X.NEW_GROUP IN (SELECT `GROUP` FROM Live{live}.mt4_groups WHERE `GROUP` LIKE X.NEW_GROUP) THEN 'Yes' ELSE 'No' END as NEW_GROUP_FOUND, 
+            CASE WHEN mt4_users.`GROUP` = X.CURRENT_GROUP THEN 'Yes' ELSE 'No' END as CURRENT_GROUP_TALLY,
+            CASE WHEN X.NEW_GROUP IN (SELECT `GROUP` FROM Live{live}.mt4_groups WHERE `GROUP` LIKE X.NEW_GROUP) THEN 'Yes' ELSE 'No' END as NEW_GROUP_FOUND,
             COALESCE((SELECT count(*) FROM live{live}.mt4_trades WHERE mt4_trades.LOGIN = X.LOGIN AND CLOSE_TIME = "1970-01-01 00:00:00" GROUP BY mt4_trades.LOGIN),0) as OPEN_TRADE_COUNT
             FROM Live{live}.mt4_users,(SELECT LIVE,LOGIN,CURRENT_GROUP,NEW_GROUP FROM test.changed_group_opencheck WHERE LIVE = '{live}' and `CHANGED` = 0 ) X
             WHERE mt4_users.`ENABLE` = 1 and mt4_users.LOGIN = X.LOGIN """
@@ -431,7 +431,7 @@ def USOil_Ticks_ajax(update_tool_time=1):
                         #
                         async_send_email(To_recipients=EMAIL_LIST_BGI, cc_recipients=[],
                                      Subject="USOil Below {} Dollars.".format(USOil_Price_Alert),
-                                     HTML_Text="""{Email_Header}Hi,<br><br>USOil Price is at {usoil_mid_price}, and it has dropped below {USOil_Price_Alert} USD. <br> 
+                                     HTML_Text="""{Email_Header}Hi,<br><br>USOil Price is at {usoil_mid_price}, and it has dropped below {USOil_Price_Alert} USD. <br>
                                                  The following is the C output. <br><br>{c_output}<br><br>
                                                <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
                                          Email_Header = Email_Header, USOil_Price_Alert = USOil_Price_Alert, usoil_mid_price = usoil_mid_price, c_output=output, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -869,13 +869,13 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
                                         0
                                     END
                                 )AS VOL,
-                    ROUND(SUM(CASE 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    ROUND(SUM(CASE
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1)
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1)
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1)
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1)
                     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS FLOATING_PROFIT,
                                 (
                                     CASE
@@ -954,7 +954,7 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
                                         LEFT(SYMBOL, 6)
                                     END
                                 )
-                
+
                             UNION
                                 SELECT
                                     'live2' AS LIVE,
@@ -968,13 +968,13 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
                                             0
                                         END
                                     )AS VOL,
-                    ROUND(SUM(CASE 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    ROUND(SUM(CASE
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1)
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1)
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1)
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1)
                     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS FLOATING_PROFIT,
                                     (
                                         CASE
@@ -1073,13 +1073,13 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
                                                 0
                                             END
                                         )AS VOL,
-                    ROUND(SUM(CASE 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    ROUND(SUM(CASE
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1)
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1)
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1)
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1)
                     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS FLOATING_PROFIT,
                                         (
                                             CASE
@@ -1161,13 +1161,13 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
                                                     0
                                                 END
                                             )AS VOL,
-                    ROUND(SUM(CASE 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1) 
-                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1) 
+                    ROUND(SUM(CASE
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'USD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN mt4_trades.PROFIT+mt4_trades.SWAPS
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'HKD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/7.78
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'EUR') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'EURUSD' ORDER BY TIME DESC LIMIT 1)
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'GBP') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'GBPUSD' ORDER BY TIME DESC LIMIT 1)
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'NZD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'NZDUSD' ORDER BY TIME DESC LIMIT 1)
+                    WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'AUD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)*(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'AUDUSD' ORDER BY TIME DESC LIMIT 1)
                     WHEN (mt4_trades.`GROUP` IN (SELECT `GROUP` FROM live5.group_table WHERE CURRENCY = 'SGD') AND mt4_trades.CLOSE_TIME = '1970-01-01 00:00:00') THEN (mt4_trades.PROFIT+mt4_trades.SWAPS)/(SELECT AVERAGE FROM live1.daily_prices WHERE SYMBOL LIKE 'USDSGD' ORDER BY TIME DESC LIMIT 1) ELSE 0 END),2) AS FLOATING_PROFIT,
                                             (
                                                 CASE
@@ -1478,18 +1478,11 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
 
     col_needed = [ "SYMBOL", "Vantage_lot", "CFH_lot", "GP_lot", "API_lot", "Offset_lot", "Lp_Net_lot", "MT4_Net_lot", "MT4_Revenue", "Discrepancy", "Mismatch_count"]
 
-
-    # Want to hide CFH if total lots is just 0
-    print(" ")
-    print(" ")
-    if "CFH_lot" in df_postion:
-        print("CFH POSITION")
-        print(df_postion["CFH_lot"].abs())
-    print("CFH GP_lot")
-    print(df_postion["GP_lot"].abs())
-    print(" ")
-    print(" ")
-
+    # If there is no lots in CFH at all, we don't need to show the column
+    if "CFH_lot" in df_postion and df_postion["CFH_lot"].abs().sum() == 0 :
+        #print(df_postion["CFH_lot"].abs().sum())
+        col_needed.remove("CFH_lot")
+        #df_postion["CFH_lot"] = 1
 
     col_to_use = [c for c in col_needed if c in df_postion]     # Just in case the column is not in the df.
 
@@ -1515,13 +1508,13 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
 def ABook_LP_Details(update_tool_time=0):    # LP Details. Balance, Credit, Margin, MC/SO levels. Will alert if email is set to send.
                             # Checks Margin against MC/SO values, with some buffer as alert.
 
-    sql_query = text("""SELECT lp, deposit, credit, pnl, equity, total_margin, free_margin, 
-		ROUND((credit + deposit + pnl),2) as EQUITY, 
+    sql_query = text("""SELECT lp, deposit, credit, pnl, equity, total_margin, free_margin,
+		ROUND((credit + deposit + pnl),2) as EQUITY,
 		COALESCE(ROUND(100 * total_margin / (credit + deposit + pnl),2),0) as `Margin/Equity (%)` ,
 		margin_call as `margin_call (M/E)` , stop_out as `stop_out (M/E)`,
 			  COALESCE(`stop_out_amount`, ROUND(  100* (`total_margin`/`stop_out`) ,2)) as `STOPOUT AMOUNT`,
 		ROUND(`equity` -  COALESCE(`stop_out_amount`, 100* (`total_margin`/`stop_out`) ),2) as `available`,
-		updated_time 
+		updated_time
 		FROM aaron.lp_summary ORDER BY LP DESC""")  # Need to convert to Python Friendly Text.
     raw_result = db.engine.execute(sql_query)
     result_data = raw_result.fetchall()
@@ -1772,7 +1765,7 @@ def Changed_readonly():
 @roles_required()
 def Changed_readonly_ajax():
 
-    # Which Date to start with. We want to count back 1 day. 
+    # Which Date to start with. We want to count back 1 day.
     start_date = get_working_day_date(datetime.date.today(), weekdays_count= -2)
     sql_query = text("Select * from test.changed_read_only WHERE `date` >= '{}' order by Date DESC".format(start_date.strftime("%Y-%m-%d")))
     raw_result = db.engine.execute(sql_query)
@@ -1957,7 +1950,7 @@ def BGI_Convert_Rate_Ajax():
     # group by A.SYMBOL""")
 
     # Want to use another table
-    sql_query = text("""select symbol, MODIFY_TIME as time, (BID + ASK) * 0.5 as average 
+    sql_query = text("""select symbol, MODIFY_TIME as time, (BID + ASK) * 0.5 as average
         From live1.mt4_prices as A
         Where LENGTH(A.SYMBOL) = 6 and A.SYMBOL like "%USD%"
         Group by A.SYMBOL""")
@@ -2096,7 +2089,7 @@ def Monitor_Account_Trades_Settings():
         sql_insert =  """INSERT INTO aaron.monitor_account (`Live`, `Account`, `Tele_name`, `Email_Risk`, `Entry_Time`, `Disable_time`)
          select A.Live, A.Account, T.Tele_name, A.Email_Risk,  now() as `Entry_Time` , A.Disable_time
         FROM (select '{Live}' as `Live`, '{Account}' as `Account`, '{Email_Risk}' as `Email_Risk`,
-        '1970-01-01 00:00:00' as `Disable_time`) as A, aaron.telegram_id as T {tele_name_condition} 
+        '1970-01-01 00:00:00' as `Disable_time`) as A, aaron.telegram_id as T {tele_name_condition}
         ON DUPLICATE KEY UPDATE `Entry_Time`=VALUES(`Entry_Time`), `Email_Risk`=VALUES(`Email_Risk`) """.format(
             Live=Live,Account=Account,Email_Risk=Email_Risk, tele_name_condition=tele_name_condition)
 
@@ -2163,8 +2156,8 @@ def Delete_Monitor_Account_Button_Endpoint(Live="", Account="", Tele_name=""):
 
 
     # Write the SQL Statement and Update to disable the Account monitoring.
-    sql_update_statement = """UPDATE aaron.Monitor_Account SET Disable_time=NOW() where Disable_time = '1970-01-01 00:00:00' 
-        AND Live={Live} AND Account={Account} 
+    sql_update_statement = """UPDATE aaron.Monitor_Account SET Disable_time=NOW() where Disable_time = '1970-01-01 00:00:00'
+        AND Live={Live} AND Account={Account}
             AND Tele_name='{Tele_name}'""".format(Live=Live,Account=Account,Tele_name=Tele_name)
     sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
     #print(sql_update_statement)
@@ -2174,8 +2167,8 @@ def Delete_Monitor_Account_Button_Endpoint(Live="", Account="", Tele_name=""):
 
 
     # Also, Need to clear off any Current Monitoring Trades.
-    sql_update_statement = """UPDATE aaron.monitor_account_trades SET Trade_Close_Notify=1 
-            WHERE Live={Live} AND Account={Account} 
+    sql_update_statement = """UPDATE aaron.monitor_account_trades SET Trade_Close_Notify=1
+            WHERE Live={Live} AND Account={Account}
                 AND Tele_name='{Tele_name}'""".format(Live=Live,Account=Account,Tele_name=Tele_name)
     sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
     #print(sql_update_statement)
@@ -2225,19 +2218,19 @@ def Monitor_Account_Trades_Ajax():
         monitor_account_table = "aaron.`monitor_account`"
         monitor_account_trades_table = "aaron.`monitor_account_trades`"
 
-    per_live_sql = """SELECT '{Live}' as `LIVE`, T.LOGIN, T.TICKET, T.CMD, T.SYMBOL, T.VOLUME, T.OPEN_TIME,T.CLOSE_TIME, 
+    per_live_sql = """SELECT '{Live}' as `LIVE`, T.LOGIN, T.TICKET, T.CMD, T.SYMBOL, T.VOLUME, T.OPEN_TIME,T.CLOSE_TIME,
         T.OPEN_PRICE, T.CLOSE_PRICE, T.PROFIT, T.SWAPS, M.Tele_name as `TELE_NAME`,TID.Tele_ID as `TELE_ID`, M.Email_risk as `EMAIL_RISK`
     FROM {monitor_account_table} as M, live{Live}.mt4_trades as T, aaron.telegram_id as TID
     WHERE M.Account = T.LOGIN AND T.CMD < 2 AND  TID.Tele_name = M.Tele_name AND
-    M.Live = {Live} AND M.Disable_time = '1970-01-1 00:00:00'  AND CLOSE_TIME = '1970-01-01 00:00:00' AND 
-    T.TICKET NOT IN 
+    M.Live = {Live} AND M.Disable_time = '1970-01-1 00:00:00'  AND CLOSE_TIME = '1970-01-01 00:00:00' AND
+    T.TICKET NOT IN
         (SELECT TICKET FROM {monitor_account_trades_table} as MT WHERE MT.Trade_Close_Notify = 0 AND MT.Live = {Live} AND  M.Tele_name = MT.Tele_name)
     UNION
-    SELECT '{Live}' as `LIVE`, T.LOGIN, T.TICKET, T.CMD, T.SYMBOL, T.VOLUME, T.OPEN_TIME,T.CLOSE_TIME, 
+    SELECT '{Live}' as `LIVE`, T.LOGIN, T.TICKET, T.CMD, T.SYMBOL, T.VOLUME, T.OPEN_TIME,T.CLOSE_TIME,
         T.OPEN_PRICE, T.CLOSE_PRICE, T.PROFIT, T.SWAPS, M.Tele_name as `TELE_NAME`,TID.Tele_ID as `TELE_ID`, M.Email_risk as `EMAIL_RISK`
     FROM {monitor_account_table} as M, live{Live}.mt4_trades as T, {monitor_account_trades_table} as MT, aaron.telegram_id as TID
-    WHERE M.Account = T.LOGIN AND T.CMD < 2 AND  MT.Tele_name = M.Tele_name AND TID.Tele_name = MT.Tele_name AND M.Live = {Live} AND 
-    M.Disable_time = '1970-01-1 00:00:00'  AND CLOSE_TIME != '1970-01-01 00:00:00' 
+    WHERE M.Account = T.LOGIN AND T.CMD < 2 AND  MT.Tele_name = M.Tele_name AND TID.Tele_name = MT.Tele_name AND M.Live = {Live} AND
+    M.Disable_time = '1970-01-1 00:00:00'  AND CLOSE_TIME != '1970-01-01 00:00:00'
     AND MT.Account = T.LOGIN AND MT.Live = {Live} AND MT.Ticket = T.TICKET AND MT.Trade_Close_Notify = 0
     """
 
@@ -2523,7 +2516,7 @@ def Mismatch_trades_mt4(symbol = [], hours=7, mins=16):
     # flexi time that we want to query the DB for Live 5
     time_live_5_gmt_query = (datetime.datetime.now()-datetime.timedelta(hours=hours -1, minutes=mins)).strftime("%Y-%m-%d %H:%M:00")
 
-    raw_query = """SELECT '{live}' as LIVE, LOGIN, TICKET, SYMBOL, CMD, VOLUME, OPEN_TIME, CLOSE_TIME, OPEN_PRICE, CLOSE_PRICE, `GROUP`, `COMMENT`  
+    raw_query = """SELECT '{live}' as LIVE, LOGIN, TICKET, SYMBOL, CMD, VOLUME, OPEN_TIME, CLOSE_TIME, OPEN_PRICE, CLOSE_PRICE, `GROUP`, `COMMENT`
     FROM live{live}.mt4_trades WHERE (OPEN_TIME >= '{time_query}' or CLOSE_TIME >= '{time_query}')
     and CMD < 2 and `GROUP` in (select * from live{live}.a_group) {symbol_list}"""
     raw_query = raw_query.replace("\n", "")
@@ -2647,4 +2640,3 @@ def Live_MT4_Users(live):    # To upload the Files, or post which trades to dele
     df_users["ENABLE"] = df_users["ENABLE"].apply(lambda x: "YES" if x==0 else "NO")
     df_users["ENABLE_READONLY"] = df_users["ENABLE_READONLY"].apply(lambda x: "YES" if x == 0 else "NO")
     return excel.make_response_from_array(list([result_col]) + list(df_users.values), 'csv', file_name="Live{}_Users.csv".format(live))
-
