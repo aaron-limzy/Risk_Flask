@@ -1302,15 +1302,15 @@ def symbol_float_trades(symbol="", book="b"):
     #
 
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("symbol_float_trades"), icon="",
-                           Table_name={ "Winning Floating Groups (Client Side)": "Hs1",
+                           Table_name={ "Total Floating (BGI Side)": "V1",
+                                        "Country Floating (BGI Side)": "Hs5",
+                                        "Winning Floating Groups (Client Side)": "Hs1",
                                         "Losing Floating Groups (Client Side)": "Hs2",
                                         "Winning Floating Accounts (Client Side)": "H1",
                                         "Losing Floating Accounts (Client Side)": "H2",
                                         "Largest Lots Floating Accounts (Client Side)": "H5",
                                         "Total Volume Snapshot" : "P1",
                                         "Open Time vs Lots": "P2",
-                                        "Total Floating (BGI Side)": "V1",
-                                        "Country Floating (BGI Side)": "Hs5",
                                         "Line": "Hr1",
                                         "Winning Realised Accounts Today (Client Side)": "H3",
                                         "Losing Realised Accounts Today (Client Side)": "H4",
@@ -1479,15 +1479,15 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
     # Return the values as json.
     # Each item in the returned dict will become a table, or a plot
-    return json.dumps({"Hs1": top_groups.to_dict("record"),
+    return json.dumps({"V1": [total_sum.to_dict()],
+                       "Hs5" : open_by_country.to_dict("record"),
+                        "Hs1": top_groups.to_dict("record"),
                        "Hs2": bottom_groups.to_dict("record"),
                        "H1": top_accounts.to_dict("record"),
                        "H2" : bottom_accounts.to_dict("record"),
                        "H5" : largest_login.to_dict("record"),
                        "P1" : vol_fig,
                        "P2": opentime_fig,
-                       "V1": [total_sum.to_dict()],
-                       "Hs5" : open_by_country.to_dict("record"),
                        "H3": closed_top_accounts.to_dict("record"),
                        "H4": closed_bottom_accounts.to_dict("record"),
                        "H6" : closed_largest_lot_accounts.to_dict("record"),

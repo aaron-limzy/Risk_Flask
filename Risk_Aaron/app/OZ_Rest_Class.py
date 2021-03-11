@@ -27,8 +27,7 @@ class OZ_Rest_Class:
 
     def __init__(self, hub):
         print("hub:{}".format(hub))
-        self.Bridge_REST_Version = "1.01"
-        #self.Bridge_REST_Version = "1.06"
+        #self.Bridge_REST_Version = "1.11"
         self.BRIDGE_IP = ""
         self.REST_Password = ""
         self.REST_Login = ""
@@ -41,25 +40,36 @@ class OZ_Rest_Class:
             self.BRIDGE_IP = "38.76.4.235:44301"  # Live Retail Bridge
             self.REST_Password = "riskrisk"
             self.REST_Login = "Risk_API"
+        elif hub.lower() == "lab":
+            self.BRIDGE_IP = "192.168.64.30:44300"  # Lab Retail Bridge
+            self.REST_Password = "riskrisk"
+            self.REST_Login = "Risk_API"
 
         self.ACCESS_CODE = self.Get_AccessCode()
 
     # Get the access code from OZ bridge
     def Get_AccessCode(self):
-        payload = {'grant_type': 'password',"username" : self.REST_Login, "password":self.REST_Password, "rest_version":self.Bridge_REST_Version}
-        Post_Return = requests.post('https://' + self.BRIDGE_IP + '/api/token', verify = False, data=payload)
 
-        if(Post_Return.status_code == 200):
-            print("Return code okay. ")
-        else:
-            print("Something went wrong with the Access code request")
-            return "ERROR: " + Post_Return.text
+        rest_version = ["1.11", "1.06"]
+        connection_flag=False
+        for res_v in rest_version:
+            payload = {'grant_type': 'password',"username" : self.REST_Login, "password":self.REST_Password, "rest_version":res_v}
+            Post_Return = requests.post('https://' + self.BRIDGE_IP + '/api/token', verify = False, data=payload)
+
+            if(Post_Return.status_code != 200):
+                print("Something went wrong with the Access code request with REST version: {}".format(res_v))
+                continue
+            else:
+                connection_flag=True
+                print("Return code okay. REST version: {}".format(res_v))
+                break
 
         Return_Json = Post_Return.json()
-
-        if("access_token" in Return_Json):  # If the access code isn't there.
-            return Return_Json["access_token"]
-        return "ERROR: " + Post_Return.text
+        if connection_flag:
+            if("access_token" in Return_Json):  # If the access code isn't there.
+                return Return_Json["access_token"]
+        else:
+            return "ERROR: " + Post_Return.text
 
 
     def post_rest_w_Idempotency(self, url, payload):
@@ -104,13 +114,12 @@ class OZ_Rest_Class:
 
         #The request Header
         Authorization = {"Authorization" : "Bearer " + Access_code}
+        #endpoint="settings/price-channel-rule"
         #Get_Return = requests.get( "https://" + self.BRIDGE_IP + "/api/rest/bridge-settings/SymbolSettings", verify=False, headers = Authorization)
         print("https://" + self.BRIDGE_IP + "/api/rest/{endpoint}".format(endpoint=endpoint))
         Get_Return = requests.get("https://" + self.BRIDGE_IP + "/api/rest/{endpoint}".format(endpoint=endpoint), verify=False, headers=Authorization)
 
         return Get_Return
-
-
 
 
     # Returns
@@ -172,11 +181,9 @@ class OZ_Rest_Class:
             print(Buffer)
 
 
-
-
     def get_margin_acc_position(self, id):
 
-        position_reply = self.Rest_Get_OZ("/margin-account/{id}/positions".format(id=id))
+        position_reply = self.Rest_Get_OZ("margin-account/{id}/positions".format(id=id))
         position_json = position_reply.json()
 
         if 'data' in position_json:
@@ -222,7 +229,7 @@ class OZ_Rest_Class:
     # Get the Symbol Markups and return it as a dict
     def get_symbol_settings_rules(self):
 
-        price_channel_rule_req = self.Rest_Get_OZ("/settings/price-channel-rule")
+        price_channel_rule_req = self.Rest_Get_OZ("settings/price-channel-rule")
 
         #Checks for Status code return.
         if price_channel_rule_req.status_code != 200:
@@ -232,19 +239,6 @@ class OZ_Rest_Class:
         price_channel_rule = price_channel_rule_req.json()
 
         return price_channel_rule
-
-    # Want to get core Symbol setting.
-    def get_core_symbol(self):
-        price_channel_rule_req = self.Rest_Get_OZ("hub-settings/SymbolSettings")
-
-        if price_channel_rule_req.status_code != 200:
-            print("Error: Return from Setting Rules Give Request error {}".format(price_channel_rule_req.status_code))
-            return
-
-        symbol_setting_all = price_channel_rule_req.json()
-
-
-        return symbol_setting_all
 
 
 
@@ -552,6 +546,8 @@ class OZ_Rest_Class:
     #
 
 
+
+# """bridge-settings/SymbolSettings"""
 
 # Writing an array or Dict to a csv file.
 # Need a [{}]
