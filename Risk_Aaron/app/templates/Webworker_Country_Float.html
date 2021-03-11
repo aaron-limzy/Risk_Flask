@@ -646,7 +646,7 @@
                 //'#' + key + '_table' will be the name of the table in the Div.
                  refresh_datatable('#' + key, current_html + ret_obj[key]);
                  if (refresh_viz_count >= 2){  // Only want to refresh the viz every 30 secons.
-                 //console.log("Refreshing viz data.");
+                   //console.log("Refreshing viz data.");
                   viz.refreshDataAsync(); // Want to refresh the tableau viz's data
                   refresh_viz_count = 0;  // reset the counbter
                 }else{

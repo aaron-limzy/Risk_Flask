@@ -20,7 +20,7 @@ from app.Plotly.tableau_url import *
 #from app.Plotly.table import Client_Trade_Table
 
 from app.background import *
-from app.tableau_embed import *
+#from app.tableau_embed import *
 
 from app.Risk_Tools_Config import email_flag_fun
 
