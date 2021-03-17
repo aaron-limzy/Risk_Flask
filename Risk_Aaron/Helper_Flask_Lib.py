@@ -549,8 +549,6 @@ def symbol_all_open_trades(app, ServerTimeDiff_Query, symbol="", book="B", entit
 
 
 
-
-
 @unsync
 # # Get all open trades of a particular symbol.
 # # Get it converted as well.

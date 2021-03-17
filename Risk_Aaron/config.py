@@ -26,7 +26,8 @@ class Config(object):
             'live1': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live1',
             'live2': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live2',
             'live3': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live3',
-            'live5': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live5'
+            'live5': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live5',
+            'mt5_live1' : 'mysql+pymysql://risk:1qaz2wsx@119.81.149.213/mt5'
         }
         print("Not on Server (64.73) Will use Internal IP to link SQL. ")
 
