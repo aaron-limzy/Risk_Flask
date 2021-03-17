@@ -161,7 +161,7 @@ def mt5_b_book_query(time_diff=0):
 # 		ON AverageVolumet.BaseSymbol = F.BaseSymbol
 # 	""".format(time_diff_mt5=time_diff_mt5)
 
-    sql_query = """SELECT FinalTable.Country,FinalTable.BaseSymbol,-NetVolume AS NetVolume,FloatVolume,AverageFloatVolume AS DailyAverage, -FloatProfit AS FloatProfit, TodayVolume AS TodayClosedVolume,-TodayProfitUsd AS TodayClosedProfitUsd,YesterdayVolume AS YesterdayClosedVolume,
+    sql_query = r"""SELECT FinalTable.Country,FinalTable.BaseSymbol,-NetVolume AS NetVolume,FloatVolume,AverageFloatVolume AS DailyAverage, -FloatProfit AS FloatProfit, TodayVolume AS TodayClosedVolume,-TodayProfitUsd AS TodayClosedProfitUsd,YesterdayVolume AS YesterdayClosedVolume,
             -YesterdayProfitUsd AS YesterdayClosedProfitUsd FROM(
                 
             SELECT F.Country,F.BaseSymbol,sum(NetVolume) AS NetVolume,SUM(FloatVolume) AS FloatVolume, SUM(FloatProfit) AS FloatProfit,
@@ -173,7 +173,7 @@ def mt5_b_book_query(time_diff=0):
                             (#FLOAT MT5 live 1
                                 select t1.*,t2.`Group`,t3.Currency, CASE 
                                 WHEN t3.Currency = "USD" THEN Profit
-                                WHEN LEFT(t3.SYMBOL,3)="USD" THEN (Profit / ((AskLast+BidLast)/2))
+                                WHEN LEFT(t3.SYMBOL,3)="USD" THEN Profit / ((AskLast+BidLast)/2)
                                 ELSE Profit * ((AskLast+BidLast)/2)
                                 END AS Profit_usd, SymbolPath,BaseSymbol
                                 from#current open position with conversion rate
@@ -193,7 +193,7 @@ def mt5_b_book_query(time_diff=0):
                                 #FLOAT MT5 live 2
                                 select t1.*,t2.`Group`,t3.Currency, CASE 
                                 WHEN t3.Currency = "USD" THEN Profit
-                                WHEN LEFT(t3.SYMBOL,3)="USD" THEN (Profit / ((AskLast+BidLast)/2))
+                                WHEN LEFT(t3.SYMBOL,3)="USD" THEN Profit / ((AskLast+BidLast)/2)
                                 ELSE Profit * ((AskLast+BidLast)/2)
                                 END AS Profit_usd, SymbolPath,BaseSymbol
                                 from#current open position select * from mt5.mt5_positions
