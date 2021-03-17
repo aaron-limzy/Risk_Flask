@@ -169,9 +169,9 @@ def before_request():
         async_sql_insert_raw(app=current_app._get_current_object(), sql_insert=sql_statement)
 
 
-@analysis.route('/Save_BGI_Float', methods=['GET', 'POST'])
+@analysis.route('/Save_MT4_BGI_Float', methods=['GET', 'POST'])
 @roles_required()
-def save_BGI_float():
+def save_mt4_BGI_float():
 
     title = "Save BGI Float"
     header = "Saving BGI Float"
@@ -191,7 +191,7 @@ def save_BGI_float():
         # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename = background_pic("save_BGI_float"),
                            icon="css/save_Filled.png", Table_name="Save Floating 💾", title=title,
-                           ajax_url=url_for('analysis.save_BGI_float_Ajax', _external=True), header=header, setinterval=12,
+                           ajax_url=url_for('analysis.save_BGI_MT4_float_Ajax', _external=True), header=header, setinterval=12,
                            description=description, replace_words=Markup(["Today"]))
 
 
@@ -200,7 +200,7 @@ def save_BGI_float():
 # Tried doing Insert.. Select. But there was desdlock situation..
 @analysis.route('/save_BGI_float_Ajax', methods=['GET', 'POST'])
 @roles_required()
-def save_BGI_float_Ajax(update_tool_time=1):
+def save_BGI_MT4_float_Ajax(update_tool_time=1):
 
     #start = datetime.datetime.now()
     # TODO: Only want to save during trading hours.
@@ -403,7 +403,7 @@ def save_BGI_float_Ajax(update_tool_time=1):
 
     # Insert into the Checking tools.
     if (update_tool_time == 1):
-        Tool = "BGI_Float_History_Save"
+        Tool = "bgi_float_mt4_history_save"
         sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`, `email_sent`) VALUES" + \
                      " ('{Tool}', now(), 0) ON DUPLICATE KEY UPDATE Updated_Time=now(), email_sent=VALUES(email_sent)".format(
                          Tool=Tool)
@@ -413,6 +413,72 @@ def save_BGI_float_Ajax(update_tool_time=1):
     #print("\nSaving floating PnL tool: {}s\n".format((end - start).total_seconds()))
     return json.dumps([{'Update time': Get_time_String()}])
 
+
+@analysis.route('/Save_BGI_mt5_Float', methods=['GET', 'POST'])
+@roles_required()
+def save_mt5_BGI_float():
+    title = "Save MT5 BGI Float"
+    header = "Saving MT5 BGI Float"
+
+    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+    # For Login in aaron.Risk_autocut and Credit_limit != 0
+
+    description = Markup("<b>Saving MT5 BGI Float Data.</b><br>" +
+                         "Saving it into aaron.BGI_Float_History_Save<br>" +
+                         "Save it by Country, by Symbol.<br>" +
+                         "Country Float and Symbol Float will be using this page.<br>" +
+                         "Table time is in Server [Live 1] Timing.<br>" +
+                         "Revenue has been all flipped (*-1) regardless of A or B book.<br><br>")
+
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("save_BGI_float"),
+                           icon="css/save_Filled.png", Table_name="Save MT5 Floating 💾", title=title,
+                           ajax_url=url_for('analysis.save_BGI_MT5_float_Ajax', _external=True), header=header,
+                           setinterval=12,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+# Insert into aaron.BGI_Float_History_Save
+# Will select, pull it out into Python, before inserting it into the table.
+# Tried doing Insert.. Select. But there was desdlock situation..
+@analysis.route('/save_BGI_mt5_float_Ajax', methods=['GET', 'POST'])
+@roles_required()
+def save_BGI_MT5_float_Ajax(update_tool_time=1):
+    # start = datetime.datetime.now()
+    # TODO: Only want to save during trading hours.
+    # TODO: Want to write a custom function, and not rely on using CFH timing.
+    if not cfh_fix_timing():
+        return json.dumps([{'Update time': "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
+
+    if check_session_live1_timing() == False:  # If False, It needs an update.
+
+        # TOREMOVE: Comment out the print.
+        print("Saving Previous Day PnL")
+        # TODO: Maybe make this async?
+        save_previous_day_PnL()  # We will take this chance to get the Previous day's PnL as well.
+
+    # Want to reduce the query overheads. So try to use the saved value as much as possible.
+    server_time_diff_str = session["live1_sgt_time_diff"] -1 if "live1_sgt_time_diff" in session \
+        else '(SELECT result FROM aaron.`aaron_misc_data` where item = "mt5_timing_diff")'
+
+
+    query = mt5_BBook_select_insert(time_diff=server_time_diff_str)
+
+    result_data = SQL_insert_MT5_statement(query)
+
+
+    # Insert into the Checking tools.
+    if (update_tool_time == 1):
+        Tool = "bgi_float_mt5_history_save"
+        sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`, `email_sent`) VALUES" + \
+                     " ('{Tool}', now(), 0) ON DUPLICATE KEY UPDATE Updated_Time=now(), email_sent=VALUES(email_sent)".format(
+                         Tool=Tool)
+        raw_insert_result = db.engine.execute(sql_insert)
+
+    # end = datetime.datetime.now()
+    # print("\nSaving floating PnL tool: {}s\n".format((end - start).total_seconds()))
+    return json.dumps([{'Update time': Get_time_String()}])
 
 
 @analysis.route('/BGI_Country_Float', methods=['GET', 'POST'])
@@ -3554,11 +3620,16 @@ def mt5_test():
     title = "Symbol Float"
     header = "Symbol Float"
 
-    query = mt5_b_book_query()
+    query = mt5_BBook_select_insert()
 
-    result_data = Query_SQL_mt5_db_engine(query)
+    result_data = SQL_insert_MT5_statement(query)
 
-    print(pd.DataFrame(result_data))
+    # sql_insert = """INSERT INTO aaron.`bgi_mt5_float_save` (entity, symbol, net_floating_volume, floating_volume, floating_revenue, datetime, closed_revenue_today, closed_vol_today)
+    # VALUES ("SG", "EURUSD", "1", "1.02", "2.02", now(), "2.34", "1.234")"""
+    #
+    # SQL_insert_MT5_statement(sql_insert)
+    #
+    # print(pd.DataFrame(result_data))
 
 
     return "Hello<br><br>testing 1 2 3 <br>Thanks!"

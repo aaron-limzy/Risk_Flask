@@ -10,7 +10,7 @@ from app.table import Delete_Monitor_Account_Table
 from app.table import Delete_Risk_ABook_Offset_Table
 
 # Import function to call in case the page dosn't run.
-from app.Plotly.routes import save_BGI_float_Ajax
+from app.Plotly.routes import save_BGI_MT5_float_Ajax, save_BGI_MT4_float_Ajax
 from app.Scrape_Futures import *
 
 from app.background import *
@@ -1821,7 +1821,8 @@ def Monitor_Risk_Tools_ajax():
     #"Equity_protect"            : Equity_protect_Cut_ajax,
     function_to_call = {'ChangeGroup_NoOpenTrades'  : noopentrades_changegroup_ajax,
                         "Risk_Auto_Cut"             : risk_auto_cut_ajax,
-                        "bgi_float_history_save"         : save_BGI_float_Ajax,
+                        "bgi_float_mt4_history_save"         : save_BGI_MT4_float_Ajax,
+                        "bgi_float_mt5_history_save": save_BGI_MT5_float_Ajax,
                         "MT4/LP A Book Check": ABook_Matching_Position_Vol,
                         "LP_Details_Check": ABook_LP_Details
                         }

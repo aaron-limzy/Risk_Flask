@@ -18,7 +18,6 @@ from unsync import unsync
 def Query_SQL_mt5_db_engine(sql_query):
 
     raw_result = db.session.execute(text(sql_query), bind=db.get_engine(current_app, 'mt5_live1'))
-
     #db.session.execute(sql_query, bind=db.get_engine(current_app, 'mt5_live1'))
     #return raw_result
 
@@ -27,3 +26,30 @@ def Query_SQL_mt5_db_engine(sql_query):
     result_col = raw_result.keys()
     zip_results = [dict(zip(result_col,d)) for d in result_data_decimal]
     return zip_results
+
+
+
+def SQL_insert_MT5(header="", values = [" "], footer = "", sql_max_insert=500):
+
+    for i in range(math.ceil(len(values) / sql_max_insert)):
+        # To construct the sql statement. header + values + footer.
+        sql_trades_insert = header + " , ".join(values[i * sql_max_insert:(i + 1) * sql_max_insert]) + footer
+        sql_trades_insert = sql_trades_insert.replace("\t", "").replace("\n", "")
+        #print(sql_trades_insert)
+        sql_trades_insert = text(sql_trades_insert)  # To make it to SQL friendly text.
+        raw_insert_result = db.session.execute(sql_trades_insert,  bind=db.get_engine(current_app, 'mt5_live1'))
+        db.session.commit()
+    return
+
+
+
+
+def SQL_insert_MT5_statement(sql_insert):
+
+    # To make it to SQL friendly text.
+    raw_insert_result = db.session.execute( text(sql_insert),  bind=db.get_engine(current_app, 'mt5_live1'))
+    #print(raw_insert_result.fetchall())
+    #print(sql_insert)
+    db.session.commit() # Since we are using session, we need to commit.
+    return
+
