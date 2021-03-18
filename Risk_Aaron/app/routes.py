@@ -159,7 +159,7 @@ def add_off_set():
     # For FLASK-TABLE to work. We need to get the names from SQL right.
     # Also, we want to get the Symbols to upper for better display. That's all. ha ha
 
-    sql_query = "SELECT UPPER(SYMBOL) as `Symbol`, SUM(LOTS) as 'Lots' FROM test.`offset_live_trades` GROUP BY SYMBOL ORDER BY `Lots` DESC"
+    sql_query = "SELECT UPPER(SYMBOL) as `Symbol`, SUM(LOTS) as 'Lots' FROM test.`offset_live_trades` GROUP BY `SYMBOL` ORDER BY `Lots` DESC"
     collate = query_SQL_return_record(text(sql_query))
     if len(collate) == 0:   # There is no data.
         empty_table = [{"Result": "There are currently no single account excluded from the autocut."}]
@@ -771,7 +771,7 @@ def ABook_Matching():
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
 def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
 
-    mismatch_count = [2, 10,15]
+    mismatch_count = [10,15]
     #mismatch_count_1 = 1   # Notify when mismatch has lasted 1st time.
     #mismatch_count_2 = 15   # Second notify when mismatched has lasted a second timessss
 
@@ -1261,45 +1261,54 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
     if request.method == 'POST' and len(request.form) > 0:    # If the request came in thru a POST. We will get the data first.
         #print("Request A Book Matching method: POST")
 
+        # This will sometimes cause everything in the dict to become list.
         post_data = dict(request.form)  # Want to do a copy.
-        print()
-        print()
-        print(post_data)
-        print()
+
+
 
         # Check if we need to send Email
-        Send_Email_Flag =  int(post_data["send_email_flag"]) if ("send_email_flag" in post_data) \
-                                                                   and (isinstance(post_data['send_email_flag'], str)
-                                                                        and isfloat(post_data['send_email_flag'])) else 0
+        # Need to check if it's a list or a string.
+        Send_Email_Flag = 0
+        if "send_email_flag" in post_data:
+            if isinstance(post_data['send_email_flag'], str) and isfloat(post_data['send_email_flag']):
+                Send_Email_Flag = int(post_data["send_email_flag"])
+            elif  isinstance(post_data['send_email_flag'], list) and len(post_data['send_email_flag']) > 0 and isfloat(post_data['send_email_flag'][0]):
+                Send_Email_Flag = int(post_data["send_email_flag"][0])
+            else:
+                Send_Email_Flag = 0
+
+        # Send_Email_Flag =  int(post_data["send_email_flag"]) if ("send_email_flag" in post_data) \
+        #                                                            and (isinstance(post_data['send_email_flag'], str)
+        #                                                                 and isfloat(post_data['send_email_flag'])) else 0
 
 
         # Check for the past details.
         # Should be stored in Javascript, and returned back Via post.
-        # Will contain all the Zeros as well.
-        # # Example below:
-        #{'send_email_flag': '1',  'MT4_LP_Position_save': '[{"SYMBOL":"GBPCAD","Vantage_lot":0,"CFH_Lots":0.01,"API_lot":0,"Offset_lot":0,"Lp_Net_Vol":0.01,
-        # "MT4_Net_Vol":0,"Discrepancy":0.01,"Mismatch_count":15},{"SYMBOL":"XAUUSD","Vantage_lot":0,"CFH_Lots":-10.26,"API_lot":0,"Offset_lot":0,"Lp_Net_Vol":-10.26,"MT4_Net_Vol":-10.26,
-        # "Discrepancy":0,"Mismatch_count":0},{"SYMBOL":"GBPUSD","Vantage_lot":0,"CFH_Lots":-0.07,"API_lot":0,"Offset_lot":0,"Lp_Net_Vol":-0.07,"MT4_Net_Vol":-0.07,"Discrepancy":0,"Mismatch_count":0},
-        # {"SYMBOL":"AUDNZD","Vantage_lot":0,"CFH_Lots":0.04,"API_lot":0,"Offset_lot":0,"Lp_Net_Vol":0.04,"MT4_Net_Vol":0.04,"Discrepancy":0,"Mismatch_count":0},{"SYMBOL":"CHFJPY","Vantage_lot":0,
-        # "CFH_Lots":0.02,"API_lot":0,"Offset_lot":0,"Lp_Net_Vol":0.02,"MT4_Net_Vol":0.02,"Discrepancy":0,"Mismatch_count":0},{"SYMBOL":"USDJPY","Vantage_lot":0,"CFH_Lots":-0.02,"API_lot":0,"Offset_lot":0,
-        # "Lp_Net_Vol":-0.02,"MT4_Net_Vol":-0.02,"Discrepancy":0,"Mismatch_count":0}]'}
 
-        print(post_data["MT4_LP_Position_save"])
-        print()
+        Past_Details = []
+        if "MT4_LP_Position_save" in post_data:
+            if isinstance(post_data['MT4_LP_Position_save'], str) and   is_json(post_data["MT4_LP_Position_save"]):
+                Past_Details = json.loads(post_data["MT4_LP_Position_save"])
+            elif isinstance(post_data['MT4_LP_Position_save'], list) and len(post_data['MT4_LP_Position_save']) > 0 and  is_json(post_data["MT4_LP_Position_save"][0]):
+                Past_Details = json.loads(post_data["MT4_LP_Position_save"][0])
+            else:
+                Past_Details = []
 
-        Past_Details = json.loads(post_data["MT4_LP_Position_save"]) if ("MT4_LP_Position_save" in post_data) \
-                                                                           and (isinstance(post_data['MT4_LP_Position_save'], str)) \
-                                                                           and is_json(post_data["MT4_LP_Position_save"]) \
-                                                                            else []
+        #print(post_data["MT4_LP_Position_save"])
+        # print("Past_Details")
+        # print(Past_Details)
+
+        # Past_Details = json.loads(post_data["MT4_LP_Position_save"]) if ("MT4_LP_Position_save" in post_data) \
+        #                                                                    and (isinstance(post_data['MT4_LP_Position_save'], str)) \
+        #                                                                    and is_json(post_data["MT4_LP_Position_save"]) \
+        #                                                                     else []
 
         # To revert back to a normal Symbol string, instead of a URL.
         df_past_details = pd.DataFrame(Past_Details)
 
 
-
-
-        print("past details")
-        print(df_past_details)
+        # print("past details")
+        # print(df_past_details)
 
         if "SYMBOL" in df_past_details:
             df_past_details["SYMBOL"] = df_past_details["SYMBOL"].apply(lambda x: BeautifulSoup(x, features="lxml").a.text \

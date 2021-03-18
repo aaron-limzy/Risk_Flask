@@ -173,8 +173,8 @@ def before_request():
 @roles_required()
 def save_mt4_BGI_float():
 
-    title = "Save BGI Float"
-    header = "Saving BGI Float"
+    title = "Save MT4 BGI Float"
+    header = "Saving MT4 BGI Float"
 
     # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
@@ -190,7 +190,7 @@ def save_mt4_BGI_float():
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename = background_pic("save_BGI_float"),
-                           icon="css/save_Filled.png", Table_name="Save Floating 💾", title=title,
+                           icon="css/save_Filled.png", Table_name="Save MT4 Floating 💾", title=title,
                            ajax_url=url_for('analysis.save_BGI_MT4_float_Ajax', _external=True), header=header, setinterval=12,
                            description=description, replace_words=Markup(["Today"]))
 
@@ -425,11 +425,10 @@ def save_mt5_BGI_float():
     # For Login in aaron.Risk_autocut and Credit_limit != 0
 
     description = Markup("<b>Saving MT5 BGI Float Data.</b><br>" +
-                         "Saving it into aaron.BGI_Float_History_Save<br>" +
+                         "Saving it into (149.213) aaron.bgi_mt5_float_save<br>" +
                          "Save it by Country, by Symbol.<br>" +
                          "Country Float and Symbol Float will be using this page.<br>" +
-                         "Table time is in Server [Live 1] Timing.<br>" +
-                         "Revenue has been all flipped (*-1) regardless of A or B book.<br><br>")
+                         "Table time is in Server Timing.<br>" )
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("save_BGI_float"),
@@ -456,7 +455,7 @@ def save_BGI_MT5_float_Ajax(update_tool_time=1):
         # TOREMOVE: Comment out the print.
         print("Saving Previous Day PnL")
         # TODO: Maybe make this async?
-        save_previous_day_PnL()  # We will take this chance to get the Previous day's PnL as well.
+        #save_previous_day_PnL()  # We will take this chance to get the Previous day's PnL as well.
 
     # Want to reduce the query overheads. So try to use the saved value as much as possible.
     server_time_diff_str = session["live1_sgt_time_diff"] -1 if "live1_sgt_time_diff" in session \
@@ -3794,4 +3793,87 @@ def BGI_All_Symbol_Float_ajax():
     #end = datetime.datetime.now()
     #print("\nGetting SYMBOL PnL tool: {}s\n".format((end - start).total_seconds()))
     return json.dumps([return_val, ", ".join(datetime_pull), ", ".join(yesterday_datetime_pull)], cls=plotly.utils.PlotlyJSONEncoder)
+
+
+# Get live 1 time difference from server.
+# SQL Table where aaron_misc_data` where item = 'live1_time_diff
+def get_live1_time_difference():
+
+    # MYSQL WEEKDAY FUNCTION
+    #0 = Monday, 1 = Tuesday, 2 = Wednesday, 3 = Thursday, 4 = Friday, 5 = Saturday, 6 =Sunday
+
+    server_time_diff_str = "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
+    sql_query = text(server_time_diff_str)
+
+    raw_result = db.engine.execute(sql_query)   # Insert select..
+    result_data = raw_result.fetchall()     # Return Result
+
+    return int(result_data[0][0])   # Return the integer value.
+
+
+# Will alter the session details.
+# does not return anything
+def check_session_live1_timing():
+
+    return_val = False  # If session timing is outdated, or needs to be updated.
+    # Might need to set the session life time. I think?
+    # Saving some stuff in session so that we don't have to keep querying for it.
+    if "live1_sgt_time_diff" in session and \
+        "live1_sgt_time_update" in session and  \
+        datetime.datetime.now() < session["live1_sgt_time_update"] and \
+            'FLASK_UPDATE_TIMING' in session and  \
+            session["FLASK_UPDATE_TIMING"]  != current_app.config["FLASK_UPDATE_TIMING"]:
+        return_val = True
+        #print(session.keys())
+        #print("From session: {}. Next update time: {}".format(session['live1_sgt_time_diff'], session['live1_sgt_time_update']))
+    else:
+        print(session)
+        Clear_session_ajax()    # Clear all cookies. And reload everything again.
+
+        print("Refreshing cookies automatically in Flask")
+        session['live1_sgt_time_diff'] = get_live1_time_difference()
+
+        # Get the updated flask timing. This is when Flask re-runs on the server. To update any changes.
+        session["FLASK_UPDATE_TIMING"] = current_app.config["FLASK_UPDATE_TIMING"]
+
+        # Will get the timing that we need to update again.
+        # Want to get either start of next working day in SGT, or in x period.
+        time_refresh_next = datetime.datetime.now() + datetime.timedelta(hours=2, minutes=45)
+        #time_refresh_next = datetime.datetime.now() + datetime.timedelta(minutes=2)
+        # need to add 10 mins, for roll overs and swap updates.
+        server_nextday_time =  liveserver_Nextday_start_timing(
+                    live1_server_difference=session['live1_sgt_time_diff'], hour_from_2300=0) + \
+                                           datetime.timedelta(hours=session['live1_sgt_time_diff'], minutes=10)
+        session['live1_sgt_time_update'] = min(time_refresh_next, server_nextday_time)
+        # Post_To_Telegram(AARON_BOT, "Clearing cookies and retrieving new cookies for: {}".format(current_user.id),
+        #                   TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+        #print(session)
+
+    return return_val
+
+
+# Using Live 5 timing as guide.
+# Since live 5 uses 0000 - 2400
+# Will minus 1 day, and take 2300 to give live 1 timing
+def liveserver_Nextday_start_timing(live1_server_difference=6, hour_from_2300 = 0, time = 0):
+
+    if time == 0:   # Check if we had a start time
+        now = datetime.datetime.now()
+    else:
+        now = time
+    # Weekday: Minus how many days.
+    # 6 = Sunday. We want to go ahead how many days, if it' that weekday (in key)
+    next_day_start = {0: 1, 1: 1, 2: 1, 3: 1, 4: 3, 5: 2, 6: 1}
+
+    # + 1 hour to force it into the next day.
+    live5_server_timing = now - datetime.timedelta(hours=live1_server_difference) + datetime.timedelta(hours=1)
+    return_time = get_working_day_date(start_date=live5_server_timing,
+                        weekdays_count=  next_day_start[live5_server_timing.weekday()],
+                                       weekdaylist=[0, 1, 2, 3, 4, 5, 6])
+    return_time = return_time - datetime.timedelta(days=1)  # minus 1 days, and use 2300hrs
+    return_time = return_time.replace(hour=23, minute=0, second=0, microsecond=0)
+    return_time = return_time + datetime.timedelta(hours=hour_from_2300)
+
+    #print("server_Time:{}, start_time: {}".format(live1_server_timing, return_time))
+    return return_time
 

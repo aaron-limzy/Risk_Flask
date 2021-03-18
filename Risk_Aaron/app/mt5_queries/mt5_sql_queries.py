@@ -286,7 +286,7 @@ def mt5_BBook_select_insert(time_diff=0):
                                 )TodayClosed
                                 ON F.BaseSymbol = TodayClosed.BaseSymbol AND F.`Group` = TodayClosed.`Group`
                         GROUP BY Country,BaseSymbol
-                )FinalTable
+                )FinalTable ON DUPLICATE KEY UPDATE `net_floating_volume` = VALUES(net_floating_volume), `floating_volume` = VALUES(floating_volume),  `floating_revenue` = VALUES(floating_revenue)
                 """.format(time_diff_mt5=time_diff_mt5)
 
     return sql_statement
