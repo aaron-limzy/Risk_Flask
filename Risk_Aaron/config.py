@@ -14,7 +14,8 @@ class Config(object):
             'live1': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/live1',
             'live2': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/live2',
             'live3': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/live3',
-            'live5': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/live5'
+            'live5': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/live5',
+            'mt5_live1': 'mysql+pymysql://risk:1qaz2wsx@119.81.149.213/mt5'
         }
 
         print("On server (64.73). Will use local host connection.")
