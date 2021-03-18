@@ -5,7 +5,7 @@ from app.decorators import async_fun
 from app.extensions import db
 
 from flask_table import create_table, Col
-from flask import url_for
+from flask import url_for, session
 import decimal
 from Aaron_Lib import *
 import pandas as pd
@@ -965,4 +965,44 @@ def get_live1_time_difference():
 
     return int(result_data[0][0])   # Return the integer value.
 
+
+# Will alter the session details.
+# does not return anything
+def check_session_live1_timing():
+
+    return_val = False  # If session timing is outdated, or needs to be updated.
+    # Might need to set the session life time. I think?
+    # Saving some stuff in session so that we don't have to keep querying for it.
+    if "live1_sgt_time_diff" in session and \
+        "live1_sgt_time_update" in session and  \
+        datetime.datetime.now() < session["live1_sgt_time_update"] and \
+            'FLASK_UPDATE_TIMING' in session and  \
+            session["FLASK_UPDATE_TIMING"]  != current_app.config["FLASK_UPDATE_TIMING"]:
+        return_val = True
+        #print(session.keys())
+        #print("From session: {}. Next update time: {}".format(session['live1_sgt_time_diff'], session['live1_sgt_time_update']))
+    else:
+        print(session)
+        Clear_session_ajax()    # Clear all cookies. And reload everything again.
+
+        print("Refreshing cookies automatically in Flask")
+        session['live1_sgt_time_diff'] = get_live1_time_difference()
+
+        # Get the updated flask timing. This is when Flask re-runs on the server. To update any changes.
+        session["FLASK_UPDATE_TIMING"] = current_app.config["FLASK_UPDATE_TIMING"]
+
+        # Will get the timing that we need to update again.
+        # Want to get either start of next working day in SGT, or in x period.
+        time_refresh_next = datetime.datetime.now() + datetime.timedelta(hours=2, minutes=45)
+        #time_refresh_next = datetime.datetime.now() + datetime.timedelta(minutes=2)
+        # need to add 10 mins, for roll overs and swap updates.
+        server_nextday_time =  liveserver_Nextday_start_timing(
+                    live1_server_difference=session['live1_sgt_time_diff'], hour_from_2300=0) + \
+                                           datetime.timedelta(hours=session['live1_sgt_time_diff'], minutes=10)
+        session['live1_sgt_time_update'] = min(time_refresh_next, server_nextday_time)
+        # Post_To_Telegram(AARON_BOT, "Clearing cookies and retrieving new cookies for: {}".format(current_user.id),
+        #                   TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+        #print(session)
+
+    return return_val
 

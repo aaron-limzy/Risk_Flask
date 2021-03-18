@@ -42,8 +42,6 @@ def SQL_insert_MT5(header="", values = [" "], footer = "", sql_max_insert=500):
     return
 
 
-
-
 def SQL_insert_MT5_statement(sql_insert):
 
     # To make it to SQL friendly text.
@@ -52,4 +50,8 @@ def SQL_insert_MT5_statement(sql_insert):
     #print(sql_insert)
     db.session.commit() # Since we are using session, we need to commit.
     return
+
+
+
+
 
