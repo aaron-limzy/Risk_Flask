@@ -5,7 +5,7 @@ from app.decorators import async_fun
 from app.extensions import db
 
 from flask_table import create_table, Col
-from flask import url_for, session
+from flask import url_for, session, current_app
 import decimal
 from Aaron_Lib import *
 import pandas as pd
@@ -1005,4 +1005,30 @@ def check_session_live1_timing():
         #print(session)
 
     return return_val
+
+
+# Using Live 5 timing as guide.
+# Since live 5 uses 0000 - 2400
+# Will minus 1 day, and take 2300 to give live 1 timing
+def liveserver_Nextday_start_timing(live1_server_difference=6, hour_from_2300 = 0, time = 0):
+
+    if time == 0:   # Check if we had a start time
+        now = datetime.datetime.now()
+    else:
+        now = time
+    # Weekday: Minus how many days.
+    # 6 = Sunday. We want to go ahead how many days, if it' that weekday (in key)
+    next_day_start = {0: 1, 1: 1, 2: 1, 3: 1, 4: 3, 5: 2, 6: 1}
+
+    # + 1 hour to force it into the next day.
+    live5_server_timing = now - datetime.timedelta(hours=live1_server_difference) + datetime.timedelta(hours=1)
+    return_time = get_working_day_date(start_date=live5_server_timing,
+                        weekdays_count=  next_day_start[live5_server_timing.weekday()],
+                                       weekdaylist=[0, 1, 2, 3, 4, 5, 6])
+    return_time = return_time - datetime.timedelta(days=1)  # minus 1 days, and use 2300hrs
+    return_time = return_time.replace(hour=23, minute=0, second=0, microsecond=0)
+    return_time = return_time + datetime.timedelta(hours=hour_from_2300)
+
+    #print("server_Time:{}, start_time: {}".format(live1_server_timing, return_time))
+    return return_time
 

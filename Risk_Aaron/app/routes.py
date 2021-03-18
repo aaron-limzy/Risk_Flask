@@ -1262,7 +1262,10 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
         #print("Request A Book Matching method: POST")
 
         post_data = dict(request.form)  # Want to do a copy.
-        #print(post_data)
+        print()
+        print()
+        print(post_data)
+        print()
 
         # Check if we need to send Email
         Send_Email_Flag =  int(post_data["send_email_flag"]) if ("send_email_flag" in post_data) \
@@ -1281,6 +1284,9 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
         # "CFH_Lots":0.02,"API_lot":0,"Offset_lot":0,"Lp_Net_Vol":0.02,"MT4_Net_Vol":0.02,"Discrepancy":0,"Mismatch_count":0},{"SYMBOL":"USDJPY","Vantage_lot":0,"CFH_Lots":-0.02,"API_lot":0,"Offset_lot":0,
         # "Lp_Net_Vol":-0.02,"MT4_Net_Vol":-0.02,"Discrepancy":0,"Mismatch_count":0}]'}
 
+        print(post_data["MT4_LP_Position_save"])
+        print()
+
         Past_Details = json.loads(post_data["MT4_LP_Position_save"]) if ("MT4_LP_Position_save" in post_data) \
                                                                            and (isinstance(post_data['MT4_LP_Position_save'], str)) \
                                                                            and is_json(post_data["MT4_LP_Position_save"]) \
@@ -1292,8 +1298,9 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
 
 
 
-        #print("past details")
-        #print(df_past_details)
+        print("past details")
+        print(df_past_details)
+
         if "SYMBOL" in df_past_details:
             df_past_details["SYMBOL"] = df_past_details["SYMBOL"].apply(lambda x: BeautifulSoup(x, features="lxml").a.text \
                                                                     if BeautifulSoup(x, features="lxml").a != None else x)
@@ -2545,6 +2552,8 @@ def Mismatch_trades_mt4(symbol = [], hours=7, mins=16):
 # symbol = ['USDJPY', 'EURUSD', 'USDSGD', 'XAUUSD']
 def Mismatch_trades_bridge(symbol=[], hours=8, mins=16):
 
+    #symbol = ["eurusd"]
+
     if len(symbol) > 0: # If CFD, we want to replace . with %
         symbol_list =  " AND (" + " OR ".join(["SYMBOL LIKE '%{}%'".format(s.replace(".","%")) for s in symbol]) + ")"
     else:
@@ -2555,6 +2564,10 @@ def Mismatch_trades_bridge(symbol=[], hours=8, mins=16):
     time_gmt_list = []
 
     date_now = datetime.datetime.now()
+
+    # Want to force it.
+    #date_now=datetime.datetime(2021, 3, 18, 2, 22)
+
     while (time_start < date_now):
         time_gmt = time_start.strftime("%Y%m%d-%H") + "%"
         if time_gmt not in time_gmt_list:
