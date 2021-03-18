@@ -771,7 +771,7 @@ def ABook_Matching():
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
 def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
 
-    mismatch_count = [10,15]
+    mismatch_count = [2, 10,15]
     #mismatch_count_1 = 1   # Notify when mismatch has lasted 1st time.
     #mismatch_count_2 = 15   # Second notify when mismatched has lasted a second timessss
 
@@ -2560,7 +2560,10 @@ def Mismatch_trades_bridge(symbol=[], hours=8, mins=16):
         symbol_list = ""
 
     # GMT time that we can use to query Shiqi SQL
-    time_start = datetime.datetime.now() - datetime.timedelta(hours=abs(hours), minutes=abs(mins))
+    date_now = datetime.datetime.now()
+    #date_now = datetime.datetime(2021, 3, 18, 2, 17, 0 )
+
+    time_start = date_now - datetime.timedelta(hours=abs(hours), minutes=abs(mins))
     time_gmt_list = []
 
     date_now = datetime.datetime.now()
