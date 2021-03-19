@@ -214,7 +214,9 @@ def save_BGI_MT4_float_Ajax(update_tool_time=1):
         # TOREMOVE: Comment out the print.
         print("Saving Previous Day PnL")
         #TODO: Maybe make this async?
-        save_previous_day_PnL()                 # We will take this chance to get the Previous day's PnL as well.
+        save_previous_day_mt4_PnL()                 # We will take this chance to get the Previous day's PnL as well.
+    # else:
+    #     print("BGI Save MT4 Float. No need to save previous day PnL.")
 
     # Want to reduce the query overheads. So try to use the saved value as much as possible.
     server_time_diff_str = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session \
@@ -449,13 +451,13 @@ def save_BGI_MT5_float_Ajax(update_tool_time=1):
     # TODO: Want to write a custom function, and not rely on using CFH timing.
     if not cfh_fix_timing():
         return json.dumps([{'Update time': "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
-
-    if check_session_live1_timing() == False:  # If False, It needs an update.
-
-        # TOREMOVE: Comment out the print.
-        print("Saving Previous Day PnL")
-        # TODO: Maybe make this async?
-        #save_previous_day_PnL()  # We will take this chance to get the Previous day's PnL as well.
+    #
+    # if check_session_live1_timing() == False:  # If False, It needs an update.
+    #
+    #     # TOREMOVE: Comment out the print.
+    #     print("Saving Previous Day PnL")
+    #     # TODO: Maybe make this async?
+    #     #save_previous_day_PnL()  # We will take this chance to get the Previous day's PnL as well.
 
     # Want to reduce the query overheads. So try to use the saved value as much as possible.
     server_time_diff_str = session["live1_sgt_time_diff"] -1 if "live1_sgt_time_diff" in session \
@@ -557,7 +559,7 @@ def check_previous_day_pnl_in_DB():
 
 
 # To save previous working day PnL to aaron.bgi_dailypnl_by_country_group
-def save_previous_day_PnL(force_update=False):
+def save_previous_day_mt4_PnL(force_update=False):
 
     # If PnL Has been saved already. We don't need to save it again.
     # Unless there's a need to force it to update.
@@ -749,6 +751,9 @@ def get_symbol_daily_pnl():
     sql_query = text(sql_statement)
     raw_result = db.engine.execute(sql_query)  # Select From DB
     result_data = raw_result.fetchall()     # Return Result
+    # print("result_data:")
+    # print(result_data)
+    # print("\n")
     result_col = raw_result.keys()  # The column names
 
     # If empty, we just want to return an empty data frame. So that the following merge will not cause any issues
@@ -1064,6 +1069,7 @@ def BGI_Symbol_Float_ajax():
 
         print("Getting yesterday symbol PnL from DB")
         df_yesterday_symbol_pnl = get_symbol_daily_pnl()
+        print(df_yesterday_symbol_pnl)
         if "DATE" in df_yesterday_symbol_pnl:  # We want to save it as a string.
             #print("DATE IN")
             df_yesterday_symbol_pnl['DATE'] = df_yesterday_symbol_pnl['DATE'].apply(
@@ -3815,14 +3821,27 @@ def get_live1_time_difference():
 # does not return anything
 def check_session_live1_timing():
 
+    test = False
+    # if test == True:
+    #     if "live1_sgt_time_update" in session:
+    #         print("session['live1_sgt_time_update'] = {}".format(session["live1_sgt_time_update"]))
+    #         print(' datetime.datetime.now() < session["live1_sgt_time_update"] : {}'.format(
+    #             (datetime.datetime.now() + datetime.timedelta(hours=3)) < session["live1_sgt_time_update"]))
+    #         print()
+    #
+    #
+    #     if  "FLASK_UPDATE_TIMING" in session:
+    #         print('current_app.config["FLASK_UPDATE_TIMING"] = {}'.format(current_app.config["FLASK_UPDATE_TIMING"]))
+    #         print('session["FLASK_UPDATE_TIMING"] = {}'.format( session["FLASK_UPDATE_TIMING"]))
+    #         print(session["FLASK_UPDATE_TIMING"]  == current_app.config["FLASK_UPDATE_TIMING"])
+
+
     return_val = False  # If session timing is outdated, or needs to be updated.
     # Might need to set the session life time. I think?
     # Saving some stuff in session so that we don't have to keep querying for it.
-    if "live1_sgt_time_diff" in session and \
-        "live1_sgt_time_update" in session and  \
-        datetime.datetime.now() < session["live1_sgt_time_update"] and \
-            'FLASK_UPDATE_TIMING' in session and  \
-            session["FLASK_UPDATE_TIMING"]  != current_app.config["FLASK_UPDATE_TIMING"]:
+    if "live1_sgt_time_diff" in session and  \
+        "live1_sgt_time_update" in session and  datetime.datetime.now() < session["live1_sgt_time_update"] and \
+            'FLASK_UPDATE_TIMING' in session and  session["FLASK_UPDATE_TIMING"]  == current_app.config["FLASK_UPDATE_TIMING"]:
         return_val = True
         #print(session.keys())
         #print("From session: {}. Next update time: {}".format(session['live1_sgt_time_diff'], session['live1_sgt_time_update']))
@@ -3838,8 +3857,12 @@ def check_session_live1_timing():
 
         # Will get the timing that we need to update again.
         # Want to get either start of next working day in SGT, or in x period.
-        time_refresh_next = datetime.datetime.now() + datetime.timedelta(hours=2, minutes=45)
-        #time_refresh_next = datetime.datetime.now() + datetime.timedelta(minutes=2)
+        if test == True:    # If we are testing if the cookies will be refreshed.
+            time_refresh_next = datetime.datetime.now() + datetime.timedelta(minutes=2)
+        else:
+            time_refresh_next = datetime.datetime.now() + datetime.timedelta(hours=2, minutes=45)
+
+
         # need to add 10 mins, for roll overs and swap updates.
         server_nextday_time =  liveserver_Nextday_start_timing(
                     live1_server_difference=session['live1_sgt_time_diff'], hour_from_2300=0) + \
