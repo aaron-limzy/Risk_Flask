@@ -92,6 +92,8 @@ $(document).ready(function(){
         var Post_Data = {	"send_email_flag": send_email_flag,
                             "MT4_LP_Position_save" : JSON.stringify(Table_Zero_Out(MT4_LP_Position_save))}; // Want to POST the non-zero symbol details.
 
+        //console.log(JSON.stringify(Post_Data));
+
         //Custom_Ajax_Call(Post_Data,"/ABook_Match_Trades_Position", "MT4_LP_Position", "MT4_LP_Position_Raw", "MT4_LP_Position_Error", "MT4/LP Position",0);
 
         $.ajax({
@@ -418,7 +420,7 @@ $(document).ready(function(){
           }
           // If it's not the same, we push it in
           if (zero_count != keys_to_check.length){
-            console.log(zero_count);
+            //console.log(zero_count);
             Table_Data_Updated.push(Table_Data[x]);	// Push it in if its non-empty.
           }
 
