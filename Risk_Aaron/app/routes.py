@@ -10,8 +10,10 @@ from app.table import Delete_Monitor_Account_Table
 from app.table import Delete_Risk_ABook_Offset_Table
 
 # Import function to call in case the page dosn't run.
-from app.Plotly.routes import save_BGI_MT5_float_Ajax, save_BGI_MT4_float_Ajax
+from app.Plotly.routes import save_BGI_MT4_float_Ajax
 from app.Scrape_Futures import *
+
+from app.mt5_monitoring.routes import save_BGI_MT5_float_Ajax
 
 from app.background import *
 

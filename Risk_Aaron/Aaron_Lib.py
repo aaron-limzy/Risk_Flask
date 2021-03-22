@@ -404,6 +404,13 @@ def init_SQLALCHEMY():
     SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/aaron'
     return create_engine(SQLALCHEMY_DATABASE_URI)
 
+# db for MT5
+# db5 = init_SQLALCHEMY_mt5()
+def init_SQLALCHEMY_mt5():
+    #TODO: Link this with Flask's config. Else, there  might be trouble when moving SQL Bases.
+    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://risk:1qaz2wsx@119.81.149.213/aaron'
+    return create_engine(SQLALCHEMY_DATABASE_URI)
+
 
 #Want to take in values and header of SQL
 # Return an array of SQL statement ready for insert.

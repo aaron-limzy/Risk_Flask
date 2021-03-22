@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+
+<style>
+  body { background-image: url("webb.png");
+  background-repeat: repeat;
+  font-family: 'Montserrat', sans-serif;
+  }
+
+
+  #title {
+    font-family: 'Montserrat', sans-serif;
+    color: black;
+    font-weight: 500;
+    font-size: 1.3rem;
+  }
+
+  .table td, .table th {
+    vertical-align: middle;
+    text-align: center;
+  }
+
+  .navbar-brand {
+    font-size: 2.5rem;
+  }
+
+  .data-table {
+    text-align: center;
+    margin: auto;
+    width: 80%;
+    padding: Auto;
+  }
+
+
+  table.basic_table {
+    caption-side: bottom;
+    border: 2px solid grey;
+    border-collapse: separate;
+    text-align: center;
+    color: black;
+    float: none;
+    background: rgba(255, 255, 255, 0.5);
+  }
+
+  table.basic_table td{
+    padding: 2px;
+  }
+
+  table.basic_table tr:nth-child(even) {
+    background-color: #f9fffa;
+  }
+
+  table.basic_table tr:nth-child(odd) {
+    background-color: #ccdfff;
+  }
+
+  table.basic_table th {
+    border-collapse: collapse;
+    border-bottom: 1px white;
+    background-color: #404c8e;
+    color: white;
+    font-size: large;
+    margin: 5px;
+    padding: 8px;
+  }
+
+  table.basic_table tfoot th{
+    background-color: #dedcdc;
+    color: black;
+  }
+
+  table.basic_table tr:hover {
+    background-color: #f9e3a7;
+  }
+
+
+
+  caption {
+    padding: .75rem;
+    text-align: center;
+    caption-side: top;
+    color: #555;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-family: 'Playfair Display', serif;
+    font-size: 60px;
+    font-weight: 800;
+    letter-spacing: -3px;
+    line-height: 1;
+    text-shadow: #EDEDED 3px 2px 0;
+    position: relative;
+    background: rgba(242, 242, 242, 0.5);
+  }
+
+  table.table_orange tr:nth-child(even) {
+    background-color: #ffe4b5;
+  }
+
+  table.table_orange tr:nth-child(odd) {
+    background-color: #fffaf0;
+  }
+
+  table.table_orange tr:hover {
+    background-color: #8b8989;
+  }
+
+  table.table_orange {
+    border: 1px solid grey;
+    border-collapse: separate;
+    padding: 1px;
+    width: 100%;
+  }
+
+  table.table_orange caption {
+    padding: 0;
+  }
+
+  .table_highlight {
+    background-color: #C7E679;
+  }
+
+  .alert_cell {
+    background-color: #ff8080;
+    font-size: 1.2rem;
+    font-style: oblique;
+  }
+
+  .main_body {
+    width: 100%;
+    margin: 0 auto;
+    padding: 0 5%;
+  }
+
+  .right-text {
+    font-size: 20px;
+    margin-top: 1%;
+    margin-bottom: 0;
+    text-align: right;
+  }
+
+  .small-text {
+    font-size: 18px;
+  }
+
+  .nav-button {
+    padding: 10px 6px;
+    margin: 5px;
+    border: 1px solid white;
+  }
+
+
+  .general_form {
+    background-color: rgba(255, 255, 255, 0.85);
+  }
+
+  .centre-img {
+    display:block;
+    margin:auto;
+    width:100%
+  }
+
+  .bg_a_dark_blue {
+    background-color: #394a6d;
+  }
+
+  .bg_a_dark_green {
+    background-color: #3c9d9b;
+  }
+
+  .bg_a_light_green {
+    background-color: #52de97;
+  }
+
+  .bg_a_lighter_green {
+    background-color: #d1eecc;
+  }
+
+  .caption {
+    padding: .75rem;
+    text-align: center;
+    caption-side: top;
+    color: #555;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-family: 'Playfair Display', serif;
+    font-size: 45px;
+    font-weight: 800;
+    letter-spacing: -3px;
+    line-height: 1;
+    text-shadow: #EDEDED 3px 2px 0;
+    position: relative;
+    background: rgba(242, 242, 242, 0.8);
+  }
+
+  table.large_text_table {
+    font-size: 120%;
+    border-collapse: collapse;
+  }
+
+
+</style>
+</head>
+<body>
+
+<div class="col-lg-12 col-md-12 col-sm-12" id="Data_table_Div1"><div id="Data_table_Div1_table_wrapper" class="dataTables_wrapper"><div id="Data_table_Div1_table_filter" class="dataTables_filter"><label>Search:<input type="search" class="" placeholder="" aria-controls="Data_table_Div1_table"></label></div><table id="Data_table_Div1_table" class="table compact table-hover table-sm table-responsive-sm table-bordered bg-light large_text_table basic_table dataTable" role="grid" aria-describedby="Data_table_Div1_table_info"><caption>MT5 Symbol Float (B 📘)</caption><thead><tr role="row"><th class="align-middle sorting" tabindex="0" aria-controls="Data_table_Div1_table" rowspan="1" colspan="1" aria-label="SYMBOL: activate to sort column ascending" style="width: 119.766px;">SYMBOL</th><th class="align-middle sorting" tabindex="0" aria-controls="Data_table_Div1_table" rowspan="1" colspan="1" aria-label="NETLOTS: activate to sort column ascending" style="width: 76.0156px;">NET<br>LOTS</th><th class="align-middle sorting" tabindex="0" aria-controls="Data_table_Div1_table" rowspan="1" colspan="1" aria-label="FLOATINGLOTS: activate to sort column ascending" style="width: 139.766px;">FLOATING<br>LOTS</th><th class="align-middle sorting" tabindex="0" aria-controls="Data_table_Div1_table" rowspan="1" colspan="1" aria-label="REVENUE: activate to sort column ascending" style="width: 133.516px;">REVENUE</th><th class="align-middle sorting" tabindex="0" aria-controls="Data_table_Div1_table" rowspan="1" colspan="1" aria-label="TODAYLOTS: activate to sort column ascending" style="width: 99.7656px;">TODAY<br>LOTS</th><th class="align-middle sorting" tabindex="0" aria-controls="Data_table_Div1_table" rowspan="1" colspan="1" aria-label="TODAYREVENUE: activate to sort column ascending" style="width: 133.516px;">TODAY<br>REVENUE</th><th class="align-middle sorting" tabindex="0" aria-controls="Data_table_Div1_table" rowspan="1" colspan="1" aria-label="YESTERDAYLOT: activate to sort column ascending" style="width: 162.266px;">YESTERDAY<br>LOT</th><th class="align-middle sorting" tabindex="0" aria-controls="Data_table_Div1_table" rowspan="1" colspan="1" aria-label="YESTERDAYREVENUE: activate to sort column ascending" style="width: 162.266px;">YESTERDAY<br>REVENUE</th><th class="align-middle sorting" tabindex="0" aria-controls="Data_table_Div1_table" rowspan="1" colspan="1" aria-label="YESTERDAYREBATE: activate to sort column ascending" style="width: 162.266px;">YESTERDAY<br>REBATE</th></tr></thead><tbody><tr role="row" class="odd"><td>BTCUSD</td><td>-0.2</td><td>-</td><td><span style="color:red">-3,705.33</span></td><td>-14.72</td><td><span style="color:green">0.13</span></td><td><span style="color:green">0.26</span></td><td><span style="color:green">2.62</span></td><td><span style="color:black">0.00</span></td></tr><tr role="row" class="even"><td>GBPJPY</td><td>-0.05</td><td>-</td><td><span style="color:green">5.98</span></td><td>0</td><td><span style="color:black">0.00</span></td><td>-</td><td>-</td><td>-</td></tr><tr role="row" class="odd"><td>EURJPY</td><td>0.15</td><td>-</td><td><span style="color:red">-1.75</span></td><td>0</td><td><span style="color:black">0.00</span></td><td>-</td><td>-</td><td>-</td></tr><tr role="row" class="even"><td>GBPCAD</td><td>-0.05</td><td>-</td><td><span style="color:red">-1.80</span></td><td>0</td><td><span style="color:black">0.00</span></td><td>-</td><td>-</td><td>-</td></tr></tbody><tfoot><tr><th rowspan="1" colspan="1">Total</th><th rowspan="1" colspan="1">-0.15</th><th rowspan="1" colspan="1">0</th><th rowspan="1" colspan="1"><span style="color:red">-3,702.9</span></th><th rowspan="1" colspan="1">-14.72</th><th rowspan="1" colspan="1"><span style="color:green">0.13</span></th><th rowspan="1" colspan="1">-</th><th rowspan="1" colspan="1"><span style="color:green">2.62</span></th><th rowspan="1" colspan="1">-</th></tr></tfoot></table><div class="dataTables_info" id="Data_table_Div1_table_info" role="status" aria-live="polite">Showing 1 to 4 of 4 entries</div></div><div class="left-text small-text bg-light p-1 m-1"> <table class="table table-sm"><tbody><tr><th scope="row">Refresh time (GMT + 8)</th><td>Mon 2021-Mar-22 15:52:16</td></tr><tr><th scope="row">Country [Floating]  Refresh (GMT + 8)</th><td>2021-Mar-22 15:52:14</td></tr><tr><th scope="row">Country [Yesterday] Refresh (GMT + 8)</th><td> - </td></tr></tbody> </table></div></div>
+
+</body>
+</html>

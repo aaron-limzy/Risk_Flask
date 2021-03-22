@@ -3,6 +3,10 @@
 
 def background_pic(website):
 
+    # Need to find bg for:
+    # BGI_MT5_Symbol_Float
+
+
 
     default = "css/Mac_Coffee.jpg"
     gb_return = {"save_BGI_float" :         "css/city_overview.jpg",
@@ -17,6 +21,7 @@ def background_pic(website):
                  "Client_trades_Analysis" : "css/strips_1.png",
 
 
+
                  "USOil_Ticks" :                        "css/Oil_Rig_2.jpg",
                  "CFH_Soap_Position" :                  "css/notebook_pen.jpg",
                  "CFH_Symbol_Update" :                  "css/notebook_pen.jpg",
@@ -28,6 +33,9 @@ def background_pic(website):
                  "Monitor_Account_Trades_Settings" :    "css/Glasses_3.jpeg",
                  "Monitor_Account_Trades" :             "css/Glasses_3.jpeg",
                  "ABook_Matching" :                     "css/tic-tac-toe.png",
+
+                 "save_mt5_BGI_float":                  "css/city1.jpg",        # MT5 Stuff.
+
 
 
 

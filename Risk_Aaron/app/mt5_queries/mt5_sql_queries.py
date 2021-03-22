@@ -1,3 +1,5 @@
+
+
 def mt5_b_book_query(time_diff=0):
     time_diff_mt5 = time_diff if time_diff != 0 else '(SELECT result FROM aaron.`aaron_misc_data` where item = "mt5_timing_diff")'
 
@@ -290,4 +292,35 @@ def mt5_BBook_select_insert(time_diff=0):
                 """.format(time_diff_mt5=time_diff_mt5)
 
     return sql_statement
-    
+
+
+# Want to use to get MT5 yesterday's PnL by symbol
+def mt5_symbol_yesterday_pnl_query():
+    sql_query = r"""SELECT BaseSymbol as `SYMBOL`, SUM(YesterdayVolume) AS YesterdayVolume, SUM(YesterdayProfit_usd) AS YesterdayProfitUsd,
+        SUM(YesterdayMarkupRebate) AS YesterdayRebate, now() as Date 
+        FROM
+            #yestClosed live 1
+            (SELECT `Group`,yestTable.Symbol,YesterdayVolume,YesterdayProfit_usd,YesterdayMarkupRebate,BaseSymbol FROM
+                (SELECT `Group`,Symbol, SUM(GroupMarkup)AS YesterdayMarkupRebate,SUM(ClosedVolume) AS YesterdayVolume,SUM(ClosedProfit_usd) AS YesterdayProfit_usd
+                FROM mt5.yudi_daily_pnl_by_group_login_symbol WHERE DATE = DATE(NOW() - INTERVAL 7 HOUR)- INTERVAL 1 DAY AND`Group` LIKE "Real%" 
+                AND `Group` NOT LIKE "Real_Futures%" AND `GROUP` NOT LIKE "%\\\\B\_%"
+                GROUP BY `Group`,Symbol
+                )yestTable
+                LEFT JOIN 
+                ( SELECT Symbol, BaseSymbol FROM mt5.yudi_BaseSymbol)yt2
+                ON yestTable.Symbol = yt2.Symbol 
+            UNION ALL
+            #yestClosed live 2
+            SELECT `Group`,yestTable.Symbol,YesterdayVolume,YesterdayProfit_usd,YesterdayMarkupRebate,BaseSymbol FROM
+                (SELECT `Group`,Symbol, SUM(GroupMarkup)AS YesterdayMarkupRebate,SUM(ClosedVolume) AS YesterdayVolume,SUM(ClosedProfit_usd) AS YesterdayProfit_usd
+                FROM mt5_uk.yudi_daily_pnl_by_group_login_symbol WHERE DATE = DATE(NOW() - INTERVAL 7 HOUR)- INTERVAL 1 DAY AND`Group` LIKE "Real%" 
+                AND `Group` NOT LIKE "Real_Futures%" AND `GROUP` NOT LIKE "%\\\\B\_%"
+                GROUP BY `Group`,Symbol
+                )yestTable
+                LEFT JOIN 
+                ( SELECT Symbol, BaseSymbol FROM mt5_uk.yudi_BaseSymbol)yt2
+                ON yestTable.Symbol = yt2.Symbol 
+
+        )z2"""
+    return sql_query
+

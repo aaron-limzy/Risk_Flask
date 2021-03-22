@@ -8,6 +8,7 @@ from flask_table import create_table, Col
 from flask import url_for, current_app
 import decimal
 from Aaron_Lib import *
+from app.mt5_queries.mt5_sql_queries import *
 import pandas as pd
 from unsync import unsync
 
@@ -18,6 +19,8 @@ from unsync import unsync
 def Query_SQL_mt5_db_engine(sql_query):
 
     raw_result = db.session.execute(text(sql_query), bind=db.get_engine(current_app, 'mt5_live1'))
+    #raw_result = db5.engine.execute(text(sql_query))
+
     #db.session.execute(sql_query, bind=db.get_engine(current_app, 'mt5_live1'))
     #return raw_result
 
@@ -52,6 +55,12 @@ def SQL_insert_MT5_statement(sql_insert):
     return
 
 
+# Want to get the MT5 PnL By Symbol from Yudi's Database.
 
+def mt5_yesterday_symbol_pnl():
+    sql_query = mt5_symbol_yesterday_pnl_query()
+    result = Query_SQL_mt5_db_engine(sql_query)
+    print(result)
+    return result
 
 

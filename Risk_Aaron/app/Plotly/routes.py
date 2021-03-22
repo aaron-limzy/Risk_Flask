@@ -416,71 +416,6 @@ def save_BGI_MT4_float_Ajax(update_tool_time=1):
     return json.dumps([{'Update time': Get_time_String()}])
 
 
-@analysis.route('/Save_BGI_mt5_Float', methods=['GET', 'POST'])
-@roles_required()
-def save_mt5_BGI_float():
-    title = "Save MT5 BGI Float"
-    header = "Saving MT5 BGI Float"
-
-    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
-    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
-    # For Login in aaron.Risk_autocut and Credit_limit != 0
-
-    description = Markup("<b>Saving MT5 BGI Float Data.</b><br>" +
-                         "Saving it into (149.213) aaron.bgi_mt5_float_save<br>" +
-                         "Save it by Country, by Symbol.<br>" +
-                         "Country Float and Symbol Float will be using this page.<br>" +
-                         "Table time is in Server Timing.<br>" )
-
-    # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("save_BGI_float"),
-                           icon="css/save_Filled.png", Table_name="Save MT5 Floating 💾", title=title,
-                           ajax_url=url_for('analysis.save_BGI_MT5_float_Ajax', _external=True), header=header,
-                           setinterval=12,
-                           description=description, replace_words=Markup(["Today"]))
-
-
-# Insert into aaron.BGI_Float_History_Save
-# Will select, pull it out into Python, before inserting it into the table.
-# Tried doing Insert.. Select. But there was desdlock situation..
-@analysis.route('/save_BGI_mt5_float_Ajax', methods=['GET', 'POST'])
-@roles_required()
-def save_BGI_MT5_float_Ajax(update_tool_time=1):
-    # start = datetime.datetime.now()
-    # TODO: Only want to save during trading hours.
-    # TODO: Want to write a custom function, and not rely on using CFH timing.
-    if not cfh_fix_timing():
-        return json.dumps([{'Update time': "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
-    #
-    # if check_session_live1_timing() == False:  # If False, It needs an update.
-    #
-    #     # TOREMOVE: Comment out the print.
-    #     print("Saving Previous Day PnL")
-    #     # TODO: Maybe make this async?
-    #     #save_previous_day_PnL()  # We will take this chance to get the Previous day's PnL as well.
-
-    # Want to reduce the query overheads. So try to use the saved value as much as possible.
-    server_time_diff_str = session["live1_sgt_time_diff"] -1 if "live1_sgt_time_diff" in session \
-        else '(SELECT result FROM aaron.`aaron_misc_data` where item = "mt5_timing_diff")'
-
-
-    query = mt5_BBook_select_insert(time_diff=server_time_diff_str)
-
-    result_data = SQL_insert_MT5_statement(query)
-
-
-    # Insert into the Checking tools.
-    if (update_tool_time == 1):
-        Tool = "bgi_float_mt5_history_save"
-        sql_insert = "INSERT INTO  aaron.`monitor_tool_runtime` (`Monitor_Tool`, `Updated_Time`, `email_sent`) VALUES" + \
-                     " ('{Tool}', now(), 0) ON DUPLICATE KEY UPDATE Updated_Time=now(), email_sent=VALUES(email_sent)".format(
-                         Tool=Tool)
-        raw_insert_result = db.engine.execute(sql_insert)
-
-    # end = datetime.datetime.now()
-    # print("\nSaving floating PnL tool: {}s\n".format((end - start).total_seconds()))
-    return json.dumps([{'Update time': Get_time_String()}])
-
 
 @analysis.route('/BGI_Country_Float', methods=['GET', 'POST'])
 @roles_required()
@@ -778,16 +713,8 @@ def get_symbol_daily_pnl():
 @analysis.route('/Clear_session_ajax', methods=['GET', 'POST'])
 @roles_required()
 def Clear_session_ajax(flash_details=False):
-    #list_of_pop = ["live1_sgt_time_diff", "live1_sgt_time_update", "yesterday_pnl_by_country", "yesterday_pnl_by_symbol"]
 
-    #delete_from_floating_table()
-
-    list_of_pop = []
-    # We want to clear everything, other then the system generated ones.
-    for u in list(session.keys()):
-        if u not in  ['_fresh', '_id', 'csrf_token']:
-            session.pop(u, None)
-            list_of_pop.append(u)
+    list_of_pop = clear_session_cookies()
 
     if flash_details:   # If we need to flash the details out.
         # Flash the details, but want to return to the main app page.
@@ -1060,23 +987,22 @@ def BGI_Symbol_Float_ajax():
     if not cfh_fix_timing():
         return json.dumps([[{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}]])
 
-    if check_session_live1_timing() == True and "yesterday_pnl_by_symbol" in session \
-            and  len(session["yesterday_pnl_by_symbol"]) > 0:
+    if check_session_live1_timing() == True and "yesterday_mt4_pnl_by_symbol" in session \
+            and len(session["yesterday_mt4_pnl_by_symbol"]) > 0:
         # From "in memory" of session
-        #print(session)
-        df_yesterday_symbol_pnl = pd.DataFrame.from_dict(session["yesterday_pnl_by_symbol"])
-    else:       # If session timing is outdated, or needs to be updated.
+        # print(session)
+        df_yesterday_symbol_pnl = pd.DataFrame.from_dict(session["yesterday_mt4_pnl_by_symbol"])
+    else:  # If session timing is outdated, or needs to be updated.
 
-        print("Getting yesterday symbol PnL from DB")
+        #print("Getting yesterday symbol PnL from DB")
         df_yesterday_symbol_pnl = get_symbol_daily_pnl()
-        print(df_yesterday_symbol_pnl)
+        #print(df_yesterday_symbol_pnl)
         if "DATE" in df_yesterday_symbol_pnl:  # We want to save it as a string.
-            #print("DATE IN")
+            # print("DATE IN")
             df_yesterday_symbol_pnl['DATE'] = df_yesterday_symbol_pnl['DATE'].apply(
                 lambda x: x.strftime("%Y-%m-%d") if isinstance(x, datetime.date) else x)
 
-
-        session["yesterday_pnl_by_symbol"] =  df_yesterday_symbol_pnl.to_dict()
+        session["yesterday_mt4_pnl_by_symbol"] =  df_yesterday_symbol_pnl.to_dict()
 
     # Want to get the Unique date for the "Yesterday" date.
     # Want to know the date of the symbol "yesterday" details.
@@ -1084,6 +1010,7 @@ def BGI_Symbol_Float_ajax():
                                c != 0] if "DATE" in df_yesterday_symbol_pnl else ["No YESTERDAY_DATE in df."]
 
     # We already know the date. No need to carry on with this data.
+
     if "DATE" in df_yesterday_symbol_pnl:
         df_yesterday_symbol_pnl.pop('DATE')
 
@@ -3589,11 +3516,11 @@ def BGI_All_Symbol_Float_ajax():
     if not cfh_fix_timing():
         return json.dumps([[{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}]])
 
-    if check_session_live1_timing() == True and "yesterday_pnl_by_symbol" in session \
-            and  len(session["yesterday_pnl_by_symbol"]) > 0:
+    if check_session_live1_timing() == True and \
+            "yesterday_mt4_pnl_by_symbol" in session and len(session["yesterday_mt4_pnl_by_symbol"]) > 0:
         # From "in memory" of session
         #print(session)
-        df_yesterday_symbol_pnl = pd.DataFrame.from_dict(session["yesterday_pnl_by_symbol"])
+        df_yesterday_symbol_pnl = pd.DataFrame.from_dict(session["yesterday_mt4_pnl_by_symbol"])
     else:       # If session timing is outdated, or needs to be updated.
 
         print("Getting yesterday symbol PnL from DB")
@@ -3604,7 +3531,7 @@ def BGI_All_Symbol_Float_ajax():
                 lambda x: x.strftime("%Y-%m-%d") if isinstance(x, datetime.date) else x)
 
 
-        session["yesterday_pnl_by_symbol"] =  df_yesterday_symbol_pnl.to_dict()
+        session["yesterday_mt4_pnl_by_symbol"] =  df_yesterday_symbol_pnl.to_dict()
 
     # Want to get the Unique date for the "Yesterday" date.
     # Want to know the date of the symbol "yesterday" details.
@@ -3801,102 +3728,6 @@ def BGI_All_Symbol_Float_ajax():
     return json.dumps([return_val, ", ".join(datetime_pull), ", ".join(yesterday_datetime_pull)], cls=plotly.utils.PlotlyJSONEncoder)
 
 
-# Get live 1 time difference from server.
-# SQL Table where aaron_misc_data` where item = 'live1_time_diff
-def get_live1_time_difference():
-
-    # MYSQL WEEKDAY FUNCTION
-    #0 = Monday, 1 = Tuesday, 2 = Wednesday, 3 = Thursday, 4 = Friday, 5 = Saturday, 6 =Sunday
-
-    server_time_diff_str = "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
-    sql_query = text(server_time_diff_str)
-
-    raw_result = db.engine.execute(sql_query)   # Insert select..
-    result_data = raw_result.fetchall()     # Return Result
-
-    return int(result_data[0][0])   # Return the integer value.
 
 
-# Will alter the session details.
-# does not return anything
-def check_session_live1_timing():
-
-    test = False
-    # if test == True:
-    #     if "live1_sgt_time_update" in session:
-    #         print("session['live1_sgt_time_update'] = {}".format(session["live1_sgt_time_update"]))
-    #         print(' datetime.datetime.now() < session["live1_sgt_time_update"] : {}'.format(
-    #             (datetime.datetime.now() + datetime.timedelta(hours=3)) < session["live1_sgt_time_update"]))
-    #         print()
-    #
-    #
-    #     if  "FLASK_UPDATE_TIMING" in session:
-    #         print('current_app.config["FLASK_UPDATE_TIMING"] = {}'.format(current_app.config["FLASK_UPDATE_TIMING"]))
-    #         print('session["FLASK_UPDATE_TIMING"] = {}'.format( session["FLASK_UPDATE_TIMING"]))
-    #         print(session["FLASK_UPDATE_TIMING"]  == current_app.config["FLASK_UPDATE_TIMING"])
-
-
-    return_val = False  # If session timing is outdated, or needs to be updated.
-    # Might need to set the session life time. I think?
-    # Saving some stuff in session so that we don't have to keep querying for it.
-    if "live1_sgt_time_diff" in session and  \
-        "live1_sgt_time_update" in session and  datetime.datetime.now() < session["live1_sgt_time_update"] and \
-            'FLASK_UPDATE_TIMING' in session and  session["FLASK_UPDATE_TIMING"]  == current_app.config["FLASK_UPDATE_TIMING"]:
-        return_val = True
-        #print(session.keys())
-        #print("From session: {}. Next update time: {}".format(session['live1_sgt_time_diff'], session['live1_sgt_time_update']))
-    else:
-        print(session)
-        Clear_session_ajax()    # Clear all cookies. And reload everything again.
-
-        print("Refreshing cookies automatically in Flask")
-        session['live1_sgt_time_diff'] = get_live1_time_difference()
-
-        # Get the updated flask timing. This is when Flask re-runs on the server. To update any changes.
-        session["FLASK_UPDATE_TIMING"] = current_app.config["FLASK_UPDATE_TIMING"]
-
-        # Will get the timing that we need to update again.
-        # Want to get either start of next working day in SGT, or in x period.
-        if test == True:    # If we are testing if the cookies will be refreshed.
-            time_refresh_next = datetime.datetime.now() + datetime.timedelta(minutes=2)
-        else:
-            time_refresh_next = datetime.datetime.now() + datetime.timedelta(hours=2, minutes=45)
-
-
-        # need to add 10 mins, for roll overs and swap updates.
-        server_nextday_time =  liveserver_Nextday_start_timing(
-                    live1_server_difference=session['live1_sgt_time_diff'], hour_from_2300=0) + \
-                                           datetime.timedelta(hours=session['live1_sgt_time_diff'], minutes=10)
-        session['live1_sgt_time_update'] = min(time_refresh_next, server_nextday_time)
-        # Post_To_Telegram(AARON_BOT, "Clearing cookies and retrieving new cookies for: {}".format(current_user.id),
-        #                   TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
-        #print(session)
-
-    return return_val
-
-
-# Using Live 5 timing as guide.
-# Since live 5 uses 0000 - 2400
-# Will minus 1 day, and take 2300 to give live 1 timing
-def liveserver_Nextday_start_timing(live1_server_difference=6, hour_from_2300 = 0, time = 0):
-
-    if time == 0:   # Check if we had a start time
-        now = datetime.datetime.now()
-    else:
-        now = time
-    # Weekday: Minus how many days.
-    # 6 = Sunday. We want to go ahead how many days, if it' that weekday (in key)
-    next_day_start = {0: 1, 1: 1, 2: 1, 3: 1, 4: 3, 5: 2, 6: 1}
-
-    # + 1 hour to force it into the next day.
-    live5_server_timing = now - datetime.timedelta(hours=live1_server_difference) + datetime.timedelta(hours=1)
-    return_time = get_working_day_date(start_date=live5_server_timing,
-                        weekdays_count=  next_day_start[live5_server_timing.weekday()],
-                                       weekdaylist=[0, 1, 2, 3, 4, 5, 6])
-    return_time = return_time - datetime.timedelta(days=1)  # minus 1 days, and use 2300hrs
-    return_time = return_time.replace(hour=23, minute=0, second=0, microsecond=0)
-    return_time = return_time + datetime.timedelta(hours=hour_from_2300)
-
-    #print("server_Time:{}, start_time: {}".format(live1_server_timing, return_time))
-    return return_time
 

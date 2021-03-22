@@ -950,3 +950,115 @@ def color_negative_red(value):
     #return 'color: %s' % color
     return  color
 
+
+# Will alter the session details.
+# does not return anything
+def check_session_live1_timing():
+
+    test = False
+    # if test == True:
+    #     if "live1_sgt_time_update" in session:
+    #         print("session['live1_sgt_time_update'] = {}".format(session["live1_sgt_time_update"]))
+    #         print(' datetime.datetime.now() < session["live1_sgt_time_update"] : {}'.format(
+    #             (datetime.datetime.now() + datetime.timedelta(hours=3)) < session["live1_sgt_time_update"]))
+    #         print()
+    #
+    #
+    #     if  "FLASK_UPDATE_TIMING" in session:
+    #         print('current_app.config["FLASK_UPDATE_TIMING"] = {}'.format(current_app.config["FLASK_UPDATE_TIMING"]))
+    #         print('session["FLASK_UPDATE_TIMING"] = {}'.format( session["FLASK_UPDATE_TIMING"]))
+    #         print(session["FLASK_UPDATE_TIMING"]  == current_app.config["FLASK_UPDATE_TIMING"])
+
+
+    return_val = False  # If session timing is outdated, or needs to be updated.
+    # Might need to set the session life time. I think?
+    # Saving some stuff in session so that we don't have to keep querying for it.
+    if "live1_sgt_time_diff" in session and  \
+        "live1_sgt_time_update" in session and  datetime.datetime.now() < session["live1_sgt_time_update"] and \
+            'FLASK_UPDATE_TIMING' in session and  session["FLASK_UPDATE_TIMING"]  == current_app.config["FLASK_UPDATE_TIMING"]:
+        return_val = True
+        #print(session.keys())
+        #print("From session: {}. Next update time: {}".format(session['live1_sgt_time_diff'], session['live1_sgt_time_update']))
+    else:
+        print(session)
+        clear_session_cookies()    # Clear all cookies. And reload everything again.
+
+        print("Refreshing cookies automatically in Flask")
+        session['live1_sgt_time_diff'] = get_live1_time_difference()
+
+        # Get the updated flask timing. This is when Flask re-runs on the server. To update any changes.
+        session["FLASK_UPDATE_TIMING"] = current_app.config["FLASK_UPDATE_TIMING"]
+
+        # Will get the timing that we need to update again.
+        # Want to get either start of next working day in SGT, or in x period.
+        if test == True:    # If we are testing if the cookies will be refreshed.
+            time_refresh_next = datetime.datetime.now() + datetime.timedelta(minutes=2)
+        else:
+            time_refresh_next = datetime.datetime.now() + datetime.timedelta(hours=2, minutes=45)
+
+
+        # need to add 10 mins, for roll overs and swap updates.
+        server_nextday_time =  liveserver_Nextday_start_timing(
+                    live1_server_difference=session['live1_sgt_time_diff'], hour_from_2300=0) + \
+                                           datetime.timedelta(hours=session['live1_sgt_time_diff'], minutes=10)
+        session['live1_sgt_time_update'] = min(time_refresh_next, server_nextday_time)
+        # Post_To_Telegram(AARON_BOT, "Clearing cookies and retrieving new cookies for: {}".format(current_user.id),
+        #                   TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+        #print(session)
+
+    return return_val
+
+
+# Using Live 5 timing as guide.
+# Since live 5 uses 0000 - 2400
+# Will minus 1 day, and take 2300 to give live 1 timing
+def liveserver_Nextday_start_timing(live1_server_difference=6, hour_from_2300 = 0, time = 0):
+
+    if time == 0:   # Check if we had a start time
+        now = datetime.datetime.now()
+    else:
+        now = time
+    # Weekday: Minus how many days.
+    # 6 = Sunday. We want to go ahead how many days, if it' that weekday (in key)
+    next_day_start = {0: 1, 1: 1, 2: 1, 3: 1, 4: 3, 5: 2, 6: 1}
+
+    # + 1 hour to force it into the next day.
+    live5_server_timing = now - datetime.timedelta(hours=live1_server_difference) + datetime.timedelta(hours=1)
+    return_time = get_working_day_date(start_date=live5_server_timing,
+                        weekdays_count=  next_day_start[live5_server_timing.weekday()],
+                                       weekdaylist=[0, 1, 2, 3, 4, 5, 6])
+    return_time = return_time - datetime.timedelta(days=1)  # minus 1 days, and use 2300hrs
+    return_time = return_time.replace(hour=23, minute=0, second=0, microsecond=0)
+    return_time = return_time + datetime.timedelta(hours=hour_from_2300)
+
+    #print("server_Time:{}, start_time: {}".format(live1_server_timing, return_time))
+    return return_time
+
+
+def clear_session_cookies():
+
+    list_of_pop = []
+    # We want to clear everything, other then the system generated ones.
+    for u in list(session.keys()):
+        if u not in  ['_fresh', '_id', 'csrf_token']:
+            session.pop(u, None)
+            list_of_pop.append(u)
+
+    return list_of_pop
+
+
+# Get live 1 time difference from server.
+# SQL Table where aaron_misc_data` where item = 'live1_time_diff
+def get_live1_time_difference():
+
+    # MYSQL WEEKDAY FUNCTION
+    #0 = Monday, 1 = Tuesday, 2 = Wednesday, 3 = Thursday, 4 = Friday, 5 = Saturday, 6 =Sunday
+
+    server_time_diff_str = "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
+    sql_query = text(server_time_diff_str)
+
+    raw_result = db.engine.execute(sql_query)   # Insert select..
+    result_data = raw_result.fetchall()     # Return Result
+
+    return int(result_data[0][0])   # Return the integer value.
+
