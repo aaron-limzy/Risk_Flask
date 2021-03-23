@@ -880,7 +880,7 @@ def BGI_Symbol_Float():
 
 
     description = Markup("<b>Floating PnL By Symbol.</b><br> Revenue = Profit + Swaps<br>"+
-                         "Includes B book Groups. Includes HK as well.<br>"+
+                         "B book Groups Only.<br>"+
                          'Using Live5.group_table where book = "B"<br>' +
                          'HK Is excluded from all symbols <br>'  +
                          '<br><br>' +

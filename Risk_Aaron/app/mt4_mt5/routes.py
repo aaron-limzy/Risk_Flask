@@ -335,9 +335,9 @@ def BGI_All_Symbol_Float():
     # For Login in aaron.Risk_autocut and Credit_limit != 0
 
 
-    description = Markup("<b>Floating PnL By Symbol.</b><br> Revenue = Profit + Swaps<br>"+
-                         "Includes B book Groups. Includes HK as well.<br>"+
-                         'Using Live5.group_table where book = "B"<br>' +
+    description = Markup("<b>Floating PnL By Symbol for MT4 and MT5.</b><br>"+
+                         "Includes B book Groups. <br>"+
+                         'Using Live5.group_table where book = "B" for MT4 Groups<br>' +
                          'HK Is excluded from all symbols <br>'  +
                          '<br><br>' +
 
