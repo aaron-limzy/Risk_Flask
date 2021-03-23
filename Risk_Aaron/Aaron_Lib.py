@@ -95,6 +95,7 @@ def Send_Email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name
 def Get_time_String(datetime_format = None):
     if datetime_format == None: # If there is no input
         datetime_format = datetime.datetime.now()
+
     return datetime_format.strftime("%Y-%b-%d %H:%M:%S")
 
 def Get_SQL_Timestring(datetime_format=None):

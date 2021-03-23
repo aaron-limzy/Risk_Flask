@@ -145,21 +145,29 @@ def BGI_MT5_Symbol_Float_ajax():
     if not cfh_fix_timing():
         return json.dumps([[{'Update time': "Not updating, as Market isn't opened. {}".format(Get_time_String())}]])
 
-
     df_to_table = mt5_symbol_float_data()
+
+    #print(df_to_table)
 
     if len(df_to_table) == 0:
         return json.dumps([[{"Comment": "No Floating position for MT5"}], "{}".format(datetime.datetime.now()), "-"],
                           cls=plotly.utils.PlotlyJSONEncoder)
 
+    yesterday_datetime_pull = ["'Yesterday Datetime' not available."]
 
-    if "DATETIME" in df_to_table:
+    if "YESTERDAY_DATETIME_PULL" in df_to_table:
         # Get Datetime into string
-        df_to_table['DATETIME'] = df_to_table['DATETIME'].apply(lambda x: Get_time_String(x) \
-                                                                if isinstance(x, pd.Timestamp) else x)
+        df_to_table['YESTERDAY_DATETIME_PULL'] = df_to_table['YESTERDAY_DATETIME_PULL'].apply(lambda x: Get_time_String(x) if isinstance(x, pd.Timestamp) else x)
+        #print( df_to_table['YESTERDAY_DATETIME_PULL'] )
+        yesterday_datetime_pull = [c for c in list(df_to_table['YESTERDAY_DATETIME_PULL'][df_to_table['YESTERDAY_DATETIME_PULL'].notnull()].unique()) if c != 0]
+        #print(yesterday_datetime_pull)
 
-    datetime_pull = [c for c in list(df_to_table['DATETIME'][df_to_table['DATETIME'].notnull()].unique()) if c != 0] \
-                                                        if "DATETIME" in df_to_table else ["No Datetime in df."]
+
+    datetime_pull=["No Datetime in df."]
+    if 'DATETIME' in df_to_table:
+        df_to_table['DATETIME'] = df_to_table['DATETIME'].apply(lambda x: Get_time_String(x) if isinstance(x, pd.Timestamp) else x)
+        datetime_pull = [c for c in list(df_to_table['DATETIME'][df_to_table['DATETIME'].notnull()].unique()) if c != 0]
+
 
     # Sort by abs net volume
     if "ABS_NET" in df_to_table:
@@ -174,7 +182,7 @@ def BGI_MT5_Symbol_Float_ajax():
     # # # Want to add colors to the words.
     # Want to color the REVENUE
 
-    cols_to_str = ["REVENUE", "TODAY_REVENUE", "NETVOL","YESTERDAY_LOT", "YESTERDAY_REVENUE", "YESTERDAY_REBATE"]
+    cols_to_str = ["REVENUE", "TODAY_REVENUE", "NET_LOTS", "YESTERDAY_LOTS", "YESTERDAY_REVENUE", "YESTERDAY_REBATE"]
 
     for c in cols_to_str:
         if c in df_to_table:
@@ -186,9 +194,10 @@ def BGI_MT5_Symbol_Float_ajax():
     # Want only those columns that are in the df
     # Might be missing cause the PnL could still be saving.
     # If so, we force it to be "-"
+    #print(df_to_table[["SYMBOL", "NET_LOTS", "FLOATING_LOTS", "REVENUE"]])
 
     col = ["SYMBOL", "NET_LOTS", "FLOATING_LOTS", "REVENUE", "TODAY_LOTS", "TODAY_REVENUE", \
-           "YESTERDAY_LOT", "YESTERDAY_REVENUE", "YESTERDAY_REBATE"]
+           "YESTERDAY_LOTS", "YESTERDAY_REVENUE", "YESTERDAY_REBATE"]
     for c in col:
         if c not in df_to_table:
             df_to_table[c] = "-"
@@ -199,83 +208,6 @@ def BGI_MT5_Symbol_Float_ajax():
     # Pandas return list of dicts.
     return_val = df_to_table[col].to_dict("record")
 
-    return json.dumps([return_val, ", ".join(datetime_pull), " - "], cls=plotly.utils.PlotlyJSONEncoder)
+    return json.dumps([return_val, ", ".join(datetime_pull), ", ".join(yesterday_datetime_pull)], cls=plotly.utils.PlotlyJSONEncoder)
 
 
-# This function will return combined data of symbol float as well as yesterday's PnL for MT5
-def mt5_symbol_float_data():
-    Testing = False
-
-    # Want to get PnL For MT5 Yesterday.
-    if check_session_live1_timing() == True and "yesterday_mt5_pnl_by_symbol" in session \
-            and len(session["yesterday_mt5_pnl_by_symbol"]) > 0:
-        # From "in memory" of session
-        # print(session)
-        df_yesterday_symbol_pnl = pd.DataFrame.from_dict(session["yesterday_mt5_pnl_by_symbol"])
-    else:  # If session timing is outdated, or needs to be updated.
-
-        print("\nGetting yesterday MT5 symbol PnL from DB\n\n")
-
-        df_yesterday_symbol_pnl = pd.DataFrame(mt5_yesterday_symbol_pnl())
-        if "DATE" in df_yesterday_symbol_pnl:  # We want to save it as a string.
-            df_yesterday_symbol_pnl['Date'] = df_yesterday_symbol_pnl['DATE'].apply(
-                lambda x: x.strftime("%Y-%m-%d") if isinstance(x, datetime.date) else x)
-        # save it to session
-
-
-        session["yesterday_mt5_pnl_by_symbol"] = df_yesterday_symbol_pnl.to_dict()
-
-    # To simulate if there was no closed symbol on MT5 yesterday
-    #df_yesterday_symbol_pnl = pd.DataFrame([])
-
-    if Testing == True:
-        test_data = [ {'SYMBOL': 'BTCUSD', 'YesterdayVolume': 0.26, 'YesterdayProfitUsd': 2.62, 'YesterdayRebate': 0.0,
-          'Date': datetime.datetime(2021, 3, 22, 14, 20, 17)},
-                   {'SYMBOL': 'EURUSD', 'YesterdayVolume': 0.26, 'YesterdayProfitUsd': 2.62, 'YesterdayRebate': 0.0,
-                    'Date': datetime.datetime(2021, 3, 22, 14, 20, 17)},
-                   {'SYMBOL': 'XAUUSD', 'YesterdayVolume': 0.26, 'YesterdayProfitUsd': 2.62, 'YesterdayRebate': 0.0,
-                    'Date': datetime.datetime(2021, 3, 22, 14, 20, 17)} ]
-        df_yesterday_symbol_pnl =  pd.DataFrame.from_dict(test_data)
-
-    # Want to rename the columns
-    df_yesterday_symbol_pnl.rename(columns={"YesterdayProfitUsd":"YESTERDAY_REVENUE", 'YesterdayRebate': "YESTERDAY_REBATE", "YesterdayVolume":"YESTERDAY_LOT"}, inplace=True)
-
-    #print(df_yesterday_symbol_pnl.to_dict())
-
-
-    if Testing == True:
-        result_data = [{'SYMBOL': 'BTCUSD', 'NET_LOTS': -0.2, 'FLOATING_LOT': 0.4, 'REVENUE': -3725.73, 'TODAY_LOTS': -14.72, 'TODAY_REVENUE': 0.13, 'DATETIME': datetime.datetime(2021, 3, 22, 14, 49, 11)},
-                       {'SYMBOL': 'XAUUSD', 'NET_LOTS': -0.2, 'FLOATING_LOT': 0.4, 'REVENUE': 725.73, 'TODAY_LOTS': -14.72, 'TODAY_REVENUE': 0.13, 'DATETIME': datetime.datetime(2021, 3, 22, 14, 49, 11)},
-                       {'SYMBOL': 'NOTASYMBOL', 'NET_LOTS': -0.2, 'FLOATING_LOT': 0.4, 'REVENUE': -35.73, 'TODAY_LOTS': -14.72, 'TODAY_REVENUE': 0.13, 'DATETIME': datetime.datetime(2021, 3, 22, 14, 49, 11)},
-                       {'SYMBOL': 'LALALALA', 'NET_LOTS': -0.2, 'FLOATING_LOT': 0.4, 'REVENUE': 3725.73, 'TODAY_LOTS': -14.72, 'TODAY_REVENUE': 0.13, 'DATETIME': datetime.datetime(2021, 3, 22, 14, 49, 11)},
-                       {'SYMBOL': 'BTCUSD', 'NET_LOTS': -0.2, 'FLOATING_LOT': 0.4, 'REVENUE': 12345.73, 'TODAY_LOTS': -14.72, 'TODAY_REVENUE': 0.13, 'DATETIME': datetime.datetime(2021, 3, 22, 14, 49, 11)}]
-    else:
-        # Now to get the Symbol float and today's closed.
-
-        sql_query = """SELECT SYMBOL, ROUND(SUM(NET_FLOATING_VOLUME),2) as `NET_LOTS`, ROUND(SUM(FLOATING_VOLUME),2) as `FLOATING_LOT`, ROUND(SUM(FLOATING_REVENUE),2) as `REVENUE`, 
-            ROUND(SUM(CLOSED_VOL_TODAY),2) as `TODAY_LOTS`,
-            ROUND(SUM(CLOSED_REVENUE_TODAY),2) as `TODAY_REVENUE`,  DATETIME
-                FROM  aaron.bgi_mt5_float_save
-                WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.bgi_mt5_float_save)
-                    GROUP BY SYMBOL
-                ORDER BY floating_revenue DESC
-            """
-        result_data = Query_SQL_mt5_db_engine(sql_query)
-        #result_data = []
-
-    #print(result_data)
-    df = pd.DataFrame(result_data)
-
-    # If either one of them are empty.
-    if len(df_yesterday_symbol_pnl) == 0 or len(df) == 0:
-        if len(df_yesterday_symbol_pnl) != 0 and len(df) == 0:
-            return df_yesterday_symbol_pnl
-        elif len(df_yesterday_symbol_pnl) == 0 and len(df) != 0:
-            return df
-        else:
-            return pd.DataFrame([])
-
-    df_combined = df_yesterday_symbol_pnl.merge(df, how='outer', on='SYMBOL')
-    #df_combined.fillna("-", inplace=True)
-
-    return df_combined

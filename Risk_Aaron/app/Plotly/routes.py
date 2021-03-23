@@ -446,28 +446,6 @@ def BGI_Country_Float():
 
 
 
-# Want to get the Live 1 START of the day timing
-# Will do a comparison and get the time for start and end.
-# Need to account for Live 5/MT5 timing.
-# For today, if Live 1 hour < 23, will return 2 workind days ago 2300
-def liveserver_Previousday_start_timing(live1_server_difference=6, hour_from_2300 = 0):
-
-    # Weekday: Minus how many days.
-    # 6 = Sunday, we want to take away 3 days, to Thursday starting.
-    previous_day_start = {6:3, 0:4, 1:2, 2:2, 3:2, 4:2, 5:2}
-    now = datetime.datetime.now()
-    # + 1 hour to force it into the next day.
-    live1_server_timing = now - datetime.timedelta(hours=live1_server_difference) + datetime.timedelta(hours=1)
-    return_time = get_working_day_date(start_date=live1_server_timing, weekdays_count= -1 * previous_day_start[live1_server_timing.weekday()],
-                                       weekdaylist=[0, 1, 2, 3,4,5,6])
-    return_time = return_time.replace(hour=23, minute=0, second=0, microsecond=0)
-    return_time = return_time + datetime.timedelta(hours=hour_from_2300)
-
-    #print("server_Time:{}, start_time: {}".format(live1_server_timing, return_time))
-    return return_time
-
-
-
 # Want to check if the PnL has been saved for the previous day.
 # Return False IF No PnL for previous Day
 def check_previous_day_pnl_in_DB():
@@ -658,55 +636,13 @@ def get_country_daily_pnl():
 
     if len(result_data) <= 0:   # If there are no data.
         # Force it to update yesterday's PnL, if it wasn't..
-        save_previous_day_PnL(force_update=True)
+        save_previous_day_mt4_PnL(force_update=True)
 
     # If empty, we just want to return an empty data frame. So that the following merge will not cause any issues
     return_df = pd.DataFrame(result_data, columns=result_col) if len(result_data) > 0 else pd.DataFrame()
     return return_df
 
 
-# Query SQL to return the previous day's PnL By Symbol
-def get_symbol_daily_pnl():
-
-    # Want to check what is the date that we should be retrieving.
-    # Trying to reduce the over-heads as much as possible.
-    live1_server_difference = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else get_live1_time_difference()
-
-    live1_start_time = liveserver_Previousday_start_timing(live1_server_difference=live1_server_difference, hour_from_2300=5)
-    date_of_pnl = "{}".format(live1_start_time.strftime("%Y-%m-%d"))
-
-    sql_statement = """SELECT SYMBOL, SUM(VOLUME) AS VOLUME, SUM(REVENUE) AS REVENUE, DATE
-            FROM aaron.`bgi_dailypnl_by_country_group`
-            WHERE DATE = '{}' 
-            AND COUNTRY in (SELECT DISTINCT(COUNTRY) from live5.group_table where BOOK = "B")
-            AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK')
-            GROUP BY SYMBOL""".format(date_of_pnl)
-
-    # Want to get results for the above query, to get the Floating PnL
-    sql_query = text(sql_statement)
-    raw_result = db.engine.execute(sql_query)  # Select From DB
-    result_data = raw_result.fetchall()     # Return Result
-    # print("result_data:")
-    # print(result_data)
-    # print("\n")
-    result_col = raw_result.keys()  # The column names
-
-    # If empty, we just want to return an empty data frame. So that the following merge will not cause any issues
-    return_df = pd.DataFrame(result_data, columns=result_col) if len(result_data) > 0 else pd.DataFrame()
-    return return_df
-
-
-#
-# # Want to delete from the table where min is not 1.
-# # TODO: will need to improve this when MY gives the code
-# def delete_from_floating_table():
-#     #if get_machine_ip_address() == '192.168.64.73': # This keeps getting stuck. Only implement on 64.73 server.
-#     print("Trying to delete from aaron.`BGI_Float_History_Save`")
-#     #insert_into_table = text("DELETE FROM aaron.`BGI_Float_History_Save` WHERE MINUTE(datetime) <> 1")
-#
-#     async_sql_insert_raw(app=current_app._get_current_object(), sql_insert="DELETE FROM aaron.`BGI_Float_History_Save` WHERE MINUTE(datetime) <> 1")
-#     # Will Asnc this.
-#     # raw_result = db.engine.execute(insert_into_table)  # Want to insert into the table.
 
 # Clear session data.
 # Called when refreshing cookies.
@@ -935,8 +871,8 @@ def Error_ajax():
 @roles_required()
 def BGI_Symbol_Float():
 
-    title = "Symbol Float"
-    header = "Symbol Float"
+    title = "MT4 Symbol Float"
+    header = "MT4 Symbol Float"
 
     # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
@@ -968,11 +904,12 @@ def BGI_Symbol_Float():
         # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Symbol_Float.html", backgroud_Filename=background_pic("BGI_Symbol_Float"),
                            icon= "",
-                           Table_name="Symbol Float (B 📘)", \
+                           Table_name="MT4 Symbol Float (B 📘)", \
                            title=title, ajax_url=url_for('analysis.BGI_Symbol_Float_ajax', _external=True),
                            header=header, setinterval=15,
                            tableau_url=Markup(symbol_float_tableau()),
                            description=description, no_backgroud_Cover=True, replace_words=Markup(['(Client Side)']))
+
 
 
 # Get BGI Float by Symbol
@@ -995,7 +932,7 @@ def BGI_Symbol_Float_ajax():
     else:  # If session timing is outdated, or needs to be updated.
 
         #print("Getting yesterday symbol PnL from DB")
-        df_yesterday_symbol_pnl = get_symbol_daily_pnl()
+        df_yesterday_symbol_pnl = get_mt4_symbol_daily_pnl()
         #print(df_yesterday_symbol_pnl)
         if "DATE" in df_yesterday_symbol_pnl:  # We want to save it as a string.
             # print("DATE IN")
@@ -3479,253 +3416,28 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
                         "P1":deposit_withdrawal_fig,
                        "P2": average_trade_duration_fig}, cls=plotly.utils.PlotlyJSONEncoder)
 
+#
+# @analysis.route('/mt5_test', methods=['GET', 'POST'])
+# @roles_required()
+# def mt5_test():
+#
+#     title = "Symbol Float"
+#     header = "Symbol Float"
+#
+#     query = mt5_BBook_select_insert()
+#
+#     result_data = SQL_insert_MT5_statement(query)
+#
+#     # sql_insert = """INSERT INTO aaron.`bgi_mt5_float_save` (entity, symbol, net_floating_volume, floating_volume, floating_revenue, datetime, closed_revenue_today, closed_vol_today)
+#     # VALUES ("SG", "EURUSD", "1", "1.02", "2.02", now(), "2.34", "1.234")"""
+#     #
+#     # SQL_insert_MT5_statement(sql_insert)
+#     #
+#     # print(pd.DataFrame(result_data))
+#
+#
+#     return "Hello<br><br>testing 1 2 3 <br>Thanks!"
 
-@analysis.route('/mt5_test', methods=['GET', 'POST'])
-@roles_required()
-def mt5_test():
-
-    title = "Symbol Float"
-    header = "Symbol Float"
-
-    query = mt5_BBook_select_insert()
-
-    result_data = SQL_insert_MT5_statement(query)
-
-    # sql_insert = """INSERT INTO aaron.`bgi_mt5_float_save` (entity, symbol, net_floating_volume, floating_volume, floating_revenue, datetime, closed_revenue_today, closed_vol_today)
-    # VALUES ("SG", "EURUSD", "1", "1.02", "2.02", now(), "2.34", "1.234")"""
-    #
-    # SQL_insert_MT5_statement(sql_insert)
-    #
-    # print(pd.DataFrame(result_data))
-
-
-    return "Hello<br><br>testing 1 2 3 <br>Thanks!"
-
-
-
-# Get BGI Float by Symbol
-# Inclusive of MT5
-@analysis.route('/BGI_All_Symbol_Float_ajax', methods=['GET', 'POST'])
-@roles_required()
-def BGI_All_Symbol_Float_ajax():
-
-
-    #start = datetime.datetime.now()
-    # TODO: Only want to save during trading hours.
-    # TODO: Want to write a custom function, and not rely on using CFH timing.
-    if not cfh_fix_timing():
-        return json.dumps([[{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}]])
-
-    if check_session_live1_timing() == True and \
-            "yesterday_mt4_pnl_by_symbol" in session and len(session["yesterday_mt4_pnl_by_symbol"]) > 0:
-        # From "in memory" of session
-        #print(session)
-        df_yesterday_symbol_pnl = pd.DataFrame.from_dict(session["yesterday_mt4_pnl_by_symbol"])
-    else:       # If session timing is outdated, or needs to be updated.
-
-        print("Getting yesterday symbol PnL from DB")
-        df_yesterday_symbol_pnl = get_symbol_daily_pnl()
-        if "DATE" in df_yesterday_symbol_pnl:  # We want to save it as a string.
-            #print("DATE IN")
-            df_yesterday_symbol_pnl['DATE'] = df_yesterday_symbol_pnl['DATE'].apply(
-                lambda x: x.strftime("%Y-%m-%d") if isinstance(x, datetime.date) else x)
-
-
-        session["yesterday_mt4_pnl_by_symbol"] =  df_yesterday_symbol_pnl.to_dict()
-
-    # Want to get the Unique date for the "Yesterday" date.
-    # Want to know the date of the symbol "yesterday" details.
-    yesterday_datetime_pull = [c for c in list(df_yesterday_symbol_pnl['DATE'].unique()) if
-                               c != 0] if "DATE" in df_yesterday_symbol_pnl else ["No YESTERDAY_DATE in df."]
-
-    # We already know the date. No need to carry on with this data.
-    if "DATE" in df_yesterday_symbol_pnl:
-        df_yesterday_symbol_pnl.pop('DATE')
-
-    # Want to change the names of the columns. But we need to preserve the COUNTRY name since we use that to merge.
-    df_yesterday_symbol_pnl.rename(columns=dict(zip(["{}".format(c) for c in list(df_yesterday_symbol_pnl.columns) if c.find("SYMBOL") == -1], \
-        ["YESTERDAY_{}".format(c) for c in list(df_yesterday_symbol_pnl.columns) if c.find("SYMBOL") == -1])), inplace=True)
-
-
-
-
-    #print(df_yesterday_symbol_pnl)
-
-    server_time_diff_str = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session \
-                else "SELECT RESULT FROM `aaron_misc_data` where item = 'live1_time_diff'"
-
-
-    sql_statement = """SELECT aaron.BGI_Float_History_Save.SYMBOL, SUM(ABS(floating_volume)) AS VOLUME, -1 * SUM(net_floating_volume) AS NETVOL, 
-                    SUM(floating_revenue) AS REVENUE, 
-                    SUM(closed_vol_today) as "TODAY_VOL",
-                    SUM(closed_revenue_today) as "TODAY_REVENUE",                            
-                                                P.ASK, P.BID,
-                                                DATE_ADD(DATETIME,INTERVAL ({ServerTimeDiff_Query}) HOUR) AS DATETIME
-    FROM aaron.BGI_Float_History_Save 
-                    LEFT JOIN live1.mt4_prices as P ON  CONCAT(aaron.BGI_Float_History_Save.SYMBOL, "q") = P.SYMBOL
-    WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.BGI_Float_History_Save)
-    AND COUNTRY IN (SELECT COUNTRY from live5.group_table where BOOK = "B") 
-    AND COUNTRY not like "HK"
-    GROUP BY SYMBOL
-    ORDER BY REVENUE DESC""".format(ServerTimeDiff_Query=server_time_diff_str)
-
-    #print(sql_statement)
-    sql_query = text(sql_statement)
-    raw_result = db.engine.execute(sql_query)   # Insert select..
-    result_data = raw_result.fetchall()     # Return Result
-
-    result_col = raw_result.keys()  # Column names
-
-
-
-    #end = datetime.datetime.now()
-    #print("\nGetting SYMBOL PnL tool[After Query]: {}s\n".format((end - start).total_seconds()))
-
-    df = pd.DataFrame(result_data, columns=result_col)
-
-    # For the display of table, we only want the latest data inout.
-    df_to_table = df[df['DATETIME'] == df['DATETIME'].max()].drop_duplicates()
-
-    # Get Datetime into string
-    df_to_table['DATETIME'] = df_to_table['DATETIME'].apply(lambda x: Get_time_String(x))
-
-
-    datetime_pull =  [c for c in list(df_to_table['DATETIME'].unique()) if c != 0] if  "DATETIME" in df_to_table else  ["No Datetime in df."]
-
-
-
-    # Sort by abs net volume
-    df_to_table["ABS_NET"] = df_to_table["NETVOL"].apply(lambda x: abs(x))
-    df_to_table.sort_values(by=["ABS_NET"], inplace=True, ascending=False)
-    df_to_table.pop('ABS_NET')
-
-
-    # We already know the date. No need to carry on with this data.
-    if "DATETIME" in df_to_table:
-        df_to_table.pop('DATETIME')
-
-
-    # SQL sometimes return values with lots of decimal points.
-    # We only want to show afew. Else, it takes up too much screen spaace.
-    if "BID" in df_to_table:
-        df_to_table["BID"] = df_to_table["BID"].apply(lambda x: "{:2.5f}".format(x) if (isfloat(decimal.Decimal(str(x)).as_tuple().exponent)
-                                                                                        and (decimal.Decimal(str(x)).as_tuple().exponent < -5)) else x)
-
-    # SQL sometimes return values with lots of decimal points.
-    # We only want to show afew. Else, it takes up too much screen spaace.
-    if "ASK" in df_to_table:
-        df_to_table["ASK"] = df_to_table["ASK"].apply(lambda x: "{:2.5f}".format(x) if (isfloat(decimal.Decimal(str(x)).as_tuple().exponent)
-                                                                                        and (decimal.Decimal(str(x)).as_tuple().exponent < -5)) else x)
-
-    # Go ahead to merge the tables, and add the hyperlink
-    if "SYMBOL" in df_to_table and "SYMBOL" in df_yesterday_symbol_pnl:
-        df_to_table = df_to_table.merge(df_yesterday_symbol_pnl, on="SYMBOL", how='left')
-        df_to_table.fillna("-", inplace=True)  # Want to fill up all the empty ones with -
-        # Want to hyperlink Yesterday Revenue. To show yesterday's date.
-        # Add comma if it's a float.
-
-        # Hyperlink this.
-        if "YESTERDAY_REVENUE" in df_to_table:
-            #df_to_table["YESTERDAY_REVENUE"] = df_to_table["YESTERDAY_REVENUE"].apply(lambda x: "{:,.2f}".format(x) if isfloat(x) else x)
-            # Hyperlink it.
-            df_to_table["YESTERDAY_REVENUE"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_REVENUE}</a>""".format( \
-                                                                url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
-                                                                YESTERDAY_REVENUE=profit_red_green(x["YESTERDAY_REVENUE"]) if isfloat(x["YESTERDAY_REVENUE"]) else x["YESTERDAY_REVENUE"] ),
-                                                                axis=1)
-        # Also want to hyperlink this.
-        # Just.. to have more hypterlink. HA ha ha.
-        # Haven changed name yet. So it's still names "volume"
-        if "YESTERDAY_VOLUME" in df_to_table:
-            # Hyperlink it.
-            df_to_table["YESTERDAY_VOLUME"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_VOLUME}</a>""".format( \
-                                                                url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
-                                                                YESTERDAY_VOLUME=x["YESTERDAY_VOLUME"]),
-                                                                axis=1)
-
-    # Need to check if the columns are in the df.
-    # taking this chance to re-arrange them as well.
-    # col_of_df = [c for c in ["SYMBOL", "NETVOL", "VOLUME", "REVENUE", "TODAY_VOL", "TODAY_REVENUE", "BID", "ASK","YESTERDAY_VOLUME", "YESTERDAY_REVENUE"] if c in  list(df_to_table.columns)]
-
-    #df_records = df_to_table[col_of_df].to_records(index=False)
-    #df_records = [list(a) for a in df_records]
-    #return_val = [dict(zip(col_of_df,d)) for d in df_records]
-
-
-    # Want to hyperlink it.
-    df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{symbol}</a>'.format(symbol=x,
-                                                                    url=url_for('analysis.symbol_float_trades', _external=True, symbol=x, book="b")))
-
-   # # # Want to add colors to the words.
-    # Want to color the REVENUE
-    cols = ["REVENUE", "TODAY_REVENUE", "NETVOL"]
-    for c in cols:
-        if c in df_to_table:
-            df_to_table[c] = df_to_table[c].apply(lambda x: """{c}""".format(c=profit_red_green(x) if isfloat(x) else x))
-
-
-
-    #Rename the VOLUME to LOTs
-    df_to_table.rename(columns={"NETVOL": "NET_LOTS", "VOLUME": "FLOATING_LOTS",
-                                "TODAY_VOL" : "TODAY_LOTS", "YESTERDAY_VOLUME": "YESTERDAY_LOTS"}, inplace=True)
-
-    ## Want to check if YESTERDAY_VOLUME and YESTERDAY_REVENUE are in.
-    # # Ment for debugging the 5.10am to 7.55am issue.
-    if 'YESTERDAY_LOTS' not in df_to_table.columns or 'YESTERDAY_REVENUE' not in df_to_table.columns:
-        # Send email
-        #print(session)
-        session_array = []
-        for u in list(session.keys()):
-            session_array.append("{} : {}".format(u, session[u]))
-        #print("<br><br>".join(session_array))
-        # async_send_email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[], Subject="Yesterday_lots or Yesterday_revenue Missing",
-        #                  HTML_Text="df_to_table <br><br>{}<br><br>session<br><br>{}".format(df_to_table.to_html() , "<br><br>".join(session_array)),
-        #                  Attachment_Name=[])
-
-
-    # Want only those columns that are in the df
-    # Might be missing cause the PnL could still be saving.
-    col_of_df_return = [c for c in ["SYMBOL", "NET_LOTS", "FLOATING_LOTS", "REVENUE", "TODAY_LOTS", \
-                                    "TODAY_REVENUE", "BID", "ASK","YESTERDAY_LOTS", "YESTERDAY_REVENUE"] \
-                        if c in  list(df_to_table.columns)]
-
-    # Pandas return list of dicts.
-    return_val = df_to_table[col_of_df_return].to_dict("record")
-
-
-
-    #end = datetime.datetime.now()
-    #print("\nGetting Country PnL tool[Before Chart]: {}s\n".format((end - start).total_seconds()))
-
-    # For plotting.
-
-    fig = []
-    # bar_color = df_to_table['REVENUE'].apply(lambda x: "green" if x >= 0 else 'red')
-    # fig = go.Figure(data=[
-    #     go.Bar(name="Total Volume", y=df_to_table['REVENUE'], x=chart_Country, text=df_to_table['REVENUE'], textposition='outside',
-    #            cliponaxis=False, textfont=dict(size=14), marker_color=bar_color)
-    # ])
-    #
-    # fig.update_layout(
-    #     autosize=True,
-    #     margin=dict(pad=1),
-    #     yaxis=dict(
-    #         title_text="Revenue",
-    #         ticks="outside", tickcolor='white', ticklen=15,
-    #         layer='below traces'
-    #     ),
-    #     yaxis_tickfont_size=14,
-    #     xaxis=dict(
-    #         title_text="Country"
-    #     ),
-    #     xaxis_tickfont_size=15,
-    #     title_text='Floating Revenue by Country',
-    #     titlefont=dict(size=28, family="'Montserrat', sans-serif"),
-    #     title_x=0.5
-    # )
-
-    #end = datetime.datetime.now()
-    #print("\nGetting SYMBOL PnL tool: {}s\n".format((end - start).total_seconds()))
-    return json.dumps([return_val, ", ".join(datetime_pull), ", ".join(yesterday_datetime_pull)], cls=plotly.utils.PlotlyJSONEncoder)
 
 
 

@@ -916,6 +916,10 @@ def profit_red_green(x):
         color = "green"
     elif float(x) < 0:
         color = "red"
+
+    # This is for -0.00 correction
+    if x==0:
+        x = 0
     return "<span style='color:{color}'>{x:,.2f}</span>".format(color=color,x=float(x))
 
 
@@ -1062,3 +1066,54 @@ def get_live1_time_difference():
 
     return int(result_data[0][0])   # Return the integer value.
 
+
+
+# Query SQL to return the previous day's PnL By Symbol
+def get_mt4_symbol_daily_pnl():
+
+    # Want to check what is the date that we should be retrieving.
+    # Trying to reduce the over-heads as much as possible.
+    live1_server_difference = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else get_live1_time_difference()
+
+    live1_start_time = liveserver_Previousday_start_timing(live1_server_difference=live1_server_difference, hour_from_2300=5)
+    date_of_pnl = "{}".format(live1_start_time.strftime("%Y-%m-%d"))
+
+    sql_statement = """SELECT SYMBOL, SUM(VOLUME) AS VOLUME, SUM(REVENUE) AS REVENUE, DATE
+            FROM aaron.`bgi_dailypnl_by_country_group`
+            WHERE DATE = '{}' 
+            AND COUNTRY in (SELECT DISTINCT(COUNTRY) from live5.group_table where BOOK = "B")
+            AND COUNTRY NOT IN ('Omnibus_sub','MAM','','TEST', 'HK')
+            GROUP BY SYMBOL""".format(date_of_pnl)
+
+    # Want to get results for the above query, to get the Floating PnL
+    sql_query = text(sql_statement)
+    raw_result = db.engine.execute(sql_query)  # Select From DB
+    result_data = raw_result.fetchall()     # Return Result
+    # print("result_data:")
+    # print(result_data)
+    # print("\n")
+    result_col = raw_result.keys()  # The column names
+
+    # If empty, we just want to return an empty data frame. So that the following merge will not cause any issues
+    return_df = pd.DataFrame(result_data, columns=result_col) if len(result_data) > 0 else pd.DataFrame()
+    return return_df
+
+# Want to get the Live 1 START of the day timing
+# Will do a comparison and get the time for start and end.
+# Need to account for Live 5/MT5 timing.
+# For today, if Live 1 hour < 23, will return 2 workind days ago 2300
+def liveserver_Previousday_start_timing(live1_server_difference=6, hour_from_2300 = 0):
+
+    # Weekday: Minus how many days.
+    # 6 = Sunday, we want to take away 3 days, to Thursday starting.
+    previous_day_start = {6:3, 0:4, 1:2, 2:2, 3:2, 4:2, 5:2}
+    now = datetime.datetime.now()
+    # + 1 hour to force it into the next day.
+    live1_server_timing = now - datetime.timedelta(hours=live1_server_difference) + datetime.timedelta(hours=1)
+    return_time = get_working_day_date(start_date=live1_server_timing, weekdays_count= -1 * previous_day_start[live1_server_timing.weekday()],
+                                       weekdaylist=[0, 1, 2, 3,4,5,6])
+    return_time = return_time.replace(hour=23, minute=0, second=0, microsecond=0)
+    return_time = return_time + datetime.timedelta(hours=hour_from_2300)
+
+    #print("server_Time:{}, start_time: {}".format(live1_server_timing, return_time))
+    return return_time

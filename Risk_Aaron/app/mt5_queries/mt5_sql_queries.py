@@ -184,7 +184,7 @@ def mt5_BBook_select_insert(time_diff=0):
 
     time_diff_mt5 = time_diff if time_diff != 0 else '(SELECT result FROM aaron.`aaron_misc_data` where item = "mt5_timing_diff")'
 
-    sql_statement = r"""INSERT INTO aaron.`bgi_mt5_float_save` (entity, symbol, net_floating_volume, floating_volume, floating_revenue, closed_revenue_today, closed_vol_today, datetime)
+    sql_statement = r"""INSERT INTO aaron.`bgi_mt5_float_save` (entity, symbol, net_floating_volume, floating_volume, floating_revenue,closed_vol_today, closed_revenue_today, datetime)
                 SELECT FinalTable.Country,FinalTable.BaseSymbol,-NetVolume AS NetVolume,FloatVolume, -FloatProfit AS FloatProfit, TodayVolume AS TodayClosedVolume,-TodayProfitUsd AS TodayClosedProfitUsd, now() as datetime FROM(
                 SELECT F.Country,F.BaseSymbol,sum(NetVolume) AS NetVolume,SUM(FloatVolume) AS FloatVolume, SUM(FloatProfit) AS FloatProfit,
                 SUM(COALESCE(Volume,0)) as TodayVolume,SUM(COALESCE(ROUND(TodayProfitUsd,2),0)) AS TodayProfitUsd FROM
@@ -297,7 +297,7 @@ def mt5_BBook_select_insert(time_diff=0):
 # Want to use to get MT5 yesterday's PnL by symbol
 def mt5_symbol_yesterday_pnl_query():
     sql_query = r"""SELECT BaseSymbol as `SYMBOL`, SUM(YesterdayVolume) AS YesterdayVolume, SUM(YesterdayProfit_usd) AS YesterdayProfitUsd,
-        SUM(YesterdayMarkupRebate) AS YesterdayRebate, now() as Date 
+        SUM(YesterdayMarkupRebate) AS YesterdayRebate, now() as YESTERDAY_DATETIME_PULL
         FROM
             #yestClosed live 1
             (SELECT `Group`,yestTable.Symbol,YesterdayVolume,YesterdayProfit_usd,YesterdayMarkupRebate,BaseSymbol FROM
