@@ -19,6 +19,7 @@ def background_pic(website):
                  "Client_Comment_Scalp" :   "css/runner_1.jpg",
                  "Client_trades_form" :     "css/cactus.jpg",
                  "Client_trades_Analysis" : "css/strips_1.png",
+                 "BGI_MT5_Symbol_Float":    "css/geometry.png",
 
 
 
