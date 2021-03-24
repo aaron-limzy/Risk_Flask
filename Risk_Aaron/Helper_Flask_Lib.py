@@ -1117,3 +1117,30 @@ def liveserver_Previousday_start_timing(live1_server_difference=6, hour_from_230
 
     #print("server_Time:{}, start_time: {}".format(live1_server_timing, return_time))
     return return_time
+
+
+
+# Query SQL to get MT4 Symbol BID/ASK
+def get_live2_ask_bid(symbols=[]):
+
+
+    sql_statement = """SELECT * FROM (
+        SELECT LEFT(SYMBOL,6) as SYMBOL, BID, ASK, MODIFY_TIME FROM live2.`mt4_prices`
+        where SYMBOL RLIKE '{}'
+        AND MODIFY_TIME > now() - INTERVAL 4 DAY
+        ORDER BY MODIFY_TIME DESC
+        ) as Z 
+        GROUP BY SYMBOL""".format("|".join(symbols))
+
+    # Want to get results for the above query, to get the Floating PnL
+    sql_query = text(sql_statement)
+    raw_result = db.engine.execute(sql_query)  # Select From DB
+    result_data = raw_result.fetchall()     # Return Result
+    # print("result_data:")
+    # print(result_data)
+    # print("\n")
+    result_col = raw_result.keys()  # The column names
+
+    # If empty, we just want to return an empty data frame. So that the following merge will not cause any issues
+    return_df = pd.DataFrame(result_data, columns=result_col) if len(result_data) > 0 else pd.DataFrame()
+    return return_df

@@ -352,7 +352,8 @@ def BGI_All_Symbol_Float():
                          'Values are all on <b>BGI Side</b>. <br>' +
                          'Sort by absolute net volume.<br>'+
                          "Yesterday Data saved in cookies.<br>" +
-                         "Taking Live prices from Live 1 q Symbols")
+                         "Taking Live prices from Live 1 q Symbols.<br>" + \
+                         "For ticks that Live 1 dosn't have, Ticks are taken from Live 2.")
 
 
 
@@ -402,10 +403,18 @@ def BGI_All_Symbol_Float_ajax():
         df_mt5.pop("YESTERDAY_REBATE")
 
 
-    # ["SYMBOL", "NET_LOTS", "FLOATING_LOTS", "REVENUE", "TODAY_LOTS", \
-    #  "TODAY_REVENUE", "BID", "ASK", "YESTERDAY_LOTS", "YESTERDAY_REVENUE"]
     # Concat the MT4 and MT5 Tables
     df_to_table = pd.concat([df_mt4, df_mt5], ignore_index=True)
+
+    # Want to get the ticks that Live 1 don't have from Live 2.
+    missing_ticks_df = get_live2_ask_bid(list(df_to_table[df_to_table['BID'].isnull()]['SYMBOL'].unique()))
+    if 'MODIFY_TIME' in missing_ticks_df:
+        missing_ticks_df.pop("MODIFY_TIME")
+    df_to_table = pd.concat([df_to_table, missing_ticks_df], ignore_index=True)
+
+
+
+
     # Want to Aggregate the columns accordingly.
     df_to_table = df_to_table.groupby("SYMBOL").agg(
         NET_LOTS=           pd.NamedAgg(column="NET_LOTS", aggfunc="sum"),
@@ -418,12 +427,12 @@ def BGI_All_Symbol_Float_ajax():
         YESTERDAY_LOTS=     pd.NamedAgg(column="YESTERDAY_LOTS", aggfunc="sum"),
         YESTERDAY_REVENUE=  pd.NamedAgg(column="YESTERDAY_REVENUE", aggfunc="sum")   ).reset_index()
 
-    # pd.set_option('display.max_columns', None)
+    # # pd.set_option('display.max_columns', None)
     # print()
-    # df_to_table = pd.concat([df_mt4, df_mt5], ignore_index=True)
-    #print(df_to_table)
-    # print()
-    # print(df_to_table.columns)
+    # # df_to_table = pd.concat([df_mt4, df_mt5], ignore_index=True)
+    # print(df_to_table)
+
+
 
     #['SYMBOL', 'FLOATING_LOTS', 'NET_LOTS', 'REVENUE', 'TODAY_LOTS','TODAY_REVENUE', 'ASK', 'BID', 'DATETIME', 'YESTERDAY_LOTS','YESTERDAY_REVENUE', 'YESTERDAY_DATE']
 
@@ -466,7 +475,7 @@ def BGI_All_Symbol_Float_ajax():
     col_from_exp_to_str = ["BID", "ASK"]
     for c in col_from_exp_to_str:
         if c in df_to_table:
-            df_to_table[c] = df_to_table[c].apply(lambda x: "{:2.5f}".format(x) if (isfloat(decimal.Decimal(str(x)).as_tuple().exponent)
+            df_to_table[c] = df_to_table[c].apply(lambda x: "{:2.5f}".format(float(x)) if (isfloat(decimal.Decimal(str(x)).as_tuple().exponent)
                                                                                             and (decimal.Decimal(str(x)).as_tuple().exponent < -5)) else x)
 
     # Time to fill in the NAs
@@ -502,7 +511,6 @@ def BGI_All_Symbol_Float_ajax():
     # Want to hyperlink it.
     df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{symbol}</a>'.format(symbol=x,
                                                                     url=url_for('analysis.symbol_float_trades', _external=True, symbol=x, book="b")))
-
 
 
     if "FLOATING_LOTS" in df_to_table:
