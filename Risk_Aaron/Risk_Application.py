@@ -1,6 +1,7 @@
 from app import create_app
 
 from waitress import serve
+from Aaron_Lib import get_machine_ip_address
 
 from logging.config import dictConfig
 
@@ -41,8 +42,9 @@ server = create_app()
 # logger.propagate = False
 # print(effectivehandlers(logger))
 
-# Need to uncomment the serve for it to work on production level.
-serve(server, host='0.0.0.0', port=5000, threads=18)
+if get_machine_ip_address() == '192.168.64.73':
+    # Need to uncomment the serve for it to work on production level.
+    serve(server, host='0.0.0.0', port=5000, threads=18)
 
 
 #server.run()
