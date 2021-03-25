@@ -508,16 +508,18 @@ def BGI_All_Symbol_Float_ajax():
         df_to_table["TODAY_LOTS"] = df_to_table.apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{TODAY_LOTS}</a>'.format(TODAY_LOTS=x['TODAY_LOTS'],
                                                                     url=url_for('analysis.symbol_float_trades', _external=True, symbol=x['SYMBOL'], book="b")), axis=1)
 
-    # Want to hyperlink it.
-    df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{symbol}</a>'.format(symbol=x,
-                                                                    url=url_for('analysis.symbol_float_trades', _external=True, symbol=x, book="b")))
-
 
     if "FLOATING_LOTS" in df_to_table:
         # Want to hyperlink it.
         df_to_table["FLOATING_LOTS"] = df_to_table.apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{FLOATING_LOTS}</a>'.format(\
                                                                         FLOATING_LOTS="{:.2f}".format(x['FLOATING_LOTS']),
                                                                         url=url_for('analysis.symbol_float_trades', _external=True, symbol=x['SYMBOL'], book="b")), axis=1)
+
+
+    # Want to hyperlink it.
+    df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{symbol}</a>'.format(symbol=x,
+                                                                    url=url_for('analysis.symbol_float_trades', _external=True, symbol=x, book="b")))
+
 
    # # # Want to add colors to the words.
     # Want to color the REVENUE
