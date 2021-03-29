@@ -21,8 +21,6 @@ def background_pic(website):
                  "Client_trades_Analysis" : "css/strips_1.png",
                  "BGI_MT5_Symbol_Float":    "css/geometry.png",
 
-
-
                  "USOil_Ticks" :                        "css/Oil_Rig_2.jpg",
                  "CFH_Soap_Position" :                  "css/notebook_pen.jpg",
                  "CFH_Symbol_Update" :                  "css/notebook_pen.jpg",
