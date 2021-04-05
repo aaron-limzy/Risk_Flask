@@ -7,7 +7,7 @@ def background_pic(website):
     # BGI_MT5_Symbol_Float
 
 
-
+    #NoTrade_Change_ReadOnly_Settings
     default = "css/Mac_Coffee.jpg"
     gb_return = {"save_BGI_float" :         "css/city_overview.jpg",
                  "BGI_Country_Float":       "css/World_Map.jpg",

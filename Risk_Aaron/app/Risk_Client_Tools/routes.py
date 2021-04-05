@@ -17,6 +17,8 @@ import json
 
 from app.decorators import roles_required
 
+from app.background import *
+
 import emoji
 import flag
 
@@ -477,7 +479,7 @@ def Exclude_Risk_Autocut():
         <br>Will add account into <span style="color:green"><b><u>aaron.risk_autocut_Exclude</u></b></span>.<br>
         To Exclude client from being autocut.""")
 
-    form = risk_AutoCut_Exclude()
+    form = Live_Client_Submit()
     form.validate_on_submit()
     if request.method == 'POST' and form.validate_on_submit():
         Live = form.Live.data  # Get the Data.
@@ -512,12 +514,16 @@ def Include_Risk_Autocut_Group():
         Live = form.Live.data  # Get the Data.
         Client_Group = form.Client_Group.data
 
-        sql_insert = """INSERT INTO  aaron.`risk_autocut_group` (`Live`, `GROUP`) VALUES
-            ('{Live}','{Group}')""".format(Live=Live, Group=Client_Group)
+        sql_insert = """INSERT INTO  aaron.`risk_autocut_group` (`Live`, `GROUP`) VALUES ('{Live}','{Group}')""".format(Live=Live, Group=Client_Group)
         sql_insert = sql_insert.replace("\t", "").replace("\n", "")
 
         db.engine.execute(text(sql_insert))  # Insert into DB
-        flash("Live: {live}, Group: {Group} has been added to aaron.`risk_autocut_group`.".format(live=Live, Group=Client_Group))
+        flash(Markup("Live: <b>{live}</b>, Group: <b>{Group}</b> has been added to aaron.`risk_autocut_group`.".format(live=Live, Group=Client_Group)))
+
+        # To generate a new form.
+        return redirect(url_for('Risk_Client_Tools_bp.Include_Risk_Autocut_Group'))
+
+
 
     table = Delete_Risk_Autocut_Group_Table_fun()
 
@@ -568,6 +574,107 @@ def Risk_Autocut_Result_ajax():
 
 
 
+# Want to add and remove clients into SQ's tools
+# SQ will change if the clients have open trades.
+# If not, they will be changed to read only.
+@Risk_Client_Tools_bp.route('/NoTrades_Change_ReadOnly/Settings', methods=['GET', 'POST'])
+@roles_required()
+def NoTrade_Change_ReadOnly_Settings():
+
+    # aaron.monitor_accout
+    # aaron.monitor_account_trades
+
+    title = Markup("No Trades to Read-Only Settings")
+    header = "No Trades to Read-Only Settings"
+    description = Markup("<b>No Trades to Read-Only Settings. SQ's tool</b><br>Will change Client to Read-Only when client has no open trades.")
+
+    form = Live_Client_Submit()
+
+    if request.method == 'POST' and form.validate_on_submit():
+        Live = form.Live.data
+        Login = form.Login.data
+
+        # # If it's not for all, we want to select the user.
+        # tele_name_condition = " WHERE T.Tele_Name = '{}' ".format(Telegram_User) if Telegram_User != "All" else " "
+        #
+        sql_insert =  """INSERT INTO shiqi.readonly_live (`Live`, `Login`, `UPDATE_TIME`, `DISABLED_TIME`)
+         VALUES ('{Live}', '{Login}', now(), '1970-01-01 00:00:00') ON DUPLICATE KEY UPDATE `UPDATE_TIME` = VALUES(`UPDATE_TIME`)""".format(Live=Live,Login=Login)
+
+        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+        print(sql_insert)
+
+        #print(sql_insert)
+        db.engine.execute(text(sql_insert))  # Insert into DB
+
+        flash("Live {}, Account: {} Successfully added.".format(Live, Login))
+
+        # So that we will generate a fresh form.
+        return redirect(url_for('Risk_Client_Tools_bp.NoTrade_Change_ReadOnly_Settings'))
+
+
+    # Want to select all the Telegram user ID
+    # sql_query = """select * FROM shiqi.readonly_live where disabled_time = '1970-01-01 00:00:00'"""
+    # raw_result = db.engine.execute(sql_query)
+
+    # result_data = raw_result.fetchall()
+    # names = [r[0] for r in result_data]
+    # name_list = [("All", "All")] + [(r, r) for r in names]  # Want to add in "All" Options
+    #
+    # # passing group_list to the form
+    # form.Telegram_User.choices = name_list
+
+
+
+    table = Delete_NoTrades_Readonly_Table_fun()
+
+    # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
+    # backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut",  replace_words=Markup(["Today"])
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    #table = table,
+    return render_template("General_Form.html",
+                           title=title, header=header,
+                           form=form, description=description, table = table,
+                           backgroud_Filename=background_pic("NoTrade_Change_ReadOnly_Settings"))
+
+
+
+def Delete_NoTrades_Readonly_Table_fun():
+    # Want to select all the accounts that we are monitoring.
+    # Flask Table, that has Delete button that allows us to delete with 1 click.
+    sql_query = """select Live, Login, Update_Time FROM shiqi.readonly_live where disabled_time = '1970-01-01 00:00:00' ORDER BY Live, Login"""
+    raw_result = db.engine.execute(sql_query)
+
+    result_data = raw_result.fetchall()
+    result_col = raw_result.keys()
+    #print(result_col)
+    if len(result_data) == 0:   # There is no data.
+        collate = [{"Result": "There are currently no active accounts in the table."}]
+        table = create_table_fun(collate, additional_class=["basic_table", "table", "table-striped", "table-bordered", "table-hover", "table-sm"])
+    else:
+        # Live Account, Tele_name from the DB that is not disabled yet...
+        list_of_data = [dict(zip(result_col, r)) for r in result_data]
+        #print(list_of_data)
+
+        table = Delete_NoTrades_ReadOnly_Table(list_of_data)
+        table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
+
+    return table
+
+
+# To remove the account from being excluded.
+@Risk_Client_Tools_bp.route('/Delete_NoTrades_ReadOnly/<Live>/<Login>', methods=['GET', 'POST'])
+@roles_required()
+def Delete_NoTrades_ReadOnly_Button_Endpoint(Live="", Login=""):
+
+    # # Write the SQL Statement and Update to disable the Account monitoring.
+    sql_update_statement = """ UPDATE  shiqi.`readonly_live` SET DISABLED_TIME = now() WHERE LIVE='{Live}' and LOGIN='{Login}' """.format(Live=Live, Login=Login)
+    sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
+    #print(sql_update_statement)
+    sql_update_statement=text(sql_update_statement)
+    result = db.engine.execute(sql_update_statement)
+    flash(Markup("Live: <b>{Live}</b>, Login: <b>{Login}</b> has been disabled.".format(Live=Live,Login=Login)))
+    #return redirect(url_for('main_app.Exclude_Risk_Autocut'))
+    return redirect(request.referrer)
 
 
 ## ## Below are code that are not currently in use.

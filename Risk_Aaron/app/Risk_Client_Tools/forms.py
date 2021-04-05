@@ -23,7 +23,7 @@ class equity_Protect_Cut(FlaskForm):
     submit = SubmitField('Submit')
 
 # Want to create a SQL insert, for any tables that has Live, Login, Equity_limit
-class risk_AutoCut_Exclude(FlaskForm):
+class Live_Client_Submit(FlaskForm):
     Live = IntegerField('Live', validators=[DataRequired(), AnyOf(values=[1,2,3,5], message="Only Live 1,2,3 and 5")], description = "1,2,3 or 5.")
     Login = IntegerField('Login', validators=[DataRequired(message="Only numbers are allowed")], description = "Client Login.")
     submit = SubmitField('Submit')

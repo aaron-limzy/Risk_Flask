@@ -47,3 +47,13 @@ class Delete_Risk_Autocut_Exclude_Table(Table):
                               url_kwargs=dict(Live='Live', Login='Login'),
                               button_attrs={"Class": "btn btn-secondary"})
 
+# Variable name has to be the Dict name.
+# Has to provide a list of Dicts.
+class Delete_NoTrades_ReadOnly_Table(Table):
+    Live = Col('Live')
+    Login = Col('Login')
+    Delete_Button = ButtonCol('Disable', endpoint="Risk_Client_Tools_bp.Delete_NoTrades_ReadOnly_Button_Endpoint",
+                              url_kwargs=dict(Live='Live', Login='Login'),
+                              button_attrs={"Class": "btn btn-secondary"})
+
+
