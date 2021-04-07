@@ -1143,4 +1143,14 @@ def get_live2_ask_bid(symbols=[]):
 
     # If empty, we just want to return an empty data frame. So that the following merge will not cause any issues
     return_df = pd.DataFrame(result_data, columns=result_col) if len(result_data) > 0 else pd.DataFrame()
+
+    # Want to clear up the CFDs.
+    # Only want to return 1 CFD.
+    if len(return_df) > 0 and "SYMBOL" in return_df:
+        all_cfds = ['.A50', '.AUS200', '.DE30', '.ES35', '.F40', '.HK50', '.JP225', '.STOXX50', '.UK100', '.UKOil', '.US100', '.US30', '.US500', '.USOil']
+        return_df = return_df[ (~ return_df["SYMBOL"].str.contains(".",  regex=False)) | (return_df["SYMBOL"].isin(all_cfds))]
+        #print(return_df)
+
+
+
     return return_df

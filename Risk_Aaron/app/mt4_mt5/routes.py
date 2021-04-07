@@ -407,7 +407,10 @@ def BGI_All_Symbol_Float_ajax():
     df_to_table = pd.concat([df_mt4, df_mt5], ignore_index=True)
 
     # Want to get the ticks that Live 1 don't have from Live 2.
-    missing_ticks_df = get_live2_ask_bid(list(df_to_table[df_to_table['BID'].isnull()]['SYMBOL'].unique()))
+    # Need to do some Clean up for CFDs as well.
+    missing_ticks_df = get_live2_ask_bid(list(df_to_table[df_to_table['BID'].isnull()]['SYMBOL'].unique()) + [".DE30"])
+
+
     if 'MODIFY_TIME' in missing_ticks_df:
         missing_ticks_df.pop("MODIFY_TIME")
     df_to_table = pd.concat([df_to_table, missing_ticks_df], ignore_index=True)
