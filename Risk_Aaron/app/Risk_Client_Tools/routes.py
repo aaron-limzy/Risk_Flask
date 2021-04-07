@@ -667,7 +667,7 @@ def Delete_NoTrades_Readonly_Table_fun():
 def Delete_NoTrades_ReadOnly_Button_Endpoint(Live="", Login=""):
 
     # # Write the SQL Statement and Update to disable the Account monitoring.
-    sql_update_statement = """ UPDATE  shiqi.`readonly_live` SET DISABLED_TIME = now() WHERE LIVE='{Live}' and LOGIN='{Login}' """.format(Live=Live, Login=Login)
+    sql_update_statement = """ UPDATE  shiqi.`readonly_live` SET DISABLED_TIME = now() WHERE LIVE='{Live}' and LOGIN='{Login}' and DISABLED_TIME = '1970-01-01 00:00:00'""".format(Live=Live, Login=Login)
     sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
     #print(sql_update_statement)
     sql_update_statement=text(sql_update_statement)
