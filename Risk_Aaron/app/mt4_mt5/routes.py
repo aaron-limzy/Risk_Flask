@@ -497,9 +497,9 @@ def BGI_All_Symbol_Float_ajax():
     # Haven changed name yet. So it's still names "volume"
     if "YESTERDAY_LOTS" in df_to_table:
         # Hyperlink it.
-        df_to_table["YESTERDAY_LOTS"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_LOTS:,.2f}</a>""".format( \
+        df_to_table["YESTERDAY_LOTS"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_LOTS}</a>""".format( \
                                                             url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
-                                                            YESTERDAY_LOTS=x["YESTERDAY_LOTS"]),
+                                                            YESTERDAY_LOTS=round(x["YESTERDAY_LOTS"], 2) if isfloat(x["YESTERDAY_LOTS"]) else x["YESTERDAY_LOTS"]),
                                                             axis=1)
 
 
