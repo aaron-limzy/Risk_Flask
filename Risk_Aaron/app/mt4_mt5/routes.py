@@ -497,7 +497,7 @@ def BGI_All_Symbol_Float_ajax():
     # Haven changed name yet. So it's still names "volume"
     if "YESTERDAY_LOTS" in df_to_table:
         # Hyperlink it.
-        df_to_table["YESTERDAY_LOTS"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_LOTS}</a>""".format( \
+        df_to_table["YESTERDAY_LOTS"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_LOTS:,.2f}</a>""".format( \
                                                             url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
                                                             YESTERDAY_LOTS=x["YESTERDAY_LOTS"]),
                                                             axis=1)
@@ -511,7 +511,8 @@ def BGI_All_Symbol_Float_ajax():
 
     if "FLOATING_LOTS" in df_to_table:
         # Want to hyperlink it.
-        df_to_table["FLOATING_LOTS"] = df_to_table.apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{FLOATING_LOTS}</a>'.format(\
+        df_to_table["FLOATING_LOTS"] = df_to_table.apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{FLOATING_LOTS:,.2f'
+                                                                   '}</a>'.format(\
                                                                         FLOATING_LOTS="{:.2f}".format(x['FLOATING_LOTS']),
                                                                         url=url_for('analysis.symbol_float_trades', _external=True, symbol=x['SYMBOL'], book="b")), axis=1)
 
