@@ -131,7 +131,7 @@ $(document).ready(function(){
     function LP_Details() {
 
         //clearInterval(SetInterval_LP_Details);
-
+        console.log(return_Time_String());
         $( "#btn_refresh_page" ).removeClass( "btn-warning" );
         $( "#btn_refresh_page" ).addClass( "btn-info" );
 
