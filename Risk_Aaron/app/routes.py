@@ -13,6 +13,9 @@ from app.table import Delete_Risk_ABook_Offset_Table
 from app.Plotly.routes import save_BGI_MT4_float_Ajax
 from app.Scrape_Futures import *
 
+# This is for the monitoring tools, in case it stops running. 
+from app.Risk_Client_Tools.routes import noopentrades_changegroup_ajax
+
 from app.mt5_monitoring.routes import save_BGI_MT5_float_Ajax
 
 from app.background import *
