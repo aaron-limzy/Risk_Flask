@@ -88,6 +88,8 @@ $(document).ready(function(){
     // zero_out - Need to Zero out the table (To make it a shorter table)
 
     function Custom_Ajax_Call(Post_Data, ajax_url, table_id, raw_return_id, error_card_id, table_caption ) {
+
+
         $.ajax({
             url:ajax_url,
             data    : Post_Data,
@@ -120,6 +122,8 @@ $(document).ready(function(){
         error_card_id = "Change_Group_Error";
         table_caption = "Group Change";
         table_Sucess_Caption = "Successful Change"
+
+        console.log(return_Time_String());
 
 
         $.ajax({
