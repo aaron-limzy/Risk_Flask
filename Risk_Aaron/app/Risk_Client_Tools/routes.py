@@ -407,6 +407,7 @@ def noopentrades_changegroup():
 
     # elif request.method == 'POST' and form.validate_on_submit() == False:
     #  flash('Invalid Form Entry')
+    table = Delete_NoTrades_ChangeGroup_Table_fun()
 
     #return render_template("Change_USer_Group.html", form=form,title=title, header=header, description=Markup(description))
 
@@ -414,8 +415,9 @@ def noopentrades_changegroup():
     return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("noopentrades_changegroup"), Table_name="No Open Trades Change Group", \
                            title=title, ajax_url=url_for('Risk_Client_Tools_bp.noopentrades_changegroup_ajax', _external=True), no_backgroud_Cover=False, \
                            header=header, setinterval=20, form=form, \
-                           description=description, replace_words=Markup(["ERROR: "])  )
-
+                           description=description, replace_words=Markup(["ERROR: "]),
+                           varibles={"Client To Change": table}
+                           )
 
 
 
@@ -427,7 +429,7 @@ def noopentrades_changegroup_ajax(update_tool_time=1):
     live_to_run = [1,2, 3, 5]  # Only want to run this on Live 1 and 3.
 
     # Raw SQL Statement. Will have to use .format(live=1) for example.
-    raw_sql_statement = """SELECT mt4_users.LOGIN, X.LIVE, X.CURRENT_GROUP as `CURRENT_GROUP[CHECK]`, X.NEW_GROUP, mt4_users.`GROUP` as USER_CURRENT_GROUP,
+    raw_sql_statement = """SELECT mt4_users.LOGIN, X.LIVE, X.CURRENT_GROUP as `CURRENT_GROUP_CHECK`, X.NEW_GROUP, mt4_users.`GROUP` as USER_CURRENT_GROUP,
             CASE WHEN mt4_users.`GROUP` = X.CURRENT_GROUP THEN 'Yes' ELSE 'No' END as CURRENT_GROUP_TALLY,
             CASE WHEN X.NEW_GROUP IN (SELECT `GROUP` FROM Live{live}.mt4_groups WHERE `GROUP` LIKE X.NEW_GROUP) THEN 'Yes' ELSE 'No' END as NEW_GROUP_FOUND,
             COALESCE((SELECT count(*) FROM live{live}.mt4_trades WHERE mt4_trades.LOGIN = X.LOGIN AND CLOSE_TIME = "1970-01-01 00:00:00" GROUP BY mt4_trades.LOGIN),0) as OPEN_TRADE_COUNT
@@ -451,7 +453,7 @@ def noopentrades_changegroup_ajax(update_tool_time=1):
     C_Return[-6] = "C++ ERROR: User Not Found!"
     C_Return[-10] = "C++ ERROR: Param Error"
 
-
+    #
     # # Need to update Run time on SQL Update table.
     if update_tool_time == 1:
         async_update_Runtime(app=current_app._get_current_object(), Tool="ChangeGroup_NoOpenTrades")
@@ -517,28 +519,69 @@ def noopentrades_changegroup_ajax(update_tool_time=1):
 
     val = [list(a.values()) for a in sql_result]
     key = list(sql_result[0].keys())
+
+    return_val = [dict(zip(key, v)) for v in val]
+    print(return_val)
+    print()
+
     key = [k.replace("_"," ") for k in key]     # Want to space things out instead of _
     #return_val = {"All": [dict(zip(key,v)) for v in val], "Changed": success_listdict}
     return_val = [dict(zip(key, v)) for v in val]
 
 
-    #print(return_val)
+    print(return_val)
 
     # table = create_table_fun(sql_result)
     return json.dumps(return_val)
 
 
 
+def Delete_NoTrades_ChangeGroup_Table_fun():
+    # Want to select all the accounts that we are monitoring.
+    # Flask Table, that has Delete button that allows us to delete with 1 click.
+    sql_query = """select Live, Login, Current_Group, New_Group 
+    FROM test.changed_group_opencheck 
+    where Changed=0
+    ORDER BY Live, Login"""
+
+    raw_result = db.engine.execute(sql_query)
+
+    result_data = raw_result.fetchall()
+    result_col = raw_result.keys()
+    #print(result_col)
+    if len(result_data) == 0:   # There is no data.
+        collate = [{"Result": "There are currently no active accounts in the table."}]
+        table = create_table_fun(collate, additional_class=["basic_table", "table", "table-striped", "table-bordered", "table-hover", "table-sm"])
+    else:
+        # Live Account, Tele_name from the DB that is not disabled yet...
+        list_of_data = [dict(zip(result_col, r)) for r in result_data]
+        #print(list_of_data)
+
+        table = Delete_NoTrades_ChangeGroup_Table(list_of_data)
+        table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
+
+    return table
 
 
+# To remove the account from Risk Autocut.
+@Risk_Client_Tools_bp.route('/Remove_NoTrade_ChangeGroup_User/<Live>/<Login>', methods=['GET', 'POST'])
+@roles_required()
+def Delete_NoTrade_ChangeGroup_Button_Endpoint(Live="", Login=""):
 
+    # # Write the SQL Statement and Update to disable the Account monitoring.
+    sql_update_statement = """UPDATE test.changed_group_opencheck
+     SET `CHANGED`=1 , TIME_CHANGED=now()
+     WHERE Live='{Live}' AND Login='{Login}'""".format(Live=Live, Login=Login)
 
+    sql_update_statement = sql_update_statement.replace("\n", "").replace("\t", "")
+    # print(sql_update_statement)
+    sql_update_statement=text(sql_update_statement)
+    result = db.engine.execute(sql_update_statement)
 
-
-
-
-
-
+    flash("Live:{Live}, Login: {Login} has been disabled.".format(Live=Live,Login=Login))
+    #print("Request URL: {}".format(redirect(request.url)))
+    return redirect(request.referrer)
+    #return redirect(url_for('main_app.Include_Risk_Autocut'))
 
 
 

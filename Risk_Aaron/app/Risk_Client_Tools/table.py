@@ -57,3 +57,13 @@ class Delete_NoTrades_ReadOnly_Table(Table):
                               button_attrs={"Class": "btn btn-secondary"})
 
 
+# Variable name has to be the Dict name.
+# Has to provide a list of Dicts.
+class Delete_NoTrades_ChangeGroup_Table(Table):
+    Live = Col('Live')
+    Login = Col('Login')
+    Current_Group = Col('Current_Group')
+    New_Group = Col('New_Group')
+    Delete_Button = ButtonCol('Disable', endpoint="Risk_Client_Tools_bp.Delete_NoTrade_ChangeGroup_Button_Endpoint",
+                              url_kwargs=dict(Live='Live', Login='Login'),
+                              button_attrs={"Class": "btn btn-secondary"})

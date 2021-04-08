@@ -13,7 +13,7 @@ from app.table import Delete_Risk_ABook_Offset_Table
 from app.Plotly.routes import save_BGI_MT4_float_Ajax
 from app.Scrape_Futures import *
 
-# This is for the monitoring tools, in case it stops running. 
+# This is for the monitoring tools, in case it stops running.
 from app.Risk_Client_Tools.routes import noopentrades_changegroup_ajax
 
 from app.mt5_monitoring.routes import save_BGI_MT5_float_Ajax
@@ -1674,7 +1674,7 @@ def Changed_readonly_ajax():
 @main_app.route('/Monitor_Risk_Tools')
 @roles_required()
 def Monitor_Risk_Tools():
-    description = Markup("Monitor Risk tools.")
+    description = Markup("Monitor Risk tools.<br> Using heartbeat saved to aaron.monitor_tool_runtime")
     return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("Monitor_Risk_Tools"),
                            Table_name="Risk tools", \
                            title="Risk Tools", ajax_url=url_for('main_app.Monitor_Risk_Tools_ajax', _external=True), setinterval=60,
