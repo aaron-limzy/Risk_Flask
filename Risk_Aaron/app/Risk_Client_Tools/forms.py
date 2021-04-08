@@ -34,3 +34,12 @@ class Live_Group(FlaskForm):
     Live = IntegerField('Live', validators=[DataRequired(), AnyOf(values=[1,2,3,5], message="Only Live 1,2,3 and 5")], description = "1,2,3 or 5.")
     Client_Group = StringField('Client Group', validators=[DataRequired(message="Group name Required")], description = "Client Group to include in Risk Auto Cut.")
     submit = SubmitField('Submit')
+
+
+# Want to add into SQL for change group, when there are no open trades.
+class noTrade_ChangeGroup_Form(FlaskForm):
+    Live = IntegerField('Live', validators=[DataRequired(), AnyOf(values=[1,2,3,5], message="Only Live 1,2,3 and 5")])
+    Login = IntegerField('Login', validators=[DataRequired()])
+    Current_Group = StringField('Current Group', validators=[DataRequired()])
+    New_Group = StringField('New Group', validators=[DataRequired()])
+    submit = SubmitField('Submit')

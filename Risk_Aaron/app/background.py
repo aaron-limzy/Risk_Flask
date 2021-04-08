@@ -8,6 +8,7 @@ def background_pic(website):
 
 
     #NoTrade_Change_ReadOnly_Settings
+    #noopentrades_changegroup
     default = "css/Mac_Coffee.jpg"
     gb_return = {"save_BGI_float" :         "css/city_overview.jpg",
                  "BGI_Country_Float":       "css/World_Map.jpg",
@@ -35,12 +36,9 @@ def background_pic(website):
 
                  "save_mt5_BGI_float":                  "css/city1.jpg",        # MT5 Stuff.
 
-
-
-
-
-
-     }
+                 "Risk_auto_cut" :                      'css/Scissors.jpg',
+                 "noopentrades_changegroup":            "css/Faded_car.jpg",
+        }
 
     #background_pic("Monitor_Account_Trades")
 
