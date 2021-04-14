@@ -1304,6 +1304,7 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
     # Want to plot the 30 mins-ish Snapshot Open lots of
     plot_title = "{symbol} Total Lots Snapshot".format(symbol=symbol)
     plot_title = plot_title + " ({book} Book)".format(book=book.upper()) if book.lower() != "none" else plot_title
+    #print(df_data_vol)
     vol_fig = plot_symbol_book_total(df_data_vol, plot_title)
 
 
@@ -2866,6 +2867,9 @@ def plot_symbol_opentime(df, chart_title):
 # Want to plot how the position looks for the past few hours/days
 # Snap shot graph.
 def plot_symbol_book_total(df, chart_title):
+
+    if 'DATETIME' not in df:
+        return []
 
     # Sort by datetime, to be able to plot it.
     df.sort_values(by=['DATETIME'], inplace=True)
