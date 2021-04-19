@@ -116,6 +116,74 @@ def save_BGI_MT5_float_Ajax(update_tool_time=1):
     return json.dumps([{'Update time': Get_time_String()}])
 
 
+
+
+
+
+@mt5_monitoring.route('/Futures_LP_Details', methods=['GET', 'POST'])
+@roles_required()
+def Futures_LP_Details():
+    title = "Futures_LP_Details"
+    header = "Futures_LP_Details"
+
+    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+    # For Login in aaron.Risk_autocut and Credit_limit != 0
+
+    description = Markup("Details are on BGI Side.")
+
+
+
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("Futures_LP_Details"),
+                           icon="css/save_Filled.png", Table_name="Futures LP Details", title=title,
+                           ajax_url=url_for('mt5_monitoring.Futures_LP_Details_Ajax', _external=True), header=header,
+                           setinterval=15, no_backgroud_Cover=True,
+                           description=description, replace_words=Markup(["Today"]))
+
+
+
+
+
+# Insert into aaron.BGI_Float_History_Save
+# Will select, pull it out into Python, before inserting it into the table.
+# Tried doing Insert.. Select. But there was desdlock situation..
+@mt5_monitoring.route('/mt5_futures_LP_data_Ajax', methods=['GET', 'POST'])
+@roles_required()
+def Futures_LP_Details_Ajax(update_tool_time=1):
+
+    data = mt5_futures_LP_data()
+    df = pd.DataFrame(data)
+    #print(df)
+    if 'DATETIME' in df:
+        df['DATETIME'] =  df['DATETIME'].apply(lambda x : "{}".format(x))
+
+    cols = ['EQUITY', 'CANDRAW', "ACCTINITIALMARGIN", "BALANCE", "ACCTMAINTENANCEMARGIN", "FROZENFEE", "MARKETEQUITY"]
+    for c in cols:
+        if c in df:
+            df[c] = df[c].apply(lambda x: "{:,.2f}".format(x))
+
+
+    # To save some space.
+    # Will display as a table inside a table on the page.
+    df["BALANCES"] = df.apply(lambda x: {"BALANCE" : x['BALANCE'], 'EQUITY' : x['EQUITY'],
+                                            'MARKET EQUITY' : x["MARKETEQUITY"], "CAN DRAW" : x["CANDRAW"]} , axis=1)
+
+
+    #ACCOUNT, CURRENCY, BALANCE, EQUITY, CANDRAW, MARKETEQUITY, ACCTINITIALMARGIN, ACCTMAINTENANCEMARGIN, FROZENFEE, DATETIME
+    df.rename(columns={"MARKETEQUITY": "MARKET EQUITY", "ACCTINITIALMARGIN" : "ACCT INITIAL MARGIN",
+               "ACCTMAINTENANCEMARGIN" : "ACCT MAINTENANCE MARGIN", "FROZENFEE" : "FROZEN FEE"}, inplace=True)
+
+    #print(df.columns)
+    cols_to_display = ['ACCOUNT', 'CURRENCY', 'BALANCES' , 'ACCT INITIAL MARGIN', 'ACCT MAINTENANCE MARGIN', 'FROZEN FEE', 'DATETIME']
+
+    cols_to_display = [c for c in cols_to_display if c in df]
+    # end = datetime.datetime.now()
+    # print("\nSaving floating PnL tool: {}s\n".format((end - start).total_seconds()))
+    return json.dumps(df[cols_to_display].to_dict('record'))
+
+
+
 @mt5_monitoring.route('/BGI_MT5_Symbol_Float', methods=['GET', 'POST'])
 @roles_required()
 def BGI_MT5_Symbol_Float():

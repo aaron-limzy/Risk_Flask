@@ -324,3 +324,12 @@ def mt5_symbol_yesterday_pnl_query():
         )z2"""
     return sql_query
 
+
+# Want to get MT5 Futures LP Account details
+def mt5_futures_LP_details_query():
+    sql_query = r"""SELECT 'e800941' as ACCOUNT, CURRENCY, BALANCE, EQUITY, CANDRAW, MARKETEQUITY, ACCTINITIALMARGIN, ACCTMAINTENANCEMARGIN, FROZENFEE, DATETIME  
+        FROM e800941.`esunny_account`
+        UNION
+        SELECT  'e91220008' as ACCOUNT, CURRENCY, BALANCE, EQUITY, CANDRAW, MARKETEQUITY, ACCTINITIALMARGIN, ACCTMAINTENANCEMARGIN, FROZENFEE, DATETIME  
+        FROM e91220008.`esunny_account`"""
+    return sql_query

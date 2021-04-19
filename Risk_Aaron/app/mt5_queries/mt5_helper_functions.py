@@ -64,6 +64,15 @@ def mt5_yesterday_symbol_pnl():
     return result
 
 
+# Want to get the Future's LP details
+def mt5_futures_LP_data():
+    sql_query = mt5_futures_LP_details_query()
+    result = Query_SQL_mt5_db_engine(sql_query)
+
+    #ACCOUNT, CURRENCY, BALANCE, EQUITY, CANDRAW, MARKETEQUITY, ACCTINITIALMARGIN, ACCTMAINTENANCEMARGIN, FROZENFEE, DATETIME
+    #print(result)
+    return result
+
 # This function will return combined data of symbol float as well as yesterday's PnL for MT5
 def mt5_symbol_float_data():
     Testing = False

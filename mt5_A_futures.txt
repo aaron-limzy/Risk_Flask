@@ -1,0 +1,23 @@
+SELECT MT5.Symbol,MT5.Market_Volume AS Market_Volume,MT5.Pending_Volume AS Pending_Volume,MT5.MT5_Pnl AS MT5_Pnl,ESUNNY.Position AS ESUNNY_Position,ESUNNY.PositionProfit AS PositionProfit FROM
+(SELECT Symbol,SUM(Market_Volume) AS Market_Volume,SUM(Pending_Volume) AS Pending_Volume,SUM(MT5_Pnl) AS MT5_Pnl FROM
+	(SELECT mt5_deals.Symbol as Symbol,SUM(CASE WHEN mt5_deals.Action = 0 THEN mt5_deals.Volume/10000 WHEN mt5_deals.Action = 1 THEN mt5_deals.Volume/10000*(-1) END) as Market_Volume,0 as Pending_Volume,SUM(A.Profit) as MT5_Pnl FROM
+		(SELECT Position,Profit,mt5_symbols.Path FROM
+mt5.mt5_positions,mt5_symbols WHERE mt5_positions.Symbol = mt5_symbols.Symbol AND mt5_symbols.Path LIKE '%Futures%'
+		) AS A LEFT JOIN mt5.mt5_deals ON A.Position = mt5_deals.PositionID WHERE mt5_deals.`Group` LIKE 'real_Futures%' ESCAPE '$' AND mt5_deals.`Group` NOT LIKE BINARY '%sub%' #futures open
+UNION
+SELECT mt5_orders.Symbol,0 as Market_Volume,SUM(CASE WHEN (mt5_orders.Type = 2 OR mt5_orders.Type = 4) THEN mt5_orders.VolumeCurrent/10000 WHEN (mt5_orders.Type = 3 OR mt5_orders.Type = 5) THEN mt5_orders.VolumeCurrent/10000*(-1) END) as Pending_Volume,0 as MT5_Pnl FROM
+mt5.mt5_orders,mt5.mt5_users,mt5_symbols WHERE mt5_orders.Symbol = mt5_symbols.Symbol AND mt5_orders.Login = mt5_users.Login AND mt5_symbols.Path LIKE '%Futures%'
+AND mt5_users.`Group` LIKE 'real_Futures%' ESCAPE '$' AND mt5_users.`Group` NOT LIKE BINARY '%sub%' GROUP BY mt5_orders.Symbol
+	) AS AL GROUP BY Symbol
+) AS MT5 LEFT JOIN
+
+(SELECT Symbol,SUM(Position) AS Position, SUM(PositionProfit) AS PositionProfit FROM
+	(SELECT CONCAT(CommodityNo,ContractNo) AS Symbol,CASE WHEN MatchSide = 'B' THEN PositionQty WHEN MatchSide = 'S' THEN PositionQty*(-1) ELSE 0 END AS Position,PositionProfit FROM e800941.`esunny_report_pos` 
+		UNION
+	SELECT CONCAT(CommodityNo,ContractNo) AS Symbol,CASE WHEN MatchSide = 'B' THEN PositionQty WHEN MatchSide = 'S' THEN PositionQty*(-1) ELSE 0 END AS Position,PositionProfit FROM yuanta.`esunny_report_pos` 
+		UNION
+	SELECT CONCAT(CommodityNo,ContractNo) AS Symbol,CASE WHEN MatchSide = 'B' THEN PositionQty WHEN MatchSide = 'S' THEN PositionQty*(-1) ELSE 0 END AS Position,PositionProfit FROM capital190523.`esunny_report_pos`
+	) AS B GROUP BY Symbol
+) AS ESUNNY ON MT5.Symbol = ESUNNY.Symbol
+
+
