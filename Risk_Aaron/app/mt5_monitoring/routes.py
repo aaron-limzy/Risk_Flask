@@ -158,7 +158,9 @@ def Futures_LP_Details_Ajax(update_tool_time=1):
     if 'DATETIME' in df:
         df['DATETIME'] =  df['DATETIME'].apply(lambda x : "{}".format(x))
 
-    cols = ['EQUITY', 'CANDRAW', "ACCTINITIALMARGIN", "BALANCE", "ACCTMAINTENANCEMARGIN", "FROZENFEE", "MARKETEQUITY"]
+    df["PnL"] = df['EQUITY'] -  df['BALANCE']
+
+    cols = ['EQUITY', 'CANDRAW', "ACCTINITIALMARGIN", "BALANCE", "ACCTMAINTENANCEMARGIN", "FROZENFEE", "MARKETEQUITY", "PnL"]
     for c in cols:
         if c in df:
             df[c] = df[c].apply(lambda x: "{:,.2f}".format(x))
@@ -166,13 +168,13 @@ def Futures_LP_Details_Ajax(update_tool_time=1):
 
     # To save some space.
     # Will display as a table inside a table on the page.
-    df["BALANCES"] = df.apply(lambda x: {"BALANCE" : x['BALANCE'], 'EQUITY' : x['EQUITY'],
-                                            'MARKET EQUITY' : x["MARKETEQUITY"], "CAN DRAW" : x["CANDRAW"]} , axis=1)
+    df["BALANCES"] = df.apply(lambda x: {"BALANCE" : x['BALANCE'], 'EQUITY' : x['EQUITY'], "PnL":  x['PnL']} , axis=1)
 
 
     #ACCOUNT, CURRENCY, BALANCE, EQUITY, CANDRAW, MARKETEQUITY, ACCTINITIALMARGIN, ACCTMAINTENANCEMARGIN, FROZENFEE, DATETIME
-    df.rename(columns={"MARKETEQUITY": "MARKET EQUITY", "ACCTINITIALMARGIN" : "ACCT INITIAL MARGIN",
-               "ACCTMAINTENANCEMARGIN" : "ACCT MAINTENANCE MARGIN", "FROZENFEE" : "FROZEN FEE"}, inplace=True)
+    df.rename(columns={"ACCTINITIALMARGIN" : "ACCT INITIAL MARGIN",
+               "ACCTMAINTENANCEMARGIN" : "ACCT MAINTENANCE MARGIN",
+                       "FROZENFEE" : "FROZEN FEE"}, inplace=True)
 
     #print(df.columns)
     cols_to_display = ['ACCOUNT', 'CURRENCY', 'BALANCES' , 'ACCT INITIAL MARGIN', 'ACCT MAINTENANCE MARGIN', 'FROZEN FEE', 'DATETIME']
