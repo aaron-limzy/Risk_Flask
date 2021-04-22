@@ -130,7 +130,7 @@ def Futures_LP_Details():
     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
     # For Login in aaron.Risk_autocut and Credit_limit != 0
 
-    description = Markup("Details are on BGI Side.")
+    description = Markup("Details are on BGI Side.<br>There are various accounts, each with a different wallet for each currency.")
 
 
 

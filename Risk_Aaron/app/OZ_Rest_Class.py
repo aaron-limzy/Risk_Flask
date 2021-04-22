@@ -35,9 +35,12 @@ class OZ_Rest_Class:
         if hub.lower() == "margin":
             self.REST_Password = "Rest123"
             self.REST_Login = "aaronlim_margin"
-            self.BRIDGE_IP = "38.76.4.235:44300"         # Live Margin Bridge
+            #self.BRIDGE_IP = "38.76.4.235:44300"         # Live Margin Bridge
+            self.BRIDGE_IP = "blackwellglobal-ny-live.onezero.com:44300"
+
         elif hub.lower() == "retail" :
-            self.BRIDGE_IP = "38.76.4.235:44301"  # Live Retail Bridge
+            #self.BRIDGE_IP = "38.76.4.235:44301"  # Live Retail Bridge
+            self.BRIDGE_IP = "blackwellglobal-ny-live.onezero.com:44301"
             self.REST_Password = "riskrisk"
             self.REST_Login = "Risk_API"
         elif hub.lower() == "lab":
