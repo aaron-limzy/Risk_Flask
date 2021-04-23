@@ -320,8 +320,7 @@ def mt5_symbol_yesterday_pnl_query():
                 LEFT JOIN 
                 ( SELECT Symbol, BaseSymbol FROM mt5_uk.yudi_BaseSymbol)yt2
                 ON yestTable.Symbol = yt2.Symbol 
-
-        )z2"""
+        )z2 group by BaseSymbol """
     return sql_query
 
 
