@@ -16,7 +16,7 @@ def group_open_trades_analysis(df_open_trades, book, col, col_1, group=""):
 
     if len(df_open_trades) <= 0:    # If there are no closed trades for the day.
         return_df = pd.DataFrame([{"Note": "There are no open trades for {} now".format(display_line)}])
-        return [return_df] * 7   # return 7 empty data frames.
+        return [return_df] * 5   # return 5 empty data frames.
         #[top_groups, bottom_groups, top_accounts , bottom_accounts, total_sum, largest_login , open_by_country]
     else:
 

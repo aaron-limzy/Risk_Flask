@@ -1578,19 +1578,21 @@ def group_float_trades_ajax(group=""):
     # To make it more printable.
     # df_all_trades["OPEN_TIME"] = df_all_trades["OPEN_TIME"].apply(lambda x: "{}".format(x))
     # df_all_trades["CLOSE_TIME"] = df_all_trades["CLOSE_TIME"].apply(lambda x: "{}".format(x))
-    #print(df_all_trades.columns)
-    #print(df_all_trades)
+    print(df_all_trades.columns)
+    print(df_all_trades)
+    if len(df_all_trades) == 0:
+        df_open_trades = pd.DataFrame([])
+    else:
+
+        df_all_trades["LOTS"] = df_all_trades["LOTS"].apply(lambda x: float(x))  # Convert from decimal.decimal
+        # Use for calculating net volume. Want to know if net buy or sell
+        df_all_trades["NET_LOTS"] = df_all_trades.apply(lambda x: x["LOTS"] if x['CMD'] == 0 else -1 * x["LOTS"], axis=1)
+
+        df_all_trades["TOTAL_PROFIT"] = df_all_trades.apply(lambda x: x["CONVERTED_REVENUE"] + x['REBATE'], axis=1)
 
 
-    df_all_trades["LOTS"] = df_all_trades["LOTS"].apply(lambda x: float(x))  # Convert from decimal.decimal
-    # Use for calculating net volume. Want to know if net buy or sell
-    df_all_trades["NET_LOTS"] = df_all_trades.apply(lambda x: x["LOTS"] if x['CMD'] == 0 else -1 * x["LOTS"], axis=1)
-
-    df_all_trades["TOTAL_PROFIT"] = df_all_trades.apply(lambda x: x["CONVERTED_REVENUE"] + x['REBATE'], axis=1)
-
-
-    # Want only those open trades.
-    df_open_trades = df_all_trades[df_all_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only open trades.
+        # Want only those open trades.
+        df_open_trades = df_all_trades[df_all_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only open trades.
 
 
     col2 = ['LIVE', 'LOGIN', "LOTS", 'NET_LOTS', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE', 'REBATE'] #'COUNTRY', 'GROUP',
@@ -1729,9 +1731,6 @@ def group_float_trades_ajax(group=""):
     #                    "V2": [total_sum_closed.to_dict()],
     #                    "Hs6" : closed_by_country.to_dict("record")
     #                    }, cls=plotly.utils.PlotlyJSONEncoder)
-
-
-
 
 
 
@@ -2157,13 +2156,13 @@ def symbol_close_trades_ajax(book="b", symbol="" ,days=-1):
     # Closed trades for today, Make it into a pandas list.
     df_closed_trades = pd.DataFrame(symbol_get_past_closed_trades(symbol=symbol, book=book, days=days))
 
+    if len(df_closed_trades) > 0:
+        df_closed_trades["TOTAL_PROFIT"] = df_closed_trades.apply(lambda x: x["CONVERTED_REVENUE"] + x['REBATE'], axis=1)
 
-    df_closed_trades["TOTAL_PROFIT"] = df_closed_trades.apply(lambda x: x["CONVERTED_REVENUE"] + x['REBATE'], axis=1)
+        df_closed_trades["LOTS"] = df_closed_trades["LOTS"].apply(float)
 
-    df_closed_trades["LOTS"] = df_closed_trades["LOTS"].apply(float)
-
-    df_closed_trades["NET_LOTS"] = df_closed_trades.apply(lambda x: x["LOTS"] if x['CMD'] == 0 else -1 * x["LOTS"],
-                                                          axis=1)
+        df_closed_trades["NET_LOTS"] = df_closed_trades.apply(lambda x: x["LOTS"] if x['CMD'] == 0 else -1 * x["LOTS"],
+                                                              axis=1)
     # List unpacking from the return of the function.
     [closed_top_accounts, closed_bottom_accounts, total_sum_closed, top_closed_groups,
      bottom_closed_groups, closed_largest_lot_accounts, closed_by_country] = symbol_closed_trades_analysis(df_closed_trades, book, symbol)
