@@ -1734,9 +1734,6 @@ def group_float_trades_ajax(group=""):
 
 
 
-
-
-
 # Consolidated function to use for closed trades (All logins for the same symbol)
 def symbol_closed_trades_analysis(df, book, symbol, entity="none"):
 

@@ -193,7 +193,7 @@ def BGI_MT5_Symbol_Float():
     header = "MT5 Symbol Float"
 
     description = Markup("<b>Floating PnL By Symbol for MT5.</b><br>" + \
-                         "Values are on BGI Side.")
+                         "Values are on BGI Side.<br> If it's a monday, 'Yesterday' refers to the sum of Friday + Sat + Sunday, where applicable'.")
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Symbol_Float.html", backgroud_Filename=background_pic("BGI_MT5_Symbol_Float"),

@@ -295,9 +295,10 @@ def mt5_BBook_select_insert(time_diff=0):
 
 
 # Want to use to get MT5 yesterday's PnL by symbol
+# BGI Side
 def mt5_symbol_yesterday_pnl_query():
-    sql_query = r"""SELECT BaseSymbol as `SYMBOL`, SUM(YesterdayVolume) AS YesterdayVolume, SUM(YesterdayProfit_usd) AS YesterdayProfitUsd,
-        SUM(YesterdayMarkupRebate) AS YesterdayRebate, now() as YESTERDAY_DATETIME_PULL
+    sql_query = r"""SELECT BaseSymbol as `SYMBOL`, SUM(YesterdayVolume) AS YesterdayVolume, -1 * SUM(YesterdayProfit_usd) AS YesterdayProfitUsd,
+        -1 * SUM(YesterdayMarkupRebate) AS YesterdayRebate, now() as YESTERDAY_DATETIME_PULL
         FROM
             #yestClosed live 1
             (SELECT `Group`,yestTable.Symbol,YesterdayVolume,YesterdayProfit_usd,YesterdayMarkupRebate,BaseSymbol FROM
