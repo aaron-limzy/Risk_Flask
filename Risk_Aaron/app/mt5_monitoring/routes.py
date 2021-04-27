@@ -56,7 +56,7 @@ mt5_monitoring = Blueprint('mt5_monitoring', __name__)
 @roles_required()
 def save_mt5_BGI_float():
     title = "Save MT5 BGI Float"
-    header = "Saving MT5 BGI Float"
+    header = "Saving MT5 BGI Floating data"
 
     # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
@@ -67,6 +67,8 @@ def save_mt5_BGI_float():
                          "Save it by Country, by Symbol.<br>" +
                          "Country Float and Symbol Float will be using this page.<br>" +
                          "Table time is in Server Timing.⏱<br>")
+
+
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("save_mt5_BGI_float"),
