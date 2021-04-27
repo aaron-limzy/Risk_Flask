@@ -66,7 +66,7 @@ def save_mt5_BGI_float():
                          "Saving it into (149.213) aaron.bgi_mt5_float_save<br>" +
                          "Save it by Country, by Symbol.<br>" +
                          "Country Float and Symbol Float will be using this page.<br>" +
-                         "Table time is in Server Timing.<br>")
+                         "Table time is in Server Timing.⏱<br>")
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("save_mt5_BGI_float"),
