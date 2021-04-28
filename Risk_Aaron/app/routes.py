@@ -1401,7 +1401,7 @@ def ABook_LP_Details(update_tool_time=0):    # LP Details. Balance, Credit, Marg
 			  COALESCE(`stop_out_amount`, ROUND(  100* (`total_margin`/`stop_out`) ,2)) as `STOPOUT AMOUNT`,
 		ROUND(`equity` -  COALESCE(`stop_out_amount`, 100* (`total_margin`/`stop_out`) ),2) as `available`,
 		updated_time
-		FROM aaron.lp_summary ORDER BY LP DESC""")  # Need to convert to Python Friendly Text.
+		FROM aaron.lp_summary WHERE LP NOT LIKE "%demo%" ORDER BY LP DESC""")  # Need to convert to Python Friendly Text.
     raw_result = db.engine.execute(sql_query)
     result_data = raw_result.fetchall()
     # result_data_json_parse = [[float(a) if isinstance(a, decimal.Decimal) else a for a in d ] for d in result_data]    # correct The decimal.Decimal class to float.
