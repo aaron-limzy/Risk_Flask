@@ -1,0 +1,859 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+
+{% block styles %}
+{{ super() }}
+<style>
+  body { background: #eee url({{ url_for('static', filename=backgroud_Filename) }});
+
+  {% if not no_backgroud_Cover %}
+  background-repeat: no-repeat;
+  background-size: cover;
+  {% endif %}}
+
+
+
+</style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="{{ url_for('static', filename='js/sweetalert2.all.min.js') }}"></script>
+
+<!-- For jquery's datatable. For interractive tables. -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
+
+<!-- For Plotly stuff -->
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+
+<!-- For Tableau Stuff -->
+<script type='text/javascript' src='http://202.88.105.5/javascripts/api/viz_v1.js'></script>
+
+
+<script type="javascript/worker" id="my_first_worker">
+
+  var Increment_counter = 1;
+  var Refresh_Page_Counter = 0;  // When to refresh the page.
+
+
+  var Table_Caption = {};     // Since it's multiple table names, we need to store it.
+
+  {% for key, value in Table_name.items() %}
+    Table_Caption["{{ value }}"] = "{{ key }}";
+  {% endfor %}
+
+
+  self.onmessage = function(event){
+    //console.log(event);
+    if (event.data == "BUTTON") {  // force the xmlhttprequest to fire off.
+      {% if setinterval %}
+      Refresh_Page_Counter =  {{ setinterval }};
+      Refresh_Page_seconds_call();
+      {% else %}
+      xhr_call();
+      {% endif %}
+    }else{
+
+
+      xhr_call();    // Do the XMLHTTPRequest
+
+      {% if setinterval %}
+        Refresh_Page_seconds_call();
+        setInterval(Refresh_Page_seconds_call,1000);
+      {% endif %}
+
+
+
+    }
+    //self.postMessage(return_Time_String());
+    //xhr_call();
+  };
+
+    var UTC_Timing_Fixed = -480;        // Used for UTC Time offset to SGT
+    var UTC_Offset_Change = 0;
+    Check_Time_Offset();
+    //Table1_Update();
+
+
+    // function call_main(){
+    //   self.postMessage(return_Time_String());
+    // }
+
+    {% if setinterval %}
+    var Refresh_Page_seconds = {{ setinterval }};  // When to refresh the page.
+
+    // setInterval(Refresh_Page_seconds_call, 1000);        //     Refresh the time.
+    //
+    // Call in every second, will check and update button.
+    function Refresh_Page_seconds_call(){
+        Refresh_Page_Counter = Refresh_Page_Counter + Increment_counter;
+        //console.log( return_Time_String());
+
+        // If the call is to be made.
+        if (Refresh_Page_Counter >=  {{ setinterval }}){
+          Increment_counter = 0;
+          Refresh_Page_Counter = 0;
+
+          //Table1_Update();
+          xhr_call();    // Do the XMLHTTP call.
+          self.postMessage({Refresh_count_down : "Running.."});
+
+        }else{
+          //console.log({Refresh_count_down : (Refresh_Page_seconds - Refresh_Page_Counter)});
+          if (Increment_counter > 0){
+          // For the count down on the button.
+            self.postMessage({Refresh_count_down : (Refresh_Page_seconds - Refresh_Page_Counter)});
+          }
+        }
+    }
+
+    {% endif %}
+
+
+    function Custom_Ajax_Error(xhr,status,error,error_card_id){
+
+        var current_html = $('#' + error_card_id).html();   // To display the error. First, we need to store the HTML as we want to append.
+        current_html += "------------------------- ↓" + return_Time_String() + " ↓------------------------<br>";
+        current_html += "Ajax Response: " + JSON.stringify(xhr) + "<br>";
+        current_html += "status: " + status + "<br>";
+        current_html += "Error: " + error['message'] + "<br>" + error['stack'] + "<br><br>";
+        $('#' + error_card_id ).html(current_html);  // Put it back into the Card.
+
+        // Want to Log the time as well here.
+        console.log(return_Time_String());
+        console.log(xhr);
+        console.log(xhr["responseText"]);
+        console.log(status);
+        console.log(error);
+    }
+
+    function Table1_Update() {
+
+
+
+        //clearInterval(SetInterval_LP_Details);
+        //$( "#btn_refresh_page" ).removeClass( "btn-warning" );
+        //$( "#btn_refresh_page" ).addClass( "btn-info" );
+
+        var Post_Data = { };
+        xhr_call();
+        //Custom_Ajax_Call(Post_Data, "{{ ajax_url }}", "Table1", "Table1_Raw", "Table1_Raw_Error", '{{ Table_name }}', ["Update Slow"] );
+        // fetch("{{ ajax_url }}")
+        // .then(res => res.json())
+        // .then(posts => self.postMessage(posts))
+    }
+
+
+  function sent_httprequest(method, url, data){
+    const promise = new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.timeout = 90*1000;         // time in milliseconds
+      //xhr.responseType = 'json';    // We expect a json back.
+      if (data){
+        xhr.setRequestHeader('Content-Type','application/json');
+      }
+      xhr.open(method, url, true);
+      xhr.onload = () => {
+        const data = xhr.response;
+        json_return_data = check_json(xhr.response);
+        if (json_return_data != false) {
+          resolve(json_return_data);  // Return the data in array/dict format.
+        }else{
+          reject(xhr.response);
+        }
+      };
+
+      xhr.onerror = () =>{
+        console.log('xmlHTTP Error');
+        console.error(xhr);
+        reject(xhr.response);
+
+
+      };
+
+      xhr.ontimeout = function (e) {
+        reject("Timeout : " + return_Time_String());
+        console.log("Timeout: " + return_Time_String());
+      // XMLHttpRequest timed out. Do something here.
+      };
+    xhr.send();
+    });
+    return promise;
+
+  }
+
+
+  // The actual function to do the XHR call.
+  function xhr_call(){
+
+    sent_httprequest("POST", "{{ ajax_url }}").then(data => {
+      //self.postMessage(responseData);
+      Increment_counter = 1;  // Restart the Counter.
+
+      // Post to main thread to update the DOM
+      // self.postMessage({"Data_table_Div1": Draw_Table(responseData, "{{ Table_name[0] }}" , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div1_table" ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + "</span>"});
+      // self.postMessage({Table1_Raw : JSON.stringify(responseData)});
+
+      var data_div_id_pre = 'Data_table_Div';
+      self.postMessage({data_length: data});
+
+      // Get the Dictionary Keys
+      const keys = Object.keys(data)
+
+      var i=0;
+
+      for (const key of keys) {
+
+        if (i >= {{ Table_name|length }}){  // Must have a table name with it.
+          break;
+        }
+        var increment = 1;
+        // The table ID
+        var data_div_id = data_div_id_pre + "_" + key;
+         var data_raw_id =  'Table' + (i+1).toString() + "_Raw_Div";
+
+        if(key.search("Hr") >= 0) {
+          // Do nothing.
+          // Still let it imcrement due to table ID naming.
+
+        }else if (key.search("H") >= 0){  // We will use Horizontal table.
+          // Need to add in [] for the object key for it to use the variable.
+          // Need to get the table name the old fashion way since we can't use the passed-in pythin variable.
+          self.postMessage({[data_div_id] : Draw_Table(data[key], Table_Caption[key] , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light", ["Update Slow"] , {{ replace_words }}, "Data_table_Div_" + key + "_table" ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + " SGT </span>"});
+        } else if(key.search("V") >= 0) {
+          // We will use the vertical table.
+          self.postMessage({[data_div_id] : Draw_Vertical_Table(data[key][0], Table_Caption[key] , "table compact row-border table-hover table-sm table-responsive-sm basic_table bg-light float-left", {{ replace_words }} ) + '<span class="right-text small-text bg-light p-3 m-2">' + return_Time_String() + " SGT</span>"});
+
+          //Draw_Vertical_Table(table_Data, Table_Caption, Table_Class, Replace_words)
+        }else if(key.search("P") >= 0){
+            var plot_id = 'plot_'+key;
+            self.postMessage({ [plot_id] :data[key] });
+        }else{
+          // Do nothing.
+        }
+
+        self.postMessage({[data_raw_id] : JSON.stringify(data[key])});
+        i = i + increment;  // Increment the counter since we are looping thru dictionary keys
+
+      }
+
+
+
+    }).catch(err => {
+      //self.postMessage(err);
+      Increment_counter = 1;  // Restart the counter.
+
+      //TODO: Try to catch the error.
+      self.postMessage({Table1_Error: "An Error Occured: " + return_Time_String(), consolidate: true});
+      self.postMessage({Table1_Error: err});
+      //console.log(err);
+
+    });
+  }
+
+
+    // Try Catch Block to catch if string can be parsed as json.
+  function check_json(str){
+        try {
+           reurn_val = JSON.parse(str);
+        } catch (e) {
+          return false;
+        }
+        return reurn_val;
+    }
+
+
+    function Draw_Vertical_Table(table_Data, Table_Caption, Table_Class, Replace_words) {
+        var sString = '';
+
+        //------------- Table Header -----------------------------
+        sString += '<table class="' + Table_Class + '">';
+        sString += '<caption>' + Table_Caption + '</caption>';
+        sString += '<tr>';
+        //------------- Table Data -----------------------------
+
+        for (var x in table_Data) {
+            //For each row, For each data
+
+            sString += '<tr>';
+
+            //for(var xx in table_Data[x]){	//
+
+            var string_buffer = "";
+            string_buffer += table_Data[x];
+
+            sString += '<td><b>' + x + '</b></td>';
+
+            if (string_buffer.search("ERROR") >= 0) {
+                // If there is an error, change the color of the cell
+                sString += '<td bgColor="#ff8080">';
+                //sString+= '<td>';
+            } else {
+                sString += '<td>';
+            }
+
+            if (table_Data[x]instanceof Array == true || table_Data[x]instanceof Object == true) {
+                //sString += "Is Array..." ;
+
+                sString += Draw_Vertical_Table(table_Data[x], "", "table_orange", Replace_words);
+            } else {
+                sString += table_Data[x];
+            }
+
+            sString += "</td>";
+
+            sString += '</tr>';
+        }
+        sString += '</table>';
+        return sString;
+    }
+
+
+        // Draws a horizontal table.
+        function Draw_Table(table_Data, Table_Caption, Table_Class, Alert_Words, Replace_words, table_id) {
+            var sString = '';
+            //------------- Table Header -----------------------------
+            sString += '<table ';
+            if (table_id!=undefined){
+                sString += 'id="' + table_id + '" ';
+            }
+            sString += 'class="' + Table_Class + '">';
+            sString += '<caption>' + Table_Caption + '</caption>';
+            sString += '<thead><tr>';
+
+            for (var x in table_Data) {
+                //For table header.
+                for (var xx in table_Data[x]) {
+                    sString += '<th>';
+                    sString += xx.replace("_", " ");  // Replace _ with ' ' so that table can be smaller
+                    sString += '</th>';
+                }
+                break;
+            }
+
+            //variable instanceof Array
+            sString += '</tr></thead>';
+
+            //------------- Table Data -----------------------------
+
+            for (var x in table_Data) {
+                //For each row
+
+                sString += '<tr>';
+
+                for (var xx in table_Data[x]) {
+                    //For each data
+                    var string_buffer = "";
+                    string_buffer += table_Data[x][xx];
+
+
+
+                    var Alert_Word_found = 0;
+                    for (var aw in Alert_Words) {	// Loop thru the list of alert words
+                        // Loop thru the array
+                        if (string_buffer.search(Alert_Words[aw]) >= 0) {
+                            Alert_Word_found = 1;
+                            break;
+                        }
+                    }
+
+                    var Relace_Word_found = 0;
+                    for (var rw in Replace_words) {	// Loop thru the list of Replace words
+                        // Loop thru the array
+                        if (string_buffer.search(Replace_words[aw]) >= 0) {
+                            Relace_Word_found = 1;
+                            string_buffer = table_Data[x][xx].replace(Replace_words[aw], "")
+                            break;
+                        }
+                    }
+
+
+                    Table_Column = xx;	// Get the Column Name
+                    if ((xx.search("Discrepancy") >= 0) && (table_Data[x][xx] != 0)){	// If its the discrepancy Column/Row, we want to Flag out any that isn't 0.
+                        Alert_Word_found = 1;
+                    }    function numberWithCommas(x) {
+                          return x.toLocaleString(undefined, {maximumFractionDigits:4})
+                        }
+
+                     if ((xx.search("Mismatch_count") >= 0) && (table_Data[x][xx] >= 10)){	// If its the Mismatch_count Column/Row, we want to Flag out any larger then 10
+                        Alert_Word_found = 1;
+                    }
+
+
+                    if (Alert_Word_found == 1) {
+                        // If there is an error, change the color of the cell
+                        sString += '<td class="alert_cell">';
+                        //sString+= '<td>';
+                    } else if (Relace_Word_found == 1) {
+                        //If replace words was found, we want to give it a class
+                        sString += '<td class="table_highlight">';
+                        //sString+= '<td>';
+                    } else {
+                        sString += '<td>';
+                    }
+
+                    if (table_Data[x][xx]instanceof Array == true || table_Data[x][xx]instanceof Object == true) {
+                        //sString += "Is Array..." ;
+
+                        sString += Draw_Vertical_Table(table_Data[x][xx], "", "table_orange ", Replace_words);
+                    } else  if (typeof(table_Data[x][xx]) === 'number'){  // If it's a number. we want to write it with a comma for easy reading.
+
+                      // If we need -ve to be red in color.
+                      // if (table_Data[x][xx] < 0){
+                      //   sString += "<font color='red'>" +  numberWithCommas(table_Data[x][xx]) + "</font>";
+                      // }else{
+                      //   sString += numberWithCommas(table_Data[x][xx]);
+                      // }
+
+                      if ((typeof(xx) == 'string') && ((xx.toLowerCase() == "login")) ||  (xx.toLowerCase() == "ticket") ) {  // If the key is string and if it's login
+                            // If it is, we don't want to write in commas.
+                            sString += table_Data[x][xx]; // Just the pure form of number.
+                        } else{
+                          sString += numberWithCommas(table_Data[x][xx]); // Else, put commas for ease of reading
+                        }
+
+
+                    }else
+                    {
+
+                        sString += string_buffer;
+                    }
+                    sString += "</td>";
+
+                }
+                sString += '</tr>';
+            }
+
+
+            // Want to write a table footer.
+            sString += "<tfoot><tr>";
+
+            for (var x in table_Data) {
+                //For table footer.
+                for (var xx in table_Data[x]) {
+                    sString += '<th>';
+                    sString += '</th>';
+                }
+                break;
+            }
+            sString += "</tr></tfoot>";
+
+
+            sString += '</table>';
+            return sString;
+          }
+
+    function numberWithCommas(x) {
+      return x.toLocaleString(undefined, {maximumFractionDigits:4})
+    }
+
+
+    function Check_Time_Offset(){
+        var d = new Date();
+        var n = d.getTimezoneOffset();
+        UTC_Offset_Change = (-1 * UTC_Timing_Fixed) + n;
+
+        var e = new Date(d.getTime() + UTC_Offset_Change*60*1000);
+        var d_day = d.getDay();            // 0 - 6
+        var e_day = e.getDay();            // 0 - 6
+        //alert("d_day = " + d_day + "  e_day = " + e_day);
+    }
+
+
+    function return_Time_String(){
+
+        var e = new Date();
+        var timeSone_OffSet = e.getTimezoneOffset();
+        UTC_Offset_Change = (-1 * UTC_Timing_Fixed) + timeSone_OffSet;
+        var d = new Date(e.getTime() + UTC_Offset_Change*60*1000);        // Get SGT
+
+
+        var day = d.getDay();            // 0 - 6
+
+        var month = d.getMonth();        // 0-11
+        var year = d.getFullYear();     // yyyy
+
+
+        var hr = pad(d.getHours(),2);            // 0-23
+        var min = pad(d.getMinutes(),2);        // 0-59
+        var sec = pad(d.getSeconds(),2);         // 0-59
+        var date = pad(d.getDate(),2);
+
+        var day_name = ["Sun" ,"Mon", "Tue", "Wed", "Thu", "Fri", "Sat" ];
+        var mon_name = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "July", "Aug", "Sep", "Oct", "Nov","Dec"];
+
+        var Date_String = "";
+        Date_String = day_name[day] + " " + year + "-" +  mon_name[month] + "-" + date + " " + hr+":"+min+":"+sec;
+        return Date_String;
+    }
+
+    function pad(number, length) {
+
+        var str = '' + number;
+        while (str.length < length) {
+            str = '0' + str;
+        }
+        return str;
+    }
+</script>
+
+
+
+<script>
+  $(document).ready(function(){
+      var UTC_Timing_Fixed = -480;
+      var UTC_Offset_Change = 0;
+      //setInterval(Refresh_H1, 500);        //     Refresh the time.
+
+      var Show_Mt4_Zero = 0;                  // Button Controlled
+      var play_Sound = 0;                     // Button Controlled. Will be set once the DOM loads.
+
+      var send_email_flag = 1;                 // Button Controlled
+      var Refresh_Page_Disable = 2;           // To count when the refresh page button can be used again.
+
+      var MT4_LP_Position_save = {};       // Used to save the past position
+      var lp_attention_email_count = 0;       // LP Details Send email Count
+      var lp_mc_email_count = 0;       // LP Details Send email Count
+      var lp_time_issue_count = 0;       // LP Details Send email Count
+      var lp_so_email_count = 0;       // LP Details Send email Count
+
+      var Page_Run_Count=0;           // A running counter.
+
+      var UTC_Timing_Fixed = -480;        // Used for UTC Time offset to SGT
+      var UTC_Offset_Change = 0;
+      var Increment_counter = 1;
+
+      var Refresh_Page_Counter = 0;  // When to refresh the page.
+
+      //var SetInterval_MT4_LP;
+      //var SetInterval_LP_Details;
+
+      var workerJS =  $('#my_first_worker').text();
+      //var workerJS =  document.getElementById("myworker_Aaron").innerText;
+      //console.log(workerJS);
+      var blob = new Blob([workerJS]);
+      var blobURL = URL.createObjectURL(blob);
+      //console.log(blobURL);
+
+      function refresh_datatable(div_id, data){
+        //'#' + key + '_table'
+        var table_id = div_id + "_table";
+        if ( $.fn.dataTable.isDataTable( table_id ) != true) { // If not a datatable
+          var order = [];
+          //console.log( table_id + ' is NOT data table' );
+
+        }else{
+          var table = $( table_id).DataTable();
+          var order = table.order();
+          //console.log( 'Column '+order+' is the ordering column' );
+        }
+
+        $(div_id).html(data);
+        table = $( table_id ).DataTable( {
+
+        "footerCallback": function (row, data, start, end, display) {
+          var api = this.api(), data;
+
+
+          var numberWithCommas = function(x) {
+            return x.toLocaleString(undefined, {maximumFractionDigits:4})
+          }
+
+
+          // converting to interger to find total
+           var intVal = function ( i ) {
+            if (typeof i === 'string'){
+              //sstr = i.replace( /[^\d\.|-]*/g, '');
+
+              // Prob can be a better regax if there was enough time to rewrite
+              sstr = i.replace(/(<([^>]+)>)/gi, "").replace( /[^\d\.|-]*/g, '');
+              return isNaN(Number(sstr)) ?
+              0 : Number(sstr);
+            }else {
+              return isNaN(Number(i)) ? 0 : Number(i);
+            }
+          };
+          //alert(intVal("77.81"));
+
+           nb_cols = api.columns().nodes().length;
+
+          // Want to write to the footer of the table as a summation
+          $( api.column( 0 ).footer() ).html("Total");
+           var j = 1; // Want to ignore the first column.
+
+          // The columns that would make sense to sum up.
+          var sum_col = ["lots", "volume", "revenue", "swaps", "profit", "rebate", "total"];
+
+
+
+          while(j < nb_cols){
+
+            col_name = api.column(j).header().textContent;
+            col_name = col_name.toLowerCase();
+            var string_found = 0; // Init the flag to 0
+
+            // Want to check if it makes sense to do the sum.
+            for (var i = 0; i < sum_col.length; i++) {
+                if (col_name.search(sum_col[i]) >= 0){  // Loop thru to find. If found, break.
+                  string_found = i+1;// Raise the flag
+                  break;
+              }
+            }
+            //console.log(string_found);
+            //console.log(col_name);
+
+          if (string_found == 0){  // When it dosn't make sense to sum.
+            // Update footer
+             $( api.column( j ).footer() ).html("-");
+          }else{  // When we want to sum it up.
+            var pageTotal = api.column( j, { page: 'current'} )
+                   .data().reduce( function (a, b) {
+                       //alert("a: " + a + " : " + intVal(a) + "b: " + b + " : "  + intVal(b));
+                       return intVal(a) + intVal(b);
+                   }, 0 );
+
+            // Want to color the text if it's +ve or -ve
+            var span_tag_start = "", span_tag_end = "";
+            if (string_found >= 3) {  // Revenue. Will want to color it.
+              if (pageTotal > 0){ // +ve
+                span_tag_start = '<span style="color:green">'
+                  span_tag_end = '</span>'
+              }else if(pageTotal < 0){
+                span_tag_start = '<span style="color:red">'
+                  span_tag_end = '</span>'
+              }
+            }
+            var cell_text = span_tag_start + numberWithCommas(Number(pageTotal.toFixed(2))) + span_tag_end;
+
+             // Update footer
+             $( api.column( j ).footer() ).html(cell_text);
+
+          }
+            j++;
+        }},
+
+
+
+
+        paging: false,
+        searching: true,
+        "aaSorting": order // Don't want to sort initially
+        } );
+      }
+
+      var remove_wait_gif=0;
+      var myWorker = new Worker(blobURL);
+      myWorker.onmessage = function(e){
+
+        if (remove_wait_gif == 0){
+          $('#Please_wait_Gif').html(" ");  // Remove the Gif for please wait.
+          remove_wait_gif = 1;
+        }
+
+
+        if (e.data instanceof Object){  // If it is an object, we loop thru and add it to the correct container/Div
+          ret_obj = e.data;
+          console.log(ret_obj);
+          var consolidate = false;
+          if ('consolidate' in ret_obj){  // If we want to consolidate all the errors.
+            consolidate = true;
+          }
+          for (let key in ret_obj){
+
+           //if(e.data.hasOwnProperty("consolidate")) {
+
+
+          //}
+             var current_html = "";
+             if (consolidate == true){  // If we need to consolidate the items.
+                var current_html = $('#' + key).html();   // To display the error. First, we need to store the HTML as we want to append.
+                current_html += "<br>-------------------------------------------------<br>";
+                //current_html += "Ajax Response: " + JSON.stringify(xhr) + "<br>";
+                //current_html += "status: " + status + "<br>";
+                //current_html += "Error: " + error['message'] + "<br>" + error['stack'] + "<br>";
+                //$('#' + error_card_id ).html(current_html);  // Put it back into the Card.
+             }
+             //console.log(`${key} : ${e.data[key]}`);
+
+             // If it's a table, we want to convert it to a datatable
+             // Naming convention. If it's a div ment to store a datatable.
+           // We name it  Data_table_Div<number>, so that the table ID = '#' + key + '_table'
+             if (key.toLowerCase().search("data_table_div")>=0){    // All tables can be put to Datatables
+               // used to check if a table is a DataTable or not already.
+               // Datatables dosn't allow for re-init. So.. gotta check
+               console.log(key);
+               //'#' + key + '_table' will be the name of the table in the Div.
+                refresh_datatable('#' + key, current_html + ret_obj[key]);
+
+
+                // Want to plot the chart.
+             }else if(key.toLowerCase().search("plot")>=0){
+                $('#' + key).html(""); // Clear whatever that is in there first.
+                Plotly.newPlot(key, ret_obj[key] )
+             } else{
+               $('#' + key).html(current_html + ret_obj[key]);
+             }
+
+
+            //$('#' + key).html(current_html + ret_obj[key]);
+          }
+            //}
+          //}
+        }else{
+          console.log(e.data);
+        }
+      };
+
+    // Could be anything. We just want to post something out.
+    myWorker.postMessage("START");
+
+
+    $('#btn_refresh_page').click(function() {
+      myWorker.postMessage("BUTTON");  // Send a click to the web worker
+    });
+
+  });
+
+
+</script>
+{% endblock %}
+
+
+{% block app_content %}
+<br>
+<div class="container" id="title">
+  <h1 class="text-muted display-4 text-center bg-light">
+
+  {% if header %}
+  {{ header }}
+  <hr>
+  {% else %}
+  Risk
+  {% endif %}
+  <span id="page_time"></span>
+</h1>
+</div>
+
+<div class="row">
+
+  {% for i in range(1, Table_name|length + 1) %}
+
+
+  {% endfor %}
+
+
+
+ {% for key, value in Table_name.items() %}
+  {% if "Hss" in value %}
+  <div class="col-lg-4 col-md-12 col-sm-12" id="Data_table_Div_{{ value }}"></div>
+  {% elif "Hs" in value %}
+  <div class="col-lg-6 col-md-12 col-sm-12" id="Data_table_Div_{{ value }}"></div>
+  {% elif "Hr" in value %}
+    <hr style="height:3px;background-color: #333;" class="col-lg-12 col-md-12 col-sm-12">
+  {% elif "H" in value %}
+    <div class="col-lg-12 col-md-12 col-sm-12" id="Data_table_Div_{{ value }}"></div>
+  {% elif "V" in value %}
+    <div class="col-lg-6 col-md-6 col-sm-12" id="Data_table_Div_{{ value }}" style="margin-left:auto;margin-right:auto;"></div>
+  {% else %}
+  <!-- Would read as P for value.  -->
+    <div class="chart col-lg-6 col-md-6 col-sm-12" id="plot_{{ value }}"></div>
+  {% endif %}
+
+
+
+ <!--
+ <h1>Key: {{key}}</h1>
+ <h2>Value: {{value}}</h2> -->
+
+  {% endfor %}
+
+
+  <div class="col-lg-12 col-md-12 col-sm-12" id="Please_wait_Gif">  {% include '_pleaseWait.html' %}  </div>
+
+  {% if tableau_url %}
+  <!-- <script type='text/javascript' src='https://202.88.105.5/javascripts/api/viz_v1.js'></script>
+  <div class='tableauPlaceholder' style='width: 2133px; height: 986px;'><object class='tableauViz' width='2133' height='986' style='display:none;'>
+  <param name='host_url' value='https%3A%2F%2F202.88.105.5%2F' />
+  <param name='embed_code_version' value='3' />
+  <param name='site_root' value='' />
+  <param name='name' value='Yesterday_Trades_0617&#47;YESTERDAY' />
+  <param name='tabs' value='yes' />
+  <param name='toolbar' value='yes' />
+  <param name='filter' value='Type~na={{symbol}}' />
+  <param name='filter' value='BOOK3~na={{book}}' />
+  <param name='showAppBanner' value='false' /></object></div> -->
+  {{tableau_url}}
+  {% endif %}
+
+
+  <br>
+  {% if description %}
+  <br><br>
+  <div class="container col-lg-12 col-md-12 col-sm-12">
+  <div class="border border-secondary  rounded bg-light p-4">{{ description }}</div>
+  </div>
+  <br>
+  {% endif %}
+
+</div>
+{% if form %}
+<div class="container general_form">
+  <div class="row">
+    <div class="col">
+      <hr class="col-xs-12">
+      {{ wtf.quick_form(form, button_map={'submit': 'outline-secondary btn-lg btn-light'}) }}
+    </div>
+  </div>
+</div>
+
+{% endif %}
+
+
+{% if table %}
+<br>
+<h2>Uploaded Swap Values</h2>
+<div class="container">
+
+{{ table  }}
+
+</div>
+<br>
+{% endif %}
+
+<br>
+
+{% for i in range(1, Table_name|length + 1) %}
+  <p>
+    <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#Table{{ i }}_Raw_Div" aria-expanded="false">
+      Show Table
+    </button>
+
+  </p>
+
+  <div class="collapse" id="Table{{ i }}_Raw_Div">
+    <div class="card card-body">
+      <b>Table {{ i }} Raw JSON:</b> <br>
+      <span id="Table{{ i }}_Raw"></span>
+    </div>
+    <div class="card card-body">
+      <b>MT4/LP Position Ajax Error:</b> <br>
+      <span id="Table{{ i }}_Error"></span>
+    </div>
+  </div>
+{% endfor %}
+
+{% endblock %}
+
+
+
+
+
+{% block navbar_button %}
+{% if setinterval %}
+<button class="btn btn-warning navbar-btn nav-button" id="btn_refresh_page">Refresh<br>Page: <span id="Refresh_count_down"></span> </button>
+{% endif %}
+
+{% endblock %}

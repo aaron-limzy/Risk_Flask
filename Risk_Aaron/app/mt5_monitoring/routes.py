@@ -283,3 +283,70 @@ def BGI_MT5_Symbol_Float_ajax():
     return json.dumps([return_val, ", ".join(datetime_pull), ", ".join(yesterday_datetime_pull)], cls=plotly.utils.PlotlyJSONEncoder)
 
 
+# To Query for all open trades by a particular symbol
+# Shows the closed trades for the day as well.
+@mt5_monitoring.route('/HK_Copy_STP', methods=['GET', 'POST'])
+@roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
+def HK_Copy_STP():
+
+    title = "HK"
+    header =  "HK"
+    description = Markup("HK_Copy_STP")
+
+    return render_template("Wbwrk_Multitable_Borderless_test.html", backgroud_Filename=background_pic("HK_Copy_STP"), icon="",
+                           Table_name={"BGI Position": "H1",
+                                       "Vantage ": "Hss1",
+                                       "BIC ": "Hss2",
+                                       "Swiss Quote": "Hss3",
+                                       "LP Details": "H2",
+                                       "Trades": "H3"},
+                           title=title, setinterval=60,
+                           ajax_url=url_for('mt5_monitoring.HK_Copy_STP_ajax', _external=True),
+                           header=header,
+                           description=description, no_backgroud_Cover=True,
+                           replace_words=Markup(["Today"])) #setinterval=60,
+
+
+
+@mt5_monitoring.route('/HK_Copy_STP_ajax', methods=['GET', 'POST'])
+@roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
+def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
+
+    # The code is in aaron database, saved as a procedure.
+    current_result = Query_SQL_db_engine("call aaron.HK_CopyTrade_Main()")
+    return_result = pd.DataFrame(data=current_result).to_dict("record") if len(current_result) != 0 else [{"Run Results": "No Open Trades"}]
+    #return_result_2 = pd.DataFrame(data=current_result)[["Login", "BaseSymbol", "Lots", "NetLots", "Swaps", "Profit"]].to_dict("record") if len(current_result) != 0 else return_result = [{"Run Results": "No Open Trades"}]
+
+    current_result2 = Query_SQL_db_engine("call aaron.HK_CopyTrade_Vantage_bySymbol()")
+    return_result2 = pd.DataFrame(data=current_result2).to_dict("record") if  len(current_result2) != 0 else [{"Run Results": "No Open Trades"}]
+
+    current_result3 = Query_SQL_db_engine("call aaron.HK_CopyTrade_BIC_bySymbol()")
+    return_result3 = pd.DataFrame(data=current_result3).to_dict("record") if  len(current_result3) != 0 else [{"Run Results": "No Open Trades"}]
+
+    current_result4 = Query_SQL_db_engine("call aaron.HK_CopyTrade_SQ_bySymbol()")
+    return_result4 = pd.DataFrame(data=current_result4).to_dict("record") if  len(current_result4) != 0 else [{"Run Results": "No Open Trades"}]
+
+    current_result5 = Query_SQL_db_engine("call aaron.HK_CopyTrade_LP_Details()")
+    return_result5 = pd.DataFrame(data=current_result5).to_dict("record") if  len(current_result5) != 0 else [{"Run Results": "No Open Trades"}]
+
+    current_result6 = Query_SQL_db_engine("call aaron.HK_CopyTrade_Price_Comparison()")
+    return_result6 = pd.DataFrame(data=current_result6).to_dict("record") if  len(current_result6) != 0 else [{"Run Results": "No Open Trades"}]
+
+
+    # if len(current_result) == 0:
+    #     return_result = [{"Run Results": "No Open Trades"}]
+    # else:
+    #     df = pd.DataFrame(data=current_result)
+    #     return_result = df.to_dict("record")
+    #     return_result_2 = df[["Login", "BaseSymbol", "Lots", "NetLots", "Swaps", "Profit"]].to_dict("record")
+
+    print("Current Results: {}".format(return_result))
+    return json.dumps({"H1" : return_result,
+                       "Hss1" : return_result2,
+                       "Hss2" : return_result3,
+                       "Hss3" : return_result4,
+                       "H2" : return_result5,
+                       "H3" : return_result6})
+
+
+

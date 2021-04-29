@@ -40,7 +40,8 @@ def background_pic(website):
                  "Risk_auto_cut" :                      'css/Scissors.jpg',
                  "noopentrades_changegroup":            "css/Faded_car.jpg",
 
-                  "Futures_LP_Details":                 "css/giftly.png"
+                  "Futures_LP_Details":                 "css/giftly.png",
+                  "HK_Copy_STP":                        "css/leaves-pattern.png"
         }
 
     #background_pic("Monitor_Account_Trades")

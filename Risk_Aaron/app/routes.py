@@ -2499,16 +2499,6 @@ def Mismatch_trades_bridge(symbol=[], hours=8, mins=16):
 
 
 
-# Helper function to check if string is json
-def is_json(myjson):
-  try:
-    json_object = json.loads(myjson)
-  except (ValueError):
-    return False
-  return True
-
-
-
 # Helper function to do a time check.
 # Return "Update Slow<br> time" if it is more then 10 mins difference.
 def time_difference_check(time_to_check):

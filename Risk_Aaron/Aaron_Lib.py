@@ -314,6 +314,15 @@ def isfloat(value):
         return False
 
 
+
+# Helper function to check if string is json
+def is_json(myjson):
+  try:
+    json_object = json.loads(myjson)
+  except (ValueError):
+    return False
+  return True
+
 # Get machine IP.
 def get_machine_ip_address():
 

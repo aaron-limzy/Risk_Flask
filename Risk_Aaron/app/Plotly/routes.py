@@ -1201,7 +1201,7 @@ def symbol_float_trades(symbol="", book="b"):
                            book = book.upper(),
                            header=header, symbol=symbol,
                            description=description, no_backgroud_Cover=True,
-                           replace_words=Markup(["Today"]))
+                           replace_words=Markup(["Today"])) #setinterval=60,
 
 # The Ajax call for the symbols we want to query. B Book.
 @analysis.route('/Open_Symbol/<book>/symbol_float_trades_ajax/<symbol>/<entity>', methods=['GET', 'POST'])
