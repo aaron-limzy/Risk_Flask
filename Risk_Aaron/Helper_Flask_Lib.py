@@ -5,11 +5,15 @@ from app.decorators import async_fun
 from app.extensions import db
 
 from flask_table import create_table, Col
-from flask import url_for, session, current_app
+from flask import url_for, session, current_app, request
 import decimal
 from Aaron_Lib import *
 import pandas as pd
 from unsync import unsync
+
+
+TIME_UPDATE_SLOW_MIN = 10
+LP_MARGIN_ALERT_LEVEL = 20            # How much away from MC do we start making noise.
 
 
 if get_machine_ip_address() == '192.168.64.73': #Only On Server computer
@@ -1120,6 +1124,8 @@ def liveserver_Previousday_start_timing(live1_server_difference=6, hour_from_230
 
 
 
+
+
 # Query SQL to get MT4 Symbol BID/ASK
 def get_live2_ask_bid(symbols=[]):
 
@@ -1151,6 +1157,224 @@ def get_live2_ask_bid(symbols=[]):
         return_df = return_df[ (~ return_df["SYMBOL"].str.contains(".",  regex=False)) | (return_df["SYMBOL"].isin(all_cfds))]
         #print(return_df)
 
-
-
     return return_df
+
+
+def ABook_LP_Details_function(update_tool_time=0, exclude_list=["demo"]):
+                            # LP Details. Balance, Credit, Margin, MC/SO levels. Will alert if email is set to send.
+                            # Checks Margin against MC/SO values, with some buffer as alert.
+
+    exclude_conditions = "WHERE LP NOT RLIKE '{}'".format("|".join(exclude_list)) if len(exclude_list) > 0 else ""
+    sql_query = text("""SELECT lp, deposit, credit, pnl, equity, total_margin, free_margin,
+		ROUND((credit + deposit + pnl),2) as EQUITY,
+		COALESCE(ROUND(100 * total_margin / (credit + deposit + pnl),2),0) as `Margin/Equity (%)` ,
+		margin_call as `margin_call (M/E)` , stop_out as `stop_out (M/E)`,
+			  COALESCE(`stop_out_amount`, ROUND(  100* (`total_margin`/`stop_out`) ,2)) as `STOPOUT AMOUNT`,
+		ROUND(`equity` -  COALESCE(`stop_out_amount`, 100* (`total_margin`/`stop_out`) ),2) as `available`,
+		updated_time
+		FROM aaron.lp_summary {} ORDER BY LP DESC""".format(exclude_conditions))  # Need to convert to Python Friendly Text.
+    raw_result = db.engine.execute(sql_query)
+    result_data = raw_result.fetchall()
+    # result_data_json_parse = [[float(a) if isinstance(a, decimal.Decimal) else a for a in d ] for d in result_data]    # correct The decimal.Decimal class to float.
+    result_data_json_parse = [[time_difference_check(a) if isinstance(a, datetime.datetime) else a for a in d] for d in
+                           result_data]  # correct The decimal.Decimal class to float.
+
+    result_col = raw_result.keys()
+    return_result = [dict(zip(result_col,d)) for d in result_data_json_parse]
+
+
+    LP_Position_Show_Table = [] # to store the LP details in a more read-able sense
+
+    Tele_Margin_Text = "*LP Margin Issues.*\n"    # To Compose Telegram text for Margin issues.
+    margin_attention_flag = 0
+    Margin_MC_Flag = 0
+    Margin_SO_Flag = 0
+    Play_Sound = 0  # For return to AJAX
+
+
+    for i,lp in enumerate(return_result):    # Want to re-arrange.
+        loop_buffer = dict()
+        loop_buffer["LP"] = lp["lp"] if "lp" in lp else None
+
+        Lp_MC_Level = lp["margin_call (M/E)"] if "margin_call (M/E)" in lp else None
+        Lp_SO_Level = lp["stop_out (M/E)"] if "stop_out (M/E)" in lp else None
+        Lp_Margin_Level = lp["Margin/Equity (%)"]  if "Margin/Equity (%)" in lp else 0
+
+        # Want to induce an error
+        #Lp_Margin_Level = lp["Margin/Equity (%)"] + 105  if "Margin/Equity (%)" in lp else None
+
+        loop_buffer["BALANCE"] = dict()
+        loop_buffer["BALANCE"]["DEPOSIT"] = "$ {:,.2f}".format(float(lp["deposit"])) if "deposit" in lp else None
+        loop_buffer["BALANCE"]["CREDIT"] = "$ {:,.2f}".format(float(lp["credit"])) if "credit" in lp else None
+        loop_buffer["BALANCE"]["PNL"] = "$ {:,.2f}".format(float(lp["pnl"])) if "pnl" in lp else None
+        loop_buffer["BALANCE"]["EQUITY"] = "$ {:,.2f}".format(float(lp["equity"])) if "equity" in lp else None
+
+        loop_buffer["MARGIN"] = dict()
+        loop_buffer["MARGIN"]["TOTAL_MARGIN"] = "${:,.2f}".format(float(lp["total_margin"])) if "total_margin" in lp else None
+        loop_buffer["MARGIN"]["FREE_MARGIN"] = "${:,.2f}".format(float(lp["free_margin"])) if "free_margin" in lp else None
+
+        # Checking Margin Levels.
+        if Lp_Margin_Level >= (Lp_SO_Level - LP_MARGIN_ALERT_LEVEL):    # Check SO Level First.
+            Margin_SO_Flag +=1
+            loop_buffer["MARGIN/EQUITY (%)"] = "SO Alert: {:.2f}%".format(Lp_Margin_Level)
+            Tele_Margin_Text += "_SO Alert_: {} margin is at {:.2f}.\n".format( loop_buffer["LP"], Lp_Margin_Level)
+        elif Lp_Margin_Level >= Lp_MC_Level:                            # Check Margin Call Level
+            Margin_MC_Flag += 1
+            loop_buffer["MARGIN/EQUITY (%)"] = "Margin Call: {:.2f}%".format(Lp_Margin_Level)
+            Tele_Margin_Text += "_MC Alert_: {} margin is at {}. MC/SO: {:.2f}/{:.2f}\n".format(loop_buffer["LP"], Lp_Margin_Level,Lp_MC_Level,Lp_SO_Level)
+        elif Lp_Margin_Level >= (Lp_MC_Level - LP_MARGIN_ALERT_LEVEL):  # Want to start an alert when reaching MC.
+            margin_attention_flag += 1
+            loop_buffer["MARGIN/EQUITY (%)"] = "Alert: {:.2f}%".format(Lp_Margin_Level)
+            Tele_Margin_Text += "_Margin Alert_: {} margin is at {}. MC is at {:.2f}\n".format(loop_buffer["LP"], Lp_Margin_Level, Lp_MC_Level)
+        else:
+            loop_buffer["MARGIN/EQUITY (%)"] = "{}%".format(Lp_Margin_Level)
+
+        loop_buffer["MC/SO/AVAILABLE"] = dict()
+        loop_buffer["MC/SO/AVAILABLE"]["MARGIN_CALL (M/E)"] = "{:.2f}".format(Lp_MC_Level)
+        loop_buffer["MC/SO/AVAILABLE"]["STOP_OUT (M/E)"] = "{:.2f}".format(Lp_SO_Level)
+        loop_buffer["MC/SO/AVAILABLE"]["STOPOUT AMOUNT"] = "$ {:,.2f}".format(float(lp["STOPOUT AMOUNT"])) if "STOPOUT AMOUNT" in lp else None
+        loop_buffer["MC/SO/AVAILABLE"]["AVAILABLE"] = "$ {:,.2f}".format(float(lp["available"])) if "available" in lp else None
+
+        loop_buffer["UPDATED_TIME"] = lp["updated_time"] if "updated_time" in lp else None
+
+        LP_Position_Show_Table.append(loop_buffer)
+        # print(loop_buffer)
+
+    if request.method == 'POST':
+        post_data = dict(request.form)
+        #print(post_data)
+
+        # Get variables from POST.
+        Send_Email_Flag = int(post_data["send_email_flag"]) if ("send_email_flag" in post_data) \
+                               and (isinstance(post_data['send_email_flag'], str)) else 0
+
+        lp_attention_email_count = int(post_data["lp_attention_email_count"]) if ("lp_attention_email_count" in post_data) \
+                                and (isinstance(post_data['lp_attention_email_count'], str)) else 0
+
+        lp_mc_email_count = int(post_data["lp_mc_email_count"]) if ("lp_mc_email_count" in post_data) \
+                                 and (isinstance(post_data['lp_mc_email_count'], str)) else 0
+
+
+        lp_time_issue_count = int(post_data["lp_time_issue_count"]) if ("lp_time_issue_count" in post_data) \
+                                 and (isinstance(post_data['lp_time_issue_count'], str)) else -1
+
+
+        lp_so_email_count = int(post_data["lp_so_email_count"]) if ("lp_so_email_count" in post_data) \
+                                and (isinstance(post_data['lp_so_email_count'], str)) else -1
+
+
+
+        if Send_Email_Flag == 1:    # Want to update the runtime table to ensure that tool is running.
+            async_update_Runtime(app=current_app._get_current_object(), Tool="LP_Details_Check")
+
+
+        Tele_Message = "*LP Details* \n"  # To compose Telegram outgoing message
+
+        # Checking if there are any update time that are slow. Returns a Bool
+        update_time_slow = any([[True for a in d if (isinstance(a, datetime.datetime) and abs((a-datetime.datetime.now()).total_seconds()) > TIME_UPDATE_SLOW_MIN*60)] for d in result_data])
+
+
+        if update_time_slow: # Want to send an email out if time is slow.
+            if lp_time_issue_count == 0:    # For time issue.
+                if Send_Email_Flag == 1:
+                    LP_position_Table = List_of_Dict_To_Horizontal_HTML_Table(LP_Position_Show_Table, ['Slow', 'Margin Call', 'Alert'])
+
+                    async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
+                                     Subject="LP Details not updating",
+                                     HTML_Text="{}Hi,<br><br>LP Details not updating. <br>{}<br>This Email was generated at: {} (SGT)<br><br>Thanks,<br>Aaron{}".format(
+                                         Email_Header, LP_position_Table, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S") ,Email_Footer), Attachment_Name=[])
+
+
+                    LP_Issue_Name = [d['lp'] for d in result_data if ("lp" in d) and ("updated_time" in d) and abs(
+                        (d["updated_time"] - datetime.datetime.now()).total_seconds()) > (TIME_UPDATE_SLOW_MIN * 60)]
+                    Tele_Message += "_Update Slow_: {}\n".format(", ".join(LP_Issue_Name))
+
+                    async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Message, TELE_CLIENT_ID)
+
+                Play_Sound+=1   # No matter sending emails or not, we will need to play sound.
+                lp_time_issue_count += 1
+        else:   # Reset to 0.
+            lp_time_issue_count = 0
+
+        #Margin_SO_Flag: 0, Send_Email_Flag: 1, lp_so_email_count: 0, Margin_MC_Flag: 2
+
+        #print("Margin_SO_Flag : {}, lp_so_email_count: {}, Send_Email_Flag:{}".format(Margin_SO_Flag, lp_so_email_count, Send_Email_Flag))
+        #print("Margin_MC_Flag : {}, lp_mc_email_count: {}, Send_Email_Flag:{}".format(Margin_MC_Flag, lp_mc_email_count, Send_Email_Flag))
+        #print("margin_attention_flag : {}, lp_attention_email_count: {}, Send_Email_Flag:{}".format(margin_attention_flag, lp_attention_email_count, Send_Email_Flag))
+
+        # -------------------- To Check the Margin Levels, and to send email when needed. --------------------------
+        if Margin_SO_Flag > 0:   # If there are margin issues. Want to send Alert Out.
+            if lp_so_email_count == 0:
+                if Send_Email_Flag == 1:
+                    async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
+                    LP_position_Table = List_of_Dict_To_Horizontal_HTML_Table(LP_Position_Show_Table, ['Slow', 'Margin Call', 'Alert'])
+
+
+                    async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
+                                     Subject = "LP Account approaching SO.",
+                                     HTML_Text="{}Hi,<br><br>LP Account margin reaching SO Levels. <br>{}<br>This Email was generated at: {} (SGT)<br><br>Thanks,<br>Aaron{}".
+                                     format(Email_Header, LP_position_Table, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),Email_Footer),
+                                     Attachment_Name=[])
+
+
+            Play_Sound += 1  # No matter sending emails or not, we will need to play sound.
+            # print("Play Sound: {}".format(Play_Sound))
+            lp_so_email_count += 1
+            lp_mc_email_count = lp_mc_email_count + 1 if lp_mc_email_count <1 else lp_mc_email_count    # Want to raise all to at least 1
+            margin_attention_flag = margin_attention_flag + 1 if margin_attention_flag < 1 else margin_attention_flag
+        elif Margin_MC_Flag > 0:   # If there are margin issues. Want to send Alert Out.
+            if lp_mc_email_count == 0:
+                if Send_Email_Flag == 1:
+                    LP_position_Table = List_of_Dict_To_Horizontal_HTML_Table(LP_Position_Show_Table, ['Slow', 'Margin Call', 'Alert'])
+
+                    async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
+                                     Subject = "LP Account has passed MC Levels.",
+                                     HTML_Text="{}Hi,<br><br>LP Account margin reaching SO Levels. <br>{}<br>This Email was generated at: {} (SGT)<br><br>Thanks,<br>Aaron{}".
+                                     format(Email_Header, LP_position_Table, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),Email_Footer),
+                                     Attachment_Name=[])
+
+
+                    async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
+                Play_Sound += 1             # Play sound when MC. Once
+            lp_mc_email_count += 1
+            lp_so_email_count = 0
+        elif margin_attention_flag > 0:  # If there are margin issues. Want to send Alert Out
+            if lp_attention_email_count == 0:
+                if Send_Email_Flag == 1:
+                    async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
+                    LP_position_Table = List_of_Dict_To_Horizontal_HTML_Table(LP_Position_Show_Table, ['Slow', 'Margin Call', 'Alert'])
+
+                    async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
+                                     Subject = "LP Account approaching MC.",
+                                     HTML_Text="{}Hi,<br><br>LP Account margin reaching SO Levels. <br>{}<br>This Email was generated at: {} (SGT)<br><br>Thanks,<br>Aaron{}".
+                                     format(Email_Header, LP_position_Table, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),Email_Footer),
+                                     Attachment_Name=[])
+
+                Play_Sound += 1              # Play sound when Nearing MC. Once
+            lp_attention_email_count += 1
+            lp_so_email_count = 0
+            lp_mc_email_count = 0
+
+        else:       # Clear all flags.
+            lp_so_email_count = 0
+            lp_mc_email_count = 0
+            lp_attention_email_count = 0
+       # , "Alert", "Margin Call", "SO Attention"
+
+            # return "Error:lalalala"
+    return {"lp_attention_email_count": lp_attention_email_count, "Play_Sound": Play_Sound, "current_result": LP_Position_Show_Table, "lp_time_issue_count": lp_time_issue_count,
+                       "lp_so_email_count": lp_so_email_count, "lp_mc_email_count": lp_mc_email_count}
+
+
+# Helper function to do a time check.
+# Return "Update Slow<br> time" if it is more then 10 mins difference.
+def time_difference_check(time_to_check):
+    time_now = datetime.datetime.now()
+    #time_now = datetime.datetime.now()  # Get the time now.
+    if not isinstance(time_to_check, datetime.datetime):
+        return "Error: Not datetime.datetime object"
+
+    if abs((time_now - time_to_check).total_seconds()) > TIME_UPDATE_SLOW_MIN*60: # set the update to 10 mins.
+        return time_to_check.strftime("<b>Update Slow</b><br>%Y-%m-%d<br>%H:%M:%S")
+    else:
+        return time_to_check.strftime("%Y-%m-%d<br>%H:%M:%S")

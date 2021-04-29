@@ -11,6 +11,7 @@ from app.extensions import db, excel
 from app.mt5_queries.mt5_sql_queries import *
 from app.mt5_queries.mt5_helper_functions import *
 
+
 import plotly
 import plotly.graph_objs as go
 import plotly.express as px
@@ -326,12 +327,15 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     current_result4 = Query_SQL_db_engine("call aaron.HK_CopyTrade_SQ_bySymbol()")
     return_result4 = pd.DataFrame(data=current_result4).to_dict("record") if  len(current_result4) != 0 else [{"Run Results": "No Open Trades"}]
 
-    current_result5 = Query_SQL_db_engine("call aaron.HK_CopyTrade_LP_Details()")
-    return_result5 = pd.DataFrame(data=current_result5).to_dict("record") if  len(current_result5) != 0 else [{"Run Results": "No Open Trades"}]
+    # current_result5 = Query_SQL_db_engine("call aaron.HK_CopyTrade_LP_Details()")
+    # return_result5 = pd.DataFrame(data=current_result5).to_dict("record") if  len(current_result5) != 0 else [{"Run Results": "No Open Trades"}]
 
     current_result6 = Query_SQL_db_engine("call aaron.HK_CopyTrade_Price_Comparison()")
     return_result6 = pd.DataFrame(data=current_result6).to_dict("record") if  len(current_result6) != 0 else [{"Run Results": "No Open Trades"}]
 
+    lp_details = ABook_LP_Details_function(exclude_list=["CFH", "GlobalPrime"])
+    print(lp_details)
+    return_result5 = lp_details["current_result"]
 
     # if len(current_result) == 0:
     #     return_result = [{"Run Results": "No Open Trades"}]
