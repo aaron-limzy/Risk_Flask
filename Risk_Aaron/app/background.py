@@ -62,3 +62,29 @@ def background_pic(website):
 
 
     return return_val
+
+
+def icon_pic(website):
+
+
+    default = "css/Mac_Coffee.jpg"
+    gb_return = {"ABook_BGI" :                           "css/icon/MickeyMouseIcon.png"
+        }
+
+    #background_pic("Monitor_Account_Trades")
+
+    # Christmas series
+    # "css/Christmas_vector_1.jpg"
+    # "css/Christmas_vector_13.jpg"
+    # "css/Christmas_vector_1.jpg"
+
+    # Background for CNY
+    # "ABook_Matching": "css/cny4.jpg",
+    #"Client_trades_Analysis": "css/cny10.jpg",
+    # "symbol_float_trades": "css/cny9.jpg",
+    # "BGI_Symbol_Float": "css/cny5.png",
+    # "symbol_closed_trades": "css/cny9.jpg",
+    return_val = gb_return[website] if website in gb_return else default
+
+
+    return return_val
