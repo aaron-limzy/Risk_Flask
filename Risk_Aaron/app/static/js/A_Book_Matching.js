@@ -97,7 +97,8 @@ $(document).ready(function(){
         //Custom_Ajax_Call(Post_Data,"/ABook_Match_Trades_Position", "MT4_LP_Position", "MT4_LP_Position_Raw", "MT4_LP_Position_Error", "MT4/LP Position",0);
 
         $.ajax({
-          url: "/ABook_Match_Trades_Position",
+          //url: "/ABook_Match_Trades_Position",
+          url: "/ABook_Match_Trades_Position2",
           data: Post_Data,
           type: 'POST',
           dataType: "JSON",

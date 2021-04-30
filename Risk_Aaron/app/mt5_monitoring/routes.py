@@ -334,7 +334,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     return_result6 = pd.DataFrame(data=current_result6).to_dict("record") if  len(current_result6) != 0 else [{"Run Results": "No Open Trades"}]
 
     lp_details = ABook_LP_Details_function(exclude_list=["CFH", "GlobalPrime"])
-    print(lp_details)
+    #print(lp_details)
     return_result5 = lp_details["current_result"]
 
     # if len(current_result) == 0:

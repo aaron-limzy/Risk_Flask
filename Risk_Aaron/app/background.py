@@ -41,7 +41,8 @@ def background_pic(website):
                  "noopentrades_changegroup":            "css/Faded_car.jpg",
 
                   "Futures_LP_Details":                 "css/giftly.png",
-                  "HK_Copy_STP":                        "css/leaves-pattern.png"
+                  "HK_Copy_STP":                        "css/leaves-pattern.png",
+                 "ABook_BGI" :                           "css/sativa.png"
         }
 
     #background_pic("Monitor_Account_Trades")

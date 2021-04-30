@@ -335,3 +335,8 @@ def mt5_futures_LP_details_query():
         SELECT  'e91220008' as ACCOUNT, CURRENCY, BALANCE, EQUITY,  ACCTINITIALMARGIN, ACCTMAINTENANCEMARGIN, FROZENFEE, DATETIME  
         FROM e91220008.`esunny_account`"""
     return sql_query
+
+# Using Procedure on MYSQL to save the code.
+def mt5_ABook_query():
+    sql_query = r"""call aaron.mt5_ABook_1()"""
+    return sql_query

@@ -73,6 +73,13 @@ def mt5_futures_LP_data():
     #print(result)
     return result
 
+# Want to getMT5 A Book Data
+def mt5_ABook_data():
+    sql_query = mt5_ABook_query()
+    result = Query_SQL_mt5_db_engine(sql_query)
+
+    return result
+
 # This function will return combined data of symbol float as well as yesterday's PnL for MT5
 def mt5_symbol_float_data():
     Testing = False
