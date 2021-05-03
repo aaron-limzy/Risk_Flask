@@ -338,5 +338,5 @@ def mt5_futures_LP_details_query():
 
 # Using Procedure on MYSQL to save the code.
 def mt5_ABook_query():
-    sql_query = r"""call aaron.mt5_ABook_1()"""
+    sql_query = r"""call aaron.mt5_ABook_2()"""
     return sql_query

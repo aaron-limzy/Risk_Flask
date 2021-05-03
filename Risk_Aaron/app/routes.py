@@ -632,7 +632,8 @@ def Risk_Download_Page():    # To upload the Files, or post which trades to dele
 @main_app.route('/ABook_Match_Trades')
 @roles_required(["Risk", "Admin", "Dealing", "Risk_TW"])
 def ABook_Matching():
-    return render_template("A_Book_Matching.html", header="A Book Matching", title="LP/MT4 Position", \
+    return render_template("A_Book_Matching.html", header="A Book Matching", title="BGI/LP Position", \
+                           icon=icon_pic("ABook_Matching"),
                            backgroud_Filename=background_pic("ABook_Matching"))
 
 
@@ -1388,7 +1389,6 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
     return json.dumps(return_result)
 
 
-
 @main_app.route('/ABook_Match_Trades_Position2', methods=['GET', 'POST'])
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
 def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
@@ -1414,12 +1414,15 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     # ------------------ MT5 Calculations. Need to redo this to make it more elegant --------
     # Need to rename some Columns.
     df_mt5_postion = pd.DataFrame(data=mt5_result)
-    df_mt5_postion = df_mt5_postion.rename(columns={"baseSymbol": "SYMBOL", "Profit_usd" : "MT5 REVENUE", "Net_Volume":"MT5 Net Lots"})
-    df_mt5_postion = df_mt5_postion[["SYMBOL", "MT5 Net Lots", "MT5 REVENUE"]]
+    df_mt5_postion = df_mt5_postion.rename(columns={"BaseSymbol": "SYMBOL", "Profit" : "MT5_REVENUE", "Net_Vol":"MT5 Net Lots", "Storage": "MT5_Swaps"})
+    df_mt5_postion = df_mt5_postion[["SYMBOL", "MT5 Net Lots", "MT5_REVENUE", "MT5_Swaps"]]
     df_postion = df_mt4_postion.merge(df_mt5_postion, on="SYMBOL")
 
     # Need to recalculate the Discrepancy as we need to add in MT5 Codes as well.
-    df_postion["Discrepancy"] = df_postion["Lp_Net_lot"] - (df_postion["MT4_Net_lot"] + df_postion["MT5 Net Lots"])
+    df_postion["Discrepancy"] = df_postion["Lp_Net_lot"] - (df_postion["MT4_Net_Lots"] + df_postion["MT5 Net Lots"])
+    df_postion["Total_Revenue"] = df_postion["MT4_Revenue"] + df_postion["MT5_REVENUE"] + df_postion["MT5_Swaps"]
+
+    #print(df_postion)
 
 
     # Variables to return.
@@ -1666,13 +1669,15 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     df_postion["SYMBOL"] = df_postion.apply(lambda x: Symbol_Trades_url(symbol=x["SYMBOL"], book="a"), axis = 1)
 
 
-    col_needed = ["SYMBOL", "Vantage_lot", "CFH_lot", "GP_lot", "API_lot", "Offset_lot", "Lp_Net_lot", "MT4_Net_lot", "MT5 Net Lots", "MT4_Revenue", "Discrepancy", "Mismatch_count"]
+    col_needed = ["SYMBOL", "Vantage_lot", "CFH_lot", "GP_lot", "API_lot", "Offset_lot", "Lp_Net_lot", "MT4_Net_Lots", "MT5 Net Lots", "Total_Revenue", "Discrepancy", "Mismatch_count"]
 
-    # If there is no lots in CFH at all, we don't need to show the column
-    if "CFH_lot" in df_postion and df_postion["CFH_lot"].abs().sum() == 0 :
-        #print(df_postion["CFH_lot"].abs().sum())
-        col_needed.remove("CFH_lot")
-        #df_postion["CFH_lot"] = 1
+    # If there is no lots in these columns at all, we don't need to show the column
+    col_not_needed_if_empty = ["CFH_lot", "GP_lot"]
+    for c in col_not_needed_if_empty:
+        if c in df_postion and df_postion[c].abs().sum() == 0 :
+            if c in col_needed:
+                col_needed.remove(c)
+
 
     col_to_use = [c for c in col_needed if c in df_postion]     # Just in case the column is not in the df.
 
@@ -1680,8 +1685,8 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     df_postion = df_postion[col_to_use]
 
     # Want to color the Revenue column
-    if "MT4_Revenue" in df_postion:
-        df_postion["MT4_Revenue"] = df_postion["MT4_Revenue"].apply(profit_red_green)
+    if "Total_Revenue" in df_postion:
+        df_postion["Total_Revenue"] = df_postion["Total_Revenue"].apply(profit_red_green)
 
 
     curent_result = df_postion.to_dict("record")
@@ -1697,8 +1702,8 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 
 @main_app.route('/ABook_LP_Details', methods=['GET', 'POST'])
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
-def ABook_LP_Details(update_tool_time=0, exclude_list=["demo"]):
-    return json.dumps(ABook_LP_Details_function(update_tool_time=0, exclude_list=["demo"]))
+def ABook_LP_Details(update_tool_time=0, exclude_list=["demo", "CFH", "GlobalPrime"]):
+    return json.dumps(ABook_LP_Details_function(update_tool_time=0, exclude_list=exclude_list))
     #
     #                         # LP Details. Balance, Credit, Margin, MC/SO levels. Will alert if email is set to send.
     #                         # Checks Margin against MC/SO values, with some buffer as alert.

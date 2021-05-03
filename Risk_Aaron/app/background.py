@@ -67,9 +67,12 @@ def background_pic(website):
 def icon_pic(website):
 
 
-    default = "css/Mac_Coffee.jpg"
-    gb_return = {"ABook_BGI" :                           "css/icon/MickeyMouseIcon.png"
-        }
+    default = "css/icon/thinking.png"
+    gb_return = {"ABook_BGI" :                           "css/icon/MickeyMouseIcon.png",
+                 "ABook_Matching":                                   "css/icon/bank.png",
+                 "Risk_auto_cut":                               "css/icon/cut.png",
+
+                 }
 
     #background_pic("Monitor_Account_Trades")
 

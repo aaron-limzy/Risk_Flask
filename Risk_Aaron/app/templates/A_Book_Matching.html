@@ -24,7 +24,7 @@
 {% block scripts %}
 {{ super() }}
 <script src="{{ url_for('static', filename='js/sweetalert2.all.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/A_Book_Matching.js') }}?v=1.2.61"></script>
+<script src="{{ url_for('static', filename='js/A_Book_Matching.js') }}?v=1.2.65"></script>
 {% endblock %}
 
 
@@ -46,7 +46,7 @@
 
 <div class="row">
   <div class="col-lg-12 col-md-12 col-sm-12" id="MT4_LP_Position">
-    MT4/LP Position.
+    BGI/LP Position.
   </div>
   <div class="col-lg-12 col-md-12 col-sm-12">
       Discrepancy: If Positive (+ve), LP has more volume. If Negative (-ve), LP has lesser volume.
@@ -64,7 +64,7 @@
 
 <p>
   <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#MT4_LP_Position_Raw_div" aria-expanded="false">
-    Show MT4/LP JSON
+    Show BGI/LP JSON
   </button>
 
   <button class="btn btn-secondary" type="button" data-toggle="collapse" data-target="#LP_Details_Raw_div" aria-expanded="false">
@@ -84,11 +84,11 @@
 
 <div class="collapse" id="MT4_LP_Position_Raw_div">
   <div class="card card-body">
-    <b>MT4/LP Position Raw JSON:</b> <br>
+    <b>BGI/LP Position Raw JSON:</b> <br>
     <span id="MT4_LP_Position_Raw"></span>
   </div>
   <div class="card card-body">
-    <b>MT4/LP Position Ajax Error:</b> <br>
+    <b>BGI/LP Position Ajax Error:</b> <br>
     <span id="MT4_LP_Position_Error"></span>
   </div>
 </div>

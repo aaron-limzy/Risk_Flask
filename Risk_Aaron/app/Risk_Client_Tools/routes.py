@@ -105,7 +105,7 @@ def Risk_auto_cut():
         # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("Risk_auto_cut"), Table_name="Risk Auto Cut", \
                            title=title, ajax_url=url_for('Risk_Client_Tools_bp.risk_auto_cut_ajax', _external=True), no_backgroud_Cover=True, \
-                           header=header, setinterval=10, \
+                           header=header, setinterval=10, icon=icon_pic("Risk_auto_cut"),
                            description=description, replace_words=Markup(["Today"]),
                             varibles = {"Client Include": client_include_tab,
                                         "Client Group Include": client_group_include_tab,

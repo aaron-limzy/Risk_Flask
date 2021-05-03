@@ -94,7 +94,7 @@ $(document).ready(function(){
 
         //console.log(JSON.stringify(Post_Data));
 
-        //Custom_Ajax_Call(Post_Data,"/ABook_Match_Trades_Position", "MT4_LP_Position", "MT4_LP_Position_Raw", "MT4_LP_Position_Error", "MT4/LP Position",0);
+        //Custom_Ajax_Call(Post_Data,"/ABook_Match_Trades_Position", "MT4_LP_Position", "MT4_LP_Position_Raw", "MT4_LP_Position_Error", "BGI/LP Position",0);
 
         $.ajax({
           //url: "/ABook_Match_Trades_Position",
@@ -105,11 +105,11 @@ $(document).ready(function(){
           timeout: 45 * 1000,
           success: function(data) {
             // Write to the table.
-            //                $('#MT4_LP_Position' ).html(Draw_Table(Table_Zero_Out(data),"MT4/LP Position", "table table-hover table-sm table-responsive-sm basic_table",[]) + '<span class="right-text small-text">' + return_Time_String() + "</span>");
+            //                $('#MT4_LP_Position' ).html(Draw_Table(Table_Zero_Out(data),"BGI/LP Position", "table table-hover table-sm table-responsive-sm basic_table",[]) + '<span class="right-text small-text">' + return_Time_String() + "</span>");
             //                MT4_LP_Position_save = data;
             if ("current_result" in data) {
               // Write to the table.
-              $('#MT4_LP_Position').html(Draw_Table(Table_Zero_Out(data["current_result"]), "MT4/LP Position", "table table-hover table-sm table-responsive-sm basic_table", []) + '<span class="right-text small-text">' + return_Time_String() + "</span>");
+              $('#MT4_LP_Position').html(Draw_Table(Table_Zero_Out(data["current_result"]), "BGI/LP Position", "table table-hover table-sm table-responsive-sm basic_table", []) + '<span class="right-text small-text">' + return_Time_String() + "</span>");
               MT4_LP_Position_save = data["current_result"];
             }
             if (("Play_Sound" in data) && (data["Play_Sound"] > 0)) { // Play sound when there's a mismatch.
@@ -399,7 +399,7 @@ $(document).ready(function(){
           //console.log(all_keys[x].toLowerCase());
           //console.log(all_keys[x].toLowerCase().includes('symbol'));
           if ((all_keys[x].toLowerCase().includes('symbol') == false) &&
-            (all_keys[x].toLowerCase().includes('mt4_revenue') == false)) {
+            (all_keys[x].toLowerCase().includes('total_revenue') == false)) {
             keys_to_check.push(all_keys[x]);
           }
         }

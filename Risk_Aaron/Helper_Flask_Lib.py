@@ -1206,7 +1206,10 @@ def ABook_LP_Details_function(update_tool_time=0, exclude_list=["demo"]):
         loop_buffer["BALANCE"] = dict()
         loop_buffer["BALANCE"]["DEPOSIT"] = "$ {:,.2f}".format(float(lp["deposit"])) if "deposit" in lp else None
         loop_buffer["BALANCE"]["CREDIT"] = "$ {:,.2f}".format(float(lp["credit"])) if "credit" in lp else None
-        loop_buffer["BALANCE"]["PNL"] = "$ {:,.2f}".format(float(lp["pnl"])) if "pnl" in lp else None
+
+
+
+        loop_buffer["BALANCE"]["PNL"] = "$ {}".format(profit_red_green(float(lp["pnl"]))) if "pnl" in lp else None
         loop_buffer["BALANCE"]["EQUITY"] = "$ {:,.2f}".format(float(lp["equity"])) if "equity" in lp else None
 
         loop_buffer["MARGIN"] = dict()
