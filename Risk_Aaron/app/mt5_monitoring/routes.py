@@ -336,7 +336,7 @@ def HK_Copy_STP():
                            ajax_url=url_for('mt5_monitoring.HK_Copy_STP_ajax', _external=True),
                            header=header,
                            description=description, no_backgroud_Cover=True,
-                           replace_words=Markup(["Today"])) #setinterval=60,
+                           replace_words=Markup(["mismatch"])) #setinterval=60,
 
 
 
@@ -375,7 +375,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     #     return_result = df.to_dict("record")
     #     return_result_2 = df[["Login", "BaseSymbol", "Lots", "NetLots", "Swaps", "Profit"]].to_dict("record")
 
-    print("Current Results: {}".format(return_result))
+    #print("Current Results: {}".format(return_result))
     return json.dumps({"H1" : return_result,
                        "Hss1" : return_result2,
                        "Hss2" : return_result3,
