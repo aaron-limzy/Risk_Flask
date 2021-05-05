@@ -325,7 +325,7 @@ def HK_Copy_STP():
         <li>SwissQuote -> aaron.live_trade_714009_swissquote_live </li>
         </ul>""")
 
-    return render_template("Wbwrk_Multitable_Borderless_test.html", backgroud_Filename=background_pic("HK_Copy_STP"), icon=icon_pic("ABook_BGI"),
+    return render_template("Wbwrk_Multitable_Borderless_redalert.html", backgroud_Filename=background_pic("HK_Copy_STP"), icon=icon_pic("ABook_BGI"),
                            Table_name={"BGI Position": "H1",
                                        "Vantage ": "Hss1",
                                        "BIC ": "Hss2",
