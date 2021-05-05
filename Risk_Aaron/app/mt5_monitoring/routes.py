@@ -294,16 +294,15 @@ def HK_Copy_STP():
     header = Markup("<b><u>HK A Book</u></b>")
     title =  "HK A Book"
 
-    description = Markup("""<b>DESCRIPTION</b><br><br>The <span style="color:green">BGI client position table </span>  reflects the floating position of the main account being STP<br>
-        -<span style="color:blue">STP Lots = Net Lots * STP% </span> <br>
-        -The <span style="color:blue">"Net Lots Difference"</span> column is used to checked if the STP lot has been hit out to lp at the correct STP%. 
-        Value 0 shows that LP lots matches with the % of Lots being STP<br>
+    description = Markup("""<b>DESCRIPTION</b><br><br>The <span style="color:green">BGI position table </span>  reflects the floating position of the main account being STP <b>by symbol</b><br>
         -The lots being STP will be rounded up to the nearest <span style="color:red">2 decimal places</span>. For example,<br>
         <span style="color:red"><u>25% of 1.5 lots  =0.375 lot, the trade will be hit out as 0.38 lots</u></span>.<br>
-        Therefore, small differences in <span style="color:blue">"Net Lots Difference"</span> column could be due to rounding issue.
+        -<span style="color:blue">Net Lots * STP% </span> <br> is calculate on each individual trades hit out to LPs as each trades will be rounded off to the nearest 2 decimal places.
         <br><br>
-        <span style="color:green">The Vantage, BIC, and SwissQuote tables</span> shows our floating positions in our LP <br>
+        <span style="color:green">The Vantage, BIC, and SwissQuote tables</span> shows our floating positions in our LP <b>by symbol</b><br>
         -<span style="color:blue">Lot%</span>: shows the percentage of LP's lot as compared to the main account's lot being copied
+        <br><br>
+        <span style="color:green">LP Details table</span> will show our current funding in our LPs.<br>
         <br><br>
         <span style="color:green">Trades table</span> will show individual floating trades made by the account being STP as well as its price comparison against trades made in LPs.<br>
         <br>
@@ -311,16 +310,19 @@ def HK_Copy_STP():
         <br>
         The account being STP,STP % and Vantage trade copier's login can be set in sql table [aaron.aaron_misc_data] <br>
         <ul>
-        <li>item = HK_Copy_Trade_Main_Login </li>
+        <li>item=HK_Copy_Trade_Main_Login </li>
         <li>item = HK_Copy_Trade_Vantage_Login</li>
         <li>item = HK_Copy_Trade_Percentage</li>
+        <li>item = HK_Copy_Trade_Percentage_Vantage</li>
+        <li>item = HK_Copy_Trade_Percentage_BIC</li>
+        <li>item = HK_Copy_Trade_Percentage_SQ</li>
         </ul>
         <br>
         The trades information can be take from 
         <ul>
         <li>Vantage -> MT4 live 1 </li>
-        <li>BIC -> live_trade_22094_b.i.c.markets_demo </li>
-        <li>SwissQuote -> live_trade_1218743143_swissquote_demo1 </li>
+        <li>BIC -> aaron.live_trade_88803164_b.i.c.markets_live </li>
+        <li>SwissQuote -> aaron.live_trade_714009_swissquote_live </li>
         </ul>""")
 
     return render_template("Wbwrk_Multitable_Borderless_test.html", backgroud_Filename=background_pic("HK_Copy_STP"), icon=icon_pic("ABook_BGI"),

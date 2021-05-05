@@ -1,0 +1,26 @@
+SELECT BASE.BaseSymbol,mt5_uk_a.Net_Vol,mt5_uk_a.`Storage`,mt5_uk_a.Profit FROM
+(SELECT DISTINCT BaseSymbol FROM yudi.basesymbol WHERE SymbolPath LIKE 'CFD%') AS BASE
+LEFT JOIN
+
+(SELECT BaseSymbol,SUM(Net_Vol) AS Net_Vol,ROUND(SUM(`Storage`*CONV.Convert_Rate),4) AS `Storage`,ROUND(SUM(Profit*CONV.Convert_Rate),4) AS Profit FROM
+(SELECT 'live2' AS LIVE,BASESYMBOL.BaseSymbol,CONCAT(mt5_groups_update.Currency,'USD') AS Currency,COALESCE(SUM(CASE WHEN Action = 0 THEN Vol WHEN Action = 1 THEN Vol*(-1) ELSE 0 END),0) AS Net_Vol,COALESCE(SUM(`Storage`),0) AS `Storage`,COALESCE(SUM(Profit),0) AS Profit FROM
+(SELECT Login,`Group`,Symbol,Volume/10000 AS Vol,Action,`Storage`,Profit FROM mt5_uk.mt5_positions WHERE `Group` LIKE 'real%') AS mt5_open
+LEFT JOIN (SELECT Symbol,BaseSymbol FROM yudi.basesymbol) AS BASESYMBOL ON mt5_open.Symbol = BASESYMBOL.Symbol
+LEFT JOIN  mt5_uk.mt5_groups_update ON mt5_open.`Group` = mt5_groups_update.`Group` WHERE mt5_groups_update.Group_Name LIKE '1%'
+GROUP BY mt5_groups_update.Currency,BASESYMBOL.BaseSymbol 
+UNION
+SELECT 'live1' AS LIVE,BASESYMBOL.BaseSymbol,CONCAT(mt5_groups.Currency,'USD') AS Currency,COALESCE(SUM(CASE WHEN Action = 0 THEN Vol WHEN Action = 1 THEN Vol*(-1) ELSE 0 END),0) AS Net_Vol,COALESCE(SUM(`Storage`),0) AS `Storage`,COALESCE(SUM(Profit),0) AS Profit FROM
+(SELECT Login,mt5_positions.`Group`,Symbol,Volume/10000 AS Vol,Action,`Storage`,Profit FROM mt5.mt5_positions LEFT JOIN mt5.mt5_groups_update ON mt5_positions.`Group` = mt5_groups_update.`Group` 
+WHERE mt5_positions.`Group` LIKE 'real%' AND mt5_positions.`Group` NOT LIKE '%future%' AND mt5_groups_update.Group_Name LIKE '1%') AS mt5_open
+LEFT JOIN (SELECT Symbol,BaseSymbol FROM yudi.basesymbol) AS BASESYMBOL ON mt5_open.Symbol = BASESYMBOL.Symbol
+LEFT JOIN  mt5.mt5_groups ON mt5_open.`Group` = mt5_groups.`Group`
+GROUP BY mt5_groups.Currency,BASESYMBOL.BaseSymbol
+) AS a_raw
+
+LEFT JOIN
+(SELECT 'USDUSD' AS Convert_Symbol,1 AS Convert_Rate UNION
+SELECT REPLACE((CASE WHEN Symbol LIKE '___USD' THEN Symbol WHEN Symbol LIKE 'USD___' THEN CONCAT(RIGHT(Symbol,3),'USD') ELSE Symbol END),'TWF','TWD') AS Convert_Symbol,CASE WHEN Symbol LIKE '___USD' THEN (BidLast + AskLast)/2 WHEN Symbol LIKE 'USD___' THEN 2/(BidLast + AskLast) ELSE 0 END AS Convert_Rate
+FROM yudi.`daily_prices` WHERE EOD = LEFT(DATE_SUB(NOW(),INTERVAL 1 DAY),10) AND LENGTH(Symbol) = 6 AND Symbol LIKE '%USD%') AS CONV ON a_raw.Currency = CONV.Convert_Symbol
+GROUP BY a_raw.BaseSymbol) AS mt5_uk_a 
+
+ON BASE.BaseSymbol = mt5_uk_a.BaseSymbol
