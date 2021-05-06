@@ -333,7 +333,10 @@ def HK_Copy_STP():
                                        "Yuanta for MT5": "H2",
                                        "LP Details": "H3",
                                        "Lot/Price/Profit Comparison": "H4",
-                                       "Open Time Comparison": "H5"},
+                                       "Open Time Comparison": "H5",
+                                        "Lot/Profit comparison": "H6",
+                                        "Open/Close Price Comparison": "H7",
+                                        "Open/Close Time Comparison": "H8"},
                            title=title, setinterval=60,
                            ajax_url=url_for('mt5_monitoring.HK_Copy_STP_ajax', _external=True),
                            header=header,
@@ -349,6 +352,14 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     #start_time = datetime.datetime.now()
 
     mt5_hk_stp_futures_data = mt5_HK_ABook_data(unsync_app=current_app._get_current_object())
+    #aaron.HK_CopyTrade_Open_Time_Comparison_last24hour()
+    #aaron.HK_CopyTrade_Price_Comparison_last24hour()
+    #aaron.HK_CopyTrade_Profit_Comparison_last24hour()
+
+    past_opentime_compare_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison_last24hour()", app=current_app._get_current_object())
+    past_price_compare_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Price_Comparison_last24hour()", app=current_app._get_current_object())
+    past_profit_compare_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Profit_Comparison_last24hour()", app=current_app._get_current_object())
+
 
     # The code is in aaron database, saved as a procedure.
     #current_result = Query_SQL_db_engine("call aaron.HK_CopyTrade_Main()")
@@ -409,6 +420,19 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     time_compare_return_result = color_profit_for_df(time_compare, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
 
 
+    # ------- To compare past trades
+
+    past_profit_compare = past_profit_compare_unsync.result()
+    past_profit_compare_return_result = color_profit_for_df(past_profit_compare, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
+
+    past_price_compare = past_price_compare_unsync.result()
+    past_price_compare_return_result = color_profit_for_df(past_price_compare, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
+
+    past_opentime_compare = past_opentime_compare_unsync.result()
+    past_opentime_compare_return_result = color_profit_for_df(past_opentime_compare, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
+
+
+
 
     lp_details_return_result = lp_details["current_result"]
 
@@ -425,7 +449,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
                        "H2": mt5_futures_return_result,
                        "H3" : lp_details_return_result,
                        "H4" : price_compare_return_result,
-                       "H5" : time_compare_return_result})
-
-
-
+                       "H5" : time_compare_return_result,
+                       "H6" : past_profit_compare_return_result,
+                       "H7" : past_price_compare_return_result,
+                       "H8" : past_opentime_compare_return_result})
