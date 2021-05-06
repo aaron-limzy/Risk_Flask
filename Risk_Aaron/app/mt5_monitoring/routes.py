@@ -334,6 +334,7 @@ def HK_Copy_STP():
                                        "LP Details": "H3",
                                        "Lot/Price/Profit Comparison": "H4",
                                        "Open Time Comparison": "H5",
+                                       "Line": "Hr1",
                                         "Lot/Profit comparison": "H6",
                                         "Open/Close Price Comparison": "H7",
                                         "Open/Close Time Comparison": "H8"},
