@@ -346,7 +346,7 @@ def HK_Copy_STP():
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
 def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
 
-    start_time = datetime.datetime.now()
+    #start_time = datetime.datetime.now()
 
     mt5_hk_stp_futures_data = mt5_HK_ABook_data(unsync_app=current_app._get_current_object())
 
@@ -378,33 +378,43 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     # ---------  After calling all the procedure, we will now wait for the results.
     bgi_position = bgi_position_unsync.result()
-    bgi_position_return_result = pd.DataFrame(data=bgi_position).to_dict("record") if len(bgi_position) != 0 else [{"Run Results": "No Open Trades"}]
+    #bgi_position_return_result = pd.DataFrame(data=bgi_position).to_dict("record") if len(bgi_position) != 0 else [{"Run Results": "No Open Trades"}]
+    bgi_position_return_result = color_profit_for_df(bgi_position, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
 
 
     vantage_position = vantage_position_unsync.result()
-    vantage_position_return_result = pd.DataFrame(data=vantage_position).to_dict("record") if  len(vantage_position) != 0 else [{"Run Results": "No Open Trades"}]
+    #vantage_position_return_result = pd.DataFrame(data=vantage_position).to_dict("record") if  len(vantage_position) != 0 else [{"Run Results": "No Open Trades"}]
+    vantage_position_return_result = color_profit_for_df(vantage_position, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
 
     bic_position = bic_position_unsync.result()
-    bic_position_return_result = pd.DataFrame(data=bic_position).to_dict("record") if  len(bic_position) != 0 else [{"Run Results": "No Open Trades"}]
+    #bic_position_return_result = pd.DataFrame(data=bic_position).to_dict("record") if  len(bic_position) != 0 else [{"Run Results": "No Open Trades"}]
+    bic_position_return_result = color_profit_for_df(bic_position, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
 
 
     SwissQ_position = SwissQ_position_unsync.result()
-    SwissQ_position_return_result = pd.DataFrame(data=SwissQ_position).to_dict("record") if  len(SwissQ_position) != 0 else [{"Run Results": "No Open Trades"}]
+    # df_SwissQ_position_return_result = pd.DataFrame(data=SwissQ_position).to_dict("record") if  len(SwissQ_position) != 0 else pd.DataFrame(data=[{"Run Results": "No Open Trades"}])
+    # SwissQ_position_return_result = df_SwissQ_position_return_result.to_dict("record")
+    SwissQ_position_return_result = color_profit_for_df(SwissQ_position, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
+
+
 
     price_compare = price_compare_unsync.result()
-    price_compare_return_result = pd.DataFrame(data=price_compare).to_dict("record") if  len(price_compare) != 0 else [{"Run Results": "No Open Trades"}]
+    #df_price_compare_return_result = pd.DataFrame(data=price_compare) if len(price_compare) != 0 else pd.DataFrame(data=[{"Run Results": "No Open Trades"}])
+    price_compare_return_result = color_profit_for_df(price_compare, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
+
+
 
     time_compare = time_compare_unsync.result()
-    time_compare_return_result = pd.DataFrame(data=time_compare).to_dict("record") if  len(time_compare) != 0 else [{"Run Results": "No Open Trades"}]
+    #time_compare_return_result = pd.DataFrame(data=time_compare).to_dict("record") if  len(time_compare) != 0 else [{"Run Results": "No Open Trades"}]
+    time_compare_return_result = color_profit_for_df(time_compare, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
+
+
 
     lp_details_return_result = lp_details["current_result"]
 
     mt5_futures = mt5_hk_stp_futures_data.result()
-    mt5_futures_return_result = pd.DataFrame(data=mt5_futures).to_dict("record") if  len(mt5_futures) != 0 else [{"Run Results": "No Open Trades"}]
-
-    #print(df_mt5_futures)
-
-    #print("Time taken: {}".format((datetime.datetime.now() - start_time).total_seconds()))
+    #mt5_futures_return_result = pd.DataFrame(data=mt5_futures).to_dict("record") if  len(mt5_futures) != 0 else [{"Run Results": "No Open Trades"}]
+    mt5_futures_return_result = color_profit_for_df(mt5_futures, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
 
 
     #print("Current Results: {}".format(return_result))
