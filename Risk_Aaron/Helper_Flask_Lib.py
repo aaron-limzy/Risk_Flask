@@ -715,6 +715,11 @@ def unsync_query_SQL_return_record(SQL_Query, app):
     return results
 
 
+# This function to be the unsync function to call the sync SQL call.
+@unsync
+def unsync_query_SQL_return_record_fun(SQL_Query, app):
+    return unsync_query_SQL_return_record(SQL_Query, app)
+
 
 
 

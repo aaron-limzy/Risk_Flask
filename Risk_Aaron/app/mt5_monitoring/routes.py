@@ -327,11 +327,13 @@ def HK_Copy_STP():
 
     return render_template("Wbwrk_Multitable_Borderless_redalert.html", backgroud_Filename=background_pic("HK_Copy_STP"), icon=icon_pic("ABook_BGI"),
                            Table_name={"BGI Position": "H1",
+                                       "Yuanta for MT5": "H2",
                                        "Vantage ": "Hss1",
                                        "BIC ": "Hss2",
                                        "Swiss Quote": "Hss3",
-                                       "LP Details": "H2",
-                                       "Trades": "H3"},
+                                       "LP Details": "H3",
+                                       "Lot/Price/Profit Comparison": "H4",
+                                       "Open Time Comparison": "H5"},
                            title=title, setinterval=60,
                            ajax_url=url_for('mt5_monitoring.HK_Copy_STP_ajax', _external=True),
                            header=header,
@@ -344,44 +346,74 @@ def HK_Copy_STP():
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
 def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
 
+    start_time = datetime.datetime.now()
     # The code is in aaron database, saved as a procedure.
-    current_result = Query_SQL_db_engine("call aaron.HK_CopyTrade_Main()")
-    return_result = pd.DataFrame(data=current_result).to_dict("record") if len(current_result) != 0 else [{"Run Results": "No Open Trades"}]
-    #return_result_2 = pd.DataFrame(data=current_result)[["Login", "BaseSymbol", "Lots", "NetLots", "Swaps", "Profit"]].to_dict("record") if len(current_result) != 0 else return_result = [{"Run Results": "No Open Trades"}]
+    #current_result = Query_SQL_db_engine("call aaron.HK_CopyTrade_Main()")
+    bgi_position_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Main()", app=current_app._get_current_object())
 
-    current_result2 = Query_SQL_db_engine("call aaron.HK_CopyTrade_Vantage_bySymbol()")
-    return_result2 = pd.DataFrame(data=current_result2).to_dict("record") if  len(current_result2) != 0 else [{"Run Results": "No Open Trades"}]
+    #Query_SQL_db_engine("call aaron.HK_CopyTrade_Vantage_bySymbol()")
+    vantage_position_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Vantage_bySymbol()", app=current_app._get_current_object())
 
-    current_result3 = Query_SQL_db_engine("call aaron.HK_CopyTrade_BIC_bySymbol()")
-    return_result3 = pd.DataFrame(data=current_result3).to_dict("record") if  len(current_result3) != 0 else [{"Run Results": "No Open Trades"}]
+    #Query_SQL_db_engine("call aaron.HK_CopyTrade_BIC_bySymbol()")
+    bic_position_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call  aaron.HK_CopyTrade_BIC_bySymbol()", app=current_app._get_current_object())
 
-    current_result4 = Query_SQL_db_engine("call aaron.HK_CopyTrade_SQ_bySymbol()")
-    return_result4 = pd.DataFrame(data=current_result4).to_dict("record") if  len(current_result4) != 0 else [{"Run Results": "No Open Trades"}]
+    # current_result4 = Query_SQL_db_engine("call aaron.HK_CopyTrade_SQ_bySymbol()")
+    SwissQ_position_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call  aaron.HK_CopyTrade_SQ_bySymbol()", app=current_app._get_current_object())
 
-    # current_result5 = Query_SQL_db_engine("call aaron.HK_CopyTrade_LP_Details()")
-    # return_result5 = pd.DataFrame(data=current_result5).to_dict("record") if  len(current_result5) != 0 else [{"Run Results": "No Open Trades"}]
+    #current_result6 = Query_SQL_db_engine("call aaron.HK_CopyTrade_Price_Comparison()")
+    price_compare_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call  aaron.HK_CopyTrade_Price_Comparison()", app=current_app._get_current_object())
 
-    current_result6 = Query_SQL_db_engine("call aaron.HK_CopyTrade_Price_Comparison()")
-    return_result6 = pd.DataFrame(data=current_result6).to_dict("record") if  len(current_result6) != 0 else [{"Run Results": "No Open Trades"}]
 
+    #current_result7 = Query_SQL_db_engine("call aaron.HK_CopyTrade_Open_Time_Comparison()")
+    time_compare_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call  aaron.HK_CopyTrade_Open_Time_Comparison()", app=current_app._get_current_object())
+
+
+    mt5_hk_stp_futures_data = mt5_HK_ABook_data(unsync_app=current_app._get_current_object())
+
+    # While waiting, we will call somthing that isn't unsync
     lp_details = ABook_LP_Details_function(exclude_list=["CFH", "GlobalPrime"])
-    #print(lp_details)
-    return_result5 = lp_details["current_result"]
 
-    # if len(current_result) == 0:
-    #     return_result = [{"Run Results": "No Open Trades"}]
-    # else:
-    #     df = pd.DataFrame(data=current_result)
-    #     return_result = df.to_dict("record")
-    #     return_result_2 = df[["Login", "BaseSymbol", "Lots", "NetLots", "Swaps", "Profit"]].to_dict("record")
+
+    # ---------  After calling all the procedure, we will now wait for the results.
+    bgi_position = bgi_position_unsync.result()
+    bgi_position_return_result = pd.DataFrame(data=bgi_position).to_dict("record") if len(bgi_position) != 0 else [{"Run Results": "No Open Trades"}]
+
+
+    vantage_position = vantage_position_unsync.result()
+    vantage_position_return_result = pd.DataFrame(data=vantage_position).to_dict("record") if  len(vantage_position) != 0 else [{"Run Results": "No Open Trades"}]
+
+    bic_position = bic_position_unsync.result()
+    bic_position_return_result = pd.DataFrame(data=bic_position).to_dict("record") if  len(bic_position) != 0 else [{"Run Results": "No Open Trades"}]
+
+
+    SwissQ_position = SwissQ_position_unsync.result()
+    SwissQ_position_return_result = pd.DataFrame(data=SwissQ_position).to_dict("record") if  len(SwissQ_position) != 0 else [{"Run Results": "No Open Trades"}]
+
+    price_compare = price_compare_unsync.result()
+    price_compare_return_result = pd.DataFrame(data=price_compare).to_dict("record") if  len(price_compare) != 0 else [{"Run Results": "No Open Trades"}]
+
+    time_compare = time_compare_unsync.result()
+    time_compare_return_result = pd.DataFrame(data=time_compare).to_dict("record") if  len(time_compare) != 0 else [{"Run Results": "No Open Trades"}]
+
+    lp_details_return_result = lp_details["current_result"]
+
+    mt5_futures = mt5_hk_stp_futures_data.result()
+    mt5_futures_return_result = pd.DataFrame(data=mt5_futures).to_dict("record") if  len(mt5_futures) != 0 else [{"Run Results": "No Open Trades"}]
+
+    #print(df_mt5_futures)
+
+    print("Time taken: {}".format((datetime.datetime.now() - start_time).total_seconds()))
+
 
     #print("Current Results: {}".format(return_result))
-    return json.dumps({"H1" : return_result,
-                       "Hss1" : return_result2,
-                       "Hss2" : return_result3,
-                       "Hss3" : return_result4,
-                       "H2" : return_result5,
-                       "H3" : return_result6})
+    return json.dumps({"H1" : bgi_position_return_result,
+                       "H2" : mt5_futures_return_result,
+                       "Hss1" : vantage_position_return_result,
+                       "Hss2" : bic_position_return_result,
+                       "Hss3" : SwissQ_position_return_result,
+                       "H3" : lp_details_return_result,
+                       "H4" : price_compare_return_result,
+                       "H5" : time_compare_return_result})
 
 
 

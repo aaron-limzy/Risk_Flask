@@ -31,6 +31,23 @@ def Query_SQL_mt5_db_engine(sql_query):
     return zip_results
 
 
+# Input: sql_query.
+# Return a Dict, using Zip for the results and the col names.
+def unsync_Query_SQL_mt5_db_engine(app_unsync, sql_query):
+
+    results = [{}]
+    with app_unsync.app_context():  # Need to use original app as this is in the thread
+
+        raw_result = db.session.execute(text(sql_query), bind=db.get_engine(app_unsync, 'mt5_live1'))
+        result_data = raw_result.fetchall()
+        result_data_decimal = [[float(a) if isinstance(a, decimal.Decimal) else a for a in d] for d in
+                               result_data]  # correct The decimal.Decimal class to float.
+        result_col = raw_result.keys()
+        results = [dict(zip(result_col, d)) for d in result_data_decimal]
+    return results
+
+
+
 
 def SQL_insert_MT5(header="", values = [" "], footer = "", sql_max_insert=500):
 
@@ -77,7 +94,17 @@ def mt5_futures_LP_data():
 def mt5_ABook_data():
     sql_query = mt5_ABook_query()
     result = Query_SQL_mt5_db_engine(sql_query)
+    return result
 
+
+
+# Want to get the MT5 PnL By Symbol from Yudi's Database.
+
+@unsync
+def mt5_HK_ABook_data(unsync_app):
+    sql_query = mt5_HK_ABook_query()
+    result = unsync_Query_SQL_mt5_db_engine(unsync_app,sql_query)
+    #print(result)
     return result
 
 # This function will return combined data of symbol float as well as yesterday's PnL for MT5
