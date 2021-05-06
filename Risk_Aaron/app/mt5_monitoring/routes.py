@@ -347,6 +347,9 @@ def HK_Copy_STP():
 def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
 
     start_time = datetime.datetime.now()
+
+    mt5_hk_stp_futures_data = mt5_HK_ABook_data(unsync_app=current_app._get_current_object())
+
     # The code is in aaron database, saved as a procedure.
     #current_result = Query_SQL_db_engine("call aaron.HK_CopyTrade_Main()")
     bgi_position_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Main()", app=current_app._get_current_object())
@@ -368,7 +371,6 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     time_compare_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call  aaron.HK_CopyTrade_Open_Time_Comparison()", app=current_app._get_current_object())
 
 
-    mt5_hk_stp_futures_data = mt5_HK_ABook_data(unsync_app=current_app._get_current_object())
 
     # While waiting, we will call somthing that isn't unsync
     lp_details = ABook_LP_Details_function(exclude_list=["CFH", "GlobalPrime"])
@@ -402,7 +404,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     #print(df_mt5_futures)
 
-    print("Time taken: {}".format((datetime.datetime.now() - start_time).total_seconds()))
+    #print("Time taken: {}".format((datetime.datetime.now() - start_time).total_seconds()))
 
 
     #print("Current Results: {}".format(return_result))
