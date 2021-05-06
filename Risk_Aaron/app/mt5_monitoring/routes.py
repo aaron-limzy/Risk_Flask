@@ -337,7 +337,7 @@ def HK_Copy_STP():
                                         "Lot/Profit comparison": "H6",
                                         "Open/Close Price Comparison": "H7",
                                         "Open/Close Time Comparison": "H8"},
-                           title=title, setinterval=60,
+                           title=title, setinterval=30,
                            ajax_url=url_for('mt5_monitoring.HK_Copy_STP_ajax', _external=True),
                            header=header,
                            description=description, no_backgroud_Cover=True,
