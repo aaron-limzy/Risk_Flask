@@ -327,10 +327,10 @@ def HK_Copy_STP():
 
     return render_template("Wbwrk_Multitable_Borderless_redalert.html", backgroud_Filename=background_pic("HK_Copy_STP"), icon=icon_pic("ABook_BGI"),
                            Table_name={"BGI Position": "H1",
-                                       "Yuanta for MT5": "H2",
                                        "Vantage ": "Hss1",
                                        "BIC ": "Hss2",
                                        "Swiss Quote": "Hss3",
+                                       "Yuanta for MT5": "H2",
                                        "LP Details": "H3",
                                        "Lot/Price/Profit Comparison": "H4",
                                        "Open Time Comparison": "H5"},
@@ -409,10 +409,10 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     #print("Current Results: {}".format(return_result))
     return json.dumps({"H1" : bgi_position_return_result,
-                       "H2" : mt5_futures_return_result,
                        "Hss1" : vantage_position_return_result,
                        "Hss2" : bic_position_return_result,
                        "Hss3" : SwissQ_position_return_result,
+                       "H2": mt5_futures_return_result,
                        "H3" : lp_details_return_result,
                        "H4" : price_compare_return_result,
                        "H5" : time_compare_return_result})
