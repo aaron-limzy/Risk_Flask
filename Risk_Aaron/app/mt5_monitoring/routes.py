@@ -139,7 +139,7 @@ def Futures_LP_Details():
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("Futures_LP_Details"),
-                           icon="css/save_Filled.png", Table_name="Futures LP Details", title=title,
+                           icon=icon_pic("Futures_LP_Details") ,Table_name="Futures LP Details", title=title,
                            ajax_url=url_for('mt5_monitoring.Futures_LP_Details_Ajax', _external=True), header=header,
                            setinterval=15, no_backgroud_Cover=True,
                            description=description, replace_words=Markup(["Today"]))
@@ -148,44 +148,20 @@ def Futures_LP_Details():
 
 
 
-# Insert into aaron.BGI_Float_History_Save
-# Will select, pull it out into Python, before inserting it into the table.
-# Tried doing Insert.. Select. But there was desdlock situation..
 @mt5_monitoring.route('/mt5_futures_LP_data_Ajax', methods=['GET', 'POST'])
 @roles_required()
 def Futures_LP_Details_Ajax(update_tool_time=1):
 
     data = mt5_futures_LP_data()
-    df = pd.DataFrame(data)
-    #print(df)
-    if 'DATETIME' in df:
-        df['DATETIME'] =  df['DATETIME'].apply(lambda x : "{}".format(x))
 
-    df["PnL"] = df['EQUITY'] -  df['BALANCE']
+    # Use MT5 Helper function to make the DF presentable. Looks nicer in the HTML
+    df = pretty_print_mt5_futures_LP_details(pd.DataFrame(data))
 
-    cols = ['EQUITY', 'CANDRAW', "ACCTINITIALMARGIN", "BALANCE", "ACCTMAINTENANCEMARGIN", "FROZENFEE", "MARKETEQUITY", "PnL"]
-    for c in cols:
-        if c in df:
-            df[c] = df[c].apply(lambda x: "{:,.2f}".format(x))
-
-
-    # To save some space.
-    # Will display as a table inside a table on the page.
-    df["BALANCES"] = df.apply(lambda x: {"BALANCE" : x['BALANCE'], 'EQUITY' : x['EQUITY'], "PnL":  x['PnL']} , axis=1)
-
-
-    #ACCOUNT, CURRENCY, BALANCE, EQUITY, CANDRAW, MARKETEQUITY, ACCTINITIALMARGIN, ACCTMAINTENANCEMARGIN, FROZENFEE, DATETIME
-    df.rename(columns={"ACCTINITIALMARGIN" : "ACCT INITIAL MARGIN",
-               "ACCTMAINTENANCEMARGIN" : "ACCT MAINTENANCE MARGIN",
-                       "FROZENFEE" : "FROZEN FEE"}, inplace=True)
-
-    #print(df.columns)
-    cols_to_display = ['ACCOUNT', 'CURRENCY', 'BALANCES' , 'ACCT INITIAL MARGIN', 'ACCT MAINTENANCE MARGIN', 'FROZEN FEE', 'DATETIME']
-
-    cols_to_display = [c for c in cols_to_display if c in df]
     # end = datetime.datetime.now()
     # print("\nSaving floating PnL tool: {}s\n".format((end - start).total_seconds()))
-    return json.dumps(df[cols_to_display].to_dict('record'))
+    return json.dumps(df.to_dict('record'))
+
+
 
 
 
@@ -353,9 +329,8 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     #start_time = datetime.datetime.now()
 
     mt5_hk_stp_futures_data = mt5_HK_ABook_data(unsync_app=current_app._get_current_object())
-    #aaron.HK_CopyTrade_Open_Time_Comparison_last24hour()
-    #aaron.HK_CopyTrade_Price_Comparison_last24hour()
-    #aaron.HK_CopyTrade_Profit_Comparison_last24hour()
+
+    mt5_hk_LP_Copy_futures_data_unsync = mt5_HK_CopyTrade_Futures_LP_data(unsync_app=current_app._get_current_object())
 
     past_opentime_compare_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison_last24hour()", app=current_app._get_current_object())
     past_price_compare_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Price_Comparison_last24hour()", app=current_app._get_current_object())
@@ -385,7 +360,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
 
     # While waiting, we will call somthing that isn't unsync
-    lp_details = ABook_LP_Details_function(exclude_list=["CFH", "GlobalPrime"])
+    lp_details = ABook_LP_Details_function(exclude_list=["CFH", "GlobalPrime", "demo"])
 
 
     # ---------  After calling all the procedure, we will now wait for the results.
@@ -432,9 +407,6 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     past_opentime_compare = past_opentime_compare_unsync.result()
     past_opentime_compare_return_result = color_profit_for_df(past_opentime_compare, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
 
-
-
-
     lp_details_return_result = lp_details["current_result"]
 
     mt5_futures = mt5_hk_stp_futures_data.result()
@@ -442,13 +414,71 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_futures_return_result = color_profit_for_df(mt5_futures, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
 
 
+    # ----------------------- MT5 LP Details to look like standadize LP details. ----------------
+
+    # Using MT5 helper function to pretty print the table in HTML.
+    mt5_hk_LP_Copy_futures_data = mt5_hk_LP_Copy_futures_data_unsync.result()
+
+    mt5_hk_LP_Copy_futures_data_df = pd.DataFrame(mt5_hk_LP_Copy_futures_data)
+    #print(mt5_hk_LP_Copy_futures_data_df)
+
+    mt5_hk_LP_Copy_futures_data_df.rename(columns={"DATETIME": "UPDATED_TIME"}, inplace=True)
+    # To write as new line.
+    mt5_hk_LP_Copy_futures_data_df["UPDATED_TIME"] = mt5_hk_LP_Copy_futures_data_df["UPDATED_TIME"].apply(lambda x: x.replace(" ", "<br>"))
+    # Need to check if all the columns are in the df
+    if all([c in mt5_hk_LP_Copy_futures_data_df for c in ["EQUITY", "BALANCE"]]):
+        mt5_hk_LP_Copy_futures_data_df["PnL"] = mt5_hk_LP_Copy_futures_data_df['EQUITY'] -  mt5_hk_LP_Copy_futures_data_df['BALANCE']
+        # Want to color the profit column
+        mt5_hk_LP_Copy_futures_data_df["PnL"] =  mt5_hk_LP_Copy_futures_data_df["PnL"].apply(lambda x: "$ {}".format(profit_red_green(x)))
+    else:
+        #print("Missing Column from df in 'pretty print mt5 futures lp details': {}".format([c for c in ["EQUITY", "BALANCE"] if c not in mt5_hk_LP_Copy_futures_data_df]))
+        mt5_hk_LP_Copy_futures_data_df["PnL"] = "-"
+
+    mt5_hk_LP_Copy_futures_data_df["LP"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: "{}_{}".format(x["ACCOUNT"], x["CURRENCY"]), axis=1)
+
+    mt5_hk_LP_Copy_futures_data_df["MC/SO/AVAILABLE"] = "-"
+    mt5_hk_LP_Copy_futures_data_df["MARGIN/EQUITY (%)"] = "-"
+
+    # Will display as a table inside a table on the page.
+    mt5_hk_LP_Copy_futures_data_df["BALANCE"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: \
+                    {"DEPOSIT" : "$ {}".format(x['BALANCE']),
+                     'EQUITY' : "$ {}".format(x['EQUITY']),
+                     "PnL":  x['PnL'],
+                     "FROZEN FEE":  "$ {}".format(x['FROZENFEE'])} , axis=1)
+
+    # Will display as a table inside a table on the page.
+    # mt5_hk_LP_Copy_futures_data_df["MARGIN"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: \
+    #                {"ACCT INITIAL MARGIN" : x['ACCTMAINTENANCEMARGIN'], 'ACCT MAINTENANCE MARGIN' : x['ACCTINITIALMARGIN']} , axis=1)
+
+    mt5_hk_LP_Copy_futures_data_df["MARGIN"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: \
+                   {"ACCT INITIAL MARGIN" : 0, 'ACCT MAINTENANCE MARGIN' :0} , axis=1)
+
+
+
+    # Remove all the column that we don't need
+    for p in ["ACCOUNT", "CURRENCY", "ACCTMAINTENANCEMARGIN", 'ACCTINITIALMARGIN', 'PnL', "FROZENFEE", "EQUITY"]:
+        if p in mt5_hk_LP_Copy_futures_data_df:
+            mt5_hk_LP_Copy_futures_data_df.pop(p)
+
+    #print()
+    #print(pd.DataFrame(lp_details_return_result))
+    # Want to see if we can add all the details together.
+    mt5_hk_LP_Copy_futures_data_df = pd.concat([mt5_hk_LP_Copy_futures_data_df, pd.DataFrame(lp_details_return_result)], axis=0)
+
+    #print(mt5_hk_LP_Copy_futures_data_df)
+
+    col = ["LP", "BALANCE", "MARGIN", "MARGIN/EQUITY (%)", "MC/SO/AVAILABLE", "UPDATED_TIME"]
+    all_lp_details = mt5_hk_LP_Copy_futures_data_df[[c for c in col if c in mt5_hk_LP_Copy_futures_data_df]].to_dict("record")
+
+    #print(mt5_hk_LP_Copy_futures_data_return_result)
+
     #print("Current Results: {}".format(return_result))
     return json.dumps({"H1" : bgi_position_return_result,
                        "Hss1" : vantage_position_return_result,
                        "Hss2" : bic_position_return_result,
                        "Hss3" : SwissQ_position_return_result,
                        "H2": mt5_futures_return_result,
-                       "H3" : lp_details_return_result,
+                       "H3" : all_lp_details,
                        "H4" : price_compare_return_result,
                        "H5" : time_compare_return_result,
                        "H6" : past_profit_compare_return_result,

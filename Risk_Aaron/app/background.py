@@ -66,7 +66,7 @@ def background_pic(website):
 
 def icon_pic(website):
 
-
+    "Futures_LP_Details"
     default = "css/icon/thinking.png"
     gb_return = {"ABook_BGI" :                           "css/icon/MickeyMouseIcon.png",
                  "ABook_Matching":                                   "css/icon/bank.png",

@@ -345,3 +345,8 @@ def mt5_ABook_query():
 def mt5_HK_ABook_query():
     sql_query = r"""call aaron.HK_CopyTrade_YT_bySymbol()"""
     return sql_query
+
+# Using Procedure on MYSQL to save the code.
+def mt5_HK_CopyTrade_Future_query():
+    sql_query = r"""call aaron.HK_CopyTrade_LP_Details()"""
+    return sql_query

@@ -3,7 +3,7 @@ import math
 from sqlalchemy import text
 from app.decorators import async_fun
 from app.extensions import db
-from Helper_Flask_Lib import check_session_live1_timing
+from Helper_Flask_Lib import check_session_live1_timing, profit_red_green
 from flask_table import create_table, Col
 from flask import url_for, current_app, session
 import decimal
@@ -33,15 +33,22 @@ def Query_SQL_mt5_db_engine(sql_query):
 
 # Input: sql_query.
 # Return a Dict, using Zip for the results and the col names.
-def unsync_Query_SQL_mt5_db_engine(app_unsync, sql_query):
+def unsync_Query_SQL_mt5_db_engine(app_unsync, sql_query, date_to_str=True):
 
     results = [{}]
     with app_unsync.app_context():  # Need to use original app as this is in the thread
 
         raw_result = db.session.execute(text(sql_query), bind=db.get_engine(app_unsync, 'mt5_live1'))
         result_data = raw_result.fetchall()
+
+        # If we need to change date to string
+        if date_to_str:
+            result_data = [["{}".format(a) if isinstance(a, datetime.datetime) else a for a in d] for d in
+                               result_data]
+
         result_data_decimal = [[float(a) if isinstance(a, decimal.Decimal) else a for a in d] for d in
                                result_data]  # correct The decimal.Decimal class to float.
+
         result_col = raw_result.keys()
         results = [dict(zip(result_col, d)) for d in result_data_decimal]
     return results
@@ -106,6 +113,15 @@ def mt5_HK_ABook_data(unsync_app):
     result = unsync_Query_SQL_mt5_db_engine(unsync_app,sql_query)
     #print(result)
     return result
+
+@unsync
+def mt5_HK_CopyTrade_Futures_LP_data(unsync_app):
+    sql_query = mt5_HK_CopyTrade_Future_query()
+    result = unsync_Query_SQL_mt5_db_engine(unsync_app,sql_query)
+    #print(result)
+    return result
+
+
 
 # This function will return combined data of symbol float as well as yesterday's PnL for MT5
 def mt5_symbol_float_data():
@@ -186,3 +202,49 @@ def mt5_symbol_float_data():
     #print(df)
 
     return df_combined
+
+
+
+
+
+# To print the MT5 LP details into nice structures.
+# Will be a table in a table for display on HTML
+def pretty_print_mt5_futures_LP_details(df):
+    #print(df)
+    # If it's an empty dataframe
+    if len(df) == 0:
+        return df
+
+    if 'DATETIME' in df:
+        df['DATETIME'] =  df['DATETIME'].apply(lambda x : "{}".format(x))
+
+    # Need to check if all the columns are in the df
+    if all([c in df for c in ["EQUITY", "BALANCE"]]):
+        df["PnL"] = df['EQUITY'] -  df['BALANCE']
+        # Want to color the profit column
+        df["PnL"] =  df["PnL"].apply(profit_red_green)
+    else:
+        print("Missing Column from df in 'pretty print mt5 futures lp details': {}".format([c for c in ["EQUITY", "BALANCE"] if c not in df]))
+        df["PnL"] = 0
+
+    cols = ['EQUITY', 'CANDRAW', "ACCTINITIALMARGIN", "BALANCE", "ACCTMAINTENANCEMARGIN", "FROZENFEE", "MARKETEQUITY"]
+    for c in cols:
+        if c in df:
+            df[c] = df[c].apply(lambda x: "{:,.2f}".format(x))
+
+
+    # To save some space.
+    # Will display as a table inside a table on the page.
+    df["BALANCES"] = df.apply(lambda x: {"BALANCE" : x['BALANCE'], 'EQUITY' : x['EQUITY'], "PnL":  x['PnL']} , axis=1)
+
+
+    #ACCOUNT, CURRENCY, BALANCE, EQUITY, CANDRAW, MARKETEQUITY, ACCTINITIALMARGIN, ACCTMAINTENANCEMARGIN, FROZENFEE, DATETIME
+    df.rename(columns={"ACCTINITIALMARGIN" : "ACCT INITIAL MARGIN",
+               "ACCTMAINTENANCEMARGIN" : "ACCT MAINTENANCE MARGIN",
+                       "FROZENFEE" : "FROZEN FEE"}, inplace=True)
+
+    #print(df.columns)
+    cols_to_display = ['ACCOUNT', 'CURRENCY', 'BALANCES' , 'ACCT INITIAL MARGIN', 'ACCT MAINTENANCE MARGIN', 'FROZEN FEE', 'DATETIME']
+
+    cols_to_display = [c for c in cols_to_display if c in df]
+    return df[cols_to_display]
