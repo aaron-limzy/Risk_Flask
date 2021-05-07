@@ -318,7 +318,7 @@ def HK_Copy_STP():
                            ajax_url=url_for('mt5_monitoring.HK_Copy_STP_ajax', _external=True),
                            header=header,
                            description=description, no_backgroud_Cover=True,
-                           replace_words=Markup(["mismatch"])) #setinterval=60,
+                           replace_words=Markup(["mismatch", "so alert:", "alert"])) #setinterval=60,
 
 
 
