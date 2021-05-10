@@ -1420,6 +1420,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 
     # Need to recalculate the Discrepancy as we need to add in MT5 Codes as well.
     df_postion["Discrepancy"] = df_postion["Lp_Net_lot"] - (df_postion["MT4_Net_Lots"] + df_postion["MT5 Net Lots"])
+    df_postion["Discrepancy"] =  df_postion["Discrepancy"].apply(lambda x: round(x, 2))
     df_postion["Total_Revenue"] = df_postion["MT4_Revenue"] + df_postion["MT5_REVENUE"] + df_postion["MT5_Swaps"]
 
     #print(df_postion)
@@ -1500,7 +1501,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
         # To Calculate the past (Previous result) Mismatches
         Past_discrepancy = dict()
         for past in Past_Details:
-            
+
             if "SYMBOL" in past \
                     and "Discrepancy" in past.keys() \
                     and past["Discrepancy"] != 0:    # If the keys are there.
