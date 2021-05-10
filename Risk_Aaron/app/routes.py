@@ -1400,9 +1400,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     # cfh_soap_query_count = [5]   # Want to fully quiery and update from CFH when mismatches reaches this.
     sql_query = text("""call aaron.mt4_ABook_Position()""")
 
-
     curent_result = Query_SQL_db_engine(sql_query)  # Function to do the Query and return zip dict.
-
 
 
     # Get the MT5 ABook data from SQL, using the MT5 lib.
@@ -1423,6 +1421,8 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     df_postion["Discrepancy"] =  df_postion["Discrepancy"].apply(lambda x: round(x, 2))
     df_postion["Total_Revenue"] = df_postion["MT4_Revenue"] + df_postion["MT5_REVENUE"] + df_postion["MT5_Swaps"]
 
+    curent_result = df_postion.to_dict("record")
+
     #print(df_postion)
 
 
@@ -1442,8 +1442,11 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
         # This will sometimes cause everything in the dict to become list.
         post_data = dict(request.form)  # Want to do a copy.
 
+        #print(request.form)
+
         # Check if we need to send Email
         # Need to check if it's a list or a string.
+
         Send_Email_Flag = 0
         if "send_email_flag" in post_data:
             if isinstance(post_data['send_email_flag'], str) and isfloat(post_data['send_email_flag']):
@@ -1463,16 +1466,16 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 
         Past_Details = []
         if "MT4_LP_Position_save" in post_data:
-            if isinstance(post_data['MT4_LP_Position_save'], str) and   is_json(post_data["MT4_LP_Position_save"]):
+            if isinstance(post_data['MT4_LP_Position_save'], str) and is_json(post_data["MT4_LP_Position_save"]):
                 Past_Details = json.loads(post_data["MT4_LP_Position_save"])
             elif isinstance(post_data['MT4_LP_Position_save'], list) and len(post_data['MT4_LP_Position_save']) > 0 and  is_json(post_data["MT4_LP_Position_save"][0]):
                 Past_Details = json.loads(post_data["MT4_LP_Position_save"][0])
             else:
                 Past_Details = []
 
-        #print(post_data["MT4_LP_Position_save"])
-        # print("Past_Details")
-        # print(Past_Details)
+        print(post_data["MT4_LP_Position_save"])
+        print("Past_Details")
+        print(pd.DataFrame(Past_Details))
 
         # Past_Details = json.loads(post_data["MT4_LP_Position_save"]) if ("MT4_LP_Position_save" in post_data) \
         #                                                                    and (isinstance(post_data['MT4_LP_Position_save'], str)) \
@@ -1492,9 +1495,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
         Past_Details = df_past_details.to_dict("record")
 
         # If we want to send all the total position
-        send_email_total = int(post_data["send_email_total"][0]) if ("send_email_total" in post_data) \
-                                                                   and (isinstance(post_data['send_email_total'], list)) else 0
-
+        send_email_total = int(post_data["send_email_total"][0]) if ("send_email_total" in post_data) and (isinstance(post_data['send_email_total'], list)) else 0
 
 
         #print("Past Details: {}".format(Past_Details))
@@ -1522,6 +1523,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 
         # To tally off with current mismatches. If there are, add 1 to count. Else, Zero it.
         for d in curent_result:
+            print(d)
             if "Discrepancy" in d.keys():
                 if d["Discrepancy"] != 0:   # There are mismatches Currently.
                     d["Mismatch_count"] = 1 if d['SYMBOL'] not in Past_discrepancy else Past_discrepancy[d['SYMBOL']] + 1
@@ -1666,6 +1668,9 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     # Will use Beautiful soup to parse it back to symbols later when recieved as POST
     #df_postion = pd.DataFrame(data=curent_result)
     #print(df_postion)
+
+
+    df_postion = pd.DataFrame(data=curent_result)
     df_postion["SYMBOL"] = df_postion.apply(lambda x: Symbol_Trades_url(symbol=x["SYMBOL"], book="a"), axis = 1)
 
 
