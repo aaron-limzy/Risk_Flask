@@ -1441,8 +1441,6 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
         # This will sometimes cause everything in the dict to become list.
         post_data = dict(request.form)  # Want to do a copy.
 
-
-
         # Check if we need to send Email
         # Need to check if it's a list or a string.
         Send_Email_Flag = 0
@@ -1502,6 +1500,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
         # To Calculate the past (Previous result) Mismatches
         Past_discrepancy = dict()
         for past in Past_Details:
+            
             if "SYMBOL" in past \
                     and "Discrepancy" in past.keys() \
                     and past["Discrepancy"] != 0:    # If the keys are there.
