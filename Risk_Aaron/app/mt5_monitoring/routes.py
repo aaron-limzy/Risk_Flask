@@ -435,7 +435,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_HK_CopyTrade_NetLots_Difference = mt5_HK_CopyTrade_NetLots_Difference_unsync.result()
     mt5_HK_CopyTrade_NetLots_Difference_df = color_profit_for_df(mt5_HK_CopyTrade_NetLots_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    table_2_return_data =  {"Run Results": "No Open Trades"}
+    table_2_return_data =  {}
 
     if all([c in mt4_HK_CopyTrade_NetLots_Difference_df for c in
             ["Net Lots", "LP Net Lots", "STP%", "LP Net Lots - Net Lots * STP%"]]) and "Philip Net Lots" in mt5_HK_CopyTrade_NetLots_Difference_df:
@@ -444,6 +444,8 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
         table_2_return_data["STP%"] = mt4_HK_CopyTrade_NetLots_Difference_df["STP%"].sum()
         table_2_return_data["LP Net Lots - Net Lots * STP%"] = mt4_HK_CopyTrade_NetLots_Difference_df["LP Net Lots - Net Lots * STP%"].sum() + \
                             mt5_HK_CopyTrade_NetLots_Difference_df["Philip Net Lots"].sum()
+    else:
+        table_2_return_data = {"Run Results": "No Open Trades"}
 
     # Third table
     mt4_HK_CopyTrade_Profit_Difference = mt4_HK_CopyTrade_Profit_Difference_unsync.result()
@@ -453,7 +455,6 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     #print(mt4_HK_CopyTrade_Profit_Difference_df)
 
     table_3_return_data = {}
-
     if all([c in mt4_HK_CopyTrade_Profit_Difference_df for c in ["LP Profit", "Profit"]]) and "Philip Net Lots" in mt5_HK_CopyTrade_NetLots_Difference_df:
         #table_3_return_data = {}
         table_3_return_data["LP Profit"] = mt4_HK_CopyTrade_Profit_Difference_df['LP Profit'].sum() + mt5_HK_CopyTrade_NetLots_Difference_df["Philip Net Lots"].sum()
