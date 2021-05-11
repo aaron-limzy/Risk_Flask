@@ -114,6 +114,7 @@ def mt5_HK_ABook_data(unsync_app):
     #print(result)
     return result
 
+
 @unsync
 def mt5_HK_CopyTrade_Futures_LP_data(unsync_app):
     sql_query = mt5_HK_CopyTrade_Future_query()
@@ -121,6 +122,12 @@ def mt5_HK_CopyTrade_Futures_LP_data(unsync_app):
     #print(result)
     return result
 
+
+@unsync
+def mt5_Query_SQL_mt5_db_engine_query(unsync_app, SQL_Query):
+    result = unsync_Query_SQL_mt5_db_engine(unsync_app, SQL_Query)
+    #print(result)
+    return result
 
 
 # This function will return combined data of symbol float as well as yesterday's PnL for MT5
@@ -248,3 +255,58 @@ def pretty_print_mt5_futures_LP_details(df):
 
     cols_to_display = [c for c in cols_to_display if c in df]
     return df[cols_to_display]
+
+# To print the Futures LP details in the same structure as the LP MT4 Details
+def pretty_print_mt5_futures_LP_details_2(futures_data, fx_lp_details, return_df=False):
+
+
+    mt5_hk_LP_Copy_futures_data_df = pd.DataFrame(futures_data)
+    #print(mt5_hk_LP_Copy_futures_data_df)
+
+    mt5_hk_LP_Copy_futures_data_df.rename(columns={"DATETIME": "UPDATED_TIME"}, inplace=True)
+    # To write as new line.
+    mt5_hk_LP_Copy_futures_data_df["UPDATED_TIME"] = mt5_hk_LP_Copy_futures_data_df["UPDATED_TIME"].apply(lambda x: x.replace(" ", "<br>"))
+    # Need to check if all the columns are in the df
+    if all([c in mt5_hk_LP_Copy_futures_data_df for c in ["EQUITY", "BALANCE"]]):
+        mt5_hk_LP_Copy_futures_data_df["PnL"] = mt5_hk_LP_Copy_futures_data_df['EQUITY'] -  mt5_hk_LP_Copy_futures_data_df['BALANCE']
+        # Want to color the profit column
+        mt5_hk_LP_Copy_futures_data_df["PnL"] =  mt5_hk_LP_Copy_futures_data_df["PnL"].apply(lambda x: "$ {}".format(profit_red_green(x)))
+    else:
+        #print("Missing Column from df in 'pretty print mt5 futures lp details': {}".format([c for c in ["EQUITY", "BALANCE"] if c not in mt5_hk_LP_Copy_futures_data_df]))
+        mt5_hk_LP_Copy_futures_data_df["PnL"] = "-"
+
+    mt5_hk_LP_Copy_futures_data_df["LP"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: "{}_{}".format(x["ACCOUNT"], x["CURRENCY"]), axis=1)
+
+    mt5_hk_LP_Copy_futures_data_df["MC/SO/AVAILABLE"] = "-"
+    mt5_hk_LP_Copy_futures_data_df["MARGIN/EQUITY (%)"] = "-"
+
+    # Will display as a table inside a table on the page.
+    mt5_hk_LP_Copy_futures_data_df["BALANCE"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: \
+                    {"DEPOSIT" : "$ {}".format(x['BALANCE']),
+                     'EQUITY' : "$ {}".format(x['EQUITY']),
+                     "PnL":  x['PnL'],
+                     "FROZEN FEE":  "$ {}".format(x['FROZENFEE'])} , axis=1)
+
+    # Will display as a table inside a table on the page.
+    # mt5_hk_LP_Copy_futures_data_df["MARGIN"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: \
+    #                {"ACCT INITIAL MARGIN" : x['ACCTMAINTENANCEMARGIN'], 'ACCT MAINTENANCE MARGIN' : x['ACCTINITIALMARGIN']} , axis=1)
+
+    mt5_hk_LP_Copy_futures_data_df["MARGIN"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: \
+                   {"ACCT INITIAL MARGIN" : 0, 'ACCT MAINTENANCE MARGIN' :0} , axis=1)
+
+
+
+    # Remove all the column that we don't need
+    for p in ["ACCOUNT", "CURRENCY", "ACCTMAINTENANCEMARGIN", 'ACCTINITIALMARGIN', 'PnL', "FROZENFEE", "EQUITY"]:
+        if p in mt5_hk_LP_Copy_futures_data_df:
+            mt5_hk_LP_Copy_futures_data_df.pop(p)
+
+    # Want to see if we can add all the details together.
+    mt5_hk_LP_Copy_futures_data_df = pd.concat([mt5_hk_LP_Copy_futures_data_df, pd.DataFrame(fx_lp_details)], axis=0)
+
+    col = ["LP", "BALANCE", "MARGIN", "MARGIN/EQUITY (%)", "MC/SO/AVAILABLE", "UPDATED_TIME"]
+
+    if return_df==False: # If we don't want to return the pandas df
+        return mt5_hk_LP_Copy_futures_data_df[[c for c in col if c in mt5_hk_LP_Copy_futures_data_df]].to_dict("record")
+
+    return mt5_hk_LP_Copy_futures_data_df[[c for c in col if c in mt5_hk_LP_Copy_futures_data_df]]

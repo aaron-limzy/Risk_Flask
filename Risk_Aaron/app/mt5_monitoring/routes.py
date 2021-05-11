@@ -301,19 +301,20 @@ def HK_Copy_STP():
         <li>SwissQuote -> aaron.live_trade_714009_swissquote_live </li>
         </ul>""")
 
+
     return render_template("Wbwrk_Multitable_Borderless_redalert.html", backgroud_Filename=background_pic("HK_Copy_STP"), icon=icon_pic("ABook_BGI"),
-                           Table_name={"BGI Position": "H1",
-                                       "Vantage ": "Hss1",
-                                       "BIC ": "Hss2",
-                                       "Swiss Quote": "Hss3",
-                                       "Yuanta for MT5": "H2",
+                           Table_name={"TOTAL CLOSED PNL": "Hss1",
+                                       "FLOATING LOTS": "Vss1",
+                                       "FLOATING PROFIT": "Vss2",
+                                       "[OPEN] PRICE&PROFIT COMPARISON": "H1",
+                                       "[OPEN] Lots& Open Time Comparison": "H2",
                                        "LP Details": "H3",
-                                       "Lot/Price/Profit Comparison": "H4",
-                                       "Open Time Comparison": "H5",
-                                       "Line": "Hr1",
-                                        "[Closed] Lot/Profit comparison": "H6",
-                                        "[Closed] Open/Close Price Comparison": "H7",
-                                        "[Closed] Open/Close Time Comparison": "H8"},
+                                       "[OPEN] PRICE&PROFIT COMPARISON": "H4",
+                                       "Line1"                           : "Hr1" ,
+                                       "[CLOSED] LOT/PROFIT COMPARISON": "H5",
+                                       "[CLOSED] OPEN/CLOSE PRICE COMPARISON": "H6",
+                                       "OPEN/CLOSE TIME COMPARISON"         : "H7"
+                                       },
                            title=title, setinterval=30,
                            ajax_url=url_for('mt5_monitoring.HK_Copy_STP_ajax', _external=True),
                            header=header,
@@ -328,159 +329,204 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     #start_time = datetime.datetime.now()
 
-    mt5_hk_stp_futures_data = mt5_HK_ABook_data(unsync_app=current_app._get_current_object())
 
+    # First table
+    # MT4 + MT5 Copy Trades Total PnL
+    mt4_HK_CopyTrade_Total_Pnl_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Total_Pnl()", app=current_app._get_current_object())
+    mt5_HK_CopyTrade_Total_Pnl_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Total_Pnl()", unsync_app=current_app._get_current_object())
+
+
+    # Second table
+    #[HK_CopyTrade_NetLots_Difference]+MT5[HK_CopyTrade_NetLots_Difference]
+    mt4_HK_CopyTrade_NetLots_Difference_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_NetLots_Difference()", app=current_app._get_current_object())
+    mt5_HK_CopyTrade_NetLots_Difference_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_NetLots_Difference()", unsync_app=current_app._get_current_object())
+
+
+    # Third table
+    mt4_HK_CopyTrade_Profit_Difference_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Profit_Difference()", app=current_app._get_current_object())
+
+
+    # 4th table
+    mt4_HK_CopyTrade_Price_Comparison_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Price_Comparison()", app=current_app._get_current_object())
+    mt5_HK_CopyTrade_Price_Comparison_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Price_Comparison()", unsync_app=current_app._get_current_object())
+
+
+    # 5th Table
+    mt4_HK_CopyTrade_Open_Time_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison()", app=current_app._get_current_object())
+    mt5_HK_CopyTrade_Open_Time_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison()", unsync_app=current_app._get_current_object())
+
+
+
+    # 7th Table
+    #[HK_CopyTrade_Profit_Comparison_last24hour] + MT5.[HK_CopyTrade_Profit_Comparison_last24hour]
+
+    mt4_HK_CopyTrade_Profit_Comparison_last24hour_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Profit_Comparison_last24hour()", app=current_app._get_current_object())
+    mt5_HK_CopyTrade_Profit_Comparison_last24hour_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Profit_Comparison_last24hour()", unsync_app=current_app._get_current_object())
+
+
+    # 8th Table
+    # [HK_CopyTrade_Price_Comparison_last24hour] + MT5.[HK_CopyTrade_Price_Comparison_last24hour]
+    mt4_HK_CopyTrade_Price_Comparison_last24hour_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Price_Comparison_last24hour()", app=current_app._get_current_object())
+    mt5_HK_CopyTrade_Price_Comparison_last24hour_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Price_Comparison_last24hour()", unsync_app=current_app._get_current_object())
+
+
+    # 9th Table
+    #[HK_CopyTrade_Open_Time_Comparison] + MT5.[HK_CopyTrade_Open_Time_Comparison]
+    mt4_HK_CopyTrade_Open_Time_Comparison_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison()", app=current_app._get_current_object())
+    mt5_HK_CopyTrade_Open_Time_Comparison_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison()", unsync_app=current_app._get_current_object())
+
+
+
+
+    # 6th Table
+    # # While waiting, we will call somthing that isn't unsync
+    lp_details = ABook_LP_Details_function(exclude_list=["CFH", "GlobalPrime", "demo"])
     mt5_hk_LP_Copy_futures_data_unsync = mt5_HK_CopyTrade_Futures_LP_data(unsync_app=current_app._get_current_object())
 
-    past_opentime_compare_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison_last24hour()", app=current_app._get_current_object())
-    past_price_compare_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Price_Comparison_last24hour()", app=current_app._get_current_object())
-    past_profit_compare_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Profit_Comparison_last24hour()", app=current_app._get_current_object())
+
+    # ----------- To get the results ------
+
+    mt4_HK_CopyTrade_Total_Pnl = mt4_HK_CopyTrade_Total_Pnl_unsync.result()
+    mt4_HK_CopyTrade_Total_Pnl_df = color_profit_for_df(mt4_HK_CopyTrade_Total_Pnl, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+
+    mt5_HK_CopyTrade_Total_Pnl = mt5_HK_CopyTrade_Total_Pnl_unsync.result()
+    mt5_HK_CopyTrade_Total_Pnl_df = color_profit_for_df(mt5_HK_CopyTrade_Total_Pnl, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+
+    table_1_concat = pd.concat([mt4_HK_CopyTrade_Total_Pnl_df, mt5_HK_CopyTrade_Total_Pnl_df])
+    table_1_concat_return_data =  table_1_concat.to_dict("record")
+
+    mt4_HK_CopyTrade_Total_Pnl = None
+    mt5_HK_CopyTrade_Total_Pnl = None
+    mt4_HK_CopyTrade_Total_Pnl_df = None
+    mt5_HK_CopyTrade_Total_Pnl_df = None
 
 
-    # The code is in aaron database, saved as a procedure.
-    #current_result = Query_SQL_db_engine("call aaron.HK_CopyTrade_Main()")
-    bgi_position_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Main()", app=current_app._get_current_object())
+    # Second table ---
+    mt4_HK_CopyTrade_NetLots_Difference = mt4_HK_CopyTrade_NetLots_Difference_unsync.result()
+    mt4_HK_CopyTrade_NetLots_Difference_df = color_profit_for_df(mt4_HK_CopyTrade_NetLots_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    #Query_SQL_db_engine("call aaron.HK_CopyTrade_Vantage_bySymbol()")
-    vantage_position_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Vantage_bySymbol()", app=current_app._get_current_object())
+    mt5_HK_CopyTrade_NetLots_Difference = mt5_HK_CopyTrade_NetLots_Difference_unsync.result()
+    mt5_HK_CopyTrade_NetLots_Difference_df = color_profit_for_df(mt5_HK_CopyTrade_NetLots_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    #Query_SQL_db_engine("call aaron.HK_CopyTrade_BIC_bySymbol()")
-    bic_position_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call  aaron.HK_CopyTrade_BIC_bySymbol()", app=current_app._get_current_object())
+    table_2_return_data = {}
+    if all([c in mt4_HK_CopyTrade_NetLots_Difference_df for c in
+            ["Net Lots", "LP Net Lots", "STP%", "LP Net Lots - Net Lots * STP%"]]) and "Philip Net Lots" in mt5_HK_CopyTrade_NetLots_Difference_df:
+        table_2_return_data["Net Lots"] = mt4_HK_CopyTrade_NetLots_Difference_df["Net Lots"].sum()
+        table_2_return_data["LP Net Lots"] = mt4_HK_CopyTrade_NetLots_Difference_df["LP Net Lots"].sum() + mt5_HK_CopyTrade_NetLots_Difference_df["Philip Net Lots"].sum()
+        table_2_return_data["STP%"] = mt4_HK_CopyTrade_NetLots_Difference_df["STP%"].sum()
+        table_2_return_data["LP Net Lots - Net Lots * STP%"] = mt4_HK_CopyTrade_NetLots_Difference_df["LP Net Lots - Net Lots * STP%"].sum() + \
+                            mt5_HK_CopyTrade_NetLots_Difference_df["Philip Net Lots"].sum()
 
-    # current_result4 = Query_SQL_db_engine("call aaron.HK_CopyTrade_SQ_bySymbol()")
-    SwissQ_position_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call  aaron.HK_CopyTrade_SQ_bySymbol()", app=current_app._get_current_object())
+    # Third table
+    mt4_HK_CopyTrade_Profit_Difference = mt4_HK_CopyTrade_Profit_Difference_unsync.result()
+    mt4_HK_CopyTrade_Profit_Difference_df = color_profit_for_df(mt4_HK_CopyTrade_Profit_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
 
-    #current_result6 = Query_SQL_db_engine("call aaron.HK_CopyTrade_Price_Comparison()")
-    price_compare_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call  aaron.HK_CopyTrade_Price_Comparison()", app=current_app._get_current_object())
+    table_3_return_data = {}
+    if all([c in mt4_HK_CopyTrade_Profit_Difference_df for c in ["LP Profit", "Profit"]]) and "Philip Net Lots" in mt5_HK_CopyTrade_NetLots_Difference_df:
+        table_3_return_data["LP Profit"] = mt4_HK_CopyTrade_Profit_Difference_df['LP Profit'].sum() + mt5_HK_CopyTrade_NetLots_Difference_df["Philip Net Lots"].sum()
+        table_3_return_data["Profit USD"] = mt4_HK_CopyTrade_Profit_Difference_df["Profit"].sum()
+        table_3_return_data["Net Profit"] = table_3_return_data["LP Profit"] - table_3_return_data["Profit USD"]
+        # To color the profit columns
+        table_3_return_data = color_profit_for_df([table_3_return_data], default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=False)
 
+    # 4th Table
+    mt4_HK_CopyTrade_Price_Comparison = mt4_HK_CopyTrade_Price_Comparison_unsync.result()
+    mt4_HK_CopyTrade_Price_Comparisone_df = color_profit_for_df(mt4_HK_CopyTrade_Price_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    #current_result7 = Query_SQL_db_engine("call aaron.HK_CopyTrade_Open_Time_Comparison()")
-    time_compare_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call  aaron.HK_CopyTrade_Open_Time_Comparison()", app=current_app._get_current_object())
+    mt5_HK_CopyTrade_Price_Comparison = mt5_HK_CopyTrade_Price_Comparison_unsync.result()
+    mt5_HK_CopyTrade_Price_Comparison_df = color_profit_for_df(mt5_HK_CopyTrade_Price_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-
-
-    # While waiting, we will call somthing that isn't unsync
-    lp_details = ABook_LP_Details_function(exclude_list=["CFH", "GlobalPrime", "demo"])
-
-
-    # ---------  After calling all the procedure, we will now wait for the results.
-    bgi_position = bgi_position_unsync.result()
-    #bgi_position_return_result = pd.DataFrame(data=bgi_position).to_dict("record") if len(bgi_position) != 0 else [{"Run Results": "No Open Trades"}]
-    bgi_position_return_result = color_profit_for_df(bgi_position, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
-
-
-    vantage_position = vantage_position_unsync.result()
-    #vantage_position_return_result = pd.DataFrame(data=vantage_position).to_dict("record") if  len(vantage_position) != 0 else [{"Run Results": "No Open Trades"}]
-    vantage_position_return_result = color_profit_for_df(vantage_position, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
-
-    bic_position = bic_position_unsync.result()
-    #bic_position_return_result = pd.DataFrame(data=bic_position).to_dict("record") if  len(bic_position) != 0 else [{"Run Results": "No Open Trades"}]
-    bic_position_return_result = color_profit_for_df(bic_position, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
+    table_4_df = mt4_HK_CopyTrade_Price_Comparisone_df.merge(mt5_HK_CopyTrade_Price_Comparison_df, how="outer", left_on="Ticket", right_on = "Merging Ticket")
+    table_4_df.pop("Merging Ticket")
 
 
-    SwissQ_position = SwissQ_position_unsync.result()
-    # df_SwissQ_position_return_result = pd.DataFrame(data=SwissQ_position).to_dict("record") if  len(SwissQ_position) != 0 else pd.DataFrame(data=[{"Run Results": "No Open Trades"}])
-    # SwissQ_position_return_result = df_SwissQ_position_return_result.to_dict("record")
-    SwissQ_position_return_result = color_profit_for_df(SwissQ_position, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
+    # 5th Table
+
+    mt4_HK_CopyTrade_Open_Time = mt4_HK_CopyTrade_Open_Time_unsync.result()
+    mt4_HK_CopyTrade_Open_Timee_df = color_profit_for_df(mt4_HK_CopyTrade_Open_Time, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+
+    mt5_HK_CopyTrade_Open_Time = mt5_HK_CopyTrade_Open_Time_unsync.result()
+    mt5_HK_CopyTrade_Open_Time_df = color_profit_for_df(mt5_HK_CopyTrade_Open_Time, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+
+    table_5_df = mt4_HK_CopyTrade_Open_Timee_df.merge(mt5_HK_CopyTrade_Open_Time_df, how="outer", left_on="Ticket", right_on = "Merging Ticket")
+    #table_5_df.pop("Merging Ticket")
 
 
-
-    price_compare = price_compare_unsync.result()
-    #df_price_compare_return_result = pd.DataFrame(data=price_compare) if len(price_compare) != 0 else pd.DataFrame(data=[{"Run Results": "No Open Trades"}])
-    price_compare_return_result = color_profit_for_df(price_compare, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
-
-
-
-    time_compare = time_compare_unsync.result()
-    #time_compare_return_result = pd.DataFrame(data=time_compare).to_dict("record") if  len(time_compare) != 0 else [{"Run Results": "No Open Trades"}]
-    time_compare_return_result = color_profit_for_df(time_compare, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
-
-
-    # ------- To compare past trades
-
-    past_profit_compare = past_profit_compare_unsync.result()
-    past_profit_compare_return_result = color_profit_for_df(past_profit_compare, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
-
-    past_price_compare = past_price_compare_unsync.result()
-    past_price_compare_return_result = color_profit_for_df(past_price_compare, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
-
-    past_opentime_compare = past_opentime_compare_unsync.result()
-    past_opentime_compare_return_result = color_profit_for_df(past_opentime_compare, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
+    #6th Table
+    # ----------------------- MT5 LP Details to look like standadize LP details. ----------------
 
     lp_details_return_result = lp_details["current_result"]
-
-    mt5_futures = mt5_hk_stp_futures_data.result()
-    #mt5_futures_return_result = pd.DataFrame(data=mt5_futures).to_dict("record") if  len(mt5_futures) != 0 else [{"Run Results": "No Open Trades"}]
-    mt5_futures_return_result = color_profit_for_df(mt5_futures, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"])
-
-
-    # ----------------------- MT5 LP Details to look like standadize LP details. ----------------
 
     # Using MT5 helper function to pretty print the table in HTML.
     mt5_hk_LP_Copy_futures_data = mt5_hk_LP_Copy_futures_data_unsync.result()
 
-    mt5_hk_LP_Copy_futures_data_df = pd.DataFrame(mt5_hk_LP_Copy_futures_data)
-    #print(mt5_hk_LP_Copy_futures_data_df)
+    # We want print it into the same structure as mt4 FX LP
+    all_lp_details = pretty_print_mt5_futures_LP_details_2(futures_data=mt5_hk_LP_Copy_futures_data, \
+                                                           fx_lp_details=lp_details_return_result, return_df=False)
 
-    mt5_hk_LP_Copy_futures_data_df.rename(columns={"DATETIME": "UPDATED_TIME"}, inplace=True)
-    # To write as new line.
-    mt5_hk_LP_Copy_futures_data_df["UPDATED_TIME"] = mt5_hk_LP_Copy_futures_data_df["UPDATED_TIME"].apply(lambda x: x.replace(" ", "<br>"))
-    # Need to check if all the columns are in the df
-    if all([c in mt5_hk_LP_Copy_futures_data_df for c in ["EQUITY", "BALANCE"]]):
-        mt5_hk_LP_Copy_futures_data_df["PnL"] = mt5_hk_LP_Copy_futures_data_df['EQUITY'] -  mt5_hk_LP_Copy_futures_data_df['BALANCE']
-        # Want to color the profit column
-        mt5_hk_LP_Copy_futures_data_df["PnL"] =  mt5_hk_LP_Copy_futures_data_df["PnL"].apply(lambda x: "$ {}".format(profit_red_green(x)))
+    # 7th Table
+    mt4_HK_CopyTrade_Profit_Comparison_last24hour = mt4_HK_CopyTrade_Profit_Comparison_last24hour_unsync.result()
+    mt4_HK_CopyTrade_Profit_Comparison_last24hour_df = color_profit_for_df(mt4_HK_CopyTrade_Profit_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+
+    mt5_HK_CopyTrade_Profit_Comparison_last24hour = mt5_HK_CopyTrade_Profit_Comparison_last24hour_unsync.result()
+    mt5_HK_CopyTrade_Profit_Comparison_last24hour_df = color_profit_for_df(mt5_HK_CopyTrade_Profit_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+
+    if "Ticket" in mt4_HK_CopyTrade_Profit_Comparison_last24hour_df and "Merging Ticket" in mt5_HK_CopyTrade_Profit_Comparison_last24hour_df:
+        table_7_df = mt4_HK_CopyTrade_Profit_Comparison_last24hour_df.merge(mt5_HK_CopyTrade_Profit_Comparison_last24hour_df, how="outer", left_on="Ticket", right_on = "Merging Ticket")
+        #table_7_df.pop("Merging Ticket")
+        table_7_df.fillna("---", inplace=True)
     else:
-        #print("Missing Column from df in 'pretty print mt5 futures lp details': {}".format([c for c in ["EQUITY", "BALANCE"] if c not in mt5_hk_LP_Copy_futures_data_df]))
-        mt5_hk_LP_Copy_futures_data_df["PnL"] = "-"
+        table_7_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
 
-    mt5_hk_LP_Copy_futures_data_df["LP"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: "{}_{}".format(x["ACCOUNT"], x["CURRENCY"]), axis=1)
 
-    mt5_hk_LP_Copy_futures_data_df["MC/SO/AVAILABLE"] = "-"
-    mt5_hk_LP_Copy_futures_data_df["MARGIN/EQUITY (%)"] = "-"
+    # 8th Table
+    mt4_HK_CopyTrade_Price_Comparison_last24hour = mt4_HK_CopyTrade_Price_Comparison_last24hour_unsync.result()
+    mt4_HK_CopyTrade_Price_Comparison_last24hour_df = color_profit_for_df(mt4_HK_CopyTrade_Price_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    # Will display as a table inside a table on the page.
-    mt5_hk_LP_Copy_futures_data_df["BALANCE"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: \
-                    {"DEPOSIT" : "$ {}".format(x['BALANCE']),
-                     'EQUITY' : "$ {}".format(x['EQUITY']),
-                     "PnL":  x['PnL'],
-                     "FROZEN FEE":  "$ {}".format(x['FROZENFEE'])} , axis=1)
+    mt5_HK_CopyTrade_Price_Comparison_last24hour = mt5_HK_CopyTrade_Price_Comparison_last24hour_unsync.result()
+    mt5_HK_CopyTrade_Price_Comparison_last24hour_df = color_profit_for_df(mt5_HK_CopyTrade_Price_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    # Will display as a table inside a table on the page.
-    # mt5_hk_LP_Copy_futures_data_df["MARGIN"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: \
-    #                {"ACCT INITIAL MARGIN" : x['ACCTMAINTENANCEMARGIN'], 'ACCT MAINTENANCE MARGIN' : x['ACCTINITIALMARGIN']} , axis=1)
-
-    mt5_hk_LP_Copy_futures_data_df["MARGIN"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: \
-                   {"ACCT INITIAL MARGIN" : 0, 'ACCT MAINTENANCE MARGIN' :0} , axis=1)
+    if "Ticket" in mt4_HK_CopyTrade_Price_Comparison_last24hour_df and "Merging Ticket" in mt5_HK_CopyTrade_Price_Comparison_last24hour_df:
+        table_8_df = mt4_HK_CopyTrade_Price_Comparison_last24hour_df.merge(
+            mt5_HK_CopyTrade_Price_Comparison_last24hour_df, how="outer", left_on="Ticket", right_on="Merging Ticket")
+        #table_8_df.pop("Merging Ticket")
+        table_8_df.fillna("---", inplace=True)
+    else:
+        table_8_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
 
 
 
-    # Remove all the column that we don't need
-    for p in ["ACCOUNT", "CURRENCY", "ACCTMAINTENANCEMARGIN", 'ACCTINITIALMARGIN', 'PnL', "FROZENFEE", "EQUITY"]:
-        if p in mt5_hk_LP_Copy_futures_data_df:
-            mt5_hk_LP_Copy_futures_data_df.pop(p)
+    # 9th Table
 
-    #print()
-    #print(pd.DataFrame(lp_details_return_result))
-    # Want to see if we can add all the details together.
-    mt5_hk_LP_Copy_futures_data_df = pd.concat([mt5_hk_LP_Copy_futures_data_df, pd.DataFrame(lp_details_return_result)], axis=0)
+    mt4_HK_CopyTrade_Open_Time_Comparison = mt4_HK_CopyTrade_Open_Time_Comparison_unsync.result()
+    mt4_HK_CopyTrade_Open_Time_Comparison_df = color_profit_for_df(mt4_HK_CopyTrade_Open_Time_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    #print(mt5_hk_LP_Copy_futures_data_df)
+    mt5_HK_CopyTrade_Open_Time_Comparison = mt5_HK_CopyTrade_Open_Time_Comparison_unsync.result()
+    mt5_HK_CopyTrade_Open_Time_Comparison_df = color_profit_for_df(mt5_HK_CopyTrade_Open_Time_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    col = ["LP", "BALANCE", "MARGIN", "MARGIN/EQUITY (%)", "MC/SO/AVAILABLE", "UPDATED_TIME"]
-    all_lp_details = mt5_hk_LP_Copy_futures_data_df[[c for c in col if c in mt5_hk_LP_Copy_futures_data_df]].to_dict("record")
+    table_9_df = mt4_HK_CopyTrade_Open_Time_Comparison_df.merge(mt5_HK_CopyTrade_Open_Time_Comparison_df, how="outer", left_on="Ticket", right_on = "Merging Ticket")
+    table_9_df.pop("Merging Ticket")
 
-    #print(mt5_hk_LP_Copy_futures_data_return_result)
+    if "Ticket" in mt4_HK_CopyTrade_Open_Time_Comparison_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_Comparison_df:
+        table_9_df = mt4_HK_CopyTrade_Open_Time_Comparison_df.merge(mt5_HK_CopyTrade_Open_Time_Comparison_df,
+                                                                    how="outer", left_on="Ticket",
+                                                                    right_on="Merging Ticket")
+        #table_9_df.pop("Merging Ticket")
+        table_9_df.fillna("---", inplace=True)
+    else:
+        table_9_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
 
-    #print("Current Results: {}".format(return_result))
-    return json.dumps({"H1" : bgi_position_return_result,
-                       "Hss1" : vantage_position_return_result,
-                       "Hss2" : bic_position_return_result,
-                       "Hss3" : SwissQ_position_return_result,
-                       "H2": mt5_futures_return_result,
-                       "H3" : all_lp_details,
-                       "H4" : price_compare_return_result,
-                       "H5" : time_compare_return_result,
-                       "H6" : past_profit_compare_return_result,
-                       "H7" : past_price_compare_return_result,
-                       "H8" : past_opentime_compare_return_result})
+
+    return json.dumps({ "Hss1": table_1_concat_return_data,
+                        "Vss1": [table_2_return_data],
+                        "Vss2":table_3_return_data,
+                        "H1": table_4_df.to_dict("record"),
+                        "H2": table_5_df.to_dict("record"),
+                        "H3" : all_lp_details,
+                        "H4": table_7_df.to_dict("record"),
+                        "H5": table_8_df.to_dict("record"),
+                        "H6": table_9_df.to_dict("record"),
+                        })
+
+
+

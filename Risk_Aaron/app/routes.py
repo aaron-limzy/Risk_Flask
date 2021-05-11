@@ -1393,9 +1393,10 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
 def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
 
+    artificial_offset = False
+
     # The amount of time that a mismatch must happen before it emails
     mismatch_count = [10,15]
-
 
     # cfh_soap_query_count = [5]   # Want to fully quiery and update from CFH when mismatches reaches this.
     sql_query = text("""call aaron.mt4_ABook_Position()""")
@@ -1407,7 +1408,15 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     #SQL Stored Procedure
     mt5_result = mt5_ABook_data()
 
+
+
     df_mt4_postion = pd.DataFrame(data=curent_result)
+
+    # If we want to put in an artificial off set for testing.
+    if artificial_offset:
+        print(df_mt4_postion)
+        df_mt4_postion["Offset_lot"][df_mt4_postion["SYMBOL"] == "XAUUSD"] = 10
+        print(df_mt4_postion)
 
     # ------------------ MT5 Calculations. Need to redo this to make it more elegant --------
     # Need to rename some Columns.
@@ -1417,7 +1426,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     df_postion = df_mt4_postion.merge(df_mt5_postion, on="SYMBOL")
 
     # Need to recalculate the Discrepancy as we need to add in MT5 Codes as well.
-    df_postion["Discrepancy"] = df_postion["Lp_Net_lot"] - (df_postion["MT4_Net_Lots"] + df_postion["MT5 Net Lots"])
+    df_postion["Discrepancy"] = df_postion["Lp_Net_lot"]  - (df_postion["MT4_Net_Lots"] + df_postion["MT5 Net Lots"] + df_postion["Offset_lot"])
     df_postion["Discrepancy"] =  df_postion["Discrepancy"].apply(lambda x: round(x, 2))
     df_postion["Total_Revenue"] = df_postion["MT4_Revenue"] + df_postion["MT5_REVENUE"] + df_postion["MT5_Swaps"]
 
@@ -1435,6 +1444,10 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     # print("request.method: {}".format(request.method))
     # print("Len of request.form: {}".format(len(request.form)))
 
+    # Flag to determine if we need to send email alerts
+    Send_Email_Flag = 0
+
+
     ## Need to check if the post has data. Cause from other functions, the POST details will come thru as well.
     if request.method == 'POST' and len(request.form) > 0:    # If the request came in thru a POST. We will get the data first.
         #print("Request A Book Matching method: POST")
@@ -1447,7 +1460,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
         # Check if we need to send Email
         # Need to check if it's a list or a string.
 
-        Send_Email_Flag = 0
+
         if "send_email_flag" in post_data:
             if isinstance(post_data['send_email_flag'], str) and isfloat(post_data['send_email_flag']):
                 Send_Email_Flag = int(post_data["send_email_flag"])
@@ -1456,14 +1469,9 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
             else:
                 Send_Email_Flag = 0
 
-        # Send_Email_Flag =  int(post_data["send_email_flag"]) if ("send_email_flag" in post_data) \
-        #                                                            and (isinstance(post_data['send_email_flag'], str)
-        #                                                                 and isfloat(post_data['send_email_flag'])) else 0
-
 
         # Check for the past details.
         # Should be stored in Javascript, and returned back Via post.
-
         Past_Details = []
         if "MT4_LP_Position_save" in post_data:
             if isinstance(post_data['MT4_LP_Position_save'], str) and is_json(post_data["MT4_LP_Position_save"]):
@@ -1473,32 +1481,35 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
             else:
                 Past_Details = []
 
-        print(post_data["MT4_LP_Position_save"])
-        print("Past_Details")
-        print(pd.DataFrame(Past_Details))
 
-        # Past_Details = json.loads(post_data["MT4_LP_Position_save"]) if ("MT4_LP_Position_save" in post_data) \
-        #                                                                    and (isinstance(post_data['MT4_LP_Position_save'], str)) \
-        #                                                                    and is_json(post_data["MT4_LP_Position_save"]) \
-        #                                                                     else []
 
         # To revert back to a normal Symbol string, instead of a URL.
         df_past_details = pd.DataFrame(Past_Details)
-
-
-        # print("past details")
-        # print(df_past_details)
-
         if "SYMBOL" in df_past_details:
             df_past_details["SYMBOL"] = df_past_details["SYMBOL"].apply(lambda x: BeautifulSoup(x, features="lxml").a.text \
                                                                     if BeautifulSoup(x, features="lxml").a != None else x)
         Past_Details = df_past_details.to_dict("record")
 
+        if 1 == 2:
+            # Checking if the columns are all in.
+            if "Mismatch_count" not in df_past_details:
+                df_past_details["Mismatch_count"] = 0
+
+            if all([c in df_past_details for c in ["Discrepancy", "SYMBOL", "Mismatch_count"]]):
+                df_past_mismatches = df_past_details[df_past_details["Discrepancy"] != 0][["SYMBOL", "Mismatch_count"]]
+                df_past_mismatches.rename(columns={"Mismatch_count" : "Mismatch_count_past"}, inplace=True) # rename it to the past
+            else:
+                df_past_mismatches = pd.DataFrame([])    # Empty DataFrame
+
+
+        #print("df_past_mismatches")
+        #print(df_past_mismatches)
+
+
         # If we want to send all the total position
         send_email_total = int(post_data["send_email_total"][0]) if ("send_email_total" in post_data) and (isinstance(post_data['send_email_total'], list)) else 0
 
 
-        #print("Past Details: {}".format(Past_Details))
         # To Calculate the past (Previous result) Mismatches
         Past_discrepancy = dict()
         for past in Past_Details:
@@ -1507,6 +1518,10 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
                     and "Discrepancy" in past.keys() \
                     and past["Discrepancy"] != 0:    # If the keys are there.
                     Past_discrepancy[past["SYMBOL"]] = past["Mismatch_count"] if "Mismatch_count" in past else 1  # Want to get the count. Or raise as 1.
+
+
+
+        #print(Past_discrepancy)
 
         # # Using pandas
         # # Get dataframe of only those that has Discrepancy for the past records
@@ -1520,10 +1535,26 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
         # # curent_result[1]["Discrepancy"] = 0.01
         # # curent_result[2]["Discrepancy"] = 0.01
 
+        # The pandas way of doing things.
+        if 1 == 2:
+            # Want to merge the past data with the current data to seeif there are any persistent mismatches.
+            if "SYMBOL" in df_past_mismatches and \
+                    "SYMBOL" in df_postion:
+                df_merge_past_present = df_postion.merge(df_past_mismatches, how="left", left_on="SYMBOL", right_on="SYMBOL", \
+                                                         suffixes=(None, '_past'))
+
+                # Fill up the column Mismatch_count_past with 0 for any Nan
+                df_merge_past_present['Mismatch_count_past'] = df_merge_past_present['Mismatch_count_past'].fillna(0)
+                # Increment the mismatch counter if there are any
+                df_merge_past_present["Mismatch_count"] = df_merge_past_present.apply(lambda x: x["Mismatch_count_past"] + 1 if x["Discrepancy"] != 0 else 0, axis=1)
+
+
+                print(df_merge_past_present)
+
 
         # To tally off with current mismatches. If there are, add 1 to count. Else, Zero it.
         for d in curent_result:
-            print(d)
+            #print(d)
             if "Discrepancy" in d.keys():
                 if d["Discrepancy"] != 0:   # There are mismatches Currently.
                     d["Mismatch_count"] = 1 if d['SYMBOL'] not in Past_discrepancy else Past_discrepancy[d['SYMBOL']] + 1
@@ -1562,10 +1593,10 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
                              email_title,
                              Email_Header + "Hi, <br><br>Kindly find the total position of the MT4/LP Position. <br> "
                              + email_table_html + "<br>Thanks,<br>Aaron" + Email_Footer, [])
-        else:
-            if Send_Email_Flag == 1:  # Only when Send Email Alert is set, we will
-                async_update_Runtime(app=current_app._get_current_object(), Tool='MT4/LP A Book Check')     # Want to update the runtime table to ensure that tool is running.
-
+        # else:
+        #     if Send_Email_Flag == 1:  # Only when Send Email Alert is set, we will
+        #         async_update_Runtime(app=current_app._get_current_object(), Tool='MT4/LP A Book Check')     # Want to update the runtime table to ensure that tool is running.
+        #
 
 
                 #
@@ -1696,6 +1727,9 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 
     curent_result = df_postion.to_dict("record")
 
+    if Send_Email_Flag == 1:  # Only when Send Email Alert is set, we will
+        async_update_Runtime(app=current_app._get_current_object(),
+                             Tool='MT4/LP A Book Check')  # Want to update the runtime table to ensure that tool is running.
 
     #print("Current Results: {}".format(curent_result))
     return_result = {"current_result":curent_result, "Play_Sound": Play_Sound}   # End of if/else. going to return.

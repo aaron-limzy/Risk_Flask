@@ -1387,12 +1387,20 @@ def time_difference_check(time_to_check):
     else:
         return time_to_check.strftime("%Y-%m-%d<br>%H:%M:%S")
 
-def color_profit_for_df(data, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"]):
+
+# withthe option to return the dataframe
+def color_profit_for_df(data, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=False):
 
     df = pd.DataFrame(data=data) if len(data) != 0 else pd.DataFrame(data=default)
-    col_to_change = [c for c in df.columns if max([c.lower().find(w) >= 0 for w in words_to_find]) ]
+    col_to_change = [c for c in df.columns if max([c.lower().find(w) >= 0 for w in words_to_find]) ] if len(words_to_find) > 0 else []
     # Want to change to color if there are profit, showing green and red for profit and loss respectively.
     for c in col_to_change:
         df[c] = df[c].apply(lambda x: profit_red_green(x))
+
+    # Only if we want to return the dataframe
+    if return_df:
+        return df
+
     ret_val = df.to_dict("record")
+
     return ret_val
