@@ -306,14 +306,13 @@ def HK_Copy_STP():
                            Table_name={"TOTAL CLOSED PNL": "Hss1",
                                        "FLOATING LOTS": "Vss1",
                                        "FLOATING PROFIT": "Vss2",
-                                       "[OPEN] PRICE&PROFIT COMPARISON": "H1",
-                                       "[OPEN] Lots& Open Time Comparison": "H2",
+                                       "[OPEN] PRICE & PROFIT COMPARISON": "H1",
+                                       "[OPEN] Lots & Open Time Comparison": "H2",
                                        "LP Details": "H3",
-                                       "[OPEN] PRICE&PROFIT COMPARISON": "H4",
                                        "Line1"                           : "Hr1" ,
-                                       "[CLOSED] LOT/PROFIT COMPARISON": "H5",
-                                       "[CLOSED] OPEN/CLOSE PRICE COMPARISON": "H6",
-                                       "OPEN/CLOSE TIME COMPARISON"         : "H7"
+                                       "[CLOSED] LOT/PROFIT COMPARISON": "H4",
+                                       "[CLOSED] OPEN/CLOSE PRICE COMPARISON": "H5",
+                                       "[CLOSED] OPEN/CLOSE TIME COMPARISON"         : "H6"
                                        },
                            title=title, setinterval=30,
                            ajax_url=url_for('mt5_monitoring.HK_Copy_STP_ajax', _external=True),
@@ -372,9 +371,8 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     # 9th Table
     #[HK_CopyTrade_Open_Time_Comparison] + MT5.[HK_CopyTrade_Open_Time_Comparison]
-    mt4_HK_CopyTrade_Open_Time_Comparison_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison()", app=current_app._get_current_object())
-    mt5_HK_CopyTrade_Open_Time_Comparison_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison()", unsync_app=current_app._get_current_object())
-
+    mt4_HK_CopyTrade_Open_Time_Comparison_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison_last24hour()", app=current_app._get_current_object())
+    mt5_HK_CopyTrade_Open_Time_Comparison_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison_last24hour()", unsync_app=current_app._get_current_object())
 
 
 
@@ -431,14 +429,26 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     # 4th Table
     mt4_HK_CopyTrade_Price_Comparison = mt4_HK_CopyTrade_Price_Comparison_unsync.result()
-    mt4_HK_CopyTrade_Price_Comparisone_df = color_profit_for_df(mt4_HK_CopyTrade_Price_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+    mt4_HK_CopyTrade_Price_Comparison_df = color_profit_for_df(mt4_HK_CopyTrade_Price_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
 
     mt5_HK_CopyTrade_Price_Comparison = mt5_HK_CopyTrade_Price_Comparison_unsync.result()
-    mt5_HK_CopyTrade_Price_Comparison_df = color_profit_for_df(mt5_HK_CopyTrade_Price_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+    mt5_HK_CopyTrade_Price_Comparison_df = color_profit_for_df(mt5_HK_CopyTrade_Price_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
 
-    table_4_df = mt4_HK_CopyTrade_Price_Comparisone_df.merge(mt5_HK_CopyTrade_Price_Comparison_df, how="outer", left_on="Ticket", right_on = "Merging Ticket")
-    
-    table_4_df.pop("Merging Ticket")
+    table_4_df = mt4_HK_CopyTrade_Price_Comparison_df.merge(mt5_HK_CopyTrade_Price_Comparison_df, how="left", left_on="Ticket", right_on = "Merging Ticket")
+
+    # Create Extra Column, considering to check if the columns are around.
+    if all([c for c in ['Profit', 'Vantage Profit', 'BIC Profit', 'SQ Profit', 'Philip Profit'] if c in table_4_df]):
+        table_4_df["BGI Profit"] = table_4_df['Vantage Profit'] + table_4_df['BIC Profit'] + table_4_df['SQ Profit'] + table_4_df['Philip Profit'] - table_4_df['Profit']
+
+    table_4_col = ['Ticket', 'Symbol',  'Open Price', 'Vantage Open Price', 'BIC Open Price',
+     'SQ Open Price', 'Philip Open Price', 'Profit', 'Vantage Profit',
+     'BIC Profit', 'SQ Profit', 'Philip Profit', "BGI Profit"]
+
+    # To color profit columns
+    table_4_df = color_profit_for_df(table_4_df.to_dict("record"), default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+
+    table_4_df = table_4_df[[c for c in table_4_col if c in table_4_df]]
+
 
 
     # 5th Table
@@ -449,7 +459,14 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_HK_CopyTrade_Open_Time = mt5_HK_CopyTrade_Open_Time_unsync.result()
     mt5_HK_CopyTrade_Open_Time_df = color_profit_for_df(mt5_HK_CopyTrade_Open_Time, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    table_5_df = mt4_HK_CopyTrade_Open_Timee_df.merge(mt5_HK_CopyTrade_Open_Time_df, how="outer", left_on="Ticket", right_on = "Merging Ticket")
+    table_5_df = mt4_HK_CopyTrade_Open_Timee_df.merge(mt5_HK_CopyTrade_Open_Time_df, how="left", left_on="Ticket", right_on = "Merging Ticket")
+
+    table_5_col = ['Ticket', 'Symbol', 'Net Lots', 'Vantage Net Lots', 'BIC Net Lots',  'SQ Net Lots', \
+                   'Philip Net Lots', 'Open Time', 'Vantage Open Time', 'BIC OpenTime','SQ Open Time', 'Philip Open Time']
+
+    table_5_df = table_5_df[[c for c in table_5_col if c in table_5_df]]
+
+
     #table_5_df.pop("Merging Ticket")
 
 
@@ -467,17 +484,29 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     # 7th Table
     mt4_HK_CopyTrade_Profit_Comparison_last24hour = mt4_HK_CopyTrade_Profit_Comparison_last24hour_unsync.result()
-    mt4_HK_CopyTrade_Profit_Comparison_last24hour_df = color_profit_for_df(mt4_HK_CopyTrade_Profit_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+    mt4_HK_CopyTrade_Profit_Comparison_last24hour_df = color_profit_for_df(mt4_HK_CopyTrade_Profit_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
 
     mt5_HK_CopyTrade_Profit_Comparison_last24hour = mt5_HK_CopyTrade_Profit_Comparison_last24hour_unsync.result()
-    mt5_HK_CopyTrade_Profit_Comparison_last24hour_df = color_profit_for_df(mt5_HK_CopyTrade_Profit_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+    mt5_HK_CopyTrade_Profit_Comparison_last24hour_df = color_profit_for_df(mt5_HK_CopyTrade_Profit_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
 
     if "Ticket" in mt4_HK_CopyTrade_Profit_Comparison_last24hour_df and "Merging Ticket" in mt5_HK_CopyTrade_Profit_Comparison_last24hour_df:
-        table_7_df = mt4_HK_CopyTrade_Profit_Comparison_last24hour_df.merge(mt5_HK_CopyTrade_Profit_Comparison_last24hour_df, how="outer", left_on="Ticket", right_on = "Merging Ticket")
+        table_7_df = mt4_HK_CopyTrade_Profit_Comparison_last24hour_df.merge(mt5_HK_CopyTrade_Profit_Comparison_last24hour_df, how="left", left_on="Ticket", right_on = "Merging Ticket")
+        table_7_df['BGI Profit'] = table_7_df['BGI Profit'] + table_7_df['Philip Profit']
+
+        # to re-color the columns
+        table_7_df = color_profit_for_df(table_7_df.to_dict("record"), default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+
+        table_7_col = ['Ticket', 'Close Time', 'Symbol', 'Net Lots', 'Vantage Net Lots',
+                       'BIC Net Lots', 'SQ Net Lots', 'Philip Net Lots', 'Profit', 'Vantage Profit', 'BIC Profit',
+                       'SQ Profit', 'Philip Profit', 'BGI Profit']
+        table_7_df = table_7_df[[c for c in table_7_col if c in table_7_df]]
+
         #table_7_df.pop("Merging Ticket")
         table_7_df.fillna("---", inplace=True)
     else:
         table_7_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
+
+
 
 
     # 8th Table
@@ -489,12 +518,18 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     if "Ticket" in mt4_HK_CopyTrade_Price_Comparison_last24hour_df and "Merging Ticket" in mt5_HK_CopyTrade_Price_Comparison_last24hour_df:
         table_8_df = mt4_HK_CopyTrade_Price_Comparison_last24hour_df.merge(
-            mt5_HK_CopyTrade_Price_Comparison_last24hour_df, how="outer", left_on="Ticket", right_on="Merging Ticket")
-        #table_8_df.pop("Merging Ticket")
+            mt5_HK_CopyTrade_Price_Comparison_last24hour_df, how="left", left_on="Ticket", right_on="Merging Ticket")
+        table_8_df.pop("Merging Ticket")
+
+        table_8_col = ['Ticket', 'Close Time ', 'Symbol', 'Open Price', 'Vantage Open Price',
+         'BIC Open Price', 'SQ Open Price', 'Close_Price', 'Philip Open Price', 'Vantage Close Price',
+         'BIC Close Price', 'SQ Close Price', 'Philip Close Price' ]
+
+        table_8_df = table_8_df[[c for c in table_8_col if c in table_8_df]]
+
         table_8_df.fillna("---", inplace=True)
     else:
         table_8_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
-
 
 
     # 9th Table
@@ -510,12 +545,23 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     if "Ticket" in mt4_HK_CopyTrade_Open_Time_Comparison_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_Comparison_df:
         table_9_df = mt4_HK_CopyTrade_Open_Time_Comparison_df.merge(mt5_HK_CopyTrade_Open_Time_Comparison_df,
-                                                                    how="outer", left_on="Ticket",
+                                                                    how="left", left_on="Ticket",
                                                                     right_on="Merging Ticket")
-        #table_9_df.pop("Merging Ticket")
+        table_9_df.pop("Merging Ticket")
+
+        table_9_col = ['Ticket', 'Symbol', 'Open Time', 'Vantage Open Time', 'BIC Open Time',
+         'SQ Open Time','Philip Open Time', 'Close Time', 'Vantage Close Time', 'BIC Close Time',
+         'SQ Close Time', 'Philip Close Time']
+
+        table_9_df = table_9_df[[c for c in table_9_col if c in table_9_df]]
+
         table_9_df.fillna("---", inplace=True)
     else:
         table_9_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
+
+    print("table_9_df")
+    print(table_9_df.columns)
+
 
 
     return json.dumps({ "Hss1": table_1_concat_return_data,
