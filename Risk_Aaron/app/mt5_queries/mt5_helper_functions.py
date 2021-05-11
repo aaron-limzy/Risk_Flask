@@ -282,19 +282,17 @@ def pretty_print_mt5_futures_LP_details_2(futures_data, fx_lp_details, return_df
 
     # Will display as a table inside a table on the page.
     mt5_hk_LP_Copy_futures_data_df["BALANCE"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: \
-                    {"DEPOSIT" : "$ {}".format(x['BALANCE']),
-                     'EQUITY' : "$ {}".format(x['EQUITY']),
+                    {"DEPOSIT" : "$ {:,.2f}".format(x['BALANCE']),
+                     'EQUITY' : "$ {:.2f}".format(x['EQUITY']),
                      "PnL":  x['PnL'],
-                     "FROZEN FEE":  "$ {}".format(x['FROZENFEE'])} , axis=1)
+                     "FROZEN FEE":  "$ {:,.2f}".format(x['FROZENFEE'])} , axis=1)
 
     # Will display as a table inside a table on the page.
-    # mt5_hk_LP_Copy_futures_data_df["MARGIN"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: \
-    #                {"ACCT INITIAL MARGIN" : x['ACCTMAINTENANCEMARGIN'], 'ACCT MAINTENANCE MARGIN' : x['ACCTINITIALMARGIN']} , axis=1)
-
     mt5_hk_LP_Copy_futures_data_df["MARGIN"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: \
-                   {"ACCT INITIAL MARGIN" : 0, 'ACCT MAINTENANCE MARGIN' :0} , axis=1)
+                   {"ACCT INITIAL MARGIN" : x['ACCTMAINTENANCEMARGIN'], 'ACCT MAINTENANCE MARGIN' : x['ACCTINITIALMARGIN']} , axis=1)
 
-
+    # mt5_hk_LP_Copy_futures_data_df["MARGIN"] = mt5_hk_LP_Copy_futures_data_df.apply(lambda x: \
+    #                {"ACCT INITIAL MARGIN" : 0, 'ACCT MAINTENANCE MARGIN' :0} , axis=1)
 
     # Remove all the column that we don't need
     for p in ["ACCOUNT", "CURRENCY", "ACCTMAINTENANCEMARGIN", 'ACCTINITIALMARGIN', 'PnL', "FROZENFEE", "EQUITY"]:
