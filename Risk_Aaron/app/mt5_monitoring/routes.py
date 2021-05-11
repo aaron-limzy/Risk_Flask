@@ -437,6 +437,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_HK_CopyTrade_Price_Comparison_df = color_profit_for_df(mt5_HK_CopyTrade_Price_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
     table_4_df = mt4_HK_CopyTrade_Price_Comparisone_df.merge(mt5_HK_CopyTrade_Price_Comparison_df, how="outer", left_on="Ticket", right_on = "Merging Ticket")
+    
     table_4_df.pop("Merging Ticket")
 
 
