@@ -270,36 +270,64 @@ def HK_Copy_STP():
     header = Markup("<b><u>HK A Book</u></b>")
     title =  "HK A Book"
 
-    description = Markup("""<b>DESCRIPTION</b><br><br>The <span style="color:green">BGI position table </span>  reflects the floating position of the main account being STP <b>by symbol</b><br>
-        -The lots being STP will be rounded up to the nearest <span style="color:red">2 decimal places</span>. For example,<br>
-        <span style="color:red"><u>25% of 1.5 lots  =0.375 lot, the trade will be hit out as 0.38 lots</u></span>.<br>
-        -<span style="color:blue">Net Lots * STP% </span> <br> is calculate on each individual trades hit out to LPs as each trades will be rounded off to the nearest 2 decimal places.
-        <br><br>
-        <span style="color:green">The Vantage, BIC, and SwissQuote tables</span> shows our floating positions in our LP <b>by symbol</b><br>
-        -<span style="color:blue">Lot%</span>: shows the percentage of LP's lot as compared to the main account's lot being copied
-        <br><br>
-        <span style="color:green">LP Details table</span> will show our current funding in our LPs.<br>
-        <br><br>
-        <span style="color:green">Trades table</span> will show individual floating trades made by the account being STP as well as its price comparison against trades made in LPs.<br>
-        <br>
-        <b>SQL INFO</b><br>
-        <br>
-        The account being STP,STP % and Vantage trade copier's login can be set in sql table [aaron.aaron_misc_data] <br>
-        <ul>
-        <li>item=HK_Copy_Trade_Main_Login </li>
-        <li>item = HK_Copy_Trade_Vantage_Login</li>
-        <li>item = HK_Copy_Trade_Percentage</li>
-        <li>item = HK_Copy_Trade_Percentage_Vantage</li>
-        <li>item = HK_Copy_Trade_Percentage_BIC</li>
-        <li>item = HK_Copy_Trade_Percentage_SQ</li>
-        </ul>
-        <br>
-        The trades information can be take from 
-        <ul>
-        <li>Vantage -> MT4 live 1 </li>
-        <li>BIC -> aaron.live_trade_88803164_b.i.c.markets_live </li>
-        <li>SwissQuote -> aaron.live_trade_714009_swissquote_live </li>
-        </ul>""")
+    description = Markup("""The lots being STP will be rounded up to the nearest <span style="color:red">2 decimal places</span>. For example,<br>
+            <span style="color:red"><u>25% of 1.5 lots  =0.375 lot, the trade will be hit out as 0.38 lots</u></span>.<br><br>
+            <span style="color:green">[Floating Lots]</span><br>
+            -<span style="color:blue">Net Lots * STP% </span> is calculate on each individual trades hit out to LPs as each trades will be rounded off to the nearest 2 decimal places.<br>
+            -Therefore <span style="color:blue">LP Net Lots - Net Lots * STP% </span> row is used to error checking. The value should always be 0,
+             otherwise an alert will be sent to notify the mismatch in Lots.
+            
+            <br><br>
+            
+            <span style="color:green">[Open positions tables]</span>: show a quick comparison between the LPs' volume/profit/price/open time .
+            <br><br>
+            <span style="color:green">[LP Details table]</span>: shows our current funding in our LPs.
+            <br><br>
+            <span style="color:green">[Close Trade tables]</span>: show the close trade for the past 24 hours<br>
+            -Shows comparison between LP's price/profit/lot/open time/close time.
+            <br><br>
+            <b>SQL INFO</b><br>
+            <br>
+            Total close PNL procedures (MT4/MT5):
+            <ul>
+                <li>HK_CopyTrade_Total_Pnl </li>
+            </ul>
+            <br>
+            Total float positions procedures (MT4/MT5):
+            <ul>
+                <li>HK_CopyTrade_Profit_Difference </li>
+                <li>HK_CopyTrade_NetLots_Difference</li>
+            </ul>
+            <br>
+            The account being STP,STP % and Vantage trade copier's login can be set in sql table [aaron.aaron_misc_data] <br>
+            <ul>
+            <li>item=HK_Copy_Trade_Main_Login </li>
+            <li>item = HK_Copy_Trade_Vantage_Login</li>
+            <li>item = HK_Copy_Trade_Percentage_Vantage</li>
+            <li>item = HK_Copy_Trade_Percentage_BIC</li>
+            <li>item = HK_Copy_Trade_Percentage_SQ</li>
+            <li>item = HK_Copy_Trade_Percentage_Philip</li>
+            </ul>
+            <br>
+            The trades information can be taken from: 
+            <ul>
+            <li>Vantage -> MT4 live 1 </li>
+            <span style="color:red">Please change the value of HK_Copy_Trade_Vantage in [aaron.aaron_misc_data] when changing account.</span>
+            <li>BIC -> aaron.live_trade_88803164_b.i.c.markets_live </li>
+            <span style="color:red">Please change the value of HK_Copy_Trade_BIC in [aaron.aaron_misc_data] when changing LP account.</span>
+            <li>SwissQuote -> aaron.live_trade_714009_swissquote_live </li>
+            <span style="color:red">Please change the value of HK_Copy_Trade_SQ in [aaron.aaron_misc_data] when changing LP account.</span>
+            <li>Philips -> MT5 positions/deals </li>
+            <span style="color:red">Please change the value of HK_Copy_Trade_Philip in [aaron.aaron_misc_data] when changing LP account.</span>
+            </ul>
+            <br>
+            Closed trades information can be taken procedures under aaron db (MT4/MT5)from
+            <ul>
+            <li>HK_CopyTrade_Open_Time_Comparison_last24hour </li>
+            <li>HK_CopyTrade_Price_Comparison_last24hour</li>
+            <li>HK_CopyTrade_Profit_Comparison_last24hour </li>
+            </ul>
+            """)
 
 
     return render_template("Wbwrk_Multitable_Borderless_redalert.html", backgroud_Filename=background_pic("HK_Copy_STP"), icon=icon_pic("ABook_BGI"),
@@ -391,6 +419,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_HK_CopyTrade_Total_Pnl_df = color_profit_for_df(mt5_HK_CopyTrade_Total_Pnl, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
     table_1_concat = pd.concat([mt4_HK_CopyTrade_Total_Pnl_df, mt5_HK_CopyTrade_Total_Pnl_df])
+    table_1_concat = table_1_concat if len(table_1_concat) > 0 else [{"Run Results": "No Open Trades"}]
     table_1_concat_return_data =  table_1_concat.to_dict("record")
 
     mt4_HK_CopyTrade_Total_Pnl = None
@@ -406,7 +435,8 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_HK_CopyTrade_NetLots_Difference = mt5_HK_CopyTrade_NetLots_Difference_unsync.result()
     mt5_HK_CopyTrade_NetLots_Difference_df = color_profit_for_df(mt5_HK_CopyTrade_NetLots_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    table_2_return_data = {}
+    table_2_return_data =  {"Run Results": "No Open Trades"}
+
     if all([c in mt4_HK_CopyTrade_NetLots_Difference_df for c in
             ["Net Lots", "LP Net Lots", "STP%", "LP Net Lots - Net Lots * STP%"]]) and "Philip Net Lots" in mt5_HK_CopyTrade_NetLots_Difference_df:
         table_2_return_data["Net Lots"] = mt4_HK_CopyTrade_NetLots_Difference_df["Net Lots"].sum()
@@ -419,7 +449,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt4_HK_CopyTrade_Profit_Difference = mt4_HK_CopyTrade_Profit_Difference_unsync.result()
     mt4_HK_CopyTrade_Profit_Difference_df = color_profit_for_df(mt4_HK_CopyTrade_Profit_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
 
-    table_3_return_data = {}
+    table_3_return_data = {"Run Results": "No Open Trades"}
     if all([c in mt4_HK_CopyTrade_Profit_Difference_df for c in ["LP Profit", "Profit"]]) and "Philip Net Lots" in mt5_HK_CopyTrade_NetLots_Difference_df:
         table_3_return_data["LP Profit"] = mt4_HK_CopyTrade_Profit_Difference_df['LP Profit'].sum() + mt5_HK_CopyTrade_NetLots_Difference_df["Philip Net Lots"].sum()
         table_3_return_data["Profit USD"] = mt4_HK_CopyTrade_Profit_Difference_df["Profit"].sum()
@@ -434,21 +464,26 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_HK_CopyTrade_Price_Comparison = mt5_HK_CopyTrade_Price_Comparison_unsync.result()
     mt5_HK_CopyTrade_Price_Comparison_df = color_profit_for_df(mt5_HK_CopyTrade_Price_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
 
-    table_4_df = mt4_HK_CopyTrade_Price_Comparison_df.merge(mt5_HK_CopyTrade_Price_Comparison_df, how="left", left_on="Ticket", right_on = "Merging Ticket")
+    if "Ticket" in mt4_HK_CopyTrade_Price_Comparison_df and "Merging Ticket" in mt5_HK_CopyTrade_Price_Comparison_df:
+        table_4_df = mt4_HK_CopyTrade_Price_Comparison_df.merge(mt5_HK_CopyTrade_Price_Comparison_df, how="left", left_on="Ticket", right_on = "Merging Ticket")
 
-    # Create Extra Column, considering to check if the columns are around.
-    if all([c for c in ['Profit', 'Vantage Profit', 'BIC Profit', 'SQ Profit', 'Philip Profit'] if c in table_4_df]):
-        table_4_df["BGI Profit"] = table_4_df['Vantage Profit'] + table_4_df['BIC Profit'] + table_4_df['SQ Profit'] + table_4_df['Philip Profit'] - table_4_df['Profit']
+        # Create Extra Column, considering to check if the columns are around.
+        if all([c for c in ['Profit', 'Vantage Profit', 'BIC Profit', 'SQ Profit', 'Philip Profit'] if
+                c in table_4_df]):
+            table_4_df["BGI Profit"] = table_4_df['Vantage Profit'] + table_4_df['BIC Profit'] + table_4_df[
+                'SQ Profit'] + table_4_df['Philip Profit'] - table_4_df['Profit']
+        table_4_col = ['Ticket', 'Symbol', 'Open Price', 'Vantage Open Price', 'BIC Open Price',
+                       'SQ Open Price', 'Philip Open Price', 'Profit', 'Vantage Profit',
+                       'BIC Profit', 'SQ Profit', 'Philip Profit', "BGI Profit"]
 
-    table_4_col = ['Ticket', 'Symbol',  'Open Price', 'Vantage Open Price', 'BIC Open Price',
-     'SQ Open Price', 'Philip Open Price', 'Profit', 'Vantage Profit',
-     'BIC Profit', 'SQ Profit', 'Philip Profit', "BGI Profit"]
+        # To color profit columns
+        table_4_df = color_profit_for_df(table_4_df.to_dict("record"), default=[{"Run Results": "No Open Trades"}],
+                                         words_to_find=["profit"], return_df=True)
 
-    # To color profit columns
-    table_4_df = color_profit_for_df(table_4_df.to_dict("record"), default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+        table_4_df = table_4_df[[c for c in table_4_col if c in table_4_df]]
 
-    table_4_df = table_4_df[[c for c in table_4_col if c in table_4_df]]
-
+    else:
+        table_4_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
 
 
     # 5th Table
@@ -459,12 +494,17 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_HK_CopyTrade_Open_Time = mt5_HK_CopyTrade_Open_Time_unsync.result()
     mt5_HK_CopyTrade_Open_Time_df = color_profit_for_df(mt5_HK_CopyTrade_Open_Time, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    table_5_df = mt4_HK_CopyTrade_Open_Timee_df.merge(mt5_HK_CopyTrade_Open_Time_df, how="left", left_on="Ticket", right_on = "Merging Ticket")
 
-    table_5_col = ['Ticket', 'Symbol', 'Net Lots', 'Vantage Net Lots', 'BIC Net Lots',  'SQ Net Lots', \
-                   'Philip Net Lots', 'Open Time', 'Vantage Open Time', 'BIC OpenTime','SQ Open Time', 'Philip Open Time']
+    if "Ticket" in mt4_HK_CopyTrade_Open_Timee_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_df:
+        table_5_df = mt4_HK_CopyTrade_Open_Timee_df.merge(mt5_HK_CopyTrade_Open_Time_df, how="left", left_on="Ticket", right_on = "Merging Ticket")
+        table_5_col = ['Ticket', 'Symbol', 'Net Lots', 'Vantage Net Lots', 'BIC Net Lots', 'SQ Net Lots', \
+                       'Philip Net Lots', 'Open Time', 'Vantage Open Time', 'BIC OpenTime', 'SQ Open Time',
+                       'Philip Open Time']
+        table_5_df = table_5_df[[c for c in table_5_col if c in table_5_df]]
 
-    table_5_df = table_5_df[[c for c in table_5_col if c in table_5_df]]
+    else:
+        table_5_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
+
 
 
     #table_5_df.pop("Merging Ticket")
@@ -540,15 +580,17 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_HK_CopyTrade_Open_Time_Comparison = mt5_HK_CopyTrade_Open_Time_Comparison_unsync.result()
     mt5_HK_CopyTrade_Open_Time_Comparison_df = color_profit_for_df(mt5_HK_CopyTrade_Open_Time_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    table_9_df = mt4_HK_CopyTrade_Open_Time_Comparison_df.merge(mt5_HK_CopyTrade_Open_Time_Comparison_df, how="outer", left_on="Ticket", right_on = "Merging Ticket")
-    table_9_df.pop("Merging Ticket")
+    if "Ticket" in mt4_HK_CopyTrade_Open_Time_Comparison_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_Comparison_df:
+        table_9_df = mt4_HK_CopyTrade_Open_Time_Comparison_df.merge(mt5_HK_CopyTrade_Open_Time_Comparison_df, how="outer", left_on="Ticket", right_on = "Merging Ticket")
+        table_9_df.pop("Merging Ticket")
+    else:
+        table_9_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
 
     if "Ticket" in mt4_HK_CopyTrade_Open_Time_Comparison_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_Comparison_df:
         table_9_df = mt4_HK_CopyTrade_Open_Time_Comparison_df.merge(mt5_HK_CopyTrade_Open_Time_Comparison_df,
                                                                     how="left", left_on="Ticket",
                                                                     right_on="Merging Ticket")
         table_9_df.pop("Merging Ticket")
-
         table_9_col = ['Ticket', 'Symbol', 'Open Time', 'Vantage Open Time', 'BIC Open Time',
          'SQ Open Time','Philip Open Time', 'Close Time', 'Vantage Close Time', 'BIC Close Time',
          'SQ Close Time', 'Philip Close Time']
@@ -559,8 +601,8 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     else:
         table_9_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
 
-    print("table_9_df")
-    print(table_9_df.columns)
+    # print("table_9_df")
+    # print(table_9_df.columns)
 
 
 
