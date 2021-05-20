@@ -406,7 +406,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     # 6th Table
     # # While waiting, we will call somthing that isn't unsync
-    lp_details = ABook_LP_Details_function(exclude_list=["CFH", "GlobalPrime", "demo"])
+    lp_details = ABook_LP_Details_function(exclude_list=["Vantage", "GlobalPrime", "demo"])
     mt5_hk_LP_Copy_futures_data_unsync = mt5_HK_CopyTrade_Futures_LP_data(unsync_app=current_app._get_current_object())
 
 
@@ -476,12 +476,12 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
         table_4_df = mt4_HK_CopyTrade_Price_Comparison_df.merge(mt5_HK_CopyTrade_Price_Comparison_df, how="left", left_on="Ticket", right_on = "Merging Ticket")
 
         # Create Extra Column, considering to check if the columns are around.
-        if all([c for c in ['Profit', 'Vantage Profit', 'BIC Profit', 'SQ Profit', 'Philip Profit'] if
+        if all([c for c in ['Profit', 'CFH Profit', 'BIC Profit', 'SQ Profit', 'Philip Profit'] if
                 c in table_4_df]):
-            table_4_df["BGI Profit"] = table_4_df['Vantage Profit'] + table_4_df['BIC Profit'] + table_4_df[
+            table_4_df["BGI Profit"] = table_4_df['CFH Profit'] + table_4_df['BIC Profit'] + table_4_df[
                 'SQ Profit'] + table_4_df['Philip Profit'] - table_4_df['Profit']
-        table_4_col = ['Ticket', 'Symbol', 'Open Price', 'Vantage Open Price', 'BIC Open Price',
-                       'SQ Open Price', 'Philip Open Price', 'Profit', 'Vantage Profit',
+        table_4_col = ['Ticket', 'Symbol', 'Open Price', 'CFH Open Price', 'BIC Open Price',
+                       'SQ Open Price', 'Philip Open Price', 'Profit', 'CFH Profit',
                        'BIC Profit', 'SQ Profit', 'Philip Profit', "BGI Profit"]
 
         # To color profit columns
@@ -505,8 +505,8 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     if "Ticket" in mt4_HK_CopyTrade_Open_Timee_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_df:
         table_5_df = mt4_HK_CopyTrade_Open_Timee_df.merge(mt5_HK_CopyTrade_Open_Time_df, how="left", left_on="Ticket", right_on = "Merging Ticket")
-        table_5_col = ['Ticket', 'Symbol', 'Net Lots', 'Vantage Net Lots', 'BIC Net Lots', 'SQ Net Lots', \
-                       'Philip Net Lots', 'Open Time', 'Vantage Open Time', 'BIC OpenTime', 'SQ Open Time',
+        table_5_col = ['Ticket', 'Symbol', 'Net Lots', 'CFH Net Lots', 'BIC Net Lots', 'SQ Net Lots', \
+                       'Philip Net Lots', 'Open Time', 'CFH Open Time', 'BIC OpenTime', 'SQ Open Time',
                        'Philip Open Time']
         table_5_df = table_5_df[[c for c in table_5_col if c in table_5_df]]
 
@@ -544,8 +544,8 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
         # to re-color the columns
         table_7_df = color_profit_for_df(table_7_df.to_dict("record"), default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-        table_7_col = ['Ticket', 'Close Time', 'Symbol', 'Net Lots', 'Vantage Net Lots',
-                       'BIC Net Lots', 'SQ Net Lots', 'Philip Net Lots', 'Profit', 'Vantage Profit', 'BIC Profit',
+        table_7_col = ['Ticket', 'Close Time', 'Symbol', 'Net Lots', 'CFH Net Lots',
+                       'BIC Net Lots', 'SQ Net Lots', 'Philip Net Lots', 'Profit', 'CFH Profit', 'BIC Profit',
                        'SQ Profit', 'Philip Profit', 'BGI Profit']
         table_7_df = table_7_df[[c for c in table_7_col if c in table_7_df]]
 
@@ -569,8 +569,8 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
             mt5_HK_CopyTrade_Price_Comparison_last24hour_df, how="left", left_on="Ticket", right_on="Merging Ticket")
         table_8_df.pop("Merging Ticket")
 
-        table_8_col = ['Ticket', 'Close Time ', 'Symbol', 'Open Price', 'Vantage Open Price',
-         'BIC Open Price', 'SQ Open Price', 'Close_Price', 'Philip Open Price', 'Vantage Close Price',
+        table_8_col = ['Ticket', 'Close Time ', 'Symbol', 'Open Price', 'CFH Open Price',
+         'BIC Open Price', 'SQ Open Price', 'Close_Price', 'Philip Open Price', 'CFH Close Price',
          'BIC Close Price', 'SQ Close Price', 'Philip Close Price' ]
 
         table_8_df = table_8_df[[c for c in table_8_col if c in table_8_df]]
@@ -599,8 +599,8 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
                                                                     how="left", left_on="Ticket",
                                                                     right_on="Merging Ticket")
         table_9_df.pop("Merging Ticket")
-        table_9_col = ['Ticket', 'Symbol', 'Open Time', 'Vantage Open Time', 'BIC Open Time',
-         'SQ Open Time','Philip Open Time', 'Close Time', 'Vantage Close Time', 'BIC Close Time',
+        table_9_col = ['Ticket', 'Symbol', 'Open Time', 'CFH Open Time', 'BIC Open Time',
+         'SQ Open Time','Philip Open Time', 'Close Time', 'CFH Close Time', 'BIC Close Time',
          'SQ Close Time', 'Philip Close Time']
 
         table_9_df = table_9_df[[c for c in table_9_col if c in table_9_df]]
