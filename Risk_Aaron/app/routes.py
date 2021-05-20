@@ -1708,7 +1708,8 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     col_needed = ["SYMBOL", "Vantage_lot", "CFH_lot", "GP_lot", "API_lot", "Offset_lot", "Lp_Net_lot", "MT4_Net_Lots", "MT5 Net Lots", "Total_Revenue", "Discrepancy", "Mismatch_count"]
 
     # If there is no lots in these columns at all, we don't need to show the column
-    col_not_needed_if_empty = ["CFH_lot", "GP_lot"]
+    # "CFH_lot"
+    col_not_needed_if_empty = [ "GP_lot"]
     for c in col_not_needed_if_empty:
         if c in df_postion and df_postion[c].abs().sum() == 0 :
             if c in col_needed:
@@ -1741,7 +1742,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 
 @main_app.route('/ABook_LP_Details', methods=['GET', 'POST'])
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
-def ABook_LP_Details(update_tool_time=0, exclude_list=["demo", "CFH", "GlobalPrime"]):
+def ABook_LP_Details(update_tool_time=0, exclude_list=["demo", "GlobalPrime"]):
     return json.dumps(ABook_LP_Details_function(update_tool_time=0, exclude_list=exclude_list))
     #
     #                         # LP Details. Balance, Credit, Margin, MC/SO levels. Will alert if email is set to send.
