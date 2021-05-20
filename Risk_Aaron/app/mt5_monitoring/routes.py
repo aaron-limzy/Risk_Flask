@@ -570,7 +570,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
         table_8_df.pop("Merging Ticket")
 
         table_8_col = ['Ticket', 'Close Time ', 'Symbol', 'Open Price', 'CFH Open Price',
-         'BIC Open Price', 'SQ Open Price', 'Close_Price', 'Philip Open Price', 'CFH Close Price',
+         'BIC Open Price', 'SQ Open Price', 'Close Price', 'Philip Open Price', 'CFH Close Price',
          'BIC Close Price', 'SQ Close Price', 'Philip Close Price' ]
 
         table_8_df = table_8_df[[c for c in table_8_col if c in table_8_df]]
