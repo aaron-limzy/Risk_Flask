@@ -506,7 +506,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     if "Ticket" in mt4_HK_CopyTrade_Open_Timee_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_df:
         table_5_df = mt4_HK_CopyTrade_Open_Timee_df.merge(mt5_HK_CopyTrade_Open_Time_df, how="left", left_on="Ticket", right_on = "Merging Ticket")
         table_5_col = ['Ticket', 'Symbol', 'Net Lots', 'CFH Net Lots', 'BIC Net Lots', 'SQ Net Lots', \
-                       'Philip Net Lots', 'Open Time', 'CFH Open Time', 'BIC OpenTime', 'SQ Open Time',
+                       'Philip Net Lots', 'Open Time', 'CFH Open Time', 'BIC Open Time', 'SQ Open Time',
                        'Philip Open Time']
         table_5_df = table_5_df[[c for c in table_5_col if c in table_5_df]]
 
