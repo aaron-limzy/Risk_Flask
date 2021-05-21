@@ -371,6 +371,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     # Third table
     mt4_HK_CopyTrade_Profit_Difference_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Profit_Difference()", app=current_app._get_current_object())
+    mt5_HK_CopyTrade_Profit_Difference_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Profit_Difference()", unsync_app=current_app._get_current_object())
 
 
     # 4th table
@@ -451,13 +452,19 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt4_HK_CopyTrade_Profit_Difference = mt4_HK_CopyTrade_Profit_Difference_unsync.result()
     mt4_HK_CopyTrade_Profit_Difference_df = color_profit_for_df(mt4_HK_CopyTrade_Profit_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
 
+    mt5_HK_CopyTrade_Profit_Difference = mt5_HK_CopyTrade_Profit_Difference_unsync.result()
+    mt5_HK_CopyTrade_Profit_Difference_df = color_profit_for_df(mt5_HK_CopyTrade_Profit_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
+
+    print(mt5_HK_CopyTrade_Profit_Difference_df)
+    print(mt5_HK_CopyTrade_Profit_Difference_df)
     #print("mt4_HK_CopyTrade_Profit_Difference_df")
     #print(mt4_HK_CopyTrade_Profit_Difference_df)
 
     table_3_return_data = {}
-    if all([c in mt4_HK_CopyTrade_Profit_Difference_df for c in ["LP Profit", "Profit"]]) and "Philip Net Lots" in mt5_HK_CopyTrade_NetLots_Difference_df:
+    if all([c in mt4_HK_CopyTrade_Profit_Difference_df for c in ["LP Profit", "Profit"]]) and \
+            all([c in mt5_HK_CopyTrade_Profit_Difference_df for c in ["Philip Profit" ]]):
         #table_3_return_data = {}
-        table_3_return_data["LP Profit"] = mt4_HK_CopyTrade_Profit_Difference_df['LP Profit'].sum() + mt5_HK_CopyTrade_NetLots_Difference_df["Philip Net Lots"].sum()
+        table_3_return_data["LP Profit"] = mt4_HK_CopyTrade_Profit_Difference_df['LP Profit'].sum() + mt5_HK_CopyTrade_Profit_Difference_df["Philip Profit"].sum()
         table_3_return_data["Profit USD"] = mt4_HK_CopyTrade_Profit_Difference_df["Profit"].sum()
         table_3_return_data["Net Profit"] = table_3_return_data["LP Profit"] - table_3_return_data["Profit USD"]
         # To color the profit columns
