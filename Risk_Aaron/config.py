@@ -42,7 +42,7 @@ class Config(object):
         "pool_pre_ping": True,
         "pool_recycle": 60 * 60,
         "pool_size": 30,
-        "pool_timeout" : 43200,
+        #"pool_timeout" : 43200,
     }
 
 

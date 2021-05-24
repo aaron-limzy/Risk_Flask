@@ -455,8 +455,8 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_HK_CopyTrade_Profit_Difference = mt5_HK_CopyTrade_Profit_Difference_unsync.result()
     mt5_HK_CopyTrade_Profit_Difference_df = color_profit_for_df(mt5_HK_CopyTrade_Profit_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
 
-    print(mt5_HK_CopyTrade_Profit_Difference_df)
-    print(mt5_HK_CopyTrade_Profit_Difference_df)
+    # print(mt5_HK_CopyTrade_Profit_Difference_df)
+    # print(mt5_HK_CopyTrade_Profit_Difference_df)
     #print("mt4_HK_CopyTrade_Profit_Difference_df")
     #print(mt4_HK_CopyTrade_Profit_Difference_df)
 
