@@ -51,6 +51,9 @@ def unsync_Query_SQL_mt5_db_engine(app_unsync, sql_query, date_to_str=True):
 
         result_col = raw_result.keys()
         results = [dict(zip(result_col, d)) for d in result_data_decimal]
+
+        #db.session.close()
+
     return results
 
 
