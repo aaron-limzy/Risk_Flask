@@ -270,63 +270,60 @@ def HK_Copy_STP():
     header = Markup("<b><u>HK A Book</u></b>")
     title =  "HK A Book"
 
-    description = Markup("""The lots being STP will be rounded up to the nearest <span style="color:red">2 decimal places</span>. For example,<br>
-            <span style="color:red"><u>25% of 1.5 lots  =0.375 lot, the trade will be hit out as 0.38 lots</u></span>.<br><br>
-            <span style="color:green">[Floating Lots]</span><br>
-            -<span style="color:blue">Net Lots * STP% </span> is calculate on each individual trades hit out to LPs as each trades will be rounded off to the nearest 2 decimal places.<br>
-            -Therefore <span style="color:blue">LP Net Lots - Net Lots * STP% </span> row is used to error checking. The value should always be 0,
-             otherwise an alert will be sent to notify the mismatch in Lots.
-            
-            <br><br>
-            
-            <span style="color:green">[Open positions tables]</span>: show a quick comparison between the LPs' volume/profit/price/open time .
-            <br><br>
-            <span style="color:green">[LP Details table]</span>: shows our current funding in our LPs.
-            <br><br>
-            <span style="color:green">[Close Trade tables]</span>: show the close trade for the past 24 hours<br>
-            -Shows comparison between LP's price/profit/lot/open time/close time.
-            <br><br>
-            <b>SQL INFO</b><br>
-            <br>
-            Total close PNL procedures (MT4/MT5):
-            <ul>
-                <li>HK_CopyTrade_Total_Pnl </li>
-            </ul>
-            <br>
-            Total float positions procedures (MT4/MT5):
-            <ul>
-                <li>HK_CopyTrade_Profit_Difference </li>
-                <li>HK_CopyTrade_NetLots_Difference</li>
-            </ul>
-            <br>
-            The account being STP,STP % and Vantage trade copier's login can be set in sql table [aaron.aaron_misc_data] <br>
-            <ul>
-            <li>item=HK_Copy_Trade_Main_Login </li>
-            <li>item = HK_Copy_Trade_Vantage_Login</li>
-            <li>item = HK_Copy_Trade_Percentage_Vantage</li>
-            <li>item = HK_Copy_Trade_Percentage_BIC</li>
-            <li>item = HK_Copy_Trade_Percentage_SQ</li>
-            <li>item = HK_Copy_Trade_Percentage_Philip</li>
-            </ul>
-            <br>
-            The trades information can be taken from: 
-            <ul>
-            <li>Vantage -> MT4 live 1 </li>
-            <span style="color:red">Please change the value of HK_Copy_Trade_Vantage in [aaron.aaron_misc_data] when changing account.</span>
-            <li>BIC -> aaron.live_trade_88803164_b.i.c.markets_live </li>
-            <span style="color:red">Please change the value of HK_Copy_Trade_BIC in [aaron.aaron_misc_data] when changing LP account.</span>
-            <li>SwissQuote -> aaron.live_trade_714009_swissquote_live </li>
-            <span style="color:red">Please change the value of HK_Copy_Trade_SQ in [aaron.aaron_misc_data] when changing LP account.</span>
-            <li>Philips -> MT5 positions/deals </li>
-            <span style="color:red">Please change the value of HK_Copy_Trade_Philip in [aaron.aaron_misc_data] when changing LP account.</span>
-            </ul>
-            <br>
-            Closed trades information can be taken procedures under aaron db (MT4/MT5)from
-            <ul>
-            <li>HK_CopyTrade_Open_Time_Comparison_last24hour </li>
-            <li>HK_CopyTrade_Price_Comparison_last24hour</li>
-            <li>HK_CopyTrade_Profit_Comparison_last24hour </li>
-            </ul>
+    description = Markup("""
+        <h3>Table Description</h3>
+        <span style="color:green">Trade Copier EA</span><br>
+        The lots being copied (STP) will be rounded up to the nearest <span style="color:red">2 decimal places</span>. For example,<br>
+        <span style="color:red"><u>25% of 1.5 lots  =0.375 lot, the trade will be hit out as 0.38 lots</u></span>.
+        <br><br>
+        <span style="color:green">[Total Closed Pnl Table]</span><br>
+        -Shows the total closed lots and profit of 800243 and its corresponding LPs since its inception.<br>
+        -The <span style="color:blue">Profit</span> value in 800243 is in BGI perspective.<br>
+        -<span style="color:blue">"Blackwell Global"</span> LP consist trades that we send out to our LPs, including GlobalPrime,Vantage and CFH. <br>
+        *Our current LP is CFH. 
+        <br><br>
+        
+        <span style="color:green">[Floating Lots Table]</span><br>
+        -<span style="color:blue">Net Lots * STP% </span> is calculate on each individual trades hit out to LPs as each trades will be rounded off to the nearest 2 decimal places.<br>
+        -Therefore <span style="color:blue">LP Net Lots - Net Lots * STP% </span> row is used for error checking. <span style="color:red"><b>The value should always be 0, otherwise an alert will be sent to notify the mismatch in Lots.</b></span>
+        
+        <br><br>
+        
+        <span style="color:green">[Open Positions Table]</span><br> 
+        -Shows a quick comparison between the LPs' volume/profit/price/open time 
+        <br><br>
+        <span style="color:green">[LP Details Table]</span><br>
+        -Shows our current funding in our LPs.<br>
+        <br><br>
+        <span style="color:green">[Close Trade Table]</span><br>
+        -Shows close trade comparison between LP's price/profit/lot/open time/close time in the past 24 hours
+        <br>
+        <br><b>SQL INFO</b><br>
+        <br>
+        The account being STP,STP % and CFH trade copier's login can be set in sql table [aaron.aaron_misc_data] <br>
+        <ul>
+        <li>item=HK_Copy_Trade_Main_Login </li>
+        <li>item = HK_Copy_Trade_CFH_Login</li>
+        <li>item = HK_Copy_Trade_Percentage</li>
+        <li>item = HK_Copy_Trade_Percentage_CFH</li>
+        <li>item = HK_Copy_Trade_Percentage_BIC</li>
+        <li>item = HK_Copy_Trade_Percentage_SQ</li>
+        </ul>
+        <br>
+        The trades information can be taken from 
+        <ul>
+        <li>Vantage/CFH -> MT4 live 1 </li>
+        <li>BIC -> aaron.live_trade_88803164_b.i.c.markets_live </li>
+        <li>SwissQuote -> aaron.live_trade_714009_swissquote_live </li>
+        <li>Philips -> MT5 positions/deals </li>
+        </ul>
+        <br>
+        Closed trades information can be taken procedures under aaron db (MT4/MT5)from
+        <ul>
+        <li>HK_CopyTrade_Open_Time_Comparison_last24hour </li>
+        <li>HK_CopyTrade_Price_Comparison_last24hour</li>
+        <li>HK_CopyTrade_Profit_Comparison_last24hour </li>
+        </ul>                                               
             """)
 
 
