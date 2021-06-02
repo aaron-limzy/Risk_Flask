@@ -117,7 +117,7 @@ def register_blueprints(server):
     from app.Notifications.routes import notifications_bp
     from app.mt4_mt5.routes import  mt4_mt5_bp
     from app.mt5_monitoring.routes import mt5_monitoring
-
+    from app.Symbol_Spread.routes import Spread_bp
 
     from app.Redirect_external.routes import re_direct
 
@@ -136,6 +136,8 @@ def register_blueprints(server):
     server.register_blueprint(re_direct)
     server.register_blueprint(notifications_bp)
     server.register_blueprint(mt4_mt5_bp)
+    server.register_blueprint(Spread_bp)
+
     server.register_blueprint(mt5_monitoring)
 
     server.register_blueprint(swaps)

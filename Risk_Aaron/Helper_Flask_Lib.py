@@ -1404,3 +1404,20 @@ def color_profit_for_df(data, default=[{"Run Results": "No Open Trades"}], words
     ret_val = df.to_dict("record")
 
     return ret_val
+
+
+# Count how many days backwards to get the num number of weekdays
+def count_weekday_backwards(num):
+    ret_count = 0
+
+    day_today = datetime.datetime.now().weekday()
+
+    while num > 0:
+        ret_count += 1
+        if day_today in (0, 1, 2, 3, 4):
+            num = num - 1
+        # Go back 1 weekday. +_6 and Mod 7 to ensure it will not be negative.
+        day_today = (day_today + 6) % 7
+
+
+    return ret_count

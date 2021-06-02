@@ -15,7 +15,8 @@ class Config(object):
             'live2': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/live2',
             'live3': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/live3',
             'live5': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/live5',
-            'mt5_live1': 'mysql+pymysql://risk:1qaz2wsx@119.81.149.213/mt5'
+            'mt5_live1': 'mysql+pymysql://risk:1qaz2wsx@119.81.149.213/mt5',
+            'risk_ticks': 'mysql+pymysql://risk:Riskrisk321@192.168.64.56/aaron'
         }
 
         print("On server (64.73). Will use local host connection.")
@@ -28,7 +29,8 @@ class Config(object):
             'live2': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live2',
             'live3': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live3',
             'live5': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live5',
-            'mt5_live1' : 'mysql+pymysql://risk:1qaz2wsx@119.81.149.213/mt5'
+            'mt5_live1' : 'mysql+pymysql://risk:1qaz2wsx@119.81.149.213/mt5',
+            'risk_ticks': 'mysql+pymysql://risk:Riskrisk321@192.168.64.56/aaron'
         }
         print("Not on Server (64.73) Will use Internal IP to link SQL. ")
 
@@ -42,7 +44,7 @@ class Config(object):
         "pool_pre_ping": True,
         "pool_recycle": 60 * 60,
         "pool_size": 30,
-        #"pool_timeout" : 43200,
+        #"pool_timeout": 43200,
     }
 
 
