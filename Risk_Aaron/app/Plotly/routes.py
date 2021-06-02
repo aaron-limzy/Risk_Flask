@@ -2869,6 +2869,9 @@ def plot_symbol_book_total(df, chart_title):
 
     # Sort by datetime, to be able to plot it.
     df.sort_values(by=['DATETIME'], inplace=True)
+
+    print(df)
+
     if "COUNTRY" in df:
         df_t2 = df.groupby(["COUNTRY", "DATETIME"]).sum().reset_index()
         fig = px.line(df_t2, x='DATETIME', y='FLOATING_VOLUME', color='COUNTRY')
@@ -2900,6 +2903,14 @@ def plot_symbol_book_total(df, chart_title):
         titlefont=dict(size=20),
         title_x=0.5
     )
+
+
+    # hide weekends
+    # fig.update_xaxes(
+    #     rangebreaks=[
+    #         dict(bounds=["sat", "mon"])  # hide weekends
+    #     ]
+    # )
 
     #fig.show()
     return fig

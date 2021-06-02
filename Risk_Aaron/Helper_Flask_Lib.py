@@ -1421,3 +1421,19 @@ def count_weekday_backwards(num):
 
 
     return ret_count
+
+# Split a list into n parts
+def split_list_n_parts(data_list, n):
+    #n =  How many to split it into
+    split_list = []  # To save all the unsync Results
+
+    for i in range(n):
+        start_index = i * math.floor(len(data_list) / n)
+
+        # Because of how it might be unevenly divided, we will use the last one as the one with the most.
+        end_index = min((i + 1) * math.floor(len(data_list) / n), len(data_list) - 1) if i != n-1 else len(data_list) -1
+
+
+        #print("length of data_list: {} | {} : {}".format(len(data_list), start_index,end_index))
+        split_list.append(data_list[start_index:end_index])
+    return split_list

@@ -57,19 +57,24 @@ Spread_bp = Blueprint('Spread', __name__)
 @roles_required()
 def symbolSpread():
 
-    title = "Symbol Spread"
-    header = "Symbol Spread"
+    title = Markup("<b>Symbol Spread</b>")
+    header = Markup("<b>Symbol Spread</b>")
 
+    description = Markup("""<b>Symbol Spread</b><br><br>Calculating the symbol spread using Live 2 q symbols. 
+                Mark up (If any) has not been removed.<br><br>Page will generally take about 1 min to load.<br>
+                CFDs not included for now.<br>""")
 
-    table_ledgend = "Symbol Spread"
-
-    description = Markup("Symbol Spread")
 
 
 
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("symbol_float_trades"), icon="",
                            Table_name={ "Symbol Float": "H1",
-                                        "Plot Of Spread" : "P_Long_1",
+                                        "Plot Of all Spread" : "P_Long_0",
+                                        "Plot Of Spread 1": "P_Long_1",
+                                        "Plot Of Spread 2": "P_Long_2",
+                                        "Plot Of Spread 3": "P_Long_3",
+                                        "Plot Of Spread 4": "P_Long_4",
+                                        "Plot Of Spread 5": "P_Long_5",
                                         },
                            title=title,
                            ajax_url=url_for('Spread.symbol_spread_ajax', _external=True),
@@ -122,21 +127,45 @@ def symbol_spread_ajax():
     date = (datetime.datetime.now() - datetime.timedelta(days=days_backwards)).strftime("%Y-%m-%d")
     all_query_list = [sql_average.format(symbol=s, table_name=t, date=date) for (s, t) in to_query]
 
-    sql_query = " UNION ".join(all_query_list).replace("\n", " ")
 
     # Query the DB for the average ticks per day.
     time_start = datetime.datetime.now()
-    res = Query_SQL_ticks_db_engine(sql_query)
 
-    if test:
-        pass
+    # Want to split up the SQL calls to reduce time taken
+    to_split_num = 5 # How many to split it into
+    # unsync_results = [] # To save all the unsync Results
+    #
+    # for i in range(to_split_num):
+    #
+    #     start_index = i * math.floor(len(all_query_list) / to_split_num)
+    #     end_index = min( (i + 1) * math.floor(len(all_query_list) / to_split_num), len(all_query_list) -1)
+    #     if test:
+    #         print("Getting SQL for list of [{} : {}]".format(start_index, end_index))
+    #
+    #     sql_query = " UNION ".join(all_query_list[start_index: end_index]).replace("\n", " ")
+    #     unsync_results.append(unsync_Query_SQL_ticks_db_engine(sql_query=sql_query,
+    #                                                 app_unsync = current_app._get_current_object(),
+    #                                                 date_to_str = False))
 
-    print("Time taken: {}".format((datetime.datetime.now() - time_start).total_seconds()))
 
+    # First, split the Query into n parts.
+    query_split_list = split_list_n_parts(all_query_list, n=to_split_num)
+    # UNION them all together. So now we have n queries.
+    sql_query_list = [" UNION ".join(q).replace("\n", " ") for q in query_split_list]
+    # Does the SQL calls in an unsync manner
+    unsync_results = [unsync_Query_SQL_ticks_db_engine(sql_query=s,
+                                               app_unsync=current_app._get_current_object(),
+                                                   date_to_str=False) for s in sql_query_list]
+    # Wait to get it all back, to sync it.
+    res_list = [pd.DataFrame(r.result()) for r in unsync_results]
+
+
+    #if test:
+    print("Time taken for getting all symbol spread: {}".format((datetime.datetime.now() - time_start).total_seconds()))
 
 
     #col = [c[0] for c in res[1]]
-    df = pd.DataFrame(res)
+    df = pd.concat(res_list)
     df["DATE_TIME"] = df["DATE_TIME"].apply(lambda x: x.strftime("%Y-%m-%d"))
 
     if test:
@@ -168,42 +197,26 @@ def symbol_spread_ajax():
     df_pivot = np.round(df_pivot, 2)
 
     df.sort_values(["DATE_TIME", "Symbol"], inplace=True) # First, we need to sort the values
-    fig = px.line(df, x="DATE_TIME", y="Spread_Digits", color='Symbol')
 
-    # Figure Layout.
-    fig.update_layout(
-        autosize=True,
-        yaxis=dict(
-            title_text="Spread (Points)",
-            titlefont=dict(size=20),
-            automargin=True,
-            ticks="outside", tickcolor='white', ticklen=50,
-            layer='below traces'
-        ),
-        yaxis_tickfont_size=14,
-        xaxis=dict(
-            title_text="Date",
-            titlefont=dict(size=20),
-            automargin=True,
-            layer='below traces'
-        ),
-        xaxis_tickfont_size=15,
-        title_text='Symbol Spread',
-        titlefont=dict(size=20),
-        title_x=0.5,
-        margin=dict(
-            pad=10)
-    )
+    all_symbol = df["Symbol"].unique().tolist()
+    all_symbol.sort()
+    split_symbol = split_list_n_parts(all_symbol, n=5)
 
-    fig.update_yaxes(automargin=True)
+    if test:
+        print(all_symbol)
+        print(len(all_symbol))
+        print(split_symbol)
 
-    #fig.show()
+    return_dict = {}     # The dict that is used for returning, thru JSON
+    return_dict["H1"] = df_pivot.to_dict("record")
+    return_dict["P_Long_0"] =  plot_symbol_Spread(df, "All Symbol Spread")
 
-
+    # Will append to the list to be returned as figures/plots
+    for i in range(len(split_symbol)):
+        return_dict["P_Long_{}".format(i+1)] = plot_symbol_Spread(df[df["Symbol"].isin(split_symbol[i])], "Symbol Spread {}".format(split_symbol[i]))
 
 
     # Return the values as json.
     # Each item in the returned dict will become a table, or a plot
-    return json.dumps({"H1": df_pivot.to_dict("record"),
-                       "P_Long_1": fig}, cls=plotly.utils.PlotlyJSONEncoder)
+    return json.dumps(return_dict, cls=plotly.utils.PlotlyJSONEncoder)
 
