@@ -63,7 +63,8 @@ def symbolSpread():
     description = Markup("""<b>Symbol Spread [Daily]</b><br><br>Calculating the symbol spread using Live 1 q symbols. 
                 Mark up (If any) has been removed Based on SQ's database.
                 <br><br>Page will generally take about 20 seconds to load as there are quite a number of data points.<br>
-                <br><b>Click Once</b> on the Symbol in the graph legend to remove it.<br><b>Double Click</b> on the Symbol in the graph legend to isolate it""")
+                <br><b>Click Once</b> on the Symbol in the graph legend to remove it.<br><b>Double Click</b> on the Symbol in the graph legend to isolate it.<br><br>
+                Using Database: "sf_test" """)
 
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("symbol_float_trades"), icon="",
                            Table_name={ "Symbol Float": "H1",
