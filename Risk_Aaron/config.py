@@ -16,7 +16,9 @@ class Config(object):
             'live3': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/live3',
             'live5': 'mysql+pymysql://Aaron_Local:aaron_local@localhost/live5',
             'mt5_live1': 'mysql+pymysql://risk:1qaz2wsx@119.81.149.213/mt5',
-            'risk_ticks': 'mysql+pymysql://risk:Riskrisk321@192.168.64.56/aaron'
+            'risk_ticks': 'mysql+pymysql://risk:Riskrisk321@192.168.64.56/aaron',
+            'mt5_futures': 'mysql+pymysql://mt4-risk:1qaz2wsx@192.168.10.25/live1'
+
         }
 
         print("On server (64.73). Will use local host connection.")
@@ -30,7 +32,9 @@ class Config(object):
             'live3': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live3',
             'live5': 'mysql+pymysql://mt4:1qaz2wsx@192.168.64.73/live5',
             'mt5_live1' : 'mysql+pymysql://risk:1qaz2wsx@119.81.149.213/mt5',
-            'risk_ticks': 'mysql+pymysql://risk:Riskrisk321@192.168.64.56/aaron'
+            'risk_ticks': 'mysql+pymysql://risk:Riskrisk321@192.168.64.56/aaron',
+            'mt5_futures': 'mysql+pymysql://mt4-risk:1qaz2wsx@192.168.10.25/live1'
+
         }
         print("Not on Server (64.73) Will use Internal IP to link SQL. ")
 

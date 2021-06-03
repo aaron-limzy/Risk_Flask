@@ -57,7 +57,7 @@ Spread_bp = Blueprint('Spread', __name__)
 @roles_required()
 def symbolSpread():
 
-    title = Markup("<b>Symbol Spread</b>")
+    title = Markup("Symbol Spread")
     header = Markup("<b>Symbol Spread</b>")
 
     description = Markup("""<b>Symbol Spread</b><br><br>Calculating the symbol spread using Live 2 q symbols. 
