@@ -80,16 +80,16 @@ def unsync_Query_SQL_ticks_db_engine(app_unsync, sql_query, date_to_str=True):
 
     return results
 
-def plot_symbol_Spread(df, chart_title):
+def plot_symbol_Spread(df, chart_title, x_axis):
 
 
     # To ensure that the columns are all in.
-    if not all(x in df for x in ["DATE_TIME", "Spread_Digits", "Symbol"]):
+    if not all(x in df for x in [x_axis, "SPREAD", "SYMBOL"]):
         print("Column missing from df for plotting symbol spread.")
         print(df)
         return []
 
-    fig = px.line(df, x="DATE_TIME", y="Spread_Digits", color='Symbol')
+    fig = px.line(df, x=x_axis, y="SPREAD", color='SYMBOL')
 
     # Figure Layout.
     fig.update_layout(
@@ -104,7 +104,7 @@ def plot_symbol_Spread(df, chart_title):
         ),
         yaxis_tickfont_size=14,
         xaxis=dict(
-            title_text="Date",
+            title_text="{}".format(x_axis),
             titlefont=dict(size=20),
             automargin=True,
             layer='below traces'
