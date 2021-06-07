@@ -353,55 +353,53 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     #start_time = datetime.datetime.now()
 
-
+    #print("1")
     # First table
     # MT4 + MT5 Copy Trades Total PnL
     mt4_HK_CopyTrade_Total_Pnl_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Total_Pnl()", app=current_app._get_current_object())
     mt5_HK_CopyTrade_Total_Pnl_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Total_Pnl()", unsync_app=current_app._get_current_object())
 
-
+    #print("2")
     # Second table
     #[HK_CopyTrade_NetLots_Difference]+MT5[HK_CopyTrade_NetLots_Difference]
     mt4_HK_CopyTrade_NetLots_Difference_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_NetLots_Difference()", app=current_app._get_current_object())
     mt5_HK_CopyTrade_NetLots_Difference_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_NetLots_Difference()", unsync_app=current_app._get_current_object())
 
-
+    #print("3")
     # Third table
     mt4_HK_CopyTrade_Profit_Difference_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Profit_Difference()", app=current_app._get_current_object())
     mt5_HK_CopyTrade_Profit_Difference_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Profit_Difference()", unsync_app=current_app._get_current_object())
 
-
+    #print("4")
     # 4th table
     mt4_HK_CopyTrade_Price_Comparison_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Price_Comparison()", app=current_app._get_current_object())
     mt5_HK_CopyTrade_Price_Comparison_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Price_Comparison()", unsync_app=current_app._get_current_object())
 
-
+    #print("5")
     # 5th Table
     mt4_HK_CopyTrade_Open_Time_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison()", app=current_app._get_current_object())
     mt5_HK_CopyTrade_Open_Time_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison()", unsync_app=current_app._get_current_object())
 
-
-
+    #print("7")
     # 7th Table
     #[HK_CopyTrade_Profit_Comparison_last24hour] + MT5.[HK_CopyTrade_Profit_Comparison_last24hour]
 
     mt4_HK_CopyTrade_Profit_Comparison_last24hour_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Profit_Comparison_last24hour()", app=current_app._get_current_object())
     mt5_HK_CopyTrade_Profit_Comparison_last24hour_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Profit_Comparison_last24hour()", unsync_app=current_app._get_current_object())
 
-
+    #print("8")
     # 8th Table
     # [HK_CopyTrade_Price_Comparison_last24hour] + MT5.[HK_CopyTrade_Price_Comparison_last24hour]
     mt4_HK_CopyTrade_Price_Comparison_last24hour_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Price_Comparison_last24hour()", app=current_app._get_current_object())
     mt5_HK_CopyTrade_Price_Comparison_last24hour_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Price_Comparison_last24hour()", unsync_app=current_app._get_current_object())
 
-
+    #print("9")
     # 9th Table
     #[HK_CopyTrade_Open_Time_Comparison] + MT5.[HK_CopyTrade_Open_Time_Comparison]
     mt4_HK_CopyTrade_Open_Time_Comparison_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison_last24hour()", app=current_app._get_current_object())
     mt5_HK_CopyTrade_Open_Time_Comparison_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.HK_CopyTrade_Open_Time_Comparison_last24hour()", unsync_app=current_app._get_current_object())
 
-
-
+    #print("6")
     # 6th Table
     # # While waiting, we will call somthing that isn't unsync
     lp_details = ABook_LP_Details_function(exclude_list=["Vantage", "GlobalPrime", "demo"])
@@ -410,6 +408,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     # ----------- To get the results ------
 
+    #print("1")
     mt4_HK_CopyTrade_Total_Pnl = mt4_HK_CopyTrade_Total_Pnl_unsync.result()
     mt4_HK_CopyTrade_Total_Pnl_df = color_profit_for_df(mt4_HK_CopyTrade_Total_Pnl, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
@@ -425,7 +424,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt4_HK_CopyTrade_Total_Pnl_df = None
     mt5_HK_CopyTrade_Total_Pnl_df = None
 
-
+    #print("2")
     # Second table ---
     mt4_HK_CopyTrade_NetLots_Difference = mt4_HK_CopyTrade_NetLots_Difference_unsync.result()
     mt4_HK_CopyTrade_NetLots_Difference_df = color_profit_for_df(mt4_HK_CopyTrade_NetLots_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
@@ -445,6 +444,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     else:
         table_2_return_data = {"Run Results": "No Open Trades"}
 
+    #print("3")
     # Third table
     mt4_HK_CopyTrade_Profit_Difference = mt4_HK_CopyTrade_Profit_Difference_unsync.result()
     mt4_HK_CopyTrade_Profit_Difference_df = color_profit_for_df(mt4_HK_CopyTrade_Profit_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
@@ -469,6 +469,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     else:
         table_3_return_data = [{"Run Results": "No Open Trades"}]
 
+    #print("4")
     # 4th Table
     mt4_HK_CopyTrade_Price_Comparison = mt4_HK_CopyTrade_Price_Comparison_unsync.result()
     mt4_HK_CopyTrade_Price_Comparison_df = color_profit_for_df(mt4_HK_CopyTrade_Price_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
@@ -497,7 +498,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     else:
         table_4_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
 
-
+    #print("5")
     # 5th Table
 
     mt4_HK_CopyTrade_Open_Time = mt4_HK_CopyTrade_Open_Time_unsync.result()
@@ -521,7 +522,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     #table_5_df.pop("Merging Ticket")
 
-
+    #print("6")
     #6th Table
     # ----------------------- MT5 LP Details to look like standadize LP details. ----------------
 
@@ -533,7 +534,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     # We want print it into the same structure as mt4 FX LP
     all_lp_details = pretty_print_mt5_futures_LP_details_2(futures_data=mt5_hk_LP_Copy_futures_data, \
                                                            fx_lp_details=lp_details_return_result, return_df=False)
-
+    #print("7")
     # 7th Table
     mt4_HK_CopyTrade_Profit_Comparison_last24hour = mt4_HK_CopyTrade_Profit_Comparison_last24hour_unsync.result()
     mt4_HK_CopyTrade_Profit_Comparison_last24hour_df = color_profit_for_df(mt4_HK_CopyTrade_Profit_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
@@ -560,7 +561,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
 
 
-
+    #print("8")
     # 8th Table
     mt4_HK_CopyTrade_Price_Comparison_last24hour = mt4_HK_CopyTrade_Price_Comparison_last24hour_unsync.result()
     mt4_HK_CopyTrade_Price_Comparison_last24hour_df = color_profit_for_df(mt4_HK_CopyTrade_Price_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
@@ -616,7 +617,16 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     # print("table_9_df")
     # print(table_9_df.columns)
 
-
+    print({ "Hss1": table_1_concat_return_data,
+                        "Vss1": [table_2_return_data],
+                        "Vss2":table_3_return_data,
+                        "H1": table_4_df.to_dict("record"),
+                        "H2": table_5_df.to_dict("record"),
+                        "H3" : all_lp_details,
+                        "H4": table_7_df.to_dict("record"),
+                        "H5": table_8_df.to_dict("record"),
+                        "H6": table_9_df.to_dict("record"),
+                        })
 
     return json.dumps({ "Hss1": table_1_concat_return_data,
                         "Vss1": [table_2_return_data],
