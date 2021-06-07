@@ -494,6 +494,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
                                          words_to_find=["profit"], return_df=True)
 
         table_4_df = table_4_df[[c for c in table_4_col if c in table_4_df]]
+        table_4_df.fillna("-", inplace=True)
 
     else:
         table_4_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
@@ -514,6 +515,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
                        'Philip Net Lots', 'Open Time', 'CFH Open Time', 'BIC Open Time', 'SQ Open Time',
                        'Philip Open Time']
         table_5_df = table_5_df[[c for c in table_5_col if c in table_5_df]]
+        table_5_df.fillna("-", inplace=True)
 
     else:
         table_5_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
@@ -617,27 +619,42 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     # print("table_9_df")
     # print(table_9_df.columns)
 
-    print({ "Hss1": table_1_concat_return_data,
+    # print({ "Hss1": table_1_concat_return_data,
+    #                     "Vss1": [table_2_return_data],
+    #                     "Vss2":table_3_return_data,
+    #                     "H1": table_4_df.to_dict("record"),
+    #                     "H2": table_5_df.to_dict("record"),
+    #                     "H3" : all_lp_details,
+    #                     "H4": table_7_df.to_dict("record"),
+    #                     "H5": table_8_df.to_dict("record"),
+    #                     "H6": table_9_df.to_dict("record"),
+    #                     })
+
+
+    print(table_4_df)
+
+    return json.dumps({ "Hss1": table_1_concat_return_data,
                         "Vss1": [table_2_return_data],
-                        "Vss2":table_3_return_data,
+                        "Vss2" : table_3_return_data,
                         "H1": table_4_df.to_dict("record"),
                         "H2": table_5_df.to_dict("record"),
-                        "H3" : all_lp_details,
+                        "H3": all_lp_details,
                         "H4": table_7_df.to_dict("record"),
                         "H5": table_8_df.to_dict("record"),
                         "H6": table_9_df.to_dict("record"),
                         })
 
-    return json.dumps({ "Hss1": table_1_concat_return_data,
-                        "Vss1": [table_2_return_data],
-                        "Vss2":table_3_return_data,
-                        "H1": table_4_df.to_dict("record"),
-                        "H2": table_5_df.to_dict("record"),
-                        "H3" : all_lp_details,
-                        "H4": table_7_df.to_dict("record"),
-                        "H5": table_8_df.to_dict("record"),
-                        "H6": table_9_df.to_dict("record"),
-                        })
+
+    # return json.dumps({ "Hss1": table_1_concat_return_data,
+    #                     "Vss1": [table_2_return_data],
+    #                     "Vss2":table_3_return_data,
+    #                     "H1": table_4_df.to_dict("record"),
+    #                     "H2": table_5_df.to_dict("record"),
+    #                     "H3" : all_lp_details,
+    #                     "H4": table_7_df.to_dict("record"),
+    #                     "H5": table_8_df.to_dict("record"),
+    #                     "H6": table_9_df.to_dict("record"),
+    #                     })
 
 
 
