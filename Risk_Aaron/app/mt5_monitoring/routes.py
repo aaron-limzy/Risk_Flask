@@ -631,7 +631,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     #                     })
 
 
-    print(table_4_df)
+    #print(table_4_df)
 
     return json.dumps({ "Hss1": table_1_concat_return_data,
                         "Vss1": [table_2_return_data],
