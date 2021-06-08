@@ -117,12 +117,14 @@ def plot_symbol_Spread(df, chart_title, x_axis):
             pad=10)
     )
 
-    # hide weekends
-    fig.update_xaxes(
-        rangebreaks=[
-            dict(bounds=["sat", "mon"])  # hide weekends
-        ]
-    )
+    # If there is time, we don't want to hide any column.
+    if x_axis.lower().find("time") < 0:
+        # hide weekends
+        fig.update_xaxes(
+            rangebreaks=[
+                dict(bounds=["sat", "mon"])  # hide weekends
+            ]
+        )
 
     fig.update_yaxes(automargin=True)
     return fig

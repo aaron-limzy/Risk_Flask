@@ -11,6 +11,11 @@ body {
 }
 
 
+.table-x-scroll-class {
+       overflow-y: hidden;    // use auto; or scroll; to allow vertical scrolling;
+       overflow-x: scroll;    // disable horizontal scroll
+}
+
 
 .table td, .table th {
   vertical-align: middle;

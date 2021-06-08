@@ -46,7 +46,7 @@
   {% block styles %}
   <!-- <link rel="stylesheet" href="https://raw.githubusercontent.com/daneden/animate.css/master/animate.css"> -->
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=2.1.0">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=2.1.2">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles_opacity.css') }}?v=1.0.0">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootnavbar.css') }}?v=1.0.0">
   {% endblock %}
@@ -176,7 +176,12 @@
                     <li><a class="dropdown-item" href="{{ url_for('mt5_monitoring.BGI_MT5_Symbol_Float') }}">MT5 Symbol Floating 🎶 </a></li>
                     <li><a class="dropdown-item" href="{{ url_for('analysis.BGI_Symbol_Float') }}">MT4 Symbol Floating 🎶 </a></li>
                     <div class="dropdown-divider"></div>
-                    <li><a class="dropdown-item" href="{{ url_for('Spread.symbolSpread') }}">Symbol Spread [Daily] 🤪 </a></li>
+                    <!-- <li><a class="dropdown-item" href="{{ url_for('Spread.symbolSpread') }}">Symbol Spread [Daily] 🤪 </a></li> -->
+                    <li><a class="dropdown-item" href="{{ url_for('Spread.symbolSpread_custom', type='hourly') }}">Symbol Spread [Hourly] 🤪 </a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('Spread.symbolSpread_custom', type='daily') }}">Symbol Spread [Daily] 🤪 </a></li>
+
+
+
 
 
 

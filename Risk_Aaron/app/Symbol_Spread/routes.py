@@ -60,10 +60,19 @@ def symbolSpread():
     title = Markup("Symbol Spread [Daily]")
     header = Markup("<b>Symbol Spread [Daily]</b>")
 
-    description = Markup("""<b>Symbol Spread [Daily]</b><br><br>Calculating the symbol spread using Live 1 q symbols. 
-                Mark up (If any) has been removed Based on SQ's database.
-                <br><br>Page will generally take about 20 seconds to load as there are quite a number of data points.<br>
-                <br><b>Click Once</b> on the Symbol in the graph legend to remove it.<br><b>Double Click</b> on the Symbol in the graph legend to isolate it.<br><br>
+    description =Markup("""<b>Symbol Spread [Hourly]</b><br><br>
+                Calculating the symbol spread using Live 1 q symbols.<br>
+                <b>Mark Up</b><br>
+                Mark up (If any) has been removed Based on SQ's database.<br><br>
+                <b>Page Loading</b><br>
+                Page will generally take about 20 seconds to load as there are quite a number of data points.<br><br>
+                <b>Graph Controls</b><br>
+                - <b>Click Once</b> on the Symbol in the graph legend to remove it.<br>
+                - <b>Double Click</b> on the Symbol in the graph legend to isolate it.<br><br>
+                <b>Date/Date Time</b><br>
+                - Times are based on Live 1 server time.<br>
+                - Date, for example, of 23th, means 22nd 2300 - 23 2259<br>
+                - Time, for example, at 0600, means 0600 - 0659<br><br>
                 Using Database: "sf_test" """)
 
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("symbol_float_trades"), icon="",
@@ -305,8 +314,240 @@ def symbol_spread_ajax():
     print("Time taken for getting all symbol spread: {}".format((datetime.datetime.now() - time_start).total_seconds()))
 
 
+    # Return the values as json.
+    # Each item in the returned dict will become a table, or a plot
+    return json.dumps(return_dict, cls=plotly.utils.PlotlyJSONEncoder)
 
 
+
+# # To Query for all open trades by a particular symbol
+# # Shows the closed trades for the day as well.
+# @Spread_bp.route('/Symbol_Spread_hourly', methods=['GET', 'POST'])
+# @roles_required()
+# def symbolSpread_custom_hourly():
+#
+#     title = Markup("Symbol Spread [Hourly]")
+#     header = Markup("<b>Symbol Spread [Hourly]</b>")
+#
+#     description = Markup("""<b>Symbol Spread [Hourly]</b><br><br>
+#                 Calculating the symbol spread using Live 1 q symbols.<br>
+#                 <b>Mark Up</b><br>
+#                 Mark up (If any) has been removed Based on SQ's database.<br><br>
+#                 <b>Page Loading</b><br>
+#                 Page will generally take about 20 seconds to load as there are quite a number of data points.<br><br>
+#                 <b>Graph Controls</b><br>
+#                 - <b>Click Once</b> on the Symbol in the graph legend to remove it.<br>
+#                 - <b>Double Click</b> on the Symbol in the graph legend to isolate it.<br><br>
+#                 <b>Date/Date Time</b><br>
+#                 - Times are based on Live 1 server time.<br>
+#                 - Date, for example, of 23th, means 22nd 2300 - 23 2259<br>
+#                 - Time, for example, at 0600, means 0600 - 0659<br><br>
+#                 Using Database: "sf_test" """)
+#
+#     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("symbol_float_trades"), icon="",
+#                            Table_name={ "Symbol Float": "H_y_scroll_1",
+#                                         "Plot Of all Spread" : "P_Long_0",
+#                                         "Plot Of Spread 1": "P_Long_1",
+#                                         "Plot Of Spread 2": "P_Long_2",
+#                                         "Plot Of Spread 3": "P_Long_3",
+#                                         "Plot Of Spread 4": "P_Long_4",
+#                                         "Plot Of Spread 5": "P_Long_5",
+#                                         "Plot Of Spread 6": "P_Long_6",
+#                                         },
+#                            title=title,
+#                            ajax_url=url_for('Spread.symbol_spread_custom_ajax', type="hourly",  _external=True),
+#                            header=header, ajax_timeout_sec = 250,
+#                            description=description, no_backgroud_Cover=True,
+#                            replace_words=Markup(["Today"])) #setinterval=60,
+
+
+
+
+# To Query for all open trades by a particular symbol
+# Shows the closed trades for the day as well.
+@Spread_bp.route('/Symbol_Spread/<type>', methods=['GET', 'POST'])
+@roles_required()
+def symbolSpread_custom(type):
+
+    title = Markup("Symbol Spread [{}]".format(type))
+    header = Markup("<b>Symbol Spread [{}]</b>".format(type))
+
+    description = Markup("""<b>Symbol Spread [{}]</b><br><br>
+                Calculating the symbol spread using Live 1 q symbols.<br>
+                <b>Mark Up</b><br>
+                Mark up (If any) has been removed Based on SQ's database.<br><br>
+                <b>Page Loading</b><br>
+                Page will generally take about 20 seconds to load as there are quite a number of data points.<br><br>
+                <b>Graph Controls</b><br>
+                - <b>Click Once</b> on the Symbol in the graph legend to remove it.<br>
+                - <b>Double Click</b> on the Symbol in the graph legend to isolate it.<br><br>
+                <b>Date/Date Time</b><br>
+                - Times are based on Live 1 server time.<br>
+                - Date, for example, of 23th, means 22nd 2300 - 23 2259<br>
+                - Time, for example, at 0600, means 0600 - 0659<br><br>
+                Using Database: "sf_test" """.format(type))
+
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("symbol_float_trades"), icon="",
+                           Table_name={ "Symbol Float": "H_y_scroll_1",
+                                        "Plot Of all Spread" : "P_Long_0",
+                                        "Plot Of Spread 1": "P_Long_1",
+                                        "Plot Of Spread 2": "P_Long_2",
+                                        "Plot Of Spread 3": "P_Long_3",
+                                        "Plot Of Spread 4": "P_Long_4",
+                                        "Plot Of Spread 5": "P_Long_5",
+                                        "Plot Of Spread 6": "P_Long_6",
+                                        },
+                           title=title,
+                           ajax_url=url_for('Spread.symbol_spread_custom_ajax', type=type.lower(),  _external=True),
+                           header=header, ajax_timeout_sec = 250,
+                           description=description, no_backgroud_Cover=True,
+                           replace_words=Markup(["Today"])) #setinterval=60,
+
+
+
+
+
+
+# The Ajax call for the symbols we want to query. B Book.
+@Spread_bp.route('/symbol_spread_custom_ajax/<type>', methods=['GET', 'POST'])
+@roles_required()
+def symbol_spread_custom_ajax(type="hourly"):
+
+    test = False
+
+    # Query the DB for the average ticks per day.
+    time_start = datetime.datetime.now()
+
+    if type.lower() == "daily":
+        sf_database = "sf_test"
+        table_name = "live1q_daily"
+    elif type.lower() == "hourly":
+        sf_database = "sf_test"
+        table_name = "live1q_hourly"
+    else:
+        return json.dumps({"H_y_scroll_1": [{"Error": "Not 'daily' or 'hourly'"}]}, cls=plotly.utils.PlotlyJSONEncoder)
+
+    days_backwards = count_weekday_backwards(12) if not test else count_weekday_backwards(5)
+
+    date = (datetime.datetime.now() - datetime.timedelta(days=days_backwards)).strftime("%Y-%m-%d")
+
+    # Want to get all the tables that are in the DB
+    sql_query = """SELECT * FROM {sf_database}.{table_name} WHERE DATE >= '{date}'""".format(sf_database=sf_database, date=date, table_name=table_name)
+
+    # Get it from the Ticks DB
+    res = unsync_Query_SQL_ticks_db_engine(sql_query=sql_query,
+                                           app_unsync=current_app._get_current_object(),
+                                                       date_to_str=False)
+
+    df = pd.DataFrame(res.result())
+
+    # Change the name of the columns
+    df.rename(columns={"AVG_spread": "SPREAD", "AVG": "SPREAD"}, inplace=True)
+
+
+
+    # Want to get the actual symbol name.
+    df_mt4_symbol = df["SYMBOL"].apply(lambda x: "'{}q'".format(x))
+    #print(list(set(df_mt4_symbol)))
+    unique_postfix_list = list(set(df_mt4_symbol))
+
+    sql_query_markup = "SELECT SOURCESYMB, POSTFIXSYMB, BIDSPREAD, ASKSPREAD from live1.symbol_o where POSTFIXSYMB in ({})".format(" , ".join(unique_postfix_list))
+    #print(sql_query_markup)
+
+    markup_res = Query_Symbol_Markup_db_engine(sql_query_markup)
+    df_markup = pd.DataFrame(markup_res)
+
+
+
+    # to remove the q postfix for each symbol. So that we can do a join
+    df_markup["SYMBOL"] = df_markup["POSTFIXSYMB"].apply(lambda x: x.replace("q", ""))
+    #df_markup.rename(columns={"SOURCESYMB": "SYMBOL"}, inplace=True)
+    #print(df_markup)
+
+
+    df = df.merge(df_markup, on="SYMBOL")
+
+
+
+    #print(df)
+    # Calculate the markup
+    df["TOTAL_MARKUP"] = df["ASKSPREAD"] - df["BIDSPREAD"]
+    df["SPREAD"] = df["SPREAD"] - df["TOTAL_MARKUP"]
+
+
+
+
+    if test:
+        print(df)
+
+    df["SYMBOL"] = df["SYMBOL"].str.upper()
+    # # Get all the symbols that we need.
+    symbols = df["SYMBOL"].unique().tolist()
+    symbols.sort()
+
+    date_col = ""
+    # Check if the columns are in.
+    if all([c in df for c in ["DATE", "HOUR"]]):
+        # Append the hour to the date. Making it a datetime.
+        df["DATE_TIME"] = df.apply(lambda x: x["DATE"] + pd.DateOffset(hours=x["HOUR"]), axis=1)
+        date_col = "DATE_TIME"
+    elif "DATE" in df:
+        # Print the dates correctly.
+        date_col = "DATE"
+
+
+    # Want to print hte dates into string
+    for c in df.columns:
+        if c.lower().find("date") >=0 :
+            df[c] = df[c].apply(lambda x: "{}".format(x))
+            #df[c] = df[c].apply(lambda x: x.strftime("%Y-%m-%d"))
+
+
+
+    df_pivot = pd.pivot_table(df, values="SPREAD", index=["SYMBOL"], columns=[date_col]).reset_index()
+    df_pivot.fillna("-", inplace=True)
+
+
+    if test:
+        print(df_pivot)
+
+
+    # print(df_pivot)
+    # print(df)
+    # return json.dumps([])
+
+
+    df_pivot = np.round(df_pivot, 2)
+    df.sort_values([date_col, "SYMBOL"], inplace=True)  # First, we need to sort the values
+
+
+    # We don't want to mix the CFDs with the FXs/PMs
+    fx_symbol = df[~ df["SYMBOL"].str.startswith(".")]["SYMBOL"].tolist()
+    fx_symbol.sort()
+    split_symbol = split_list_n_parts(fx_symbol, n=5)
+
+    if test:
+        print(symbols)
+        print(len(symbols))
+        print(split_symbol)
+
+    return_dict = {}  # The dict that is used for returning, thru JSON
+    return_dict["H_y_scroll_1"] = df_pivot.to_dict("record")
+    return_dict["P_Long_0"] = plot_symbol_Spread(df, "All Symbol Spread", x_axis=date_col)
+    return_dict["P_Long_1"] = plot_symbol_Spread(df[df["SYMBOL"].str.startswith(".")], "All CFD Spread", x_axis=date_col)
+
+
+    # Will append to the list to be returned as figures/plots
+    for i in range(len(split_symbol)):
+        return_dict["P_Long_{}".format(i + 2)] = plot_symbol_Spread(df[df["SYMBOL"].isin(split_symbol[i])],
+                                                                    "Symbol Spread {}".format(split_symbol[i]), x_axis=date_col)
+
+
+    #if test:
+    print("Time taken for getting all symbol spread: {}".format((datetime.datetime.now() - time_start).total_seconds()))
+
+
+    #print(return_dict)
     # Return the values as json.
     # Each item in the returned dict will become a table, or a plot
     return json.dumps(return_dict, cls=plotly.utils.PlotlyJSONEncoder)
