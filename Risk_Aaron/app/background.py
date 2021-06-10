@@ -42,7 +42,12 @@ def background_pic(website):
 
                   "Futures_LP_Details":                 "css/giftly.png",
                   "HK_Copy_STP":                        "css/leaves-pattern.png",
-                 "ABook_BGI" :                           "css/sativa.png"
+                 "ABook_BGI" :                          "css/sativa.png",
+
+                 "symbolspread_daily":                  "css/restaurant_icons.png",
+                 "symbolspread_hourly":                 "css/restaurant_icons.png",
+
+
         }
 
     #background_pic("Monitor_Account_Trades")

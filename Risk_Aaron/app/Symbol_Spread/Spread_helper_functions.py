@@ -89,7 +89,7 @@ def plot_symbol_Spread(df, chart_title, x_axis):
         print(df)
         return []
 
-    fig = px.line(df, x=x_axis, y="SPREAD", color='SYMBOL')
+    fig = px.line(df, x=x_axis, y="SPREAD", color='SYMBOL', template='ggplot2')
 
     # Figure Layout.
     fig.update_layout(

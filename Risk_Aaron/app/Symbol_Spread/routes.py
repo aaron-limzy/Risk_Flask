@@ -373,9 +373,9 @@ def symbolSpread_custom(type):
     header = Markup("<b>Symbol Spread [{}]</b>".format(type))
 
     description = Markup("""<b>Symbol Spread [{}]</b><br><br>
-                Calculating the symbol spread using Live 1 q symbols.<br>
+                Calculating the symbol spread using Live 1 q symbols.<br><br>
                 <b>Mark Up</b><br>
-                Mark up (If any) has been removed Based on SQ's database.<br><br>
+                Mark up (If any) has been removed Based on SQ's current database. (no back tracking)<br><br>
                 <b>Page Loading</b><br>
                 Page will generally take about 20 seconds to load as there are quite a number of data points.<br><br>
                 <b>Graph Controls</b><br>
@@ -387,7 +387,7 @@ def symbolSpread_custom(type):
                 - Time, for example, at 0600, means 0600 - 0659<br><br>
                 Using Database: "sf_test" """.format(type))
 
-    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("symbol_float_trades"), icon="",
+    return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("symbolspread_{}".format(type)), icon="",
                            Table_name={ "Symbol Float": "H_y_scroll_1",
                                         "Plot Of all Spread" : "P_Long_0",
                                         "Plot Of Spread 1": "P_Long_1",
@@ -396,6 +396,7 @@ def symbolSpread_custom(type):
                                         "Plot Of Spread 4": "P_Long_4",
                                         "Plot Of Spread 5": "P_Long_5",
                                         "Plot Of Spread 6": "P_Long_6",
+                                        "Plot Of Spread 7": "P_Long_7",
                                         },
                            title=title,
                            ajax_url=url_for('Spread.symbol_spread_custom_ajax', type=type.lower(),  _external=True),
@@ -513,8 +514,19 @@ def symbol_spread_custom_ajax(type="hourly"):
 
 
     # print(df_pivot)
-    # print(df)
-    # return json.dumps([])
+    #print(df)
+
+    # Computing IQR. Want to split out some high spread symbols so that the chart looks better.
+    df_grouped_max = df.groupby("SYMBOL").max().reset_index()
+    df_grouped_max.rename(columns={"AVG_spread": "SPREAD", "AVG": "SPREAD"}, inplace=True)
+
+    Q1 = df_grouped_max['SPREAD'].quantile(0.25)
+    Q3 = df_grouped_max['SPREAD'].quantile(0.75)
+    IQR = Q3 - Q1
+    Upper_limit = Q3 + 4 * IQR
+    Upper_limit_Symbols = df_grouped_max[df_grouped_max["SPREAD"] >= Upper_limit]["SYMBOL"].unique().tolist()
+    # print("IQR : {}, Q3 + 4*IQR: {}".format(IQR, Upper_limit))
+    # print("Symbols above 1.5IQR + Q3: {}".format(Upper_limit_Symbols))
 
 
     df_pivot = np.round(df_pivot, 2)
@@ -523,6 +535,7 @@ def symbol_spread_custom_ajax(type="hourly"):
 
     # We don't want to mix the CFDs with the FXs/PMs
     fx_symbol = df[~ df["SYMBOL"].str.startswith(".")]["SYMBOL"].tolist()
+    fx_symbol = [x for x in fx_symbol if x not in set(Upper_limit_Symbols)]
     fx_symbol.sort()
     split_symbol = split_list_n_parts(fx_symbol, n=5)
 
@@ -535,12 +548,13 @@ def symbol_spread_custom_ajax(type="hourly"):
     return_dict["H_y_scroll_1"] = df_pivot.to_dict("record")
     return_dict["P_Long_0"] = plot_symbol_Spread(df, "All Symbol Spread", x_axis=date_col)
     return_dict["P_Long_1"] = plot_symbol_Spread(df[df["SYMBOL"].str.startswith(".")], "All CFD Spread", x_axis=date_col)
+    return_dict["P_Long_2"] =  plot_symbol_Spread(df[df["SYMBOL"].isin(Upper_limit_Symbols)], "High Spread Symbol", x_axis=date_col)
 
 
     # Will append to the list to be returned as figures/plots
     for i in range(len(split_symbol)):
-        return_dict["P_Long_{}".format(i + 2)] = plot_symbol_Spread(df[df["SYMBOL"].isin(split_symbol[i])],
-                                                                    "Symbol Spread {}".format(split_symbol[i]), x_axis=date_col)
+        return_dict["P_Long_{}".format(i + 3)] = plot_symbol_Spread(df[df["SYMBOL"].isin(split_symbol[i])],
+                                                                    "Symbol Spread [plot {}]".format(i+3), x_axis=date_col)
 
 
     #if test:
