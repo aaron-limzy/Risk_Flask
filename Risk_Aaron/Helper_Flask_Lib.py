@@ -1437,3 +1437,8 @@ def split_list_n_parts(data_list, n):
         #print("length of data_list: {} | {} : {}".format(len(data_list), start_index,end_index))
         split_list.append(data_list[start_index:end_index])
     return split_list
+
+
+def get_symbol_digits(symbol):
+    sql_query = "SELECT SYMBOL, DIGITS FROM live1.mt4_symbols WHERE Symbol like '{}'".format(symbol)
+    return query_SQL_return_record(sql_query)

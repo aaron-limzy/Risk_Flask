@@ -8,6 +8,7 @@ from flask_table import create_table, Col
 from flask import url_for, current_app, session
 import decimal
 from Aaron_Lib import *
+from Helper_Flask_Lib import *
 from app.mt5_queries.mt5_sql_queries import *
 import pandas as pd
 from unsync import unsync
@@ -128,3 +129,129 @@ def plot_symbol_Spread(df, chart_title, x_axis):
 
     fig.update_yaxes(automargin=True)
     return fig
+
+# Create all the timings, by hour
+# So that the Graph lines won't be drawn.
+def create_all_timing(df):
+    # Make the time for all 24 hours. So that there will be null.
+    date_all_from_df = [d for d in df["DATE"].unique().tolist()]
+    # We want to compute the weekends as well.
+    date_all = [min(date_all_from_df) + datetime.timedelta(days=i) for i in
+                range((max(date_all_from_df) - min(date_all_from_df)).days)]
+
+    date_time_all = [datetime.datetime.combine(d, datetime.time.min) + datetime.timedelta(hours=h) for d in date_all for
+                     h in range(24)]
+    df_time_all = pd.DataFrame(date_time_all, columns=["DATE_TIME"])
+    return df_time_all
+
+def plot_symbol_Spread_individual(df, chart_title, x_axis):
+
+
+    # To ensure that the columns are all in.
+    if not all(x in df for x in [x_axis]):
+        print("Column missing from df for plotting symbol spread.")
+        print(df)
+        return []
+
+    list_of_charts = []
+
+    # We want the list of columns to plog
+    list_of_col = [c for c in df.columns if any(c.find(x) >= 0 for x in ["MAX", "AVG", "MIN"])]
+
+    for c in list_of_col:
+        if c in df:
+            list_of_charts.append(go.Scatter(
+            name='{c} Spread'.format(c=c),
+            x=df['DATE_TIME'],
+            y=df[c],
+            mode='lines',
+            showlegend=True,
+            connectgaps=False
+        ))
+
+    # Create all the trace`
+    fig = go.Figure(list_of_charts)
+
+    # fig = go.Figure([
+    #     go.Scatter(
+    #         name='Max Spread',
+    #         x=df['DATE_TIME'],
+    #         y=df['MAX'],
+    #         mode='lines',
+    #         marker=dict(color='red'),
+    #         showlegend=True,
+    #         connectgaps=False
+    #     ),
+    #     go.Scatter(
+    #         name='Average',
+    #         x=df['DATE_TIME'],
+    #         y=df['AVG'],
+    #         marker=dict(color="black", size=2),
+    #         line=dict(width=1),
+    #         mode='lines',
+    #         showlegend=True,
+    #         connectgaps=False
+    #     ),
+    #     go.Scatter(
+    #         name='Min Spread',
+    #         x=df['DATE_TIME'],
+    #         y=df['MIN'],
+    #         mode='lines',
+    #         marker=dict(color="blue"),
+    #         line=dict(width=1),
+    #         showlegend=True,
+    #         connectgaps=False
+    #     ),
+    #
+    #     #     go.Scatter(
+    #     #         name='Upper Bound',
+    #     #         x=df['Time'],
+    #     #         y=df['Velocity']+df['SEM'],
+    #     #         mode='lines',
+    #     #         marker=dict(color="#444"),
+    #     #         line=dict(width=1),
+    #     #         showlegend=False
+    #     #     ),
+    #     #     go.Scatter(
+    #     #         name='Lower Bound',
+    #     #         x=df['Time'],
+    #     #         y=df['Velocity']-df['SEM'],
+    #     #         marker=dict(color="#444"),
+    #     #         line=dict(width=1),
+    #     #         mode='lines',
+    #     #         fillcolor='rgba(68, 68, 68, 0.3)',
+    #     #         fill='tonexty',
+    #     #         showlegend=False
+    #     #     )
+    # ])
+
+
+    # Figure Layout.
+    fig.update_layout(
+        autosize=True,
+        height=1000,
+        yaxis=dict(
+            title_text="Spread (Points)",
+            titlefont=dict(size=20),
+            automargin=True,
+            ticks="outside", tickcolor='white', ticklen=50,
+            layer='below traces'
+        ),
+        yaxis_tickfont_size=14,
+        xaxis=dict(
+            title_text="Live 2 Server Time",
+            titlefont=dict(size=20),
+            automargin=True,
+            layer='below traces'
+        ),
+        xaxis_tickfont_size=15,
+        title_text=chart_title,
+        titlefont=dict(size=20),
+        title_x=0.5,
+        margin=dict(
+            pad=10)
+    )
+
+    return fig
+
+

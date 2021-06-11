@@ -46,6 +46,7 @@ def background_pic(website):
 
                  "symbolspread_daily":                  "css/restaurant_icons.png",
                  "symbolspread_hourly":                 "css/restaurant_icons.png",
+                 "individual_symbol_spread" :              "css/foggy_birds.png",
 
 
         }
