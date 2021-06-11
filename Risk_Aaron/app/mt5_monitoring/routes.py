@@ -574,8 +574,8 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     if "Merging Ticket" in mt4_HK_CopyTrade_Price_Comparison_last24hour_df and "Merging Ticket" in mt5_HK_CopyTrade_Price_Comparison_last24hour_df:
         table_8_df = mt4_HK_CopyTrade_Price_Comparison_last24hour_df.merge(
             mt5_HK_CopyTrade_Price_Comparison_last24hour_df, how="left", left_on="Merging Ticket", right_on="Merging Ticket")
-        if "Merging Ticket" in table_8_df:
-            table_8_df.pop("Merging Ticket")
+        # if "Merging Ticket" in table_8_df:
+        #     table_8_df.pop("Merging Ticket")
 
         table_8_col = ['Ticket', 'Close Time ', 'Symbol', 'Open Price', 'CFH Open Price',
          'BIC Open Price', 'SQ Open Price', 'Close Price', 'Philip Open Price', 'CFH Close Price',
