@@ -545,7 +545,14 @@ def symbol_spread_custom_ajax(type="hourly"):
         print(split_symbol)
 
     return_dict = {}  # The dict that is used for returning, thru JSON
-    return_dict["H_y_scroll_1"] = df_pivot.to_dict("record")
+
+    df_pivot_return = df_pivot.copy()
+    df_pivot_return["SYMBOL"] = df_pivot_return["SYMBOL"].apply(lambda x: Symbol_spread_url_External(x))
+
+    return_dict["H_y_scroll_1"] = df_pivot_return.to_dict("record")
+
+    df_pivot_return = None # Free up some space.
+
     return_dict["P_Long_0"] = plot_symbol_Spread(df, "All Symbol Spread", x_axis=date_col)
     return_dict["P_Long_1"] = plot_symbol_Spread(df[df["SYMBOL"].str.startswith(".")], "All CFD Spread", x_axis=date_col)
     return_dict["P_Long_2"] =  plot_symbol_Spread(df[df["SYMBOL"].isin(Upper_limit_Symbols)], "High Spread Symbol", x_axis=date_col)
@@ -613,8 +620,8 @@ def individual_symbol_spread(symbol):
 @roles_required()
 def individual_symbol_spread_ajax(symbol):
 
-    test = True
-
+    test = False
+    BGI_prefix = "BGI"
     # # Query the DB for the average ticks per day.
     time_start = datetime.datetime.now()
 
@@ -624,75 +631,79 @@ def individual_symbol_spread_ajax(symbol):
     date = (datetime.datetime.now() - datetime.timedelta(days=days_backwards)).strftime("%Y-%m-%d")
 
 
-    sql_query = "SELECT * from sf_test.live1q_hourly where DATE >= '{date}' AND SYMBOL RLIKE '{symbol}'".format( date=date, symbol=symbol)
+    # --------------- Getting the symbol digits.
+    symbol_digits_record = get_symbol_digits(symbol=symbol.lower())
+    symbol_digits_df = pd.DataFrame(symbol_digits_record)
+    symbol_digits = symbol_digits_df[symbol_digits_df["SYMBOL"] == symbol.upper()]["DIGITS"].values[0]
+    if test:
+        print(f"symbol_digits: {symbol_digits}")
+
+    # Want to get other broker's ticks, by per hour
+    Symbol_Ticks_Broker_unsync = get_other_broker_ticks_unsync(sql_database = "global_prime", symbol=symbol,
+                                                               date_start=date, symbol_digits=symbol_digits,
+                                                               app_unsync=current_app._get_current_object(),
+                                                               pre_fix="GP")
+
+
 
     # Get it from the Ticks DB
-    res = unsync_Query_SQL_ticks_db_engine(sql_query=sql_query,
+    sql_query = "SELECT * from sf_test.live1q_hourly where DATE >= '{date}' AND SYMBOL RLIKE '{symbol}'".format( date=date, symbol=symbol)
+    bgi_ticks_res = unsync_Query_SQL_ticks_db_engine(sql_query=sql_query,
                                            app_unsync=current_app._get_current_object(),
                                                        date_to_str=False)
 
 
 
 
-
-    df = pd.DataFrame(res.result())
-
-    # Change the name of the columns
-    #df.rename(columns={"AVG_spread": "SPREAD", "AVG": "SPREAD"}, inplace=True)
-
-
-
-    # Want to get the actual symbol markup.
-    sql_query_markup = "SELECT SOURCESYMB, POSTFIXSYMB, BIDSPREAD, ASKSPREAD from live1.symbol_o where POSTFIXSYMB in ('{}')".format(symbol)
+    # ------------------------- Want to get the actual symbol markup.
+    sql_query_markup = "SELECT SOURCESYMB, POSTFIXSYMB, BIDSPREAD, ASKSPREAD from live1.symbol_o where POSTFIXSYMB in ('{}q')".format(symbol)
 
     markup_res = Query_Symbol_Markup_db_engine(sql_query_markup)
     df_markup = pd.DataFrame(markup_res)
 
-
     # to remove the q postfix for each symbol. So that we can do a join
     df_markup["SYMBOL"] = df_markup["POSTFIXSYMB"].apply(lambda x: x.replace("q", ""))
-    #df_markup.rename(columns={"SOURCESYMB": "SYMBOL"}, inplace=True)
-    #print(df_markup)
 
+    df = pd.DataFrame(bgi_ticks_res.result())
+    # Change the name of the columns to reflect that it's BGI
+    df.rename(columns={"AVG": "{}_AVG".format(BGI_prefix),
+                       "MIN": "{}_MIN".format(BGI_prefix),
+                       "MAX": "{}_MAX".format(BGI_prefix)}, inplace=True)
+
+    #--------------- Merge the dfs so that we can get the correct markup.
     df = df.merge(df_markup, on="SYMBOL")
-
-    #print(df)
     # Calculate the markup
     df["TOTAL_MARKUP"] = df["ASKSPREAD"] - df["BIDSPREAD"]
 
-    for c in ["AVG", "MIN", "MAX"]:
+    # Minus the markup for all the AVG, MIN and MAX
+    list_of_col = [c for c in df.columns if any(c.find(x) >= 0 for x in ["MAX", "AVG", "MIN"])]
+    for c in list_of_col:
         df[c] = df[c] - df["TOTAL_MARKUP"]
 
-    #
-    # if test:
-    #     print(df)
 
+    # To Print it nicely.
     df["SYMBOL"] = df["SYMBOL"].str.upper()
-    # # Get all the symbols that we need.
-    symbols = df["SYMBOL"].unique().tolist()
-    symbols.sort()
+
 
     date_col = ""
+
+    # To create timing for ALL hours of the day.
+    # This includes date/times that might be have ticks,
+    # To put the None timing in.
+    df_time_all = create_all_timing(df)
+    # For the hourly merge.
 
     # Check if the columns are in.
     if all([c in df for c in ["DATE", "HOUR"]]):
         # Append the hour to the date. Making it a datetime.
         df["DATE_TIME"] = df.apply(lambda x: x["DATE"] + pd.DateOffset(hours=x["HOUR"]), axis=1)
         date_col = "DATE_TIME"
-
-        # To put the None timing in.
-        df_time_all = create_all_timing(df)
-        # For the hourly merge.
         df = df.merge(df_time_all, how="outer", on="DATE_TIME").sort_values("DATE_TIME")
-        #df.fillna(value=None, inplace=True)
-
         #pd.set_option("max_rows", 500)
-        #print(df)
 
     elif "DATE" in df:
         # Print the dates correctly.
         date_col = "DATE"
-
 
     # Want to print the dates into string
     for c in df.columns:
@@ -702,86 +713,47 @@ def individual_symbol_spread_ajax(symbol):
 
 
 
-    df_pivot = pd.pivot_table(df, values="AVG", index=["SYMBOL"], columns=[date_col]).reset_index()
-    df_pivot.fillna("-", inplace=True)
-
-
-    if test:
-        print(df_pivot)
-
-
-    df_pivot = np.round(df_pivot, 2)
     df.sort_values(date_col, inplace=True)  # First, we need to sort the values
 
     return_dict = {}  # The dict that is used for returning, thru JSON
-    return_dict["H_y_scroll_1"] = df_pivot.to_dict("record")
+
 
     # Plot the Figure. BGI Hourly Min/Average/Max
     return_dict["P_Long_0"] = plot_symbol_Spread_individual(df, "BGI {} Spread".format(symbol.upper()), x_axis=date_col)
 
-    # Getting the symbol digits.
-    symbol_digits_record = get_symbol_digits(symbol=symbol.lower())
-    symbol_digits_df = pd.DataFrame(symbol_digits_record)
-    symbol_digits = symbol_digits_df[symbol_digits_df["SYMBOL"] == symbol.upper()]["DIGITS"].values[0]
-    print(f"symbol_digits: {symbol_digits}")
 
-
-
-    # Preparing to get Global_prime's Ticks
-    sql_database = "global_prime"
-    sql_query = """SELECT TABLE_NAME FROM information_schema.tables WHERE TABLE_SCHEMA = "{sql_database}" and TABLE_NAME rlike '{Symbol}' """.format(
-        sql_database=sql_database, Symbol=symbol)
-    # Get it from the Ticks DB
-    res_broker_unsync = unsync_Query_SQL_ticks_db_engine(sql_query=sql_query, \
-                                           app_unsync=current_app._get_current_object(), \
-                                                       date_to_str=False)
-    res_broker = res_broker_unsync.result()
-    broker_table_name = res_broker[0]["TABLE_NAME"] if len(res_broker) > 0 and "TABLE_NAME" in res_broker[0] else ""
-    print(f"broker_table_name: {broker_table_name}")
-
-    sql_query = """SELECT DATE(DATE_TIME) as `DATE`, HOUR(DATE_TIME) as `HOUR`, (ASK-BID) as AVG, MAX(ASK-BID) as MAX, MIN(ASK-BID) as MIN          
-                FROM {sql_database}.`{sql_table}` 
-                WHERE DATE_TIME >= '{date}'
-                GROUP BY LEFT(DATE_TIME, 13)""".format(date=date, sql_table=broker_table_name,
-                                                       sql_database=sql_database).replace("\n", " ")
-
-    res_broker_ticks_unsync = unsync_Query_SQL_ticks_db_engine(sql_query=sql_query, \
-                                           app_unsync=current_app._get_current_object(), \
-                                                       date_to_str=False)
-    res_broker_ticks = res_broker_ticks_unsync.result()
-    df_Symbol_Ticks_Broker = pd.DataFrame(data=res_broker_ticks)
-    # Digit Correction
-    df_Symbol_Ticks_Broker["AVG"] = df_Symbol_Ticks_Broker["AVG"] * (10**symbol_digits)
-    df_Symbol_Ticks_Broker["MAX"] = df_Symbol_Ticks_Broker["MAX"] * (10**symbol_digits)
-    df_Symbol_Ticks_Broker["MIN"] = df_Symbol_Ticks_Broker["MIN"] * (10**symbol_digits)
-
-    # Concat the Date with the Hour
-    # Global Prime has is 1 hour behind Live 2 ticks.
-    df_Symbol_Ticks_Broker["DATE_TIME"] = df_Symbol_Ticks_Broker.apply(
-        lambda x: x["DATE"] + pd.DateOffset(hours=x["HOUR"] - 1), axis=1)
-
-    df_Symbol_Ticks_Broker.rename(columns={"AVG": "{} AVG".format(sql_database),
-                                           "MAX": "{} MAX".format(sql_database),
-                                           "MIN": "{} MIN".format(sql_database),
-                                           }, inplace=True)
-
-
-    df_Symbol_Ticks_Broker = df_Symbol_Ticks_Broker.merge(df_time_all, how="outer", on="DATE_TIME").sort_values(
-        "DATE_TIME")
-
-    # Want to drop the columns that are not needed.
-    for c in ["HOUR", "DATE"]:
-        if c in df_Symbol_Ticks_Broker:
-            df_Symbol_Ticks_Broker.drop(c, axis=1)
-
-
+    # Want to get ticks from another LP to compare.
+    df_Symbol_Ticks_Broker = pd.DataFrame(Symbol_Ticks_Broker_unsync.result())
     df_Symbol_Ticks_Broker["DATE_TIME"] = df_Symbol_Ticks_Broker["DATE_TIME"].apply(lambda x: "{}".format(x))
     df = df.merge(df_Symbol_Ticks_Broker, how="outer", on="DATE_TIME").sort_values("DATE_TIME")
 
-    print(df)
+    if test:
+        print(df)
+
+    # We want the list of columns to plog
+    list_of_col = [c for c in df.columns if any(c.find(x) >= 0 for x in ["MAX", "AVG", "MIN"])]
+
+    print(list_of_col)
+
+    # pd.concat([get_df_slice(df=df, col=c) for c in list_of_col])
+    df_pivot = pd.pivot_table(pd.concat([get_df_slice(df=df, col=c) for c in list_of_col]),
+                              values="VALUE", index=["TYPE"], columns=[date_col]).reset_index()
+
+    df_pivot.fillna("-", inplace=True)
+    df_pivot = np.round(df_pivot, 2)
+
+    if test:
+        print(df_pivot)
+
+    return_dict["H_y_scroll_1"] = df_pivot.to_dict("record")
+
+
+
+
+
 
     # Plot the Figure. BGI Hourly Min/Average/Max
-    return_dict["P_Long_1"] = plot_symbol_Spread_individual(df, "BGI {} Spread".format(symbol.upper()), x_axis=date_col)
+    return_dict["P_Long_1"] = plot_symbol_Spread_individual(df, "{} Spread Compare".format(symbol.upper()), x_axis=date_col)
 
 
     #if test:
