@@ -477,8 +477,8 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_HK_CopyTrade_Price_Comparison = mt5_HK_CopyTrade_Price_Comparison_unsync.result()
     mt5_HK_CopyTrade_Price_Comparison_df = color_profit_for_df(mt5_HK_CopyTrade_Price_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
 
-    if "Ticket" in mt4_HK_CopyTrade_Price_Comparison_df and "Merging Ticket" in mt5_HK_CopyTrade_Price_Comparison_df:
-        table_4_df = mt4_HK_CopyTrade_Price_Comparison_df.merge(mt5_HK_CopyTrade_Price_Comparison_df, how="left", left_on="Ticket", right_on = "Merging Ticket")
+    if "Merging Ticket" in mt4_HK_CopyTrade_Price_Comparison_df and "Merging Ticket" in mt5_HK_CopyTrade_Price_Comparison_df:
+        table_4_df = mt4_HK_CopyTrade_Price_Comparison_df.merge(mt5_HK_CopyTrade_Price_Comparison_df, how="left", left_on="Merging Ticket", right_on = "Merging Ticket")
 
         # Create Extra Column, considering to check if the columns are around.
         if all([c for c in ['Profit', 'CFH Profit', 'BIC Profit', 'SQ Profit', 'Philip Profit'] if
@@ -509,8 +509,8 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_HK_CopyTrade_Open_Time_df = color_profit_for_df(mt5_HK_CopyTrade_Open_Time, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
 
-    if "Ticket" in mt4_HK_CopyTrade_Open_Timee_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_df:
-        table_5_df = mt4_HK_CopyTrade_Open_Timee_df.merge(mt5_HK_CopyTrade_Open_Time_df, how="left", left_on="Ticket", right_on = "Merging Ticket")
+    if "Merging Ticket" in mt4_HK_CopyTrade_Open_Timee_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_df:
+        table_5_df = mt4_HK_CopyTrade_Open_Timee_df.merge(mt5_HK_CopyTrade_Open_Time_df, how="left", left_on="Merging Ticket", right_on = "Merging Ticket")
         table_5_col = ['Ticket', 'Symbol', 'Net Lots', 'CFH Net Lots', 'BIC Net Lots', 'SQ Net Lots', \
                        'Philip Net Lots', 'Open Time', 'CFH Open Time', 'BIC Open Time', 'SQ Open Time',
                        'Philip Open Time']
@@ -544,8 +544,8 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_HK_CopyTrade_Profit_Comparison_last24hour = mt5_HK_CopyTrade_Profit_Comparison_last24hour_unsync.result()
     mt5_HK_CopyTrade_Profit_Comparison_last24hour_df = color_profit_for_df(mt5_HK_CopyTrade_Profit_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
 
-    if "Ticket" in mt4_HK_CopyTrade_Profit_Comparison_last24hour_df and "Merging Ticket" in mt5_HK_CopyTrade_Profit_Comparison_last24hour_df:
-        table_7_df = mt4_HK_CopyTrade_Profit_Comparison_last24hour_df.merge(mt5_HK_CopyTrade_Profit_Comparison_last24hour_df, how="left", left_on="Ticket", right_on = "Merging Ticket")
+    if "Merging Ticket" in mt4_HK_CopyTrade_Profit_Comparison_last24hour_df and "Merging Ticket" in mt5_HK_CopyTrade_Profit_Comparison_last24hour_df:
+        table_7_df = mt4_HK_CopyTrade_Profit_Comparison_last24hour_df.merge(mt5_HK_CopyTrade_Profit_Comparison_last24hour_df, how="left", left_on="Merging Ticket", right_on = "Merging Ticket")
         table_7_df['BGI Profit'] = table_7_df['BGI Profit'] + table_7_df['Philip Profit']
 
         # to re-color the columns
@@ -571,10 +571,11 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_HK_CopyTrade_Price_Comparison_last24hour = mt5_HK_CopyTrade_Price_Comparison_last24hour_unsync.result()
     mt5_HK_CopyTrade_Price_Comparison_last24hour_df = color_profit_for_df(mt5_HK_CopyTrade_Price_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    if "Ticket" in mt4_HK_CopyTrade_Price_Comparison_last24hour_df and "Merging Ticket" in mt5_HK_CopyTrade_Price_Comparison_last24hour_df:
+    if "Merging Ticket" in mt4_HK_CopyTrade_Price_Comparison_last24hour_df and "Merging Ticket" in mt5_HK_CopyTrade_Price_Comparison_last24hour_df:
         table_8_df = mt4_HK_CopyTrade_Price_Comparison_last24hour_df.merge(
-            mt5_HK_CopyTrade_Price_Comparison_last24hour_df, how="left", left_on="Ticket", right_on="Merging Ticket")
-        table_8_df.pop("Merging Ticket")
+            mt5_HK_CopyTrade_Price_Comparison_last24hour_df, how="left", left_on="Merging Ticket", right_on="Merging Ticket")
+        if "Merging Ticket" in table_8_df:
+            table_8_df.pop("Merging Ticket")
 
         table_8_col = ['Ticket', 'Close Time ', 'Symbol', 'Open Price', 'CFH Open Price',
          'BIC Open Price', 'SQ Open Price', 'Close Price', 'Philip Open Price', 'CFH Close Price',
@@ -595,15 +596,15 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_HK_CopyTrade_Open_Time_Comparison = mt5_HK_CopyTrade_Open_Time_Comparison_unsync.result()
     mt5_HK_CopyTrade_Open_Time_Comparison_df = color_profit_for_df(mt5_HK_CopyTrade_Open_Time_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    if "Ticket" in mt4_HK_CopyTrade_Open_Time_Comparison_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_Comparison_df:
-        table_9_df = mt4_HK_CopyTrade_Open_Time_Comparison_df.merge(mt5_HK_CopyTrade_Open_Time_Comparison_df, how="outer", left_on="Ticket", right_on = "Merging Ticket")
+    if "Merging Ticket" in mt4_HK_CopyTrade_Open_Time_Comparison_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_Comparison_df:
+        table_9_df = mt4_HK_CopyTrade_Open_Time_Comparison_df.merge(mt5_HK_CopyTrade_Open_Time_Comparison_df, how="outer", left_on="Merging Ticket", right_on = "Merging Ticket")
         table_9_df.pop("Merging Ticket")
     else:
         table_9_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
 
-    if "Ticket" in mt4_HK_CopyTrade_Open_Time_Comparison_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_Comparison_df:
+    if "Merging Ticket" in mt4_HK_CopyTrade_Open_Time_Comparison_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_Comparison_df:
         table_9_df = mt4_HK_CopyTrade_Open_Time_Comparison_df.merge(mt5_HK_CopyTrade_Open_Time_Comparison_df,
-                                                                    how="left", left_on="Ticket",
+                                                                    how="left", left_on="Merging Ticket",
                                                                     right_on="Merging Ticket")
         table_9_df.pop("Merging Ticket")
         table_9_col = ['Ticket', 'Symbol', 'Open Time', 'CFH Open Time', 'BIC Open Time',
