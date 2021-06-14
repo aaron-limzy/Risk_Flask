@@ -3356,7 +3356,13 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
 
     # Plot the graph. Would e best to use the df_data["DURATION"] that was already calculated.
     # Want only CLOSED trades.
-    average_trade_duration_fig = plot_symbol_tradetime_duration_2(df_data[df_data["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')])
+    #print(df_data)
+    df_data_closed = df_data[df_data["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')]
+    if len(df_data_closed) > 0:
+        average_trade_duration_fig = plot_symbol_tradetime_duration_2(df_data[df_data["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')])
+    else:
+        average_trade_duration_fig = []
+    df_data_closed = None
 
     # Want to see which trades are below 3 mins..
     df_data["DURATION"] =  df_data["DURATION"].apply(lambda x: '<span style="color:red">{value}</span>'.format(value=x)  \
