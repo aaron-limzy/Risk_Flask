@@ -138,8 +138,21 @@ def Get_Vol_snapshot(app, symbol="", book="", day_backwards_count=5, entities = 
 
     # [res, col] = Query_SQL(SQL_Query)
 
+
+    #
+    SQL_current_Volume_Query = SQL_Query_Volume_Recent.replace("\n", " ").replace("\t", " ")
+
+    # Use the unsync version to query SQL
+    results_current = unsync_query_SQL_return_record(SQL_current_Volume_Query, app)
+    df_data_vol_current = pd.DataFrame(results_current)
+
+
+
+
     day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * day_backwards_count))
 
+    # Get those that are more grunular.
+    # These are those that has just been saved, and have yet to be aggregated.
 
     SQL_Query_Volume_Days = """SELECT {select_column} 
         FROM aaron.bgi_float_history_past 
@@ -151,14 +164,33 @@ def Get_Vol_snapshot(app, symbol="", book="", day_backwards_count=5, entities = 
                                        symbol_condition=symbol_condition, day_backwards=day_backwards)
 
 
-    SQL_Volume_Query = " UNION ".join([SQL_Query_Volume_Recent, SQL_Query_Volume_Days])
+    #SQL_Volume_Query = " UNION ".join([SQL_Query_Volume_Recent, SQL_Query_Volume_Days])
     #
-    SQL_Volume_Query = SQL_Volume_Query.replace("\n", " ").replace("\t", " ")
+    SQL_Query_Volume_Days = SQL_Query_Volume_Days.replace("\n", " ").replace("\t", " ")
 
     # Use the unsync version to query SQL
-    results = unsync_query_SQL_return_record(SQL_Volume_Query, app)
-    df_data_vol = pd.DataFrame(results)
-    #print(df_data_vol)
+    results = unsync_query_SQL_return_record(SQL_Query_Volume_Days, app)
+    df_data_vol_past = pd.DataFrame(results)
+
+
+    # Want to clean up rouge datetime that only appears once.
+    if "DATETIME" in df_data_vol_past:
+        df_data_vol_past = df_data_vol_past[df_data_vol_past["DATETIME"].isin(clear_df_datetime(df_data_vol_past))]
+
+
+    # concat the past, and the currently saved data together.
+    df_data_vol = pd.concat([df_data_vol_current, df_data_vol_past])
+    # Drop Duplicate as there's a chance that the same data are in Past, and current data
+    df_data_vol.drop_duplicates(inplace=True)
+
+    # We want to show a Total Volume, if it's just 1 symbol.
+    # It would make sense to add them up.
+    if "symbol" != "":
+        df_data_vol_total = df_data_vol.groupby("DATETIME").sum().reset_index()
+        df_data_vol_total["COUNTRY"] = "TOTAL"
+        #print(df_data_vol_total)
+        df_data_vol  = pd.concat([df_data_vol, df_data_vol_total])
+
 
     return df_data_vol
 
@@ -1442,3 +1474,15 @@ def split_list_n_parts(data_list, n):
 def get_symbol_digits(symbol):
     sql_query = "SELECT SYMBOL, DIGITS FROM live1.mt4_symbols WHERE Symbol like '{}'".format(symbol)
     return query_SQL_return_record(sql_query)
+
+
+# Check the df, want to count the datetime.
+# We only want the datetime that is more common. > 3
+def clear_df_datetime(df_original, counter_limit = 3):
+    df = df_original.copy() # Make a copy so we won't overwrite the original
+    # Want to get rid of the datetime that only appears once.
+    df["counter_buffer"] = 1
+    df_datetime_count = df[["DATETIME", "counter_buffer"]].groupby("DATETIME").count().reset_index()
+    # Want to have at least 3 counters, else, it could possibily be a rouge time
+    df_datetime_count = df_datetime_count[df_datetime_count["counter_buffer"] > counter_limit]
+    return df_datetime_count["DATETIME"].to_list()

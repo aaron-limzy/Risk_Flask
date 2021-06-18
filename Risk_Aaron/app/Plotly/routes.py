@@ -2827,16 +2827,21 @@ def plot_symbol_opentime(df, chart_title):
     # Lots was saved as decimal. Need to convert to float
     df["LOTS"] = df["LOTS"].apply(float)
 
-    fd_5min = df.groupby(["COUNTRY"]).resample('5T', on='OPEN_TIME').sum().reset_index()
+    #fd_5min = df.groupby(["COUNTRY"]).resample('5T', on='OPEN_TIME').sum().reset_index()
+    fd_5min = df.groupby(["COUNTRY"]).resample('15T', on='OPEN_TIME').sum().reset_index()
+
     #print(fd_5min)
-    fig = px.bar(fd_5min, x='OPEN_TIME', y='LOTS', color="COUNTRY")
+    fig = px.bar(fd_5min, x='OPEN_TIME', y='LOTS', color="COUNTRY", template="ggplot2")
+
+
+
     #fig.show()
     #
     # Change the bar layout
     fig.update_layout(
         autosize=True,
-        width=750,
-        height=500,
+        #width=750,
+        #height=500,
         margin=dict( pad=10),
         yaxis=dict(
             title_text="Total Lots",
@@ -2852,7 +2857,12 @@ def plot_symbol_opentime(df, chart_title):
         xaxis_tickfont_size=15,
         title_text=chart_title,
         titlefont=dict(size=20),
-        title_x=0.5
+        title_x=0.5,
+        font=dict(
+            family="Montserrat, monospace",
+            size=18,
+            color="Black"
+        )
     )
     # graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
     #
@@ -2874,18 +2884,18 @@ def plot_symbol_book_total(df, chart_title):
 
     if "COUNTRY" in df:
         df_t2 = df.groupby(["COUNTRY", "DATETIME"]).sum().reset_index()
-        fig = px.line(df_t2, x='DATETIME', y='FLOATING_VOLUME', color='COUNTRY')
+        fig = px.line(df_t2, x='DATETIME', y='FLOATING_VOLUME', color='COUNTRY', template="ggplot2")
     elif "SYMBOL" in df:
         df_t2 = df.groupby(["SYMBOL", "DATETIME"]).sum().reset_index()
-        fig = px.line(df_t2, x='DATETIME', y='FLOATING_VOLUME', color='SYMBOL')
+        fig = px.line(df_t2, x='DATETIME', y='FLOATING_VOLUME', color='SYMBOL',  template="ggplot2")
     else:
         return []
 
     # Chart layout
     fig.update_layout(
-        autosize=False,
-        width=700,
-        height=500,
+        autosize=True,
+        #width=700,
+        #height=500,
         margin=dict(pad=10),
         yaxis=dict(
             title_text="Floating Lots",
@@ -2901,7 +2911,12 @@ def plot_symbol_book_total(df, chart_title):
         xaxis_tickfont_size=15,
         title_text=chart_title,
         titlefont=dict(size=20),
-        title_x=0.5
+        title_x=0.5,
+        font=dict(
+            family="Montserrat, monospace",
+            size=18,
+            color="Black"
+        )
     )
 
 
