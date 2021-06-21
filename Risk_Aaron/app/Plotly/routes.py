@@ -2831,7 +2831,8 @@ def plot_symbol_opentime(df, chart_title):
     fd_5min = df.groupby(["COUNTRY"]).resample('15T', on='OPEN_TIME').sum().reset_index()
 
     #print(fd_5min)
-    fig = px.bar(fd_5min, x='OPEN_TIME', y='LOTS', color="COUNTRY", template="ggplot2")
+    fig = px.bar(fd_5min, x='OPEN_TIME', y='LOTS', color="COUNTRY", template="ggplot2",
+                 color_discrete_sequence=px.colors.qualitative.Alphabet, )
 
 
 
@@ -2884,10 +2885,12 @@ def plot_symbol_book_total(df, chart_title):
 
     if "COUNTRY" in df:
         df_t2 = df.groupby(["COUNTRY", "DATETIME"]).sum().reset_index()
-        fig = px.line(df_t2, x='DATETIME', y='FLOATING_VOLUME', color='COUNTRY', template="ggplot2")
+        fig = px.line(df_t2, x='DATETIME', y='FLOATING_VOLUME', color='COUNTRY', template="ggplot2",
+                      color_discrete_sequence=px.colors.qualitative.Alphabet,)
     elif "SYMBOL" in df:
         df_t2 = df.groupby(["SYMBOL", "DATETIME"]).sum().reset_index()
-        fig = px.line(df_t2, x='DATETIME', y='FLOATING_VOLUME', color='SYMBOL',  template="ggplot2")
+        fig = px.line(df_t2, x='DATETIME', y='FLOATING_VOLUME', color='SYMBOL',  template="ggplot2",
+                      color_discrete_sequence=px.colors.qualitative.Alphabet,)
     else:
         return []
 
