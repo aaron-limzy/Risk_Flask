@@ -183,14 +183,9 @@ def mt5_symbol_float_data():
     else:
         # Now to get the Symbol float and today's closed.
 
-        sql_query = """SELECT SYMBOL, ROUND(SUM(NET_FLOATING_VOLUME),2) as `NET_LOTS`, ROUND(SUM(FLOATING_VOLUME),2) as `FLOATING_LOTS`, ROUND(SUM(FLOATING_REVENUE),2) as `REVENUE`, 
-            ROUND(SUM(CLOSED_VOL_TODAY),2) as `TODAY_LOTS`,
-            ROUND(SUM(CLOSED_REVENUE_TODAY),2) as `TODAY_REVENUE`,  DATETIME
-                FROM  aaron.bgi_mt5_float_save
-                WHERE DATETIME = (SELECT MAX(DATETIME) FROM aaron.bgi_mt5_float_save)
-                    GROUP BY SYMBOL
-                ORDER BY floating_revenue DESC
-            """
+        # Call the procedure for the getting the data from the Saved Data
+        sql_query = """call  aaron.`BGI_MT5_Float_Query`()"""
+
         result_data = Query_SQL_mt5_db_engine(sql_query)
         #result_data = []
 

@@ -378,7 +378,7 @@ def BGI_All_Symbol_Float_ajax():
 
 
 
-
+    # start_time = datetime.datetime.now()
     #start = datetime.datetime.now()
     # TODO: Only want to save during trading hours.
     # TODO: Want to write a custom function, and not rely on using CFH timing.
@@ -387,7 +387,11 @@ def BGI_All_Symbol_Float_ajax():
 
     # Get all the data that is pertainint to MT4 Floating.
     df_mt4 = mt4_Symbol_Float_Data()
+    # print("Time taken for MT4 call: {}".format((datetime.datetime.now() - start_time).total_seconds()))
+    start_time = datetime.datetime.now()
     df_mt5 = mt5_symbol_float_data()
+
+    # print("Time taken for MT5 Call: {}".format((datetime.datetime.now() - start_time).total_seconds()))
 
     # print()
     # print(df_mt4.columns)
