@@ -48,6 +48,8 @@ def background_pic(website):
                  "symbolspread_hourly":                 "css/restaurant_icons.png",
                  "individual_symbol_spread" :              "css/foggy_birds.png",
 
+                  "Swap_upload_form":                       "css/witewall_3.png",
+
 
         }
 

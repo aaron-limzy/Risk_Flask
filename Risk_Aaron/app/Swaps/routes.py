@@ -7,7 +7,7 @@ from app.Swaps.A_Utils import *
 from sqlalchemy import text
 from app.extensions import db, excel
 
-from app.Swaps.forms import UploadForm
+from app.Swaps.forms import *
 
 from app.Swaps.get_swaps_all import *
 
@@ -18,6 +18,11 @@ import requests
 import pyexcel
 from werkzeug.utils import secure_filename
 from app.decorators import roles_required
+from app.background import *
+
+
+#from formencode import variabledecode
+
 
 swaps = Blueprint('swaps', __name__)
 
@@ -319,6 +324,78 @@ def markup_swaps(Val, positive_markup, negative_markup ):
         markup_percentage = float(negative_markup)
         val = val * (100 + markup_percentage) / 100
     return val
+
+
+
+
+# To view Client's trades as well as some simple details.
+@swaps.route('/Swap_upload_form', methods=['GET', 'POST'])
+@roles_required()
+def Swap_upload_form():
+    title = "Swap Upload"
+    header = "Swap Upload"
+    description = Markup("Swap Upload.")
+
+
+    # file_form = File_Form()
+    # and form.validate_on_submit()
+    if request.method != 'POST':
+        form = All_Swap_Form()
+        # Live = form.Live.data  # Get the Data.
+        # Login = form.Login.data
+        #form.title.data = "All Swaps"  # change the field's data
+
+        for sym, long, short in [("EURUSD", 1.01, -2.45),("XAUUSD", 5.02, -5.46),("GBPUSD", -6.01, 4.55),("GBPJPY", -2.01, 7.45)]:  # some database function to get a list of team members
+            symbol_form = Individual_symbol_Form()
+            #symbol_form.symbol_hidden = sym # Hide so that the data isn't shown, and can be used for validation later.
+            symbol_form.symbol = sym
+            symbol_form.long = long
+            symbol_form.short = short
+            symbol_form.long_style = 'bg-danger'
+            symbol_form.short_style = 'bg-secondary'
+
+            symbol_form.avg_short = 123.12
+            symbol_form.avg_long = 0
+
+            symbol_form.broker_long = 2.2
+            symbol_form.broker_short = 3.3
+
+
+            symbol_form.bloomberg_dividend = "-"
+
+            #symbol_form.short.render_kw = {"class": "danger"}
+
+            # Append to the Swaps for all.
+            form.core_symbols.append_entry(symbol_form)
+
+
+    if request.method == 'POST':
+        form = All_Swap_Form()
+        print("POST!")
+        print(form)
+        for s in form.core_symbols:
+            print("{} | {} | {}".format(s.symbol.data, s.long.data, s.short.data))
+
+
+        if form.validate_on_submit():
+            print(str(form.data))
+        else:
+            print("Can't validate.")
+        # postvars = variabledecode.variable_decode(request.form, dict_char='_')
+        #     for k, v in postvars.iteritems():
+
+
+        # # Want to redirect this to some other pages.
+        # return redirect(url_for('analysis.Client_trades_Analysis', Live=Live, Login=Login))
+
+
+    return render_template("Swap_Calculate_results.html",
+                           backgroud_Filename=background_pic("Swap_upload_form"),
+                           title=title,
+                           header=header,
+                           form=form, no_backgroud_Cover=True,
+                           description=description)
+
 
 
 # @app.route('/upload')
