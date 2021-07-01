@@ -653,8 +653,6 @@ def individual_symbol_spread_ajax(symbol):
                                                        date_to_str=False)
 
 
-
-
     # ------------------------- Want to get the actual symbol markup.
     sql_query_markup = "SELECT SOURCESYMB, POSTFIXSYMB, BIDSPREAD, ASKSPREAD from live1.symbol_o where POSTFIXSYMB in ('{}q')".format(symbol)
 

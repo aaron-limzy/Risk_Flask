@@ -18,14 +18,22 @@ class UploadForm(FlaskForm):
 # Form to be output into a table
 class Individual_symbol_Form(FlaskForm):
     symbol = HiddenField('Symbol', render_kw={'readonly': True})
-    #symbol_hidden = HiddenField('Symbol', render_kw={'readonly': True})
+
     avg_long = HiddenField('avg_long', render_kw={'readonly': True})
     long_style = HiddenField('bg-danger', render_kw={'readonly': True})
+
+    broker_1_long = HiddenField('broker_1_long', render_kw={'readonly': True})
+    broker_2_long = HiddenField('broker_2_long', render_kw={'readonly': True})
+
+
     short_style = HiddenField('bg-secondary', render_kw={'readonly': True})
     avg_short = HiddenField('avg_short', render_kw={'readonly': True})
+
+    broker_1_short = HiddenField('broker_1_short', render_kw={'readonly': True})
+    broker_2_short = HiddenField('broker_2_short', render_kw={'readonly': True})
+
     bloomberg_dividend = HiddenField('bloomberg_dividend', render_kw={'readonly': True})
-    broker_long = HiddenField('broker_long', render_kw={'readonly': True})
-    broker_short = HiddenField('broker_short', render_kw={'readonly': True})
+
 
     long = FloatField('Long')
     short = FloatField('Short')
@@ -35,6 +43,9 @@ class All_Swap_Form(FlaskForm):
     #title = StringField('title')
     core_symbols = FieldList(FormField(Individual_symbol_Form))
 
+
+# class Upload_File_Form(FlaskForm):
+#     file = FileField()
 
 # class Individual_symbol_Form_2(FlaskForm):
 #     symbol = StringField('Symbol')

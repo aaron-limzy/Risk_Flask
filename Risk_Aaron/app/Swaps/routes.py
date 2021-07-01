@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, Markup, url_for, request, current_app
+from flask import Blueprint, render_template, Markup, url_for, request, current_app, jsonify, flash, redirect
 from flask_login import current_user, login_user, logout_user, login_required
 
 from Aaron_Lib import *
@@ -161,7 +161,7 @@ def Bloomberg_Dividend_ajax():     # Return the Bloomberg dividend table in Json
 
 
 @swaps.route('/Swaps/upload_LP_Swaps', methods=['GET', 'POST'])
-def upload_excel():
+def upload_Swaps_csv():
 
     title = "Swaps Upload"
     header = "Swaps Upload"
@@ -171,20 +171,19 @@ def upload_excel():
 
         record_dict = request.get_records(field_name='upload', name_columns_by_row=0)
 
-        month_year = datetime.datetime.now().strftime('%b-%Y')
-        month_year_folder = swaps.config["VANTAGE_UPLOAD_FOLDER"] + "/" + month_year
+        # month_year = datetime.datetime.now().strftime('%b-%Y')
+        # month_year_folder = swaps.config["VANTAGE_UPLOAD_FOLDER"] + "/" + month_year
+        #
+        # filename = secure_filename(request.files['upload'].filename)
+        #
+        # filename_postfix_xlsx = Check_File_Exist(month_year_folder, ".".join(
+        #     filename.split(".")[:-1]) + ".xlsx")  # Checks, Creates folders and return AVAILABLE filename
+        #
+        # # Want to Let the users download the File..
+        # # return excel.make_response_from_records(record_dict, "xls", status=200, file_name=filename_without_postfix)
+        #
+        # pyexcel.save_as(records=record_dict, dest_file_name=filename_postfix_xlsx)
 
-        filename = secure_filename(request.files['upload'].filename)
-
-        filename_postfix_xlsx = Check_File_Exist(month_year_folder, ".".join(
-            filename.split(".")[:-1]) + ".xlsx")  # Checks, Creates folders and return AVAILABLE filename
-
-        # Want to Let the users download the File..
-        # return excel.make_response_from_records(record_dict, "xls", status=200, file_name=filename_without_postfix)
-
-        pyexcel.save_as(records=record_dict, dest_file_name=filename_postfix_xlsx)
-
-        column_name = []
         file_data = []
         for cc, record in enumerate(record_dict):
             if cc == 0:
@@ -200,6 +199,12 @@ def upload_excel():
             file_data.append(buffer)
         print(file_data)
         T = create_table()
+
+        # Save it into the cookies first.
+        session["Swap_excel_upload"] = file_data
+
+
+        return redirect(url_for('swaps.Swap_upload_form'))
         # table = T(file_data, classes=["table", "table-striped", "table-bordered", "table-hover"])
         # if (len(file_data) > 0) and isinstance(file_data[0], dict):
         #     for c in file_data[0]:
@@ -207,18 +212,16 @@ def upload_excel():
         #             table.add_column(c, Col(c, th_html_attrs={"style": "background-color:# afcdff"}))
         #
 
-        table_col = list(file_data[0].keys())
-        table_values = [list(d.values()) for d in file_data]
+        # table_col = list(file_data[0].keys())
+        # table_values = [list(d.values()) for d in file_data]
 
         #return render_template("upload_form.html", form=form, table=table)
-        return render_template("Single_Table_FixedBG.html", backgroud_Filename='css/Charts.jpg',
+        return render_template("General_Form.html", backgroud_Filename=background_pic('upload_Swaps_csv'),
                                form=form, Table_name="Swaps", header=header, description=description, title=title, html=Markup(Array_To_HTML_Table(table_col, table_values,
-                                            Table_Class=['table', 'table-striped', 'table-hover', 'table-bordered', 'table-light', 'table-sm'])))
+                                                                                                                                                   )))
 
-    return render_template("Single_Table_FixedBG.html",  backgroud_Filename='css/Charts.jpg',
-                           form=form, Table_name="Swaps", header=header, description=description, title=title,
-                           html=Markup(Array_To_HTML_Table(Table_Header=[str(i) for i in range(20)], Table_Data=[["{:.4f}".format(random.random()) for i in range(20)] for j in range(100)],
-                                                           Table_Class=['table', 'table-striped', 'table-hover', 'table-bordered', 'table-light', 'table-sm'])))
+    return render_template("General_Form.html", backgroud_Filename=background_pic('upload_Swaps_csv'),
+                           form=form, Table_name="Swaps", header=header, description=description, title=title)
 
 
 @swaps.route('/Swaps/Other_Brokers', methods=['GET', 'POST'])
@@ -226,8 +229,6 @@ def Other_Brokers():
 
     title = "Swap Compare"
     header = "Swap Compare"
-
-
 
     description = Markup("Swaps from other brokers.<br>" +
                          "fxdd: fxdd (https://www.fxdd.com/mt/en/trading/offering)<br>" +
@@ -326,47 +327,72 @@ def markup_swaps(Val, positive_markup, negative_markup ):
     return val
 
 
-
-
 # To view Client's trades as well as some simple details.
 @swaps.route('/Swap_upload_form', methods=['GET', 'POST'])
 @roles_required()
 def Swap_upload_form():
+
+
     title = "Swap Upload"
     header = "Swap Upload"
     description = Markup("Swap Upload.")
-
-
     # file_form = File_Form()
     # and form.validate_on_submit()
+
+    print(request.method)
+
+    # Get the data from cookies.
+    if "Swap_excel_upload" in session:
+        file_data =  session["Swap_excel_upload"]
+        #session.pop("Swap_excel_upload", None)
+    else:
+        return redirect(url_for('swaps.upload_Swaps_csv'))
+
+
+    print(file_data)
+
+
+
     if request.method != 'POST':
+
+        df = calculate_swaps_bgi(file_data, db) # Get the data processed by the helper function
+        df.fillna("-", inplace=True) # Fill the NAs so that it will not appear weird.
+        data = df.to_dict("records")
+
         form = All_Swap_Form()
         # Live = form.Live.data  # Get the Data.
         # Login = form.Login.data
         #form.title.data = "All Swaps"  # change the field's data
 
-        for sym, long, short in [("EURUSD", 1.01, -2.45),("XAUUSD", 5.02, -5.46),("GBPUSD", -6.01, 4.55),("GBPJPY", -2.01, 7.45)]:  # some database function to get a list of team members
-            symbol_form = Individual_symbol_Form()
-            #symbol_form.symbol_hidden = sym # Hide so that the data isn't shown, and can be used for validation later.
-            symbol_form.symbol = sym
-            symbol_form.long = long
-            symbol_form.short = short
-            symbol_form.long_style = 'bg-danger'
-            symbol_form.short_style = 'bg-secondary'
-
-            symbol_form.avg_short = 123.12
-            symbol_form.avg_long = 0
-
-            symbol_form.broker_long = 2.2
-            symbol_form.broker_short = 3.3
+        for f in file_data:  # Loop thru all swaps uploaded.
+            if all([u in f for u in ["Core Symbol", "Long Points" , "Short Points"]]):
+                sym = f["Core Symbol"]
+                long = f["Long Points"]
+                short = f["Short Points"]
 
 
-            symbol_form.bloomberg_dividend = "-"
+                symbol_form = Individual_symbol_Form()
+                # symbol_form.symbol_hidden = sym # Hide so that the data isn't shown, and can be used for validation later.
+                symbol_form.symbol = sym
+                symbol_form.long = long
+                symbol_form.short = short
+                symbol_form.long_style = 'bg-danger'
+                symbol_form.short_style = 'bg-secondary'
 
-            #symbol_form.short.render_kw = {"class": "danger"}
+                symbol_form.avg_short = 123.12
+                symbol_form.avg_long = 0
 
-            # Append to the Swaps for all.
-            form.core_symbols.append_entry(symbol_form)
+                symbol_form.broker_1_long = 2.2
+                symbol_form.broker_1_short = 3.3
+
+                symbol_form.bloomberg_dividend = "-"
+
+                # symbol_form.short.render_kw = {"class": "danger"}
+
+                # Append to the Swaps for all.
+                form.core_symbols.append_entry(symbol_form)
+            else:
+                pass
 
 
     if request.method == 'POST':
@@ -390,11 +416,58 @@ def Swap_upload_form():
 
 
     return render_template("Swap_Calculate_results.html",
-                           backgroud_Filename=background_pic("Swap_upload_form"),
+
                            title=title,
                            header=header,
                            form=form, no_backgroud_Cover=True,
                            description=description)
+
+
+
+@swaps.route("/upload", methods=['GET', 'POST'])
+def upload_file():
+    if request.method == 'POST':
+        return jsonify({"result": request.get_array(field_name='file')})
+    return '''
+    <!doctype html>
+    <title>Upload an excel file</title>
+    <h1>Excel file upload (csv, tsv, csvz, tsvz only)</h1>
+    <form action="" method=post enctype=multipart/form-data><p>
+    <input type=file name=file><input type=submit value=Upload>
+    </form>
+    '''
+
+
+#
+# # Want to insert into table.
+# # From Flask.
+# @swaps.route('/Upload_Swap_File', methods=['GET', 'POST'])
+# @roles_required()
+# def Upload_Swap_File():
+#     title = Markup("Upload Swap File")
+#     header = title
+#     description = Markup("Upload Swap file for calculations")
+#
+#     form = UploadForm()
+#     print("Method: {}".format(request.method))
+#     print("validate_on_submit: {}".format(form.validate_on_submit()))
+#     form.validate_on_submit()
+#
+#     if request.method == 'POST' and form.validate_on_submit():
+#         filename = secure_filename(form.file.data.filename)
+#         print(form.file.data)
+#
+#
+#         #flash("Live: {live}, Login: {login} Equity limit: {equity_limit} has been added to live1.`balance_equity_exclude`.".format(live=Live, login=Login, equity_limit=Equity_Limit))
+#
+#     # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
+#     # backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut",  replace_words=Markup(["Today"])
+#     # TODO: Add Form to add login/Live/limit into the exclude table.
+#     return render_template("General_Form.html", backgroud_Filename=background_pic("Upload_Swap_File"),
+#                            title=title, header=header,
+#                            form=form, description=description)
+
+
 
 
 

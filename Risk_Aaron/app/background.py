@@ -49,6 +49,7 @@ def background_pic(website):
                  "individual_symbol_spread" :              "css/foggy_birds.png",
 
                   "Swap_upload_form":                       "css/witewall_3.png",
+                 "upload_Swaps_csv"  :                      "css/Charts.jpg",
 
 
         }

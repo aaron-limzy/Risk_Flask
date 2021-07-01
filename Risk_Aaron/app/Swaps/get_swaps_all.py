@@ -19,6 +19,7 @@ from zeep import Client
 from zeep import helpers
 
 import pandas as pd
+import numpy as np
 
 from Aaron_Lib import *
 
@@ -725,4 +726,86 @@ def get_broker_swaps(db=False):
     # Want to re-arrange the columns.
     return df_return[Symbol_array + Swap_long_array + Swap_short_array + everything_else_array]
     # return df_return
+
+# To calculate the swap after markup, based on the various % of the swap markups.
+def swap_markup(swap_val, markup_percentage):
+    x = swap_val
+    if x > 0: # Positive. We are giving Client. We want to give Less.
+        x = x * 0.01 * (100 - markup_percentage)
+    elif x < 0: # It's negative. We want to take more from Client.
+        x = x *  0.01 * (100 + markup_percentage)
+    return x
+
+
+def calculate_swaps_bgi(excel_data, db):
+
+    df_bgi_excel = pd.DataFrame(excel_data)
+    print(df_bgi_excel)
+
+    # Need to do Long point correction form the file that Vantage sent.
+    df_bgi_excel["Long Points"] = df_bgi_excel["Long Points"] * -1
+    df = get_from_sql_or_file("call aaron.Swap_Symbol_Details()", "Swap_Symbol_Details.xlsx", db)
+
+    df = df.merge(df_bgi_excel, how="left", left_on="vantage_coresymbol", right_on="Core Symbol")
+
+    # Calculate the markup First.
+    df["long_markup_value"] = df.apply(lambda x: swap_markup(x["Long Points"], x["Long_Markup"]), axis=1)
+    df["short_markup_value"] = df.apply(lambda x: swap_markup(x["Short Points"], x["Short_Markup"]), axis=1)
+
+    # Account for the Symbol Digit Correction
+    df["long_markup_value_digit_correct"] = df["long_markup_value"] * (10 ** (df["BGI_digits"] - df["VANTAGE_digits"]))
+    df["short_markup_value_digit_correct"] = df["short_markup_value"] * (
+                10 ** (df["BGI_digits"] - df["VANTAGE_digits"]))
+
+    # If there's no BGI digits, or Vantage Digits, this will Fire off.
+    df['long_markup_value'] = np.where(df['long_markup_value_digit_correct'].isna(), df['long_markup_value'],
+                                       df['long_markup_value_digit_correct'])
+    df['short_markup_value'] = np.where(df['short_markup_value_digit_correct'].isna(), df['short_markup_value'],
+                                        df['short_markup_value_digit_correct'])
+
+    # Want to deal with all the fixed Values.
+    df['long_markup_value_PlusFixed'] = np.where(df['BGI_fixed_long'].isna(), df['long_markup_value'],
+                                                 df['BGI_fixed_long'])
+    df['short_markup_value_PlusFixed'] = np.where(df['BGI_fixed_short'].isna(), df['short_markup_value'],
+                                                  df['BGI_fixed_short'])
+
+    # Want to deal with all the fixed Insti Values.
+    df['long_markup_value_Plus_Insti_Fixed'] = np.where(df['BGI_fixed_insti_long'].isna(),
+                                                        df['long_markup_value_PlusFixed'], df['BGI_fixed_insti_long'])
+    df['short_markup_value_Plus_Insti_Fixed'] = np.where(df['BGI_fixed_insti_short'].isna(),
+                                                         df['short_markup_value_PlusFixed'],
+                                                         df['BGI_fixed_insti_short'])
+
+    custom_dict = {"PM": 0, "FX": 1, "FX_20%": 1, "Exotic Pairs": 3, "CFD": 4, "CFD_20%": 4}
+    df.sort_values(by=["swap_markup_profile", "bgi_coresymbol"], key=lambda x: x.map(custom_dict), inplace=True)
+
+    # df.sort_values(["swap_markup_profile", "bgi_coresymbol"],ascending=[False, True],  inplace=True)
+
+    bgi_Col_Needed = ["bgi_coresymbol", "long_markup_value_PlusFixed", "short_markup_value_PlusFixed", \
+                      "swap_markup_profile", "long_markup_value_Plus_Insti_Fixed",
+                      "short_markup_value_Plus_Insti_Fixed", \
+                      "avg_long", "avg_short"]
+    #df[bgi_Col_Needed]
+
+    # Get 3rd Party Swaps
+    tradeview_unsync = get_swaps_tradeview()
+    globalprime_unsync = get_swaps_globalprime()
+
+    df_tradeview = pd.DataFrame(tradeview_unsync.result())
+    df_tradeview = df_tradeview.rename(columns={"Long": "tv Long", "Short": "tv Short"})
+
+    df_global_prime = pd.DataFrame(globalprime_unsync.result())
+    df_global_prime = df_global_prime.rename(columns={"Long": "gp Long", "Short": "gp Short"})
+
+    df_Merge = df[bgi_Col_Needed].merge(df_tradeview, how="left", left_on="bgi_coresymbol", right_on="Symbol")
+    df_Merge = df_Merge.merge(df_global_prime, how="left", left_on="bgi_coresymbol", right_on="Symbol")
+    return df_Merge
+
+
+
+
+
+
+
+
 
