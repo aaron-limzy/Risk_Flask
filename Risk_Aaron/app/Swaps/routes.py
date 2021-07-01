@@ -349,7 +349,7 @@ def Swap_upload_form():
         return redirect(url_for('swaps.upload_Swaps_csv'))
 
 
-    print(file_data)
+    #print(file_data)
 
 
 
@@ -364,28 +364,49 @@ def Swap_upload_form():
         # Login = form.Login.data
         #form.title.data = "All Swaps"  # change the field's data
 
-        for f in file_data:  # Loop thru all swaps uploaded.
-            if all([u in f for u in ["Core Symbol", "Long Points" , "Short Points"]]):
-                sym = f["Core Symbol"]
-                long = f["Long Points"]
-                short = f["Short Points"]
+        for f in data:  # Loop thru all swaps uploaded.
+            if all([u in f for u in ['bgi_coresymbol', 'long_markup_value_PlusFixed', 'short_markup_value_PlusFixed',
+                        'swap_markup_profile', 'long_markup_value_Plus_Insti_Fixed',
+                        'short_markup_value_Plus_Insti_Fixed',
+                        'avg_long',  'avg_short', 'tv Long',
+                        'tv Short',  'gp Long', 'gp Short']]):
+
+
+                # sym = f["bgi_coresymbol"]
+                # long = f["long_markup_value_PlusFixed"]
+                # short = f["short_markup_value_PlusFixed"]
 
 
                 symbol_form = Individual_symbol_Form()
-                # symbol_form.symbol_hidden = sym # Hide so that the data isn't shown, and can be used for validation later.
-                symbol_form.symbol = sym
-                symbol_form.long = long
-                symbol_form.short = short
+                symbol_form.symbol = f["bgi_coresymbol"]
+                symbol_form.long = f["long_markup_value_PlusFixed"]
+                symbol_form.short = f["short_markup_value_PlusFixed"]
                 symbol_form.long_style = 'bg-danger'
                 symbol_form.short_style = 'bg-secondary'
 
-                symbol_form.avg_short = 123.12
-                symbol_form.avg_long = 0
+                symbol_form.avg_short = f["avg_short"]
+                symbol_form.avg_long = f["avg_long"]
 
-                symbol_form.broker_1_long = 2.2
-                symbol_form.broker_1_short = 3.3
+                symbol_form.broker_1_long = f["gp Long"]
+                symbol_form.broker_1_short = f["gp Short"]
+
+                symbol_form.broker_2_long = f["tv Long"]
+                symbol_form.broker_2_short = f["tv Short"]
+
 
                 symbol_form.bloomberg_dividend = "-"
+
+                symbol_form.symbol_markup_type = f["swap_markup_profile"]
+
+                # The cell color
+                symbol_form.long_style = compare_swap_values(f["long_markup_value_PlusFixed"], f["avg_long"])
+                symbol_form.short_style = compare_swap_values(f["short_markup_value_PlusFixed"], f["avg_short"])
+
+                symbol_form.broker_1_long_style = compare_swap_values(f["long_markup_value_PlusFixed"], f["gp Long"])
+                symbol_form.broker_1_short_style = compare_swap_values(f["short_markup_value_PlusFixed"], f["gp Short"])
+
+                symbol_form.broker_2_long_style = compare_swap_values(f["long_markup_value_PlusFixed"], f["tv Long"])
+                symbol_form.broker_2_short_style = compare_swap_values(f["short_markup_value_PlusFixed"], f["tv Short"])
 
                 # symbol_form.short.render_kw = {"class": "danger"}
 

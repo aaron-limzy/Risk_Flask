@@ -57,24 +57,30 @@
                             <th> Symbol </th>
                             <th> Long<br>Average </th>
                             <th> BGI<br>Long </th>
-                            <th> Broker<br>Long </th>
+                            <th> Broker 1<br>Long </th>
+                            <th> Broker 2<br>Long </th>
                             <th> Short<br>Average </th>
                             <th> BGI<br>Short </th>
-                            <th> Broker<br>Short </th>
+                            <th> Broker 1<br>Short </th>
+                            <th> Broker 2<br>Short </th>
                             <th> Bloomberg<br>Dividend </th>
+                            <th> Markup<br>Type </th>
                           </tr>
                           {% for core_symbol in form.core_symbols %}
                           <tr>
-                              <td>{{ core_symbol.hidden_tag() }}{{ core_symbol.symbol.data }}</td>
-                              <td>{{ core_symbol.avg_long.data  }}</td>
-                              <td>{{ core_symbol.long(class_=core_symbol.long_style.data + " form-control") }}</td>
-                              <td>{{ core_symbol.broker_long.data }}</td>
+                            <td>{{ core_symbol.hidden_tag() }}{{ core_symbol.symbol.data }}</td>
+                            <td>{{ core_symbol.avg_long.data  }}</td>
+                            <td>{{ core_symbol.long(class_=core_symbol.long_style.data + " form-control") }}</td>
+                            <td class="{{core_symbol.broker_1_long_style.data}}">{{ core_symbol.broker_1_long.data }}</td>
+                            <td class="{{core_symbol.broker_2_long_style.data}}">{{ core_symbol.broker_2_long.data }}</td>
 
-                              <td>{{ core_symbol.avg_short.data }}</td>
-                              <td>{{ core_symbol.short(class_=core_symbol.short_style.data + " form-control") }}</td>
-                                <td>{{ core_symbol.broker_short.data }}</td>
+                            <td>{{ core_symbol.avg_short.data }}</td>
+                            <td>{{ core_symbol.short(class_=core_symbol.short_style.data + " form-control") }}</td>
+                            <td class="{{core_symbol.broker_1_short_style.data}}">{{ core_symbol.broker_1_short.data }}</td>
+                            <td class="{{core_symbol.broker_2_short_style.data}}">{{ core_symbol.broker_2_short.data }}</td>
 
-                              <td>{{ core_symbol.bloomberg_dividend.data }}</td>
+                            <td>{{ core_symbol.bloomberg_dividend.data }}</td>
+                            <td>{{ core_symbol.symbol_markup_type.data }}</td>
                           </tr>
                           {% endfor %}
                       </table>

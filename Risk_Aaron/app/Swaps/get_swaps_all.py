@@ -766,15 +766,21 @@ def calculate_swaps_bgi(excel_data, db):
     # Want to deal with all the fixed Values.
     df['long_markup_value_PlusFixed'] = np.where(df['BGI_fixed_long'].isna(), df['long_markup_value'],
                                                  df['BGI_fixed_long'])
+    df['long_markup_value_PlusFixed'] = round(df['long_markup_value_PlusFixed'], 4)
     df['short_markup_value_PlusFixed'] = np.where(df['BGI_fixed_short'].isna(), df['short_markup_value'],
                                                   df['BGI_fixed_short'])
+    df['short_markup_value_PlusFixed'] = round(df['short_markup_value_PlusFixed'], 4)
 
     # Want to deal with all the fixed Insti Values.
     df['long_markup_value_Plus_Insti_Fixed'] = np.where(df['BGI_fixed_insti_long'].isna(),
                                                         df['long_markup_value_PlusFixed'], df['BGI_fixed_insti_long'])
+    df['long_markup_value_Plus_Insti_Fixed'] = round(df['long_markup_value_Plus_Insti_Fixed'], 4)
+
     df['short_markup_value_Plus_Insti_Fixed'] = np.where(df['BGI_fixed_insti_short'].isna(),
                                                          df['short_markup_value_PlusFixed'],
                                                          df['BGI_fixed_insti_short'])
+    df['short_markup_value_Plus_Insti_Fixed'] = round(df['short_markup_value_Plus_Insti_Fixed'], 4)
+
 
     custom_dict = {"PM": 0, "FX": 1, "FX_20%": 1, "Exotic Pairs": 3, "CFD": 4, "CFD_20%": 4}
     df.sort_values(by=["swap_markup_profile", "bgi_coresymbol"], key=lambda x: x.map(custom_dict), inplace=True)
@@ -802,8 +808,35 @@ def calculate_swaps_bgi(excel_data, db):
     return df_Merge
 
 
+# To see if there's any issue with the swap values
+# To see if there's any issue with the swap values
+def compare_swap_values(x, y):
 
+    # We need to make sure input is number value
+    if not isfloat(x) or not isfloat(y):
+        return "bg-white"
 
+    diff = abs(x - y)  # The difference in the values.
+    percent_difference_allowed_raise_warning = 50
+    percent_difference_allowed_raise_info = 20
+    min_allow_difference = 1  # If the swap only differs by 1, it should be alright.
+
+    # If they are different in sign.
+    if ((x > 0 and y < 0) or (x < 0 and y > 0)):
+        return "bg-warning"
+
+    if diff < min_allow_difference:  # To allow for minimum difference
+        return "bg-white"
+
+    # If there is a significant difference.
+    if (percent_difference_allowed_raise_warning * 0.01 * min(abs(x), abs(y)) < diff) and diff > min_allow_difference:
+        return "bg-danger"
+
+    # If there is a minor difference.
+    if (percent_difference_allowed_raise_info * 0.01 * min(abs(x), abs(y)) < diff) and diff > min_allow_difference:
+        return "bg-info"
+
+    return "bg-white"
 
 
 

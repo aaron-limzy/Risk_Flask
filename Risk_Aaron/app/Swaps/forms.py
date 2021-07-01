@@ -24,6 +24,8 @@ class Individual_symbol_Form(FlaskForm):
 
     broker_1_long = HiddenField('broker_1_long', render_kw={'readonly': True})
     broker_2_long = HiddenField('broker_2_long', render_kw={'readonly': True})
+    broker_1_long_style = HiddenField('', render_kw={'readonly': True})
+    broker_2_long_style = HiddenField('', render_kw={'readonly': True})
 
 
     short_style = HiddenField('bg-secondary', render_kw={'readonly': True})
@@ -31,8 +33,11 @@ class Individual_symbol_Form(FlaskForm):
 
     broker_1_short = HiddenField('broker_1_short', render_kw={'readonly': True})
     broker_2_short = HiddenField('broker_2_short', render_kw={'readonly': True})
+    broker_1_short_style = HiddenField('', render_kw={'readonly': True})
+    broker_2_short_style = HiddenField('', render_kw={'readonly': True})
 
     bloomberg_dividend = HiddenField('bloomberg_dividend', render_kw={'readonly': True})
+    symbol_markup_type = HiddenField('symbol_markup_type', render_kw={'readonly': True})
 
 
     long = FloatField('Long')
