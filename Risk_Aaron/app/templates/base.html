@@ -237,6 +237,20 @@
                     <li><a class="dropdown-item" href="{{ url_for('swaps.cfh_oz_upload') }}">CFH OZ Upload</a></li>
                   </ul>
                 </li>
+
+
+                <li class="nav-item dropleft">
+                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown1" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Swaps
+                  </a>
+                  <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown1">
+
+                    <li><a class="dropdown-item" href="{{ url_for('swaps.upload_Swaps_csv') }}">Swap Upload</a></li>
+                  </ul>
+                </li>
+
+
+
               {% endif %}
               {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Finance"] %}
                 <li class="dropdown-divider"></li>

@@ -20,6 +20,8 @@ from werkzeug.utils import secure_filename
 from app.decorators import roles_required
 from app.background import *
 
+from openpyxl.workbook import Workbook
+
 
 #from formencode import variabledecode
 
@@ -457,6 +459,33 @@ def upload_file():
     <input type=file name=file><input type=submit value=Upload>
     </form>
     '''
+
+
+
+
+@swaps.route("/custom_export", methods=['GET'])
+def docustomexport():
+
+    # wb = Workbook()
+    # ws1 = wb.create_sheet("Sheet_A")
+    # ws1.title = "Title_A"
+    #
+    # ws2 = wb.create_sheet("Sheet_B", 0)
+    # ws2.title = "Title_B"
+
+    # Need to do this pip install
+    # pip install pyexcel-xlsx
+
+    content = { 'Sheet 1': [[1.0, 2.0, 3.0]],
+                'Sheet 2': [ ['X', 'Y', 'Z'], [1.0, 2.0, 3.0], [4.0, 5.0, 6.0] ],
+                'Sheet 3': [  ['O', 'P', 'Q'],  [3.0, 2.0, 1.0], [4.0, 3.0, 2.0] ],
+                }
+
+    book = pyexcel.Book(content)
+
+    return excel.make_response(book, file_type ="xls", file_name="export_data")
+    #return excel.make_response_from_array([[1, 2], [3, 4]], "xlsx", file_name="export_data")
+
 
 
 #
