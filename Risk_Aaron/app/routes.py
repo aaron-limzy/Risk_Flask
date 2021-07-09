@@ -2262,10 +2262,6 @@ def Exclude_Equity_Below_Credit():
                            form=form, description=description)
 
 
-
-
-
-
 # Want to show which clients got recently changed to read only.
 # Due to Equity < Balance.
 @main_app.route('/Futures/Scrape')

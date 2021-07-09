@@ -358,6 +358,7 @@ def Swap_upload_form():
     if request.method != 'POST':
 
         df = calculate_swaps_bgi(file_data, db) # Get the data processed by the helper function
+        print(df)
         df.fillna("-", inplace=True) # Fill the NAs so that it will not appear weird.
         data = df.to_dict("records")
 
@@ -383,8 +384,11 @@ def Swap_upload_form():
                 symbol_form.symbol = f["bgi_coresymbol"]
                 symbol_form.long = f["long_markup_value_PlusFixed"]
                 symbol_form.short = f["short_markup_value_PlusFixed"]
-                symbol_form.long_style = 'bg-danger'
-                symbol_form.short_style = 'bg-secondary'
+
+
+                ## Save the Insti Values
+                symbol_form.insti_long = f['long_markup_value_Plus_Insti_Fixed']
+                symbol_form.insti_short = f['short_markup_value_Plus_Insti_Fixed']
 
                 symbol_form.avg_short = f["avg_short"]
                 symbol_form.avg_long = f["avg_long"]
@@ -394,6 +398,9 @@ def Swap_upload_form():
 
                 symbol_form.broker_2_long = f["tv Long"]
                 symbol_form.broker_2_short = f["tv Short"]
+
+
+
 
 
                 symbol_form.bloomberg_dividend = "-"
@@ -421,13 +428,31 @@ def Swap_upload_form():
     if request.method == 'POST':
         form = All_Swap_Form()
         print("POST!")
-        print(form)
+        all_data = []
+        #print(form)
         for s in form.core_symbols:
-            print("{} | {} | {}".format(s.symbol.data, s.long.data, s.short.data))
+            # Append to the list.
+            all_data.append([s.symbol.data, s.long.data, s.short.data, s.insti_long.data, s.insti_short.data])
+
+            print("{} | {} | {} | {} | {}".format(s.symbol.data, s.long.data, s.short.data, s.insti_long.data, s.insti_short.data))
 
 
         if form.validate_on_submit():
-            print(str(form.data))
+            # Want to return the Excel.
+            df = pd.DataFrame(all_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
+            df.sort_values("Core Symbol (BGI)", inplace=True)
+            retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
+            insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
+
+            content = {'retail': retail_sheet,
+                       'insti': insti_sheet,
+                       }
+
+            book = pyexcel.Book(content)
+
+            return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
+
+            #print(str(form.data))
         else:
             print("Can't validate.")
         # postvars = variabledecode.variable_decode(request.form, dict_char='_')

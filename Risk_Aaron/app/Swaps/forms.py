@@ -28,6 +28,8 @@ class Individual_symbol_Form(FlaskForm):
     broker_2_long_style = HiddenField('', render_kw={'readonly': True})
 
 
+
+
     short_style = HiddenField('bg-secondary', render_kw={'readonly': True})
     avg_short = HiddenField('avg_short', render_kw={'readonly': True})
 
@@ -42,7 +44,12 @@ class Individual_symbol_Form(FlaskForm):
 
     long = FloatField('Long')
     short = FloatField('Short')
+
+    insti_long = HiddenField('insti_long', render_kw={'readonly': True})
+    insti_short = HiddenField('insti_short', render_kw={'readonly': True})
+
     # etc.
+
 
 class All_Swap_Form(FlaskForm):
     #title = StringField('title')
