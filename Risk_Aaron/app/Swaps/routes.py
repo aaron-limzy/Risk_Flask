@@ -341,12 +341,12 @@ def Swap_upload_form():
     # file_form = File_Form()
     # and form.validate_on_submit()
 
-    print(request.method)
+    #print(request.method)
 
     # Get the data from cookies.
     if "Swap_excel_upload" in session:
         file_data =  session["Swap_excel_upload"]
-        #session.pop("Swap_excel_upload", None)
+        session.pop("Swap_excel_upload", None)
     else:
         return redirect(url_for('swaps.upload_Swaps_csv'))
 
@@ -358,7 +358,7 @@ def Swap_upload_form():
     if request.method != 'POST':
 
         df = calculate_swaps_bgi(file_data, db) # Get the data processed by the helper function
-        print(df)
+        #print(df)
         df.fillna("-", inplace=True) # Fill the NAs so that it will not appear weird.
         data = df.to_dict("records")
 
@@ -427,14 +427,14 @@ def Swap_upload_form():
 
     if request.method == 'POST':
         form = All_Swap_Form()
-        print("POST!")
+        #print("POST!")
         all_data = []
         #print(form)
         for s in form.core_symbols:
             # Append to the list.
             all_data.append([s.symbol.data, s.long.data, s.short.data, s.insti_long.data, s.insti_short.data])
 
-            print("{} | {} | {} | {} | {}".format(s.symbol.data, s.long.data, s.short.data, s.insti_long.data, s.insti_short.data))
+            #print("{} | {} | {} | {} | {}".format(s.symbol.data, s.long.data, s.short.data, s.insti_long.data, s.insti_short.data))
 
 
         if form.validate_on_submit():
@@ -449,7 +449,7 @@ def Swap_upload_form():
                        }
 
             book = pyexcel.Book(content)
-
+            # pip install pyexcel-xls
             return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
 
             #print(str(form.data))
