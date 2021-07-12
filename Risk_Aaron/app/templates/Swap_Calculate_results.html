@@ -48,6 +48,17 @@
 </div>
 <div class="container general_form">
   {% if form %}
+
+  <table class="table table-bordered table-sm table-hover">
+      <tr class="table-info">
+        <th style="background-color: DarkOrange;"> Difference in Sign </th>
+        <th style="background-color: Salmon;"> Significant Difference </th>
+        <th style="background-color: Gold;"> Minor Difference </th>
+
+      </tr>
+    </table>
+
+
           <div>
               <form action="{{ url_for('swaps.Swap_upload_form') }}" method="post">
                   {{ form.hidden_tag() }}
@@ -71,13 +82,13 @@
                             <td class="table-success">{{ core_symbol.hidden_tag() }}<b>{{ core_symbol.symbol.data }}</b></td>
                             <td>{{ core_symbol.avg_long.data  }}</td>
                             <td>{{ core_symbol.long(class_=core_symbol.long_style.data + " form-control") }}</td>
-                            <td class="{{core_symbol.broker_1_long_style.data}}">{{ core_symbol.broker_1_long.data }}</td>
-                            <td class="{{core_symbol.broker_2_long_style.data}}">{{ core_symbol.broker_2_long.data }}</td>
+                            <td style="background-color: {{core_symbol.broker_1_long_style.data}};">{{ core_symbol.broker_1_long.data }}</td>
+                            <td style="background-color: {{core_symbol.broker_2_long_style.data}};">{{ core_symbol.broker_2_long.data }}</td>
 
                             <td>{{ core_symbol.avg_short.data }}</td>
                             <td>{{ core_symbol.short(class_=core_symbol.short_style.data + " form-control") }}</td>
-                            <td class="{{core_symbol.broker_1_short_style.data}}">{{ core_symbol.broker_1_short.data }}</td>
-                            <td class="{{core_symbol.broker_2_short_style.data}}">{{ core_symbol.broker_2_short.data }}</td>
+                            <td style="background-color: {{core_symbol.broker_1_short_style.data}};">{{ core_symbol.broker_1_short.data }}</td>
+                            <td style="background-color:{{core_symbol.broker_2_short_style.data}};">{{ core_symbol.broker_2_short.data }}</td>
 
                             <td>{{ core_symbol.bloomberg_dividend.data }}</td>
                             <td>{{ core_symbol.symbol_markup_type.data }}</td>

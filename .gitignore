@@ -109,4 +109,5 @@ Archive*
 # mypy
 .mypy_cache/
 *.pyc
+*.xlsx
 

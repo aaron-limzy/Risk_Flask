@@ -27,6 +27,8 @@ from unsync import unsync
 
 from app.OZ_Rest_Class import *
 
+from Helper_Flask_Lib import *
+
 #logging.basicConfig(level=logging.INFO)
 #logging.getLogger('suds.client').setLevel(logging.INFO)
 
@@ -742,6 +744,9 @@ def calculate_swaps_bgi(excel_data, db):
     df_bgi_excel = pd.DataFrame(excel_data)
     print(df_bgi_excel)
 
+    print(Get_Dividend())
+
+
     # Need to do Long point correction form the file that Vantage sent.
     df_bgi_excel["Long Points"] = df_bgi_excel["Long Points"] * -1
     df = get_from_sql_or_file("call aaron.Swap_Symbol_Details()", "Swap_Symbol_Details.xlsx", db)
@@ -782,7 +787,7 @@ def calculate_swaps_bgi(excel_data, db):
     df['short_markup_value_Plus_Insti_Fixed'] = round(df['short_markup_value_Plus_Insti_Fixed'], 4)
 
 
-    custom_dict = {"PM": 0, "FX": 1, "FX_20%": 1, "Exotic Pairs": 3, "CFD": 4, "CFD_20%": 4}
+    custom_dict = {"FX": 0, "FX_20%": 0, "Exotic Pairs": 1, "PM": 2, "CFD": 4, "CFD_20%": 4}
     df.sort_values(by=["swap_markup_profile", "bgi_coresymbol"], key=lambda x: x.map(custom_dict), inplace=True)
 
     # df.sort_values(["swap_markup_profile", "bgi_coresymbol"],ascending=[False, True],  inplace=True)
@@ -814,7 +819,7 @@ def compare_swap_values(x, y):
 
     # We need to make sure input is number value
     if not isfloat(x) or not isfloat(y):
-        return "bg-white"
+        return "White"
 
     diff = abs(x - y)  # The difference in the values.
     percent_difference_allowed_raise_warning = 50
@@ -823,21 +828,51 @@ def compare_swap_values(x, y):
 
     # If they are different in sign.
     if ((x > 0 and y < 0) or (x < 0 and y > 0)):
-        return "bg-warning"
+        return "DarkOrange"
 
     if diff < min_allow_difference:  # To allow for minimum difference
-        return "bg-white"
+        return "White"
 
     # If there is a significant difference.
     if (percent_difference_allowed_raise_warning * 0.01 * min(abs(x), abs(y)) < diff) and diff > min_allow_difference:
-        return "bg-danger"
+        return "Salmon"
 
     # If there is a minor difference.
     if (percent_difference_allowed_raise_info * 0.01 * min(abs(x), abs(y)) < diff) and diff > min_allow_difference:
-        return "bg-info"
+        return "Gold"
 
-    return "bg-white"
+    return "White"
 
+
+
+# Get the day's chargable dividend from SQL
+def Get_Dividend():
+
+    increment_days = 1  #How many days to increment by. Need to go from the friday to monday.
+    now = datetime.datetime.now() #- datetime.timedelta(days=2)
+
+    if now.weekday() >= 4:   # 0=Monday, 4 = Thursday
+        increment_days = 3 - (now.weekday() - 4) # To skip the weekend
+    else:
+        increment_days = 1 # Just the next day would be good.
+
+    sql_query = "Select mt4_symbol, dividend ,`date` as `Date(DD-MM-YYYY)` from aaron.bloomberg_dividend WHERE Dividend != 0 AND `date` = '{}'".format( \
+        (now+datetime.timedelta(days=increment_days)).strftime("%Y-%m-%d"))
+
+    #df = get_from_sql_or_file("call aaron.Swap_Symbol_Details()", "Swap_Symbol_Details.xlsx", db)
+    return query_SQL_return_record(sql_query)
+
+    # [result_array, Column_Details] = Query_SQL(sql_query)
+    #
+    # to_table_data = [[".{}".format(a[0]), "{}".format(a[1]) ,a[2].strftime("%d-%m-%Y")] for a in result_array]
+    # to_table_column = [a[0] for a in Column_Details]
+    #
+    # file_name = "BloombergDividendChargable_{}.csv".format(now.strftime("%d_%b_%Y"))  # File name with date.
+    #
+    # with open(file_name, "w") as f:
+    #     f.write(",".join(to_table_column))
+    #     f.write("\n")
+    #     f.write("\n".join([",".join(a) for a in to_table_data]))
 
 
 
