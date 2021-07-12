@@ -346,7 +346,7 @@ def Swap_upload_form():
     # Get the data from cookies.
     if "Swap_excel_upload" in session:
         file_data =  session["Swap_excel_upload"]
-        session.pop("Swap_excel_upload", None)
+        #session.pop("Swap_excel_upload", None)
     else:
         return redirect(url_for('swaps.upload_Swaps_csv'))
 
