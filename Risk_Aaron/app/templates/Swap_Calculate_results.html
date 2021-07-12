@@ -68,7 +68,7 @@
                           </tr>
                           {% for core_symbol in form.core_symbols %}
                           <tr>
-                            <td class="table-success">{{ core_symbol.hidden_tag() }}<br>{{ core_symbol.symbol.data }}</br></td>
+                            <td class="table-success">{{ core_symbol.hidden_tag() }}<b>{{ core_symbol.symbol.data }}</b></td>
                             <td>{{ core_symbol.avg_long.data  }}</td>
                             <td>{{ core_symbol.long(class_=core_symbol.long_style.data + " form-control") }}</td>
                             <td class="{{core_symbol.broker_1_long_style.data}}">{{ core_symbol.broker_1_long.data }}</td>

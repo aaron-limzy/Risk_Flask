@@ -218,9 +218,9 @@ def upload_Swaps_csv():
         # table_values = [list(d.values()) for d in file_data]
 
         #return render_template("upload_form.html", form=form, table=table)
-        return render_template("General_Form.html", backgroud_Filename=background_pic('upload_Swaps_csv'),
-                               form=form, Table_name="Swaps", header=header, description=description, title=title, html=Markup(Array_To_HTML_Table(table_col, table_values,
-                                                                                                                                                   )))
+        # return render_template("General_Form.html", backgroud_Filename=background_pic('upload_Swaps_csv'),
+        #                        form=form, Table_name="Swaps", header=header, description=description, title=title, html=Markup(Array_To_HTML_Table(table_col, table_values,
+        #                                                                                                                                            )))
 
     return render_template("General_Form.html", backgroud_Filename=background_pic('upload_Swaps_csv'),
                            form=form, Table_name="Swaps", header=header, description=description, title=title)
@@ -400,9 +400,6 @@ def Swap_upload_form():
                 symbol_form.broker_2_short = f["tv Short"]
 
 
-
-
-
                 symbol_form.bloomberg_dividend = "-"
 
                 symbol_form.symbol_markup_type = f["swap_markup_profile"]
@@ -470,46 +467,46 @@ def Swap_upload_form():
                            form=form, no_backgroud_Cover=True,
                            description=description)
 
+#
+#
+# @swaps.route("/upload", methods=['GET', 'POST'])
+# def upload_file():
+#     if request.method == 'POST':
+#         return jsonify({"result": request.get_array(field_name='file')})
+#     return '''
+#     <!doctype html>
+#     <title>Upload an excel file</title>
+#     <h1>Excel file upload (csv, tsv, csvz, tsvz only)</h1>
+#     <form action="" method=post enctype=multipart/form-data><p>
+#     <input type=file name=file><input type=submit value=Upload>
+#     </form>
+#     '''
 
 
-@swaps.route("/upload", methods=['GET', 'POST'])
-def upload_file():
-    if request.method == 'POST':
-        return jsonify({"result": request.get_array(field_name='file')})
-    return '''
-    <!doctype html>
-    <title>Upload an excel file</title>
-    <h1>Excel file upload (csv, tsv, csvz, tsvz only)</h1>
-    <form action="" method=post enctype=multipart/form-data><p>
-    <input type=file name=file><input type=submit value=Upload>
-    </form>
-    '''
 
 
-
-
-@swaps.route("/custom_export", methods=['GET'])
-def docustomexport():
-
-    # wb = Workbook()
-    # ws1 = wb.create_sheet("Sheet_A")
-    # ws1.title = "Title_A"
-    #
-    # ws2 = wb.create_sheet("Sheet_B", 0)
-    # ws2.title = "Title_B"
-
-    # Need to do this pip install
-    # pip install pyexcel-xlsx
-
-    content = { 'Sheet 1': [[1.0, 2.0, 3.0]],
-                'Sheet 2': [ ['X', 'Y', 'Z'], [1.0, 2.0, 3.0], [4.0, 5.0, 6.0] ],
-                'Sheet 3': [  ['O', 'P', 'Q'],  [3.0, 2.0, 1.0], [4.0, 3.0, 2.0] ],
-                }
-
-    book = pyexcel.Book(content)
-
-    return excel.make_response(book, file_type ="xls", file_name="export_data")
-    #return excel.make_response_from_array([[1, 2], [3, 4]], "xlsx", file_name="export_data")
+# @swaps.route("/custom_export", methods=['GET'])
+# def docustomexport():
+#
+#     # wb = Workbook()
+#     # ws1 = wb.create_sheet("Sheet_A")
+#     # ws1.title = "Title_A"
+#     #
+#     # ws2 = wb.create_sheet("Sheet_B", 0)
+#     # ws2.title = "Title_B"
+#
+#     # Need to do this pip install
+#     # pip install pyexcel-xlsx
+#
+#     content = { 'Sheet 1': [[1.0, 2.0, 3.0]],
+#                 'Sheet 2': [ ['X', 'Y', 'Z'], [1.0, 2.0, 3.0], [4.0, 5.0, 6.0] ],
+#                 'Sheet 3': [  ['O', 'P', 'Q'],  [3.0, 2.0, 1.0], [4.0, 3.0, 2.0] ],
+#                 }
+#
+#     book = pyexcel.Book(content)
+#
+#     return excel.make_response(book, file_type ="xls", file_name="export_data")
+#     #return excel.make_response_from_array([[1, 2], [3, 4]], "xlsx", file_name="export_data")
 
 
 
