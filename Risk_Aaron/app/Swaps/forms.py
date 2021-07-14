@@ -40,6 +40,10 @@ class Individual_symbol_Form(FlaskForm):
 
     bloomberg_dividend = HiddenField('bloomberg_dividend', render_kw={'readonly': True})
     symbol_markup_type = HiddenField('symbol_markup_type', render_kw={'readonly': True})
+    symbol_markup_style = HiddenField('symbol_markup_style', render_kw={'readonly': True})
+
+
+
 
 
     long = FloatField('Long')

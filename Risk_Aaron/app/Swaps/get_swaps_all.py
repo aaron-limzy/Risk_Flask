@@ -741,17 +741,32 @@ def swap_markup(swap_val, markup_percentage):
 
 def calculate_swaps_bgi(excel_data, db):
 
+    pd.set_option('display.max_rows', 200)
+
     df_bgi_excel = pd.DataFrame(excel_data)
     print(df_bgi_excel)
 
-    print(Get_Dividend())
+    # Get the Bloomberg Dividend.
+    df_dividend = pd.DataFrame(Get_Dividend())
+    print(df_dividend)
 
 
     # Need to do Long point correction form the file that Vantage sent.
     df_bgi_excel["Long Points"] = df_bgi_excel["Long Points"] * -1
+
     df = get_from_sql_or_file("call aaron.Swap_Symbol_Details()", "Swap_Symbol_Details.xlsx", db)
+    #
+    # print()
+    # print("df:")
+    # print(df)
 
     df = df.merge(df_bgi_excel, how="left", left_on="vantage_coresymbol", right_on="Core Symbol")
+
+    # Merge in Bloomberg Dividend.
+    df["Symbol_without_dot"] = df["bgi_coresymbol"].apply(lambda x: x.replace(".", "")) # So that we can do the merge.
+    df = df.merge(df_dividend, how="left", left_on="Symbol_without_dot", right_on="mt4_symbol")
+    df.drop( columns="Symbol_without_dot", inplace = True)  # Drop the column that we just created.
+    #print(df)
 
     # Calculate the markup First.
     df["long_markup_value"] = df.apply(lambda x: swap_markup(x["Long Points"], x["Long_Markup"]), axis=1)
@@ -769,12 +784,20 @@ def calculate_swaps_bgi(excel_data, db):
                                         df['short_markup_value_digit_correct'])
 
     # Want to deal with all the fixed Values.
-    df['long_markup_value_PlusFixed'] = np.where(df['BGI_fixed_long'].isna(), df['long_markup_value'],
-                                                 df['BGI_fixed_long'])
+    df['long_markup_value_PlusFixed'] = np.where(df['BGI_fixed_long'].isna(), df['long_markup_value'], df['BGI_fixed_long'])
+
     df['long_markup_value_PlusFixed'] = round(df['long_markup_value_PlusFixed'], 4)
+
     df['short_markup_value_PlusFixed'] = np.where(df['BGI_fixed_short'].isna(), df['short_markup_value'],
                                                   df['BGI_fixed_short'])
     df['short_markup_value_PlusFixed'] = round(df['short_markup_value_PlusFixed'], 4)
+
+    # Want to note Symbols are on fixed swaps
+    df['Markup_Style'] = np.where( (~df['BGI_fixed_long'].isna()) | (~df['BGI_fixed_short'].isna()), \
+                                                  "#85C1E9", "")
+
+    print(df)
+    #--- Want to show which
 
     # Want to deal with all the fixed Insti Values.
     df['long_markup_value_Plus_Insti_Fixed'] = np.where(df['BGI_fixed_insti_long'].isna(),
@@ -792,11 +815,11 @@ def calculate_swaps_bgi(excel_data, db):
 
     # df.sort_values(["swap_markup_profile", "bgi_coresymbol"],ascending=[False, True],  inplace=True)
 
-    bgi_Col_Needed = ["bgi_coresymbol", "long_markup_value_PlusFixed", "short_markup_value_PlusFixed", \
+    bgi_Col_Needed = ["bgi_coresymbol", "long_markup_value_PlusFixed",
+                      "short_markup_value_PlusFixed", \
                       "swap_markup_profile", "long_markup_value_Plus_Insti_Fixed",
-                      "short_markup_value_Plus_Insti_Fixed", \
-                      "avg_long", "avg_short"]
-    #df[bgi_Col_Needed]
+                      "short_markup_value_Plus_Insti_Fixed", "dividend", \
+                      "avg_long", "avg_short", "Markup_Style"]
 
     # Get 3rd Party Swaps
     tradeview_unsync = get_swaps_tradeview()
@@ -804,6 +827,9 @@ def calculate_swaps_bgi(excel_data, db):
 
     df_tradeview = pd.DataFrame(tradeview_unsync.result())
     df_tradeview = df_tradeview.rename(columns={"Long": "tv Long", "Short": "tv Short"})
+    print("df_tradeview")
+
+    print(df_tradeview)
 
     df_global_prime = pd.DataFrame(globalprime_unsync.result())
     df_global_prime = df_global_prime.rename(columns={"Long": "gp Long", "Short": "gp Short"})
@@ -817,6 +843,17 @@ def calculate_swaps_bgi(excel_data, db):
 # To see if there's any issue with the swap values
 def compare_swap_values(x, y):
 
+    # The color list:
+    # RED:  #FF0000/ #E74C3C
+    # YELLOW:  #F9F34C/ #F1C40F
+    # BLUE:  #3498DB/ #85C1E9
+    # GREEN:  #29AE60/ #44F846
+    # ORANGE:  #EB984E/ #F39C12
+
+    color_dict = {"Red": "#E74C3C", "Yellow": "#F1C40F", \
+               "Blue" : "#85C1E9", "Green": "#44F846", \
+               "Orange": "#F39C12", "White": "#FFFFFF"}
+
     # We need to make sure input is number value
     if not isfloat(x) or not isfloat(y):
         return "White"
@@ -828,20 +865,20 @@ def compare_swap_values(x, y):
 
     # If they are different in sign.
     if ((x > 0 and y < 0) or (x < 0 and y > 0)):
-        return "DarkOrange"
+        return color_dict["Yellow"]
 
     if diff < min_allow_difference:  # To allow for minimum difference
-        return "White"
+        return color_dict["White"]
 
     # If there is a significant difference.
     if (percent_difference_allowed_raise_warning * 0.01 * min(abs(x), abs(y)) < diff) and diff > min_allow_difference:
-        return "Salmon"
+        return color_dict["Red"]
 
     # If there is a minor difference.
     if (percent_difference_allowed_raise_info * 0.01 * min(abs(x), abs(y)) < diff) and diff > min_allow_difference:
-        return "Gold"
+        return color_dict["Orange"]
 
-    return "White"
+    return color_dict["White"]
 
 
 

@@ -51,9 +51,11 @@
 
   <table class="table table-bordered table-sm table-hover">
       <tr class="table-info">
-        <th style="background-color: DarkOrange;"> Difference in Sign </th>
-        <th style="background-color: Salmon;"> Significant Difference </th>
-        <th style="background-color: Gold;"> Minor Difference </th>
+        <th style="background-color: #F1C40F;"> Difference in Sign </th>
+        <th style="background-color: #E74C3C;"> Significant Difference </th>
+        <th style="background-color: #F39C12;"> Minor Difference </th>
+        <th style="background-color: #85C1E9;"> Fixed Swaps </th>
+
 
       </tr>
     </table>
@@ -88,10 +90,10 @@
                             <td>{{ core_symbol.avg_short.data }}</td>
                             <td>{{ core_symbol.short(class_=core_symbol.short_style.data + " form-control") }}</td>
                             <td style="background-color: {{core_symbol.broker_1_short_style.data}};">{{ core_symbol.broker_1_short.data }}</td>
-                            <td style="background-color:{{core_symbol.broker_2_short_style.data}};">{{ core_symbol.broker_2_short.data }}</td>
+                            <td style="background-color: {{core_symbol.broker_2_short_style.data}};">{{ core_symbol.broker_2_short.data }}</td>
 
                             <td>{{ core_symbol.bloomberg_dividend.data }}</td>
-                            <td>{{ core_symbol.symbol_markup_type.data }}</td>
+                            <td style="background-color: {{core_symbol.symbol_markup_style.data}};">{{ core_symbol.symbol_markup_type.data }}</td>
                           </tr>
                           {% endfor %}
                       </table>

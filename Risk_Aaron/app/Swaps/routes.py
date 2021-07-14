@@ -372,6 +372,7 @@ def Swap_upload_form():
                         'swap_markup_profile', 'long_markup_value_Plus_Insti_Fixed',
                         'short_markup_value_Plus_Insti_Fixed',
                         'avg_long',  'avg_short', 'tv Long',
+                        "dividend", "Markup_Style",
                         'tv Short',  'gp Long', 'gp Short']]):
 
 
@@ -400,9 +401,11 @@ def Swap_upload_form():
                 symbol_form.broker_2_short = f["tv Short"]
 
 
-                symbol_form.bloomberg_dividend = "-"
+                symbol_form.bloomberg_dividend = f["dividend"]
 
                 symbol_form.symbol_markup_type = f["swap_markup_profile"]
+                symbol_form.symbol_markup_style = f["Markup_Style"]
+
 
                 # The cell color
                 symbol_form.long_style = compare_swap_values(f["long_markup_value_PlusFixed"], f["avg_long"])
