@@ -5,6 +5,8 @@ __pycache__/
 
 *.xml
 
+*.xlsx
+*.xls
 
 # C extensions
 *.so
@@ -109,5 +111,5 @@ Archive*
 # mypy
 .mypy_cache/
 *.pyc
-*.xlsx
+
 
