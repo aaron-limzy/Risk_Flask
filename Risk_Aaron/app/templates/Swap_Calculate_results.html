@@ -55,8 +55,6 @@
         <th style="background-color: #E74C3C;"> Significant Difference </th>
         <th style="background-color: #F39C12;"> Minor Difference </th>
         <th style="background-color: #85C1E9;"> Fixed Swaps </th>
-
-
       </tr>
     </table>
 
@@ -81,7 +79,7 @@
                           </tr>
                           {% for core_symbol in form.core_symbols %}
                           <tr>
-                            <td class="table-success">{{ core_symbol.hidden_tag() }}<b>{{ core_symbol.symbol.data }}</b></td>
+                            <td style="background-color: #44F846">{{ core_symbol.hidden_tag() }}<b>{{ core_symbol.symbol.data }}</b></td>
                             <td>{{ core_symbol.avg_long.data  }}</td>
                             <td>{{ core_symbol.long(class_=core_symbol.long_style.data + " form-control") }}</td>
                             <td style="background-color: {{core_symbol.broker_1_long_style.data}};">{{ core_symbol.broker_1_long.data }}</td>

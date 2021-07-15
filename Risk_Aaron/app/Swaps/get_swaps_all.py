@@ -29,6 +29,12 @@ from app.OZ_Rest_Class import *
 
 from Helper_Flask_Lib import *
 
+
+from sklearn.linear_model import LinearRegression
+
+from sqlalchemy import text
+
+
 #logging.basicConfig(level=logging.INFO)
 #logging.getLogger('suds.client').setLevel(logging.INFO)
 
@@ -744,29 +750,43 @@ def calculate_swaps_bgi(excel_data, db):
     pd.set_option('display.max_rows', 200)
 
     df_bgi_excel = pd.DataFrame(excel_data)
-    print(df_bgi_excel)
+    #print(df_bgi_excel)
 
     # Get the Bloomberg Dividend.
-    df_dividend = pd.DataFrame(Get_Dividend())
-    print(df_dividend)
+    #df_dividend = pd.DataFrame(Get_Dividend())
+    #print(df_dividend)
+
+    # Get 3rd Party Swaps - UNSYNC. To save some time.
+    tradeview_unsync = get_swaps_tradeview()
+    globalprime_unsync = get_swaps_globalprime()
+
+    #start_time = datetime.datetime.now()
+    df_swaps_predict = predict_cfd_swaps(db, return_predict_only=True)
+    #print("Time taken for prediction: {}s".format((datetime.datetime.now() - start_time).total_seconds()))
+    # The dataframe column names has to be unique.
+    df_swaps_predict.rename(columns={"BGI_Long" : "BGI_Predict_Long", "BGI_Short" : "BGI_Predict_Short"}, inplace=True)
 
 
     # Need to do Long point correction form the file that Vantage sent.
     df_bgi_excel["Long Points"] = df_bgi_excel["Long Points"] * -1
 
+    # Get the Symbol details from SQL
     df = get_from_sql_or_file("call aaron.Swap_Symbol_Details()", "Swap_Symbol_Details.xlsx", db)
-    #
-    # print()
-    # print("df:")
-    # print(df)
 
+    # Merge the Vantage swaps with the Symbol details.
     df = df.merge(df_bgi_excel, how="left", left_on="vantage_coresymbol", right_on="Core Symbol")
 
     # Merge in Bloomberg Dividend.
-    df["Symbol_without_dot"] = df["bgi_coresymbol"].apply(lambda x: x.replace(".", "")) # So that we can do the merge.
-    df = df.merge(df_dividend, how="left", left_on="Symbol_without_dot", right_on="mt4_symbol")
-    df.drop( columns="Symbol_without_dot", inplace = True)  # Drop the column that we just created.
+    # df["Symbol_without_dot"] = df["bgi_coresymbol"].apply(lambda x: x.replace(".", "")) # So that we can do the merge.
+    # df = df.merge(df_dividend, how="left", left_on="Symbol_without_dot", right_on="mt4_symbol")
+    # df.drop( columns="Symbol_without_dot", inplace = True)  # Drop the column that we just created.
     #print(df)
+
+
+    # Merge in CFD Regression Swaps Value
+    df = df.merge(df_swaps_predict, how="left", left_on="bgi_coresymbol", right_on="Symbol")
+
+
 
     # Calculate the markup First.
     df["long_markup_value"] = df.apply(lambda x: swap_markup(x["Long Points"], x["Long_Markup"]), axis=1)
@@ -796,7 +816,7 @@ def calculate_swaps_bgi(excel_data, db):
     df['Markup_Style'] = np.where( (~df['BGI_fixed_long'].isna()) | (~df['BGI_fixed_short'].isna()), \
                                                   "#85C1E9", "")
 
-    print(df)
+    #print(df)
     #--- Want to show which
 
     # Want to deal with all the fixed Insti Values.
@@ -810,6 +830,17 @@ def calculate_swaps_bgi(excel_data, db):
     df['short_markup_value_Plus_Insti_Fixed'] = round(df['short_markup_value_Plus_Insti_Fixed'], 4)
 
 
+
+    # Want to over-write the average with the regression CFD Swaps.
+    df['avg_long'] = np.where(df['BGI_Predict_Long'].isna(), df['avg_long'],
+                                        df['BGI_Predict_Long'])
+
+    df['avg_short'] = np.where(df['BGI_Predict_Short'].isna(), df['avg_short'],
+                                        df['BGI_Predict_Short'])
+
+
+
+
     custom_dict = {"FX": 0, "FX_20%": 0, "Exotic Pairs": 1, "PM": 2, "CFD": 4, "CFD_20%": 4}
     df.sort_values(by=["swap_markup_profile", "bgi_coresymbol"], key=lambda x: x.map(custom_dict), inplace=True)
 
@@ -821,15 +852,13 @@ def calculate_swaps_bgi(excel_data, db):
                       "short_markup_value_Plus_Insti_Fixed", "dividend", \
                       "avg_long", "avg_short", "Markup_Style"]
 
-    # Get 3rd Party Swaps
-    tradeview_unsync = get_swaps_tradeview()
-    globalprime_unsync = get_swaps_globalprime()
+
 
     df_tradeview = pd.DataFrame(tradeview_unsync.result())
     df_tradeview = df_tradeview.rename(columns={"Long": "tv Long", "Short": "tv Short"})
-    print("df_tradeview")
+    #print("df_tradeview")
 
-    print(df_tradeview)
+    #print(df_tradeview)
 
     df_global_prime = pd.DataFrame(globalprime_unsync.result())
     df_global_prime = df_global_prime.rename(columns={"Long": "gp Long", "Short": "gp Short"})
@@ -914,3 +943,121 @@ def Get_Dividend():
 
 
 
+#----- To calculate and apply regression for swaps on CFDs
+
+
+def get_dividend_history(db, backward_days=51):
+    #     data_dividend = Query_SQL_Host("""SELECT mt4_symbol, dividend, date,  weekday(date) as `Weekday`
+    #     FROM aaron.bloomberg_dividend where date > DATE_SUB(NOW(), INTERVAL {} DAY)""".format(backward_days), \
+    #                                    SQL_IP, SQL_User, SQL_Password, SQL_Database)
+    #     df_dividend = pd.DataFrame(data_dividend[0], columns=["mt4_symbol", "dividend", "date", "Weekday"])
+
+    df_dividend = get_from_sql_or_file("""SELECT mt4_symbol, dividend, date,  weekday(date) as `Weekday` 
+    FROM aaron.bloomberg_dividend where date > DATE_SUB(NOW(), INTERVAL {} DAY)""".format(backward_days),
+                                       "Dividend_History.xlsx", db)
+
+    # Weekday 0 = Monday.
+
+    # Backward calculate by 1 working day.
+    df_dividend["Backwards_days"] = 1
+    df_dividend["Backwards_days"] = np.where(df_dividend['Weekday'] == 6, 2, df_dividend["Backwards_days"])
+    df_dividend["Backwards_days"] = np.where(df_dividend['Weekday'] == 0, 3, df_dividend["Backwards_days"])
+
+    # Cast to date
+    df_dividend["date"] = pd.to_datetime(df_dividend["date"])
+    # Add the . for the symbols
+    df_dividend["mt4_symbol"] = df_dividend["mt4_symbol"].apply(lambda x: ".{}".format(x))
+
+    df_dividend["Date_merge"] = df_dividend.apply(lambda x: x["date"] - datetime.timedelta(days=x["Backwards_days"]),
+                                                  axis=1)
+
+    df_dividend_ret = df_dividend.groupby(["mt4_symbol", "Date_merge"]).sum().reset_index()
+
+    df_dividend_ret = df_dividend_ret[["mt4_symbol", "Date_merge", "dividend"]]
+    return df_dividend_ret
+
+# To calculate what should be the swaps, with dividend incoperated into it. Both long and short.
+def calculate_CFD_long_short_dividend(df):
+    # Get all the dividend data that are history
+    df_regression_data = df[(~df["BGI_Long"].isna()) & (~df["dividend"].isna()) & (~df["BGI_Short"].isna())]
+    if len(df_regression_data) == 0:
+        print("Data is Empty or NaN")
+        return (0, 0)
+
+    # regression_dividend = df_s[(df_s["BGI_Long"].isna()) & (~df_s["dividend"].isna())  & (df_s["BGI_Short"].isna())]
+
+    dividend_today = df[df["Date_merge"] == datetime.datetime.now().strftime("%Y-%m-%d")]["dividend"]
+    # print(dividend_today.item())
+    df_s = df_regression_data[["dividend", "BGI_Long", "BGI_Short"]]
+
+    X = df_s.iloc[:, :-2].values  # Get the Dividend
+    Y_Long = df_s.iloc[:, 1].values  # Get the LONG for BGI.
+    Y_Short = df_s.iloc[:, 2].values  # Get the SHORT for BGI.
+
+    return (linear_regression(X, Y_Long, dividend_today.item()), linear_regression(X, Y_Short, dividend_today.item()))
+
+# To run the Linear Regression for the CFD Swaps.
+def linear_regression(X, Y, Predict):
+    lr = LinearRegression()
+    model_Long = lr.fit(X, Y)
+    predictions = lr.predict([[Predict]])
+    return predictions[0]
+
+
+def get_swap_history(db, backward_days=50):
+    # data = Query_SQL_Host("""SELECT Core_Symbol as `Symbol`, BGI_Long, BGI_Short, Date
+    #     FROM test.bgi_swaps WHERE CORE_SYMBOL LIKE '.%' AND DATE > DATE_SUB(NOW(),
+    # INTERVAL {} DAY) ORDER BY date""".format(backward_days), SQL_IP, SQL_User, SQL_Password, SQL_Database)
+
+    SQL_Query = """SELECT Core_Symbol as `Symbol`, BGI_Long, BGI_Short, Date 
+    FROM test.bgi_swaps WHERE CORE_SYMBOL LIKE '.%' AND 
+    DATE > DATE_SUB(NOW(),INTERVAL {} DAY) ORDER BY date""".format(backward_days).replace("\n", " ")
+
+    #print("\n\n{}\n\n".format(SQL_Query))
+
+    df = get_from_sql_or_file(SQL_Query, "Swap_Value_History.xlsx", db)
+
+    #df = pd.DataFrame(query_SQL_return_record(text(SQL_Query)))
+
+    #df = pd.DataFrame(data[0], columns=["Symbol", "BGI_Long", "BGI_Short", "Date"])
+    df["BGI_Long"] = df["BGI_Long"].astype(float)
+    df["BGI_Short"] = df["BGI_Short"].astype(float)
+
+    df["Date"] = pd.to_datetime(df["Date"])
+    return df
+
+
+def merge_dividend_swaps(df, df_dividend):
+    # Merge and try to get a column with all the data.
+    df = df.merge(df_dividend, left_on=["Symbol", "Date"], right_on=["mt4_symbol", "Date_merge"], how="outer")
+    df["Symbol"] = np.where(df["mt4_symbol"].isna(), df["Symbol"], df["mt4_symbol"])
+    df["Date"] = np.where(df["Date"].isna(), df["Date_merge"], df["Date"])
+    return df
+
+
+# Has the ability to return only the predicted df.
+def predict_cfd_swaps(db, return_predict_only=True):
+    df_dividend = get_dividend_history(db, 51)
+    df_swapHistory = get_swap_history(db, 50)
+    df = merge_dividend_swaps(df_swapHistory, df_dividend)
+    df.sort_values("Date", inplace=True)
+    # Want those that are not empty
+    all_symbol = df[~df["dividend"].isna()]["Symbol"].unique().tolist()
+
+    for s in all_symbol:
+        predict_long, predict_short = calculate_CFD_long_short_dividend(df[df["Symbol"] == s])
+        # print("{} {} {}".format(s, predict_long, predict_short))
+        df.loc[(df.Symbol == s) & (
+                    df["Date_merge"] == datetime.datetime.now().strftime("%Y-%m-%d")), 'BGI_Long'] = predict_long
+        df.loc[(df.Symbol == s) & (
+                    df["Date_merge"] == datetime.datetime.now().strftime("%Y-%m-%d")), 'BGI_Short'] = predict_short
+
+    # Need to round off the values to 2
+    df['BGI_Long'] = round(df['BGI_Long'], 4)
+    df['BGI_Short'] = round(df['BGI_Short'], 4)
+
+
+    if return_predict_only:
+        return df[df["Date_merge"] == datetime.datetime.now().strftime("%Y-%m-%d")]
+
+    return df
