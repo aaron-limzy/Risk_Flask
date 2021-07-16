@@ -51,7 +51,7 @@ def background_pic(website):
                   "Swap_upload_form":                       "css/witewall_3.png",
                  "upload_Swaps_csv"  :                      "css/Charts.jpg",
 
-                 "Swap_upload_form":                        "css/vintage_speckles.png",
+                 "Swap_upload_form":                        "css/foggy_birds.png",
 
                  "Swap_download_page":                      "css/pink dust.png"
 

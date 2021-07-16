@@ -907,10 +907,10 @@ def compare_swap_values(x, y):
     percent_difference_allowed_raise_warning = 50
     percent_difference_allowed_raise_info = 20
     min_allow_difference = 2  # If the swap only differs by X, it should be alright.
-    min_allow_difference_oposing_sign = 0.5 # If swaps are different signs, it's okay if they are just 0.5 difference.
+    min_allow_difference_opposing_sign = 0.5 # If swaps are different signs, it's okay if they are just 0.5 difference.
 
     # If they are different in sign, and past a certain threshold
-    if ((x > 0 and y < 0) or (x < 0 and y > 0)) and diff > min_allow_difference_oposing_sign:
+    if ((x > 0 and y < 0) or (x < 0 and y > 0)) and diff > min_allow_difference_opposing_sign:
         return color_dict["Yellow"]
 
     if diff < min_allow_difference:  # To allow for minimum difference

@@ -272,7 +272,9 @@ def Other_Brokers_Ajax():
     FROM aaron.swap_bgicoresymbol
     ORDER BY Symbol"""
 
-    df_bgi_core_symbol = get_from_sql_or_file(sql_query_line, "app\\Swaps\\Upload_Swaps\\BGI_Core_Symbol_Only.xls", db)
+    df_bgi_core_symbol = get_from_sql_or_file(sql_query_line, current_app.config["VANTAGE_UPLOAD_FOLDER"] + "BGI_Core_Symbol_Only.xls", db)
+
+
     df_other_broker_swaps = df_bgi_core_symbol.merge(df_other_broker_swaps, on="Symbol", how="left")
 
     #print(df_bgi_core_symbol)
@@ -491,13 +493,45 @@ def Swap_download_page():
     df = pd.DataFrame(swap_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
     df.sort_values("Core Symbol (BGI)", inplace=True)
 
+    # Get the data into a Bracket format to be ready to inset into SQL
+    # We will do a 2 hours back so that swaps can still be uploaded near midnight.
+    swap_insert_list = [ "(" + ",".join(["'{}'".format(x) for x in X]) + ", DATE(DATE_SUB(now(), INTERVAL 2 HOUR)))" \
+                         for X in df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()]
+    swap_insert_str = " , ".join(swap_insert_list)
+
+
     # Need to upload to MT4
+    #sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
+    footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
+    #risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_test, values=[swap_insert_str], footer=footer, sql_max_insert=500)
+
+    sql_header = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
+    risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header, values=[swap_insert_str], footer=footer, sql_max_insert=500)
+    flash("Risk (64.73) Swaps Insert Successful.")
+
+
+    # Insert into BO DB
+    sql_query_bo = "INSERT INTO bgiswap.table_swap ( bgi_symbol, bgi_long, bgi_short, Update_Date ) Values  " + swap_insert_str
+    # #To make it to SQL friendly text.
+    raw_insert_result = db.session.execute(text("delete from bgiswap.table_swap"), bind=db.get_engine(current_app, 'bo_swaps'))
+    #db.session.commit()  # Since we are using session, we need to commit.
+    raw_insert_result = db.session.execute(text(sql_query_bo), bind=db.get_engine(current_app, 'bo_swaps'))
+    db.session.commit()  # Since we are using session, we need to commit.
+    flash("BO Swaps Insert Successful.")
+
+
+
+    # Insert into Risk 64.73 Database
+
+
 
     # Need to upload to MT5
 
 
+
+
     # Need to upload to Risk Database
-    
+
     # Need to upload to BO Database
 
 
