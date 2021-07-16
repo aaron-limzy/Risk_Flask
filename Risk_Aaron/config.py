@@ -60,7 +60,7 @@ class Config(object):
 
     UPLOADED_SWAPS_DEST='./project/static/vantage_swap/'
     UPLOADED_SWAPS_URL='http://localhost:5000/static/vantage_swap/'
-    VANTAGE_UPLOAD_FOLDER="./Swaps_upload/Vantage_upload/"
+    VANTAGE_UPLOAD_FOLDER="./Swap_Details/"
 
     MAIL_SERVER = "smtp.googlemail.com"
     MAIL_PORT = 587

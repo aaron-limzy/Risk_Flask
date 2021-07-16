@@ -350,11 +350,6 @@ def Swap_upload_form():
     else:
         return redirect(url_for('swaps.upload_Swaps_csv'))
 
-
-    #print(file_data)
-
-
-
     if request.method != 'POST':
 
         df = calculate_swaps_bgi(file_data, db) # Get the data processed by the helper function
@@ -438,20 +433,22 @@ def Swap_upload_form():
 
 
         if form.validate_on_submit():
-            # Want to return the Excel.
-            df = pd.DataFrame(all_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
-            df.sort_values("Core Symbol (BGI)", inplace=True)
-            retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
-            insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
+            session['swap_validated_data']  = all_data
+            # # Want to return the Excel.
+            # df = pd.DataFrame(all_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
+            # df.sort_values("Core Symbol (BGI)", inplace=True)
+            # retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
+            # insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
+            #
+            # content = {'retail': retail_sheet,
+            #            'insti': insti_sheet,
+            #            }
+            #
+            # book = pyexcel.Book(content)
+            # # pip install pyexcel-xls
+            # return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
 
-            content = {'retail': retail_sheet,
-                       'insti': insti_sheet,
-                       }
-
-            book = pyexcel.Book(content)
-            # pip install pyexcel-xls
-            return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
-
+            return redirect(url_for('swaps.Swap_download_page'))
             #print(str(form.data))
         else:
             print("Can't validate.")
@@ -464,11 +461,77 @@ def Swap_upload_form():
 
 
     return render_template("Swap_Calculate_results.html",
-
-                           title=title,
+                           title=title, backgroud_Filename = background_pic("Swap_upload_form"),
                            header=header,
                            form=form, no_backgroud_Cover=True,
                            description=description)
+
+
+# To view Client's trades as well as some simple details.
+@swaps.route('/Swap_download', methods=['GET', 'POST'])
+@roles_required()
+def Swap_download_page():
+
+
+    title = "Swap Upload File"
+    header = "Swap Upload File"
+    description = Markup("Swap Upload File")
+    # file_form = File_Form()
+    # and form.validate_on_submit()
+
+    #print(request.method)
+
+    # Get the data from cookies.
+    if "swap_validated_data" in session:
+        swap_data =  session["swap_validated_data"]
+        #session.pop("swap_validated_data", None)
+    else:
+        return redirect(url_for('swaps.upload_Swaps_csv'))
+
+    df = pd.DataFrame(swap_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
+    df.sort_values("Core Symbol (BGI)", inplace=True)
+
+    # Need to upload to MT4
+
+    # Need to upload to MT5
+
+
+    # Need to upload to Risk Database
+    
+    # Need to upload to BO Database
+
+
+
+    retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
+    insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
+
+    content = {'retail': retail_sheet,
+               'insti': insti_sheet,
+               }
+
+    book = pyexcel.Book(content)
+    # pip install pyexcel-xls
+    #return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
+
+    #print(str(form.data))
+
+    # postvars = variabledecode.variable_decode(request.form, dict_char='_')
+    #     for k, v in postvars.iteritems():
+
+# # Want to redirect this to some other pages.
+# return redirect(url_for('analysis.Client_trades_Analysis', Live=Live, Login=Login))
+
+
+    return render_template("Swap_Calculate_results.html",
+                           title=title,
+                           header=header, backgroud_Filename = background_pic("Swap_download_page"),
+                           no_backgroud_Cover=True,
+                           description=description)
+
+
+
+
+
 
 #
 #

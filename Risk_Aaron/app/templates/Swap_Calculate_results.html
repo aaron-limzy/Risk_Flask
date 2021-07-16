@@ -57,8 +57,6 @@
         <th style="background-color: #85C1E9;"> Fixed Swaps </th>
       </tr>
     </table>
-
-
           <div>
               <form action="{{ url_for('swaps.Swap_upload_form') }}" method="post">
                   {{ form.hidden_tag() }}
@@ -68,12 +66,12 @@
                             <th> Symbol </th>
                             <th> Long<br>Average </th>
                             <th> BGI<br>Long </th>
-                            <th> Broker 1<br>Long </th>
-                            <th> Broker 2<br>Long </th>
+                            <th> Broker<br>Long [1]</th>
+                            <th> Broker<br>Long [2]</th>
                             <th> Short<br>Average </th>
                             <th> BGI<br>Short </th>
-                            <th> Broker 1<br>Short </th>
-                            <th> Broker 2<br>Short </th>
+                            <th> Broker<br>Short [1]</th>
+                            <th> Broker<br>Short [2]</th>
                             <th> Bloomberg<br>Dividend </th>
                             <th> Markup<br>Type </th>
                           </tr>
@@ -81,12 +79,12 @@
                           <tr>
                             <td style="background-color: #29AE60">{{ core_symbol.hidden_tag() }}<b>{{ core_symbol.symbol.data }}</b></td>
                             <td>{{ core_symbol.avg_long.data  }}</td>
-                            <td>{{ core_symbol.long(class_=core_symbol.long_style.data + " form-control") }}</td>
+                            <td style="background-color: {{core_symbol.long_style.data}};">{{ core_symbol.long(class_="form-control") }}</td>
                             <td style="background-color: {{core_symbol.broker_1_long_style.data}};">{{ core_symbol.broker_1_long.data }}</td>
                             <td style="background-color: {{core_symbol.broker_2_long_style.data}};">{{ core_symbol.broker_2_long.data }}</td>
 
                             <td>{{ core_symbol.avg_short.data }}</td>
-                            <td>{{ core_symbol.short(class_=core_symbol.short_style.data + " form-control") }}</td>
+                            <td style="background-color: {{core_symbol.short_style.data}};"">{{ core_symbol.short(class_="form-control") }}</td>
                             <td style="background-color: {{core_symbol.broker_1_short_style.data}};">{{ core_symbol.broker_1_short.data }}</td>
                             <td style="background-color: {{core_symbol.broker_2_short_style.data}};">{{ core_symbol.broker_2_short.data }}</td>
 

@@ -249,6 +249,12 @@ def get_swaps_tradeview():
             if len(swap_data) == len(col_names):
                 if swap_data[0] in tradeview_to_bgi_symbols:  # Want to do the CFD conversion
                     swap_data[0] = tradeview_to_bgi_symbols[swap_data[0]]
+                    # Want to do some CFD Digit Correction (This is a rough Guess, when compared to BGI Data)
+                    for i in range(1, len(swap_data)):
+                        if swap_data[0] in [".US500", ".DE30"]: # Looks like these 2 needs to multiply by 10
+                            swap_data[i] = round(swap_data[i] * 10, 2)  # Looks like it needs to be divided by 10
+                        else:
+                            swap_data[i] = round(swap_data[i] * 0.1, 2)  #Looks like it needs to be divided by 10
 
                 swap_long_short.append(dict(zip(col_names, swap_data)))
         return swap_long_short
@@ -367,10 +373,9 @@ def get_swaps_globalprime():
 
         # Symbol Translations.
         globalprime_to_BGI_Symbol = {'AUS200': '.AUS200', 'EUSTX50': '.STOXX50', 'FRA40': '.F40', 'GER30': '.DE30',
-                                     'HK50': '.HK50',
+                                     'HK50': '.HK50', 'ES35' : '.ES35',
                                      'JPN225': '.JP225', 'NAS100': '.US100', 'UK100': '.UK100', 'UKOIL': '.UKOil',
-                                     'US30': '.US30',
-                                     'US500': '.US500', 'XTIUSD': '.USOil'}
+                                     'US30': '.US30',  'US500': '.US500', 'XTIUSD': '.USOil'}
         swap_long_short = []
         for t in table:
             # Get the header from the table
@@ -391,14 +396,22 @@ def get_swaps_globalprime():
                 swap_data = [float(td.text) if isfloat(td.text) else td.text for td in tr.find_all('td')]
                 # print(swap_data)
                 if len(swap_data) == len(col_names):
+                    digit_multiplier = 1    # If we need to do any digit corrections
                     # Want to do the symbol translation.
                     # Mainly for CFDs tho.
                     if swap_data[0] in globalprime_to_BGI_Symbol:
                         swap_data[0] = globalprime_to_BGI_Symbol[swap_data[0]]
+                        # does some digit corrections.
+                        if swap_data[0] in [".US500", ".DE30"]:
+                            digit_multiplier = 100 # These 2 symbols seems like they need the 100 Multiplier
+                        else:
+                            digit_multiplier = 10  # For all other CFDs, we want to multiply the swaps by 10 to make it up to BGI Values.
                     else:
                         swap_data[0] = swap_data[0].replace(".", "")
                     swap_long_short.append(dict(zip(["Symbol", "Long", "Short"],
-                                                    [swap_data[0], swap_data[long_index], swap_data[short_index]])))
+                                                    [swap_data[0],
+                                                     round(digit_multiplier*swap_data[long_index],2),
+                                                     round(digit_multiplier*swap_data[short_index],2)])))
 
         return swap_long_short
     except:
@@ -639,7 +652,7 @@ def get_MT4_cfd_Digits(db=False):
         order by `Symbol`"""
 
     # Return a Pandas Data Frame
-    cfd_conversion = get_from_sql_or_file(sql_query_line, "BGI_CFD_Digits.xls", db)
+    cfd_conversion = get_from_sql_or_file(sql_query_line, current_app.config["VANTAGE_UPLOAD_FOLDER"] + "BGI_CFD_Digits.xls", db)
     return cfd_conversion
 
 # For the Upload to OZ.
@@ -770,8 +783,13 @@ def calculate_swaps_bgi(excel_data, db):
     # Need to do Long point correction form the file that Vantage sent.
     df_bgi_excel["Long Points"] = df_bgi_excel["Long Points"] * -1
 
+
+    #print("Session details: {}".format(current_app.config["VANTAGE_UPLOAD_FOLDER"]))
+
     # Get the Symbol details from SQL
-    df = get_from_sql_or_file("call aaron.Swap_Symbol_Details()", "Swap_Symbol_Details.xlsx", db)
+    # Puts it into  the correct Folder
+    df = get_from_sql_or_file("call aaron.Swap_Symbol_Details()",
+                              current_app.config["VANTAGE_UPLOAD_FOLDER"] + "Swap_Symbol_Details.xlsx", db)
 
     # Merge the Vantage swaps with the Symbol details.
     df = df.merge(df_bgi_excel, how="left", left_on="vantage_coresymbol", right_on="Core Symbol")
@@ -785,8 +803,6 @@ def calculate_swaps_bgi(excel_data, db):
 
     # Merge in CFD Regression Swaps Value
     df = df.merge(df_swaps_predict, how="left", left_on="bgi_coresymbol", right_on="Symbol")
-
-
 
     # Calculate the markup First.
     df["long_markup_value"] = df.apply(lambda x: swap_markup(x["Long Points"], x["Long_Markup"]), axis=1)
@@ -890,10 +906,11 @@ def compare_swap_values(x, y):
     diff = abs(x - y)  # The difference in the values.
     percent_difference_allowed_raise_warning = 50
     percent_difference_allowed_raise_info = 20
-    min_allow_difference = 1  # If the swap only differs by 1, it should be alright.
+    min_allow_difference = 2  # If the swap only differs by X, it should be alright.
+    min_allow_difference_oposing_sign = 0.5 # If swaps are different signs, it's okay if they are just 0.5 difference.
 
-    # If they are different in sign.
-    if ((x > 0 and y < 0) or (x < 0 and y > 0)):
+    # If they are different in sign, and past a certain threshold
+    if ((x > 0 and y < 0) or (x < 0 and y > 0)) and diff > min_allow_difference_oposing_sign:
         return color_dict["Yellow"]
 
     if diff < min_allow_difference:  # To allow for minimum difference
@@ -954,7 +971,7 @@ def get_dividend_history(db, backward_days=51):
 
     df_dividend = get_from_sql_or_file("""SELECT mt4_symbol, dividend, date,  weekday(date) as `Weekday` 
     FROM aaron.bloomberg_dividend where date > DATE_SUB(NOW(), INTERVAL {} DAY)""".format(backward_days),
-                                       "Dividend_History.xlsx", db)
+                         current_app.config["VANTAGE_UPLOAD_FOLDER"] + "Dividend_History.xlsx", db)
 
     # Weekday 0 = Monday.
 
@@ -1015,7 +1032,7 @@ def get_swap_history(db, backward_days=50):
 
     #print("\n\n{}\n\n".format(SQL_Query))
 
-    df = get_from_sql_or_file(SQL_Query, "Swap_Value_History.xlsx", db)
+    df = get_from_sql_or_file(SQL_Query, current_app.config["VANTAGE_UPLOAD_FOLDER"] + "Swap_Value_History.xlsx", db)
 
     #df = pd.DataFrame(query_SQL_return_record(text(SQL_Query)))
 

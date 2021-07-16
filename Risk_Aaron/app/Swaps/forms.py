@@ -43,9 +43,6 @@ class Individual_symbol_Form(FlaskForm):
     symbol_markup_style = HiddenField('symbol_markup_style', render_kw={'readonly': True})
 
 
-
-
-
     long = FloatField('Long')
     short = FloatField('Short')
 
