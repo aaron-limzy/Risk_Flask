@@ -525,6 +525,11 @@ def Swap_download_page():
 
 
     df = pd.DataFrame(swap_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
+
+    # Trying to cast to float so that it will be saved as float.. hopefully?
+    for c in ["Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]:
+        df[c] = df[c].astype(float)
+
     df.sort_values("Core Symbol (BGI)", inplace=True)
 
     # Get the data into a Bracket format to be ready to inset into SQL
