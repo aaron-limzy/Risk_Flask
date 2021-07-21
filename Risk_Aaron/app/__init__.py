@@ -18,6 +18,15 @@ from logging.config import fileConfig
 # logger = logging.getLogger('waitress')
 # logger.setLevel(logging.INFO)
 
+# For the 3rd party Session Identifier
+from flask_kvsession import KVSessionExtension
+
+
+
+
+
+
+
 #from app.routes import db as main_app_db  # blueprint db
 import dash
 
@@ -56,6 +65,12 @@ def register_extensions(server):
 
     # Configure the image uploading via Flask-Uploads
     configure_uploads(server, excel_format)
+
+
+
+    #-------------------
+    #KVSessionExtension(store, server)
+
 
 
     if server.config['VANTAGE_UPLOAD_FOLDER']:

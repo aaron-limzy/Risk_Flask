@@ -20,6 +20,10 @@ from werkzeug.utils import secure_filename
 from app.decorators import roles_required
 from app.background import *
 
+
+# For Excel saving
+import pyexcel as pe
+
 from openpyxl.workbook import Workbook
 
 
@@ -169,6 +173,13 @@ def upload_Swaps_csv():
     header = "Swaps Upload"
     description = Markup("Swaps<br>Upload")
     form = UploadForm()
+
+    session_to_pop = ["swap_validated_data_datetime", "swap_validated_data", "Swap_excel_upload"]
+    for s in session_to_pop:
+        if s in session:
+            session.pop(s, None)
+
+
     if request.method == 'POST' and form.validate_on_submit():
 
         record_dict = request.get_records(field_name='upload', name_columns_by_row=0)
@@ -336,6 +347,7 @@ def markup_swaps(Val, positive_markup, negative_markup ):
 @roles_required()
 def Swap_upload_form():
 
+    test=True
 
     title = "Swap Upload"
     header = "Swap Upload"
@@ -348,9 +360,21 @@ def Swap_upload_form():
     # Get the data from cookies.
     if "Swap_excel_upload" in session:
         file_data =  session["Swap_excel_upload"]
+        print(file_data)
         #session.pop("Swap_excel_upload", None)
     else:
-        return redirect(url_for('swaps.upload_Swaps_csv'))
+        if test:
+        # Artificially create something.
+            file_data = [{'Core Symbol': 'MXN/JPY', 'Long Points': -0.29, 'Short Points': -1.46, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'HKD/JPY', 'Long Points': 0.15, 'Short Points': -0.25, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'NOK/JPY', 'Long Points': 0.39, 'Short Points': -0.54, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'GBP/SEK', 'Long Points': 1.82, 'Short Points': -3.44, 'Symbol Group Path': '*', 'digits': 4}, {'Core Symbol': 'SEK/JPY', 'Long Points': 0.2, 'Short Points': -0.14, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'NOK/SEK', 'Long Points': 1.15, 'Short Points': -1.96, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/DKK', 'Long Points': 12.13, 'Short Points': -9.03, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/SEK', 'Long Points': 27.31, 'Short Points': -1.62, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'CAD/SGD', 'Long Points': -0.03, 'Short Points': -1.77, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'GBP/NOK', 'Long Points': 2.2, 'Short Points': -2.69, 'Symbol Group Path': '*', 'digits': 4}, {'Core Symbol': 'EUR/PLN', 'Long Points': 26.07, 'Short Points': -9.57, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/NOK', 'Long Points': 31.52, 'Short Points': 1.63, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'GBP/HKD', 'Long Points': 21.47, 'Short Points': -24.12, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/HKD', 'Long Points': 29.07, 'Short Points': 2.91, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/TRY', 'Long Points': 640.42, 'Short Points': 0.0, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'USD/MXN', 'Long Points': 342.23, 'Short Points': 0.0, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'USD/TRY', 'Long Points': 515.32, 'Short Points': 0.0, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/MXN', 'Long Points': 453.16, 'Short Points': 0.0, 'Symbol Group Path': '*', 'digits': 5}, \
+                         {'Core Symbol': 'USD/RUB', 'Long Points': 13.11, 'Short Points': 4.63, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'USD/CZK', 'Long Points': 0.22, 'Short Points': 0.02, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'USD/DKK', 'Long Points': -3.18, 'Short Points': -15.72, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'USD/HKD', 'Long Points': -0.3, 'Short Points': -5.79, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'USD/HUF', 'Long Points': 11.73, 'Short Points': -5.37, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'USD/PLN', 'Long Points': 12.24, 'Short Points': -16.07, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'USD/ZAR', 'Long Points': 219.54, 'Short Points': 0.0, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'USD/SEK', 'Long Points': 4.58, 'Short Points': -20.91, 'Symbol Group Path': '*', 'digits': 5}, \
+                         {'Core Symbol': 'EUR/GBP', 'Long Points': 3.66, 'Short Points': -0.36, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'USD/CNH', 'Long Points': 70.44, 'Short Points': 18.59, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'USD/CHF', 'Long Points': -0.94, 'Short Points': -4.05, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'USD/SGD', 'Long Points': 2.75, 'Short Points': -2.75, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/JPY', 'Long Points': 3.65, 'Short Points': 0.1, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'EUR/USD', 'Long Points': 4.57, 'Short Points': 0.68, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/NZD', 'Long Points': 6.52, 'Short Points': 1.27, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'USD/NOK', 'Long Points': 7.72, 'Short Points': -16.1, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/SGD', 'Long Points': 6.7, 'Short Points': 0.12, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'USD/CAD', 'Long Points': 2.21, 'Short Points': -1.88, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'USD/JPY', 'Long Points': 1.3, 'Short Points': -2.91, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'GBP/USD', 'Long Points': 3.53, 'Short Points': -2.75, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'GBP/AUD', 'Long Points': 3.32, 'Short Points': -4.63, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'GBP/CAD', 'Long Points': 4.42, 'Short Points': -3.04, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'GBP/CHF', 'Long Points': -0.37, 'Short Points': -6.24, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'GBP/SGD', 'Long Points': 4.14, 'Short Points': -3.2, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'GBP/NZD', 'Long Points': 5.28, 'Short Points': -3.53, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'GBP/JPY', 'Long Points': 2.45, 'Short Points': -3.92, 'Symbol Group Path': '*', 'digits': 3}, \
+                         {'Core Symbol': 'CHF/JPY', 'Long Points': 4.17, 'Short Points': 0.77, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'AUD/NZD', 'Long Points': 2.44, 'Short Points': -0.64, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'AUD/SGD', 'Long Points': 2.63, 'Short Points': -1.5, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'AUD/CAD', 'Long Points': 1.99, 'Short Points': -0.61, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'CAD/JPY', 'Long Points': 0.43, 'Short Points': -1.96, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'EUR/AUD', 'Long Points': 4.69, 'Short Points': 0.27, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/CHF', 'Long Points': 0.78, 'Short Points': -2.36, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'AUD/JPY', 'Long Points': 1.0, 'Short Points': -1.23, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'CAD/CHF', 'Long Points': -0.86, 'Short Points': -3.3, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'AUD/CHF', 'Long Points': -0.42, 'Short Points': -2.59, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/CAD', 'Long Points': 5.5, 'Short Points': 1.04, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'NZD/SGD', 'Long Points': 1.72, 'Short Points': -2.17, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'NZD/USD', 'Long Points': 1.18, 'Short Points': -1.55, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'AUD/USD', 'Long Points': 2.46, 'Short Points': -1.54, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'NZD/CAD', 'Long Points': 1.3, 'Short Points': -1.3, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'NZD/CHF', 'Long Points': -0.78, 'Short Points': -2.97, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'NZD/JPY', 'Long Points': 0.32, 'Short Points': -1.74, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'SGD/JPY', 'Long Points': 1.04, 'Short Points': -2.23, 'Symbol Group Path': '*', 'digits': 3}, \
+                         {'Core Symbol': 'XAU/USD', 'Long Points': 3.69, 'Short Points': -1.18, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'XAG/USD', 'Long Points': 0.6, 'Short Points': -0.2, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'XPT/USD', 'Long Points': 13.69, 'Short Points': -3.5, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'XPD/USD', 'Long Points': 32.56, 'Short Points': -8.99, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'XAU/AUD', 'Long Points': 0.33, 'Short Points': -0.32, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'XAG/AUD', 'Long Points': 0.6, 'Short Points': -0.45, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'CHF/SGD', 'Long Points': 9.14, 'Short Points': -2.54, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'AUD/CNH', 'Long Points': 84.85, 'Short Points': 10.56, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'BCHUSD', 'Long Points': 28.29, 'Short Points': -28.29, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'LTCUSD', 'Long Points': 7.89, 'Short Points': -7.89, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'ETHUSD', 'Long Points': 121.5, 'Short Points': -121.5, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'XRPUSD', 'Long Points': 3.81, 'Short Points': -3.81, 'Symbol Group Path': '*', 'digits': 4}, {'Core Symbol': 'BTCUSD', 'Long Points': 2033.02, 'Short Points': -2033.02, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'COPPER-C', 'Long Points': 4.63, 'Short Points': -2.1, 'Symbol Group Path': '*', 'digits': 4}, {'Core Symbol': 'NG-C', 'Long Points': 1.84, 'Short Points': 0.44, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'GAS-C', 'Long Points': 3.22, 'Short Points': -0.17, 'Symbol Group Path': '*', 'digits': 4}, {'Core Symbol': 'Cocoa-C', 'Long Points': 6.06, 'Short Points': 1.77, 'Symbol Group Path': '*', 'digits': 1}, {'Core Symbol': 'Coffee-C', 'Long Points': 5.28, 'Short Points': 1.99, 'Symbol Group Path': '*', 'digits': 4}, \
+                         {'Core Symbol': 'Cotton-C', 'Long Points': 16.73, 'Short Points': 2.11, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'OJ-C', 'Long Points': 7.28, 'Short Points': 3.74, 'Symbol Group Path': '*', 'digits': 4}, {'Core Symbol': 'Sugar-C', 'Long Points': 1.46, 'Short Points': -1.3, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'GASOIL-C', 'Long Points': 9.86, 'Short Points': 0.32, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'Soybean-C', 'Long Points': -8.72, 'Short Points': -14.62, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'Wheat-C', 'Long Points': 1.46, 'Short Points': 0.25, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'CHINA50', 'Long Points': 0.85, 'Short Points': -0.77, 'Symbol Group Path': '*', 'digits': 0}, {'Core Symbol': 'DAX30', 'Long Points': 67.24, 'Short Points': -133.11, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'NAS100', 'Long Points': 101.64, 'Short Points': -91.8, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'Nikkei225', 'Long Points': 173.96, 'Short Points': -189.64, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'HSI', 'Long Points': 1.84, 'Short Points': -1.69, 'Symbol Group Path': '*', 'digits': 0}, {'Core Symbol': 'SPI200', 'Long Points': 48.4, 'Short Points': -47.31, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'FTSE100', 'Long Points': -83.61, 'Short Points': -172.91, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'EU50', 'Long Points': 17.48, 'Short Points': -34.6, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'SP500', 'Long Points': -3.45, 'Short Points': -60.26, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'DJ30', 'Long Points': -316.75, 'Short Points': -803.88, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'FRA40', 'Long Points': 28.08, 'Short Points': -55.58, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'ES35', 'Long Points': 52.75, 'Short Points': -83.06, 'Symbol Group Path': '*', 'digits': 2}, \
+                         {'Core Symbol': 'ITA40', 'Long Points': 152.91, 'Short Points': -240.78, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'UKOUSD', 'Long Points': -14.05, 'Short Points': -32.41, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'USOUSD', 'Long Points': -3.55, 'Short Points': -16.32, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': '*', 'Long Points': 0, 'Short Points': 0, 'Symbol Group Path': '*', 'digits': 0}]
+
+        else:
+            return redirect(url_for('swaps.upload_Swaps_csv'))
 
     if request.method != 'POST':
 
@@ -436,7 +460,10 @@ def Swap_upload_form():
 
         if form.validate_on_submit():
             session['swap_validated_data']  = all_data
-            session['swap_validated_data_datetime'] = datetime.datetime.now()
+            # For the Swaps to expire.
+            #session['swap_validated_data_datetime'] = datetime.datetime.timestamp(datetime.datetime.now())
+            session.pop("Swap_excel_upload", None)
+
             # # Want to return the Excel.
             # df = pd.DataFrame(all_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
             # df.sort_values("Core Symbol (BGI)", inplace=True)
@@ -490,10 +517,12 @@ def Swap_download_page():
         #session.pop("swap_validated_data", None)
     else:
         return redirect(url_for('swaps.upload_Swaps_csv'))
+    #
+    # if "swap_validated_data_datetime" in session:
+    #     print("{}".format(Session["swap_validated_data_datetime"]))
 
+    #print(datetime.datetime.now())
 
-    if "swap_validated_data_datetime" in session:
-        print(Session["swap_validated_data_datetime"])
 
     df = pd.DataFrame(swap_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
     df.sort_values("Core Symbol (BGI)", inplace=True)
@@ -505,13 +534,14 @@ def Swap_download_page():
     swap_insert_str = " , ".join(swap_insert_list)
 
 
-    # Need to upload to MT4
-    #sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
-    footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
-    #risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_test, values=[swap_insert_str], footer=footer, sql_max_insert=500)
 
-    sql_header = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
-    risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header, values=[swap_insert_str], footer=footer, sql_max_insert=500)
+    # Insert into Risk 64.73 Database
+    #sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
+
+
+    sql_header_risk = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
+    footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
+    risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_risk, values=[swap_insert_str], footer=footer, sql_max_insert=500)
     flash("Risk (64.73) Swaps Insert Successful.")
 
 
@@ -519,28 +549,19 @@ def Swap_download_page():
     sql_query_bo = "INSERT INTO bgiswap.table_swap ( bgi_symbol, bgi_long, bgi_short, Update_Date ) Values  " + swap_insert_str
     # #To make it to SQL friendly text.
     raw_insert_result = db.session.execute(text("delete from bgiswap.table_swap"), bind=db.get_engine(current_app, 'bo_swaps'))
-    #db.session.commit()  # Since we are using session, we need to commit.
     raw_insert_result = db.session.execute(text(sql_query_bo), bind=db.get_engine(current_app, 'bo_swaps'))
     db.session.commit()  # Since we are using session, we need to commit.
     flash("BO Swaps Insert Successful.")
-
-
-
-    # Insert into Risk 64.73 Database
-
-
 
     # Need to upload to MT5
 
 
 
 
-    # Need to upload to Risk Database
+    # Need to upload to MT4
 
-    # Need to upload to BO Database
-
-
-
+    #
+    #
     retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
     insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
 
@@ -548,8 +569,28 @@ def Swap_download_page():
                'insti': insti_sheet,
                }
 
-    book = pyexcel.Book(content)
+    #book = pyexcel.Book(content)
+
+
+    # Save the file as an Excel first.
     # pip install pyexcel-xls
+    pe.save_book_as(bookdict = content,
+    dest_file_name = current_app.config["SWAPS_MT4_UPLOAD_FOLDER"] + \
+                     'MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
+
+
+    # # Run the real prog
+    # USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Setting.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
+    #                            0.01 : {'path':'Close_USOil_Trade_0.01.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
+    # c_run_return = Run_C_Prog(Path=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['path'],
+    #                           cwd=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['cwd'])
+
+
+    # Run the C++ Prog for the Upload.
+    #C_Return_Val, output, err = Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=current_app.config["SWAPS_MT4_UPLOAD_FOLDER"])
+
+
+
     #return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
 
     #print(str(form.data))
@@ -568,6 +609,40 @@ def Swap_download_page():
                            description=description)
 
 
+
+
+#To Let the user download the Swap file, IF it's in the session's cookie.
+# To view Client's trades as well as some simple details.
+@swaps.route('/Swap_download_excel', methods=['GET', 'POST'])
+@roles_required()
+def Swap_download_excel():
+
+    # Get the data from cookies.
+    if "swap_validated_data" in session:
+        swap_data =  session["swap_validated_data"]
+        #session.pop("swap_validated_data", None)
+    else:
+        print("swap_validated_data NOT in session")
+        return redirect(url_for('swaps.upload_Swaps_csv'))
+
+
+    # if "swap_validated_data_datetime" in session:
+    #     print(Session["swap_validated_data_datetime"])
+
+    df = pd.DataFrame(swap_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
+    df.sort_values("Core Symbol (BGI)", inplace=True)
+
+
+    retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
+    insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
+
+    content = {'retail': retail_sheet,
+               'insti': insti_sheet,
+               }
+
+    book = pyexcel.Book(content)
+    # pip install pyexcel-xls
+    return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
 
 
 
