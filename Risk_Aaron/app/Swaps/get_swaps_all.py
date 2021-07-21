@@ -252,7 +252,7 @@ def get_swaps_tradeview():
                     # Want to do some CFD Digit Correction (This is a rough Guess, when compared to BGI Data)
                     for i in range(1, len(swap_data)):
                         if swap_data[0] in [".US500", ".DE30"]: # Looks like these 2 needs to multiply by 10
-                            swap_data[i] = round(swap_data[i] * 10, 2)  # Looks like it needs to be divided by 10
+                            swap_data[i] = round(swap_data[i], 2)  # Looks like it needs to be divided by 10
                         else:
                             swap_data[i] = round(swap_data[i] * 0.1, 2)  #Looks like it needs to be divided by 10
 
@@ -1001,23 +1001,27 @@ def calculate_CFD_long_short_dividend(df):
         print("Data is Empty or NaN")
         return (0, 0)
 
-    # regression_dividend = df_s[(df_s["BGI_Long"].isna()) & (~df_s["dividend"].isna())  & (df_s["BGI_Short"].isna())]
+    # Want to take the dividend for non-fridays and fridays differently.
+    dividend_today = df[df["Date_merge"] == datetime.datetime.now().strftime("%Y-%m-%d")][
+        ["Dividend_Friday", "Dividend_Not_Friday"]]
 
-    dividend_today = df[df["Date_merge"] == datetime.datetime.now().strftime("%Y-%m-%d")]["dividend"]
-    # print(dividend_today.item())
-    df_s = df_regression_data[["dividend", "BGI_Long", "BGI_Short"]]
+    #print(dividend_today.values)
+
+    # Taking two "types" of regression for multiple linear regression.
+    df_s = df_regression_data[["Dividend_Friday", "Dividend_Not_Friday", "BGI_Long", "BGI_Short"]]
 
     X = df_s.iloc[:, :-2].values  # Get the Dividend
-    Y_Long = df_s.iloc[:, 1].values  # Get the LONG for BGI.
-    Y_Short = df_s.iloc[:, 2].values  # Get the SHORT for BGI.
+    Y_Long = df_s.iloc[:, 2].values  # Get the LONG for BGI.
+    Y_Short = df_s.iloc[:, 3].values  # Get the SHORT for BGI.
+    # print(Y_Long)
 
-    return (linear_regression(X, Y_Long, dividend_today.item()), linear_regression(X, Y_Short, dividend_today.item()))
+    return (linear_regression(X, Y_Long, dividend_today.values), linear_regression(X, Y_Short, dividend_today.values))
 
 # To run the Linear Regression for the CFD Swaps.
 def linear_regression(X, Y, Predict):
     lr = LinearRegression()
     model_Long = lr.fit(X, Y)
-    predictions = lr.predict([[Predict]])
+    predictions = lr.predict(Predict)
     return predictions[0]
 
 
@@ -1054,10 +1058,17 @@ def merge_dividend_swaps(df, df_dividend):
 
 # Has the ability to return only the predicted df.
 def predict_cfd_swaps(db, return_predict_only=True):
-    df_dividend = get_dividend_history(db, 51)
-    df_swapHistory = get_swap_history(db, 50)
+    df_dividend = get_dividend_history(db, 101)
+    df_swapHistory = get_swap_history(db, 100)
     df = merge_dividend_swaps(df_swapHistory, df_dividend)
     df.sort_values("Date", inplace=True)
+
+    # Create Feature. Since Fridays usually has 3 time swaps.
+    df["Date_weekday"] = df["Date"].dt.weekday  # 0 = Monday, 4 = Friday
+    df["Dividend_Friday"] = np.where(df["Date_weekday"] == 4, df["dividend"], 0)
+    df["Dividend_Not_Friday"] = np.where(df["Date_weekday"] != 4, df["dividend"], 0)
+
+
     # Want those that are not empty
     all_symbol = df[~df["dividend"].isna()]["Symbol"].unique().tolist()
 

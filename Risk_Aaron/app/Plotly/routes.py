@@ -3140,7 +3140,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
 
 
     if Live not in ["1","2","3","5"] or Login == "":   # There are no information.
-        return json.dumps([{"Result":"Error in Login or Live"}])
+        return json.dumps({"H1": [{'Results': 'Error in Live/Login'}]})
 
     # First Query. Want to get the MT4 Group, Loginm Currency, Margin call etc...
     sql_statement = """SELECT LOGIN, mt4_users.`GROUP`,mt4_groups.CURRENCY,mt4_groups.MARGIN_CALL, mt4_groups.MARGIN_STOPOUT, 
@@ -3159,10 +3159,11 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     ignore_col = ["LOGIN", "GROUP", "CURRENCY", "MARGIN_CALL", "MARGIN_STOPOUT", "ENABLE", "ENABLE_READONLY", "BALANCE"]
     login_details = [{k:"{:,.2f}".format(d) if k not in ignore_col and isfloat(d) else d for k,d in l.items()} for l in login_details]
 
-    #print(login_details)
+    print(login_details)
 
     if len(login_details) <= 0:   # There are no information.
-        return json.dumps([{"Result":"Error in Login or Live"}])
+        #print("No Login Details.")
+        return json.dumps({"H1": [{'Results': 'No Login/Live'}]})
 
     # Color the background for Balance to highlight it.
     # login_details[0]["BALANCE"] = "<span style = 'background-color:#4af076;' >{}</span> ".format(login_details[0]["BALANCE"])
@@ -3335,6 +3336,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     #result_clean = [{k : "{}".format(d) for k,d in r.items()} for r in result]
     # #return json.dumps(return_html)
 
+    print(net_position_dict_clean)
     # Return "Trades" and "Net position"
     return json.dumps({"V1" : login_details, "V2": Sum_details, "H1": net_position_dict_clean,
                        "H2" : open_position_dict,

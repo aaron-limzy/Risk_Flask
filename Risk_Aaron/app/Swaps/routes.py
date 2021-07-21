@@ -436,6 +436,7 @@ def Swap_upload_form():
 
         if form.validate_on_submit():
             session['swap_validated_data']  = all_data
+            session['swap_validated_data_datetime'] = datetime.datetime.now()
             # # Want to return the Excel.
             # df = pd.DataFrame(all_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
             # df.sort_values("Core Symbol (BGI)", inplace=True)
@@ -489,6 +490,10 @@ def Swap_download_page():
         #session.pop("swap_validated_data", None)
     else:
         return redirect(url_for('swaps.upload_Swaps_csv'))
+
+
+    if "swap_validated_data_datetime" in session:
+        print(Session["swap_validated_data_datetime"])
 
     df = pd.DataFrame(swap_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
     df.sort_values("Core Symbol (BGI)", inplace=True)
