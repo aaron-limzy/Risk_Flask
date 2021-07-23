@@ -11,6 +11,7 @@ from Aaron_Lib import *
 import pandas as pd
 from unsync import unsync
 
+import pytz
 
 TIME_UPDATE_SLOW_MIN = 10
 LP_MARGIN_ALERT_LEVEL = 20            # How much away from MC do we start making noise.
@@ -1018,8 +1019,18 @@ def check_session_live1_timing():
     return_val = False  # If session timing is outdated, or needs to be updated.
     # Might need to set the session life time. I think?
     # Saving some stuff in session so that we don't have to keep querying for it.
+
+    # if "live1_sgt_time_update" in session:
+    #     print(session["live1_sgt_time_update"].replace(tzinfo=None))
+    #     print(type(session["live1_sgt_time_update"]))
+    #
+    #     print(session["live1_sgt_time_update"].astimezone( pytz.timezone('UTC')))
+
+        #print(pytz.timezone('UTC').localize(session["live1_sgt_time_update"]))
+
+
     if "live1_sgt_time_diff" in session and  \
-        "live1_sgt_time_update" in session and  datetime.datetime.now() < session["live1_sgt_time_update"] and \
+        "live1_sgt_time_update" in session and  datetime.datetime.now() < session["live1_sgt_time_update"].replace(tzinfo=None) and \
             'FLASK_UPDATE_TIMING' in session and  session["FLASK_UPDATE_TIMING"]  == current_app.config["FLASK_UPDATE_TIMING"]:
         return_val = True
         #print(session.keys())

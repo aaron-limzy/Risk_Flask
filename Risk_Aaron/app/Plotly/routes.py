@@ -1245,23 +1245,23 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
     # Return the values as json.
     # Each item in the returned dict will become a table, or a plot
     return json.dumps({"V1": [total_sum.to_dict()],
-                       "Hs5" : open_by_country.to_dict("record"),
-                        "Hs1": top_groups.to_dict("record"),
-                       "Hs2": bottom_groups.to_dict("record"),
-                       "H1": top_accounts.to_dict("record"),
-                       "H2" : bottom_accounts.to_dict("record"),
-                       "H5" : largest_login.to_dict("record"),
+                       "Hs5" : open_by_country.to_dict("records"),
+                        "Hs1": top_groups.to_dict("records"),
+                       "Hs2": bottom_groups.to_dict("records"),
+                       "H1": top_accounts.to_dict("records"),
+                       "H2" : bottom_accounts.to_dict("records"),
+                       "H5" : largest_login.to_dict("records"),
                        "P1" : vol_fig,
                        "P2": opentime_fig,
-                       "H3": closed_top_accounts.to_dict("record"),
-                       "H4": closed_bottom_accounts.to_dict("record"),
-                       "H6" : closed_largest_lot_accounts.to_dict("record"),
-                       "Hs3": top_closed_groups.to_dict("record"),
-                       "Hs4" : bottom_closed_groups.to_dict("record"),
+                       "H3": closed_top_accounts.to_dict("records"),
+                       "H4": closed_bottom_accounts.to_dict("records"),
+                       "H6" : closed_largest_lot_accounts.to_dict("records"),
+                       "Hs3": top_closed_groups.to_dict("records"),
+                       "Hs4" : bottom_closed_groups.to_dict("records"),
                        "P3": history_daily_vol_fig,
                        "P4": history_daily_rev_fig,
                        "V2": [total_sum_closed.to_dict()],
-                       "Hs6" : closed_by_country.to_dict("record")
+                       "Hs6" : closed_by_country.to_dict("records")
                        }, cls=plotly.utils.PlotlyJSONEncoder)
 
 

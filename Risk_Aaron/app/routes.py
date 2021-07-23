@@ -1,4 +1,4 @@
-from app.extensions import  excel
+from app.extensions import excel
 from flask import render_template, flash, redirect, url_for, request, send_from_directory, jsonify, g, Markup, Blueprint, abort, current_app, session
 from werkzeug.utils import secure_filename
 from werkzeug.urls import url_parse

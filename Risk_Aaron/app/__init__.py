@@ -19,7 +19,7 @@ from logging.config import fileConfig
 # logger.setLevel(logging.INFO)
 
 # For the 3rd party Session Identifier
-from flask_kvsession import KVSessionExtension
+#from flask_kvsession import KVSessionExtension
 
 
 
