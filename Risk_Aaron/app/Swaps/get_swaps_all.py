@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 
 import datetime
+from app.decorators import async_fun
 
 now = datetime.datetime.now()
 
@@ -1131,42 +1132,56 @@ def process_validated_swaps(all_data):
     df = pd.DataFrame(all_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
 
     # Trying to cast to float so that it will be saved as float.. hopefully?
-    for c in ["Long Points (BGI)", "Short Points (BGI)"]:
+    for c in ["Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]:
         if c in df:
             df[c] = df[c].astype(float)
 
     df.sort_values("Core Symbol (BGI)", inplace=True)
 
-    # Get the data into a Bracket format to be ready to inset into SQL
-    # We will do a 2 hours back so that swaps can still be uploaded near midnight.
-    swap_insert_list = ["(" + ",".join(["'{}'".format(x) for x in X]) + ", DATE(DATE_SUB(now(), INTERVAL 2 HOUR)))" \
-                        for X in df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()]
-    swap_insert_str = " , ".join(swap_insert_list)
+    # We want to upload to MT4 First.
+    if False:
+        # Get the data into a Bracket format to be ready to inset into SQL
+        # We will do a 2 hours back so that swaps can still be uploaded near midnight.
+        swap_insert_list = ["(" + ",".join(["'{}'".format(x) for x in X]) + ", DATE(DATE_SUB(now(), INTERVAL 2 HOUR)))" \
+                            for X in df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()]
+        swap_insert_str = " , ".join(swap_insert_list)
 
-    # -------------------------------Insert into Risk 64.73 Database
-    # sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
+        # -------------------------------Insert into Risk 64.73 Database
+        # sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
 
-    # sql_header_risk = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
-    # footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
-    #
-    # Insert_into_sql("{} {} {}".format(sql_header_risk, swap_insert_str, footer))  # Go insert into SQL.
-    #
-    # # risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_risk,
-    # #                                           values=[swap_insert_str], footer=footer, sql_max_insert=500)
-    # flash("Risk (64.73) Swaps Insert Successful.")
-    #
-    # # ----------------------------------------Insert into BO DB
-    # sql_query_bo = "INSERT INTO bgiswap.table_swap ( bgi_symbol, bgi_long, bgi_short, Update_Date ) Values  " + swap_insert_str
-    # # #To make it to SQL friendly text.
-    # raw_insert_result = db.session.execute(text("delete from bgiswap.table_swap"),
-    #                                        bind=db.get_engine(current_app, 'bo_swaps'))
-    # raw_insert_result = db.session.execute(text(sql_query_bo), bind=db.get_engine(current_app, 'bo_swaps'))
-    # db.session.commit()  # Since we are using session, we need to commit.
-    # flash("BO Swaps Insert Successful.")
+        sql_header_risk = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
+        footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
+
+        Insert_into_sql("{} {} {}".format(sql_header_risk, swap_insert_str, footer))  # Go insert into SQL.
+
+        # risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_risk,
+        #                                           values=[swap_insert_str], footer=footer, sql_max_insert=500)
+        flash("Risk (64.73) Swaps Insert Successful.")
+
+        # ----------------------------------------Insert into BO DB
+        sql_query_bo = "INSERT INTO bgiswap.table_swap ( bgi_symbol, bgi_long, bgi_short, Update_Date ) Values  " + swap_insert_str
+        # #To make it to SQL friendly text.
+        raw_insert_result = db.session.execute(text("delete from bgiswap.table_swap"),
+                                               bind=db.get_engine(current_app, 'bo_swaps'))
+        raw_insert_result = db.session.execute(text(sql_query_bo), bind=db.get_engine(current_app, 'bo_swaps'))
+        db.session.commit()  # Since we are using session, we need to commit.
+        flash("BO Swaps Insert Successful.")
+
+    upload_swaps_mt_servers(df, current_app.config["SWAPS_MT4_UPLOAD_FOLDER"])
+
+    return
+
+
+@async_fun
+def upload_swaps_mt_servers(df, base_folder):
 
 
     retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
     insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
+
+    c_run_results = []
+
+    # ----------------------------------------- Need to upload to MT4
 
     content = {'retail': retail_sheet,
                'insti': insti_sheet,
@@ -1175,15 +1190,37 @@ def process_validated_swaps(all_data):
     # Save the file as an Excel first.
     # pip install pyexcel-xls
     pe.save_book_as(bookdict = content,
-    dest_file_name = current_app.config["SWAPS_MT4_UPLOAD_FOLDER"] + 'MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
+    dest_file_name = base_folder + 'MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
 
+    # Run the C++ Prog for the Upload.
+    print(os.getcwd())
+    # mt4_unsync_res = unsync_Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=base_folder)
+    # C_Return_Val, output, err = mt4_unsync_res.result()
+
+    C_Return_Val, output, err  = Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=base_folder)
+
+    if C_Return_Val == 1:
+        c_run_results.append(["MT4", "Swaps uploaded Successfully."])
+
+    print("{}, {}, {}".format(C_Return_Val, output, err))
+
+    # Need to tidy up the excel files into the archive folder
 
     # Need to upload to MT5
 
+    # Need to tidy up the excel files into the archive folder
 
+    # Send email to say that upload is done.
+    Send_Email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[],
+               Subject="Swaps Upload [{}]".format(datetime.datetime.now().strftime("%Y-%m-%d")),
+               HTML_Text="""{Email_Header}Hi all,<br><br>Swaps upload results for today:  
+                                    {table}   <br><br>{mt4_output}           
+                                       <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
+                   Email_Header=Email_Header,
+                   table=Array_To_HTML_Table(Table_Header=["Server", "Results"], Table_Data=c_run_results),
+                   datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), mt4_output=output.decode("utf-8").replace("\r\n", "<br>"),
+                   Email_Footer=Email_Footer), Attachment_Name=[])
 
-
-    # Need to upload to MT4
 
     # # Run the real prog
     # USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Setting.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
@@ -1191,8 +1228,6 @@ def process_validated_swaps(all_data):
     # c_run_return = Run_C_Prog(Path=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['path'],
     #                           cwd=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['cwd'])
 
-    # Run the C++ Prog for the Upload.
-    # C_Return_Val, output, err = Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=current_app.config["SWAPS_MT4_UPLOAD_FOLDER"])
 
     # return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
 
@@ -1203,9 +1238,4 @@ def process_validated_swaps(all_data):
 
     # # Want to redirect this to some other pages.
     # return redirect(url_for('analysis.Client_trades_Analysis', Live=Live, Login=Login))
-
-
-
     return
-
-

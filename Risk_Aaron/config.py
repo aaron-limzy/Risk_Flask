@@ -63,8 +63,11 @@ class Config(object):
     UPLOADED_SWAPS_DEST='./project/static/vantage_swap/'
     UPLOADED_SWAPS_URL='http://localhost:5000/static/vantage_swap/'
 
+    # --------------------- Swaps Upload Folders ----------------
     VANTAGE_UPLOAD_FOLDER="./Swap_Details/"
     SWAPS_MT4_UPLOAD_FOLDER = "./Swap_Details/Swap_uploads/mt4/"
+    SWAPS_MT5_LIVE1_UPLOAD_FOLDER = "./Swap_Details/Swap_uploads/mt5_Live1/"
+    SWAPS_MT5_LIVE2_UPLOAD_FOLDER = "./Swap_Details/Swap_uploads/mt5_Live2/"
 
 
     MAIL_SERVER = "smtp.googlemail.com"

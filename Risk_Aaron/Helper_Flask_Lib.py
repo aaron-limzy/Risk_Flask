@@ -754,6 +754,14 @@ def unsync_query_SQL_return_record_fun(SQL_Query, app):
     return unsync_query_SQL_return_record(SQL_Query, app)
 
 
+# If we can run C progs on unsync to save time.
+@unsync
+def unsync_Run_C_Prog(Path, cwd=None):
+    #print(os.getcwd())
+    return Run_C_Prog(Path, cwd=cwd)
+
+
+
 
 
 def create_table_fun(table_data, additional_class=[]):
