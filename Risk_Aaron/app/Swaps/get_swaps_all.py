@@ -1181,6 +1181,7 @@ def process_validated_swaps(all_data):
 @async_fun
 def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base_folder ):
 
+    Test=True
 
     retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
     insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
@@ -1191,9 +1192,7 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
 
     # ----------------------------------------- Need to upload to MT4
 
-    content = {'retail': retail_sheet,
-               'insti': insti_sheet,
-               }
+    content = {'retail': retail_sheet, 'insti': insti_sheet }
 
     # Save the file as an Excel first.
     # pip install pyexcel-xls
@@ -1201,29 +1200,21 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     dest_file_name = mt4_base_folder + 'MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
 
     # Run the C++ Prog for the Upload.
-    print(os.getcwd())
-    # mt4_unsync_res = unsync_Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=base_folder)
-    # C_Return_Val, output, err = mt4_unsync_res.result()
 
-    if False:
-        C_Return_Val_mt4, output_mt4, err_mt4  = Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=mt4_base_folder)
-    else:
+    if Test == True:
         C_Return_Val_mt4, output_mt4, err_mt4 = 1, b"Testing", 0
+    else:
+        C_Return_Val_mt4, output_mt4, err_mt4  = Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=mt4_base_folder)
+
 
     if C_Return_Val_mt4 == 1:
         c_run_results.append(["MT4 Live/Demo", "Swaps uploaded Successfully.", C_Return_Val_mt4])
     else:
         c_run_results.append(["MT4 Live/Demo", "Swaps upload Error: {}.".format(err_mt4), C_Return_Val_mt4])
 
-    # f_mt4 = StringIO()
-    # f_mt4.write(output_mt4.decode("utf-8"))
-    # f_mt4.seek(0)
+    # Create the virtual file to be uploaded
     email_result_dict["MT4_Upload"] =  create_email_virtual_file(output_mt4.decode("utf-8"))
 
-
-    #print("mt4 output : {}".format(type(output_mt4)))
-
-    #print("{}, {}, {}".format(C_Return_Val, output, err))
 
     # Need to tidy up the excel files into the archive folder
     clean_up_folder(mt4_base_folder, file_header="mt4swaps")
@@ -1247,13 +1238,9 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     else:
         c_run_results.append(["MT5 Live 1", "Swaps upload Error: {}.".format(err_mt5_1), C_Return_Val_mt5_1])
 
+    # Create the virtual file to be uploaded
     email_result_dict["MT5_Live1_Upload"] =  create_email_virtual_file(output_mt5_1.decode("utf-8"))
     email_result_dict["MT5_Demo1_Upload"] =  create_email_virtual_file(output_mt5_1D.decode("utf-8"))
-
-
-
-    #print("mt5L output : {}".format(type(output_mt5_1)))
-    #print("mt5D output : {}".format(type(output_mt5_1D)))
 
 
     if C_Return_Val_mt5_1D == 0:
