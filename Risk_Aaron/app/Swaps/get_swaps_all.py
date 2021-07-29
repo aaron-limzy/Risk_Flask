@@ -1243,21 +1243,9 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
 
 
     if C_Return_Val_mt5_1 == 0:
-        c_run_results.append(["MT5 Live", "Swaps uploaded Successfully.", C_Return_Val_mt5_1])
+        c_run_results.append(["MT5 Live 1", "Swaps uploaded Successfully.", C_Return_Val_mt5_1])
     else:
-        c_run_results.append(["MT5 Live", "Swaps upload Error: {}.".format(err_mt5_1), C_Return_Val_mt5_1])
-    # email_result_list.append(output_mt5_1) ## To output the results
-    # email_result_list.append(output_mt5_1D) ## To output the results
-
-    # f_mt5_L1 = StringIO()
-    # f_mt5_L1.write(output_mt5_1.decode("utf-8"))
-    # f_mt5_L1.seek(0)
-    # email_result_dict["MT5_Live1_Upload"] =  f_mt5_L1
-    #
-    # f_mt5_D1 = StringIO()
-    # f_mt5_D1.write(output_mt5_1D.decode("utf-8"))
-    # f_mt5_D1.seek(0)
-    # email_result_dict["MT5_Demo1_Upload"] =  f_mt5_D1
+        c_run_results.append(["MT5 Live 1", "Swaps upload Error: {}.".format(err_mt5_1), C_Return_Val_mt5_1])
 
     email_result_dict["MT5_Live1_Upload"] =  create_email_virtual_file(output_mt5_1.decode("utf-8"))
     email_result_dict["MT5_Demo1_Upload"] =  create_email_virtual_file(output_mt5_1D.decode("utf-8"))
@@ -1269,9 +1257,9 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
 
 
     if C_Return_Val_mt5_1D == 0:
-        c_run_results.append(["MT5 Live", "Swaps uploaded Successfully.", C_Return_Val_mt5_1D])
+        c_run_results.append(["MT5 Demo 1", "Swaps uploaded Successfully.", C_Return_Val_mt5_1D])
     else:
-        c_run_results.append(["MT5 Live", "Swaps upload Error: {}.".format(err_mt5_1D), C_Return_Val_mt5_1])
+        c_run_results.append(["MT5 Demo 1", "Swaps upload Error: {}.".format(err_mt5_1D), C_Return_Val_mt5_1])
 
     # Need to tidy up the excel files into the archive folder
     clean_up_folder(mt5_L1_base_folder, file_header="mt5 swaps")
