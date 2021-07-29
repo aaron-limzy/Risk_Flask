@@ -10,6 +10,7 @@ bases/
 
 *.xlsx
 *.xls
+!Ignore_Symbol.*
 
 # C extensions
 *.so
