@@ -51,10 +51,10 @@
 
   <table class="table table-bordered table-sm table-hover">
       <tr class="table-info">
-        <th style="background-color: #F1C40F;"> Difference in Sign </th>
+        <th style="background-color: #BCF90C;"> Difference in Sign </th>
         <th style="background-color: #E74C3C;"> Significant Difference </th>
         <th style="background-color: #F39C12;"> Minor Difference </th>
-        <th style="background-color: #85C1E9;"> Fixed Swaps </th>
+        <th style="background-color: #3498DB;"> Fixed Swaps </th>
       </tr>
     </table>
           <div>
@@ -62,7 +62,7 @@
                   {{ form.hidden_tag() }}
                   <div class="container">
                       <table class="table table-bordered table-sm table-hover">
-                          <tr class="table-info">
+                          <tr style="background-color: #85C1E9">
                             <th> Symbol </th>
                             <th> Long<br>Average </th>
                             <th> BGI<br>Long </th>
@@ -77,7 +77,7 @@
                           </tr>
                           {% for core_symbol in form.core_symbols %}
                           <tr>
-                            <td style="background-color: #29AE60">{{ core_symbol.hidden_tag() }}<b>{{ core_symbol.symbol.data }}</b></td>
+                            <td style="background-color: #317BDF">{{ core_symbol.hidden_tag() }}<b>{{ core_symbol.symbol.data }}</b></td>
                             <td>{{ core_symbol.avg_long.data  }}</td>
                             <td style="background-color: {{core_symbol.long_style.data}};">{{ core_symbol.long(class_="form-control") }}</td>
                             <td style="background-color: {{core_symbol.broker_1_long_style.data}};">{{ core_symbol.broker_1_long.data }}</td>
@@ -107,8 +107,19 @@
 {% endif %}
 <br>
 
-  {% if table %}
-  {{table}}
+  {% if show_table %}
+  <table class="table basic_table">
+    <tr>
+      <th>Description</th>
+      <th>Comment</th>
+      <th>Download</th>
+    </tr>
+    <tr>
+      <td><b>Swap File</b></td>
+      <td>Download Swaps in excel format.</td>
+      <td><a href="{{ url_for('swaps.Swap_download_excel') }}"><input class="btn btn-primary btn-lg btn-block" type="button" value="Download"></a></td>
+    </tr>
+  </table>
   <br>
   {% endif %}
 

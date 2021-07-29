@@ -791,6 +791,15 @@ def Query_SQL_db_engine(sql_query):
     zip_results = [dict(zip(result_col,d)) for d in result_data_decimal]
     return zip_results
 
+
+# Insert into 64.73. (NOT async)
+# Will have to wait for it to be done.
+def Insert_into_sql(sql_Insert_query):
+    sql_insert = sql_Insert_query.replace("\t", "").replace("\n", "")
+    sql_insert = text(sql_insert)  # To make it to SQL friendly text.
+    raw_insert_result = db.engine.execute(sql_insert)
+    return
+
 # Gets in a Pandas dataframe.
 # Want to calculate what is the net position of the login
 def Calculate_Net_position(df_data):

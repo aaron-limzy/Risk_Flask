@@ -28,11 +28,15 @@ from unsync import unsync
 from app.OZ_Rest_Class import *
 
 from Helper_Flask_Lib import *
+from flask import flash
 
 
 from sklearn.linear_model import LinearRegression
 
 from sqlalchemy import text
+
+# For Excel saving
+import pyexcel as pe
 
 
 #logging.basicConfig(level=logging.INFO)
@@ -763,6 +767,12 @@ def calculate_swaps_bgi(excel_data, db):
     pd.set_option('display.max_rows', 200)
 
     df_bgi_excel = pd.DataFrame(excel_data)
+
+    # Cast it to float.
+    # Data came from SQL. Might be in string.
+    df_bgi_excel["Long Points"] = df_bgi_excel["Long Points"].astype(float)
+    df_bgi_excel["Short Points"] = df_bgi_excel["Short Points"].astype(float)
+
     #print(df_bgi_excel)
 
     # Get the Bloomberg Dividend.
@@ -804,6 +814,10 @@ def calculate_swaps_bgi(excel_data, db):
     # Merge in CFD Regression Swaps Value
     df = df.merge(df_swaps_predict, how="left", left_on="bgi_coresymbol", right_on="Symbol")
 
+
+
+
+
     # Calculate the markup First.
     df["long_markup_value"] = df.apply(lambda x: swap_markup(x["Long Points"], x["Long_Markup"]), axis=1)
     df["short_markup_value"] = df.apply(lambda x: swap_markup(x["Short Points"], x["Short_Markup"]), axis=1)
@@ -830,7 +844,7 @@ def calculate_swaps_bgi(excel_data, db):
 
     # Want to note Symbols are on fixed swaps
     df['Markup_Style'] = np.where( (~df['BGI_fixed_long'].isna()) | (~df['BGI_fixed_short'].isna()), \
-                                                  "#85C1E9", "")
+                                                  "#3498DB", "")
 
     #print(df)
     #--- Want to show which
@@ -895,9 +909,15 @@ def compare_swap_values(x, y):
     # GREEN:  #29AE60/ #44F846
     # ORANGE:  #EB984E/ #F39C12
 
+    # color_dict = {"Red": "#E74C3C", "Yellow": "#F1C40F", \
+    #            "Blue" : "#85C1E9", "Green": "#44F846", \
+    #            "Orange": "#F39C12", "White": "#FFFFFF"}
+
+
     color_dict = {"Red": "#E74C3C", "Yellow": "#F1C40F", \
-               "Blue" : "#85C1E9", "Green": "#44F846", \
+               "Blue" : "#85C1E9", "Green": "#BCF90C", \
                "Orange": "#F39C12", "White": "#FFFFFF"}
+
 
     # We need to make sure input is number value
     if not isfloat(x) or not isfloat(y):
@@ -990,6 +1010,9 @@ def get_dividend_history(db, backward_days=51):
 
     df_dividend_ret = df_dividend.groupby(["mt4_symbol", "Date_merge"]).sum().reset_index()
 
+    # Cast the dividend to float
+    df_dividend_ret["dividend"] = df_dividend_ret["dividend"].astype(float)
+
     df_dividend_ret = df_dividend_ret[["mt4_symbol", "Date_merge", "dividend"]]
     return df_dividend_ret
 
@@ -1053,6 +1076,9 @@ def merge_dividend_swaps(df, df_dividend):
     df = df.merge(df_dividend, left_on=["Symbol", "Date"], right_on=["mt4_symbol", "Date_merge"], how="outer")
     df["Symbol"] = np.where(df["mt4_symbol"].isna(), df["Symbol"], df["mt4_symbol"])
     df["Date"] = np.where(df["Date"].isna(), df["Date_merge"], df["Date"])
+
+    #df["Weekday"] = pd.to_datetime(df["Date_merge"]).dt.weekday
+
     return df
 
 
@@ -1064,13 +1090,19 @@ def predict_cfd_swaps(db, return_predict_only=True):
     df.sort_values("Date", inplace=True)
 
     # Create Feature. Since Fridays usually has 3 time swaps.
-    df["Date_weekday"] = df["Date"].dt.weekday  # 0 = Monday, 4 = Friday
+    df["Date_weekday"] = df["Date_merge"].dt.weekday  # 0 = Monday, 4 = Friday
+
+    # Want only dates that are monday (0) - Friday (4)
+    df = df[df["Date_weekday"].isin([0,1,2,3,4])]
+
     df["Dividend_Friday"] = np.where(df["Date_weekday"] == 4, df["dividend"], 0)
     df["Dividend_Not_Friday"] = np.where(df["Date_weekday"] != 4, df["dividend"], 0)
 
 
     # Want those that are not empty
     all_symbol = df[~df["dividend"].isna()]["Symbol"].unique().tolist()
+
+    # Want those that are only within monday - Fridays.
 
     for s in all_symbol:
         predict_long, predict_short = calculate_CFD_long_short_dividend(df[df["Symbol"] == s])
@@ -1089,3 +1121,95 @@ def predict_cfd_swaps(db, return_predict_only=True):
         return df[df["Date_merge"] == datetime.datetime.now().strftime("%Y-%m-%d")]
 
     return df
+
+
+
+
+def process_validated_swaps(all_data):
+
+
+
+
+    # Cast it into a df
+    df = pd.DataFrame(all_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
+
+    # Trying to cast to float so that it will be saved as float.. hopefully?
+    for c in ["Long Points (BGI)", "Short Points (BGI)"]:
+        if c in df:
+            df[c] = df[c].astype(float)
+
+    df.sort_values("Core Symbol (BGI)", inplace=True)
+
+    # Get the data into a Bracket format to be ready to inset into SQL
+    # We will do a 2 hours back so that swaps can still be uploaded near midnight.
+    swap_insert_list = ["(" + ",".join(["'{}'".format(x) for x in X]) + ", DATE(DATE_SUB(now(), INTERVAL 2 HOUR)))" \
+                        for X in df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()]
+    swap_insert_str = " , ".join(swap_insert_list)
+
+    # -------------------------------Insert into Risk 64.73 Database
+    # sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
+
+    sql_header_risk = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
+    footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
+
+    Insert_into_sql("{} {} {}".format(sql_header_risk, swap_insert_str, footer))  # Go insert into SQL.
+
+    # risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_risk,
+    #                                           values=[swap_insert_str], footer=footer, sql_max_insert=500)
+    flash("Risk (64.73) Swaps Insert Successful.")
+
+    # ----------------------------------------Insert into BO DB
+    sql_query_bo = "INSERT INTO bgiswap.table_swap ( bgi_symbol, bgi_long, bgi_short, Update_Date ) Values  " + swap_insert_str
+    # #To make it to SQL friendly text.
+    raw_insert_result = db.session.execute(text("delete from bgiswap.table_swap"),
+                                           bind=db.get_engine(current_app, 'bo_swaps'))
+    raw_insert_result = db.session.execute(text(sql_query_bo), bind=db.get_engine(current_app, 'bo_swaps'))
+    db.session.commit()  # Since we are using session, we need to commit.
+    flash("BO Swaps Insert Successful.")
+
+
+
+    retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
+    insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
+
+    content = {'retail': retail_sheet,
+               'insti': insti_sheet,
+               }
+
+    # Save the file as an Excel first.
+    # pip install pyexcel-xls
+    pe.save_book_as(bookdict = content,
+    dest_file_name = current_app.config["SWAPS_MT4_UPLOAD_FOLDER"] + 'MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
+
+
+    # Need to upload to MT5
+
+
+
+
+    # Need to upload to MT4
+
+    # # Run the real prog
+    # USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Setting.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
+    #                            0.01 : {'path':'Close_USOil_Trade_0.01.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
+    # c_run_return = Run_C_Prog(Path=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['path'],
+    #                           cwd=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['cwd'])
+
+    # Run the C++ Prog for the Upload.
+    # C_Return_Val, output, err = Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=current_app.config["SWAPS_MT4_UPLOAD_FOLDER"])
+
+    # return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
+
+    # print(str(form.data))
+
+    # postvars = variabledecode.variable_decode(request.form, dict_char='_')
+    #     for k, v in postvars.iteritems():
+
+    # # Want to redirect this to some other pages.
+    # return redirect(url_for('analysis.Client_trades_Analysis', Live=Live, Login=Login))
+
+
+
+    return
+
+

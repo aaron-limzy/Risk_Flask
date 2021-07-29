@@ -21,8 +21,7 @@ from app.decorators import roles_required
 from app.background import *
 
 
-# For Excel saving
-import pyexcel as pe
+
 
 from openpyxl.workbook import Workbook
 
@@ -182,42 +181,92 @@ def upload_Swaps_csv():
 
     if request.method == 'POST' and form.validate_on_submit():
 
+        # The columns to check.
+        col_to_check = ['Core Symbol', 'Symbol Group Path', 'Long Points', 'Short Points']
+
+        # To track which columns are missing.
+        missing_col = []
+
         record_dict = request.get_records(field_name='upload', name_columns_by_row=0)
 
-        # month_year = datetime.datetime.now().strftime('%b-%Y')
-        # month_year_folder = swaps.config["VANTAGE_UPLOAD_FOLDER"] + "/" + month_year
-        #
-        # filename = secure_filename(request.files['upload'].filename)
-        #
-        # filename_postfix_xlsx = Check_File_Exist(month_year_folder, ".".join(
-        #     filename.split(".")[:-1]) + ".xlsx")  # Checks, Creates folders and return AVAILABLE filename
-        #
-        # # Want to Let the users download the File..
-        # # return excel.make_response_from_records(record_dict, "xls", status=200, file_name=filename_without_postfix)
-        #
-        # pyexcel.save_as(records=record_dict, dest_file_name=filename_postfix_xlsx)
 
-        file_data = []
-        for cc, record in enumerate(record_dict):
-            if cc == 0:
-                column_name = list(record_dict[cc].keys())
-            buffer = dict()
-            #print(record)
-            for i, j in record.items():
-                if i == "":
-                    i = "Empty"
-                buffer[i] = j
-                #print(i, j)
-                #print(i, j)
-            file_data.append(buffer)
-        print(file_data)
-        T = create_table()
+        # We want to check the Valtage file to access if it's usable.
 
-        # Save it into the cookies first.
-        session["Swap_excel_upload"] = file_data
+        # Get the dataframe of the records.
+        df = pd.DataFrame(record_dict)
+
+        # Want to check how many "long" and "Short" Columns there are.
+        error_found = 0    # Counter for any issues on the file.
+
+        # Checking for missing, or double/multiple entries of the same columns
+        for x in ["long", "short", "core symbol"]:
+            if sum([c.lower().find(x) == 0 for c in df.columns]) > 1:
+                error_found = error_found + 1
+                flash(Markup("More than 1 <b>'{}'</b> column found.".format(x)))
+            elif sum([c.lower().find(x) == 0 for c in df.columns]) < 1:
+                error_found = error_found + 1
+                flash(Markup("No <b>'{}'</b> column found.".format(x)))
+
+        # Check for main columns to see if it's missing.
+        if not all([c in df.columns for c in col_to_check]):
+            error_found = error_found + 1
+            missing_col = ["<b>{}</b>".format(c) for c in col_to_check if c not in df]
+            flash(Markup("Columns missing from excel: {}.".format(" & ".join(missing_col))))
+
+        if error_found == 0 :   ## If Only there are no issues.
 
 
-        return redirect(url_for('swaps.Swap_upload_form'))
+            start_time = datetime.datetime.now()
+            df["Core Symbol"] = df["Core Symbol"].apply(lambda x: "'{}'".format(x))  # Cast to string. Add the '
+            df["Long Points"] = df["Long Points"].apply(lambda x: "'{}'".format(x))
+            df["Short Points"] = df["Short Points"].apply(lambda x: "'{}'".format(x))
+            df["Date"] = "'{}'".format(datetime.datetime.now().strftime("%Y-%m-%d"))  # Write in system time.
+
+            # Getting the data to write to SQL for Vantage Raw.
+            data = df[['Core Symbol', 'Long Points', 'Short Points', 'Date']].values.tolist()
+            sql_data = " , ".join(["({})".format(",".join(d)) for d in data])
+
+            # SQL Statement preparation for inset.
+            sql_header = "INSERT INTO aaron.swaps_vantage_raw (`core_symbol`, `vantage_long`, `vantage_short`, `date`) VALUES "
+            sql_footer = " ON DUPLICATE  KEY UPDATE `vantage_long`=VALUES(`vantage_long`), `vantage_short`=VALUES(`vantage_short`)  "
+
+            # To construct the sql statement. header + values + footer.
+            sql_insert = sql_header + sql_data + sql_footer
+            Insert_into_sql(sql_insert) # Go insert into SQL.
+            print("Time Taken to send swaps to SQL: {}".format((datetime.datetime.now() - start_time).total_seconds()))
+
+            # month_year = datetime.datetime.now().strftime('%b-%Y')
+            # month_year_folder = swaps.config["VANTAGE_UPLOAD_FOLDER"] + "/" + month_year
+            #
+            # filename = secure_filename(request.files['upload'].filename)
+            #
+            # filename_postfix_xlsx = Check_File_Exist(month_year_folder, ".".join(
+            #     filename.split(".")[:-1]) + ".xlsx")  # Checks, Creates folders and return AVAILABLE filename
+            #
+            # # Want to Let the users download the File..
+            # # return excel.make_response_from_records(record_dict, "xls", status=200, file_name=filename_without_postfix)
+            #
+            # pyexcel.save_as(records=record_dict, dest_file_name=filename_postfix_xlsx)
+
+            # file_data = []
+            # for cc, record in enumerate(record_dict):
+            #     if cc == 0:
+            #         column_name = list(record_dict[cc].keys())
+            #     buffer = dict()
+            #     #print(record)
+            #     for i, j in record.items():
+            #         if i == "":
+            #             i = "Empty"
+            #         buffer[i] = j
+            #         #print(i, j)
+            #         #print(i, j)
+            #     file_data.append(buffer)
+            # #print(file_data)
+            #
+            # # Save it into the cookies first.
+            # session["Swap_excel_upload"] = file_data
+            return redirect(url_for('swaps.Swap_upload_form'))
+
         # table = T(file_data, classes=["table", "table-striped", "table-bordered", "table-hover"])
         # if (len(file_data) > 0) and isinstance(file_data[0], dict):
         #     for c in file_data[0]:
@@ -265,9 +314,6 @@ def Other_Brokers():
                            Table_name="Swap Compare ", title=title,
                             ajax_url=url_for('swaps.Other_Brokers_Ajax', _external=True), header=header,
                            description=description, replace_words=Markup(["Today"]))
-
-
-
 
 
 @swaps.route('/Swaps/Other_Brokers_Ajax', methods=['GET', 'POST'])
@@ -356,13 +402,22 @@ def Swap_upload_form():
     # and form.validate_on_submit()
 
     #print(request.method)
+    today_swap_SQL_Query = """Select `core_symbol` as `Core Symbol`, `vantage_long` as `Long Points`, `vantage_short` as `Short Points`
+                          FROM aaron.swaps_vantage_raw
+                           WHERE date='{}'""".format(datetime.datetime.now().strftime("%Y-%m-%d"))
 
-    # Get the data from cookies.
-    if "Swap_excel_upload" in session:
-        file_data =  session["Swap_excel_upload"]
-        print(file_data)
-        #session.pop("Swap_excel_upload", None)
-    else:
+
+    # today_swap_SQL_Query = """Select `core_symbol` as `Core Symbol`, `vantage_long` as `Long Points`, `vantage_short` as `Short Points`
+    #                       FROM aaron.swaps_vantage_raw
+    #                        WHERE date='2020-01-01' """
+
+    file_data = query_SQL_return_record(today_swap_SQL_Query)   # Get the uploaded swaps from SQL.
+    # print(file_data)
+    # print("Length: {}".format(len(file_data)))
+
+
+    # Check that we got data from SQL.
+    if len(file_data) == 0:
         if test:
         # Artificially create something.
             file_data = [{'Core Symbol': 'MXN/JPY', 'Long Points': -0.29, 'Short Points': -1.46, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'HKD/JPY', 'Long Points': 0.15, 'Short Points': -0.25, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'NOK/JPY', 'Long Points': 0.39, 'Short Points': -0.54, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'GBP/SEK', 'Long Points': 1.82, 'Short Points': -3.44, 'Symbol Group Path': '*', 'digits': 4}, {'Core Symbol': 'SEK/JPY', 'Long Points': 0.2, 'Short Points': -0.14, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'NOK/SEK', 'Long Points': 1.15, 'Short Points': -1.96, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/DKK', 'Long Points': 12.13, 'Short Points': -9.03, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/SEK', 'Long Points': 27.31, 'Short Points': -1.62, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'CAD/SGD', 'Long Points': -0.03, 'Short Points': -1.77, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'GBP/NOK', 'Long Points': 2.2, 'Short Points': -2.69, 'Symbol Group Path': '*', 'digits': 4}, {'Core Symbol': 'EUR/PLN', 'Long Points': 26.07, 'Short Points': -9.57, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/NOK', 'Long Points': 31.52, 'Short Points': 1.63, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'GBP/HKD', 'Long Points': 21.47, 'Short Points': -24.12, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/HKD', 'Long Points': 29.07, 'Short Points': 2.91, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/TRY', 'Long Points': 640.42, 'Short Points': 0.0, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'USD/MXN', 'Long Points': 342.23, 'Short Points': 0.0, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'USD/TRY', 'Long Points': 515.32, 'Short Points': 0.0, 'Symbol Group Path': '*', 'digits': 5}, {'Core Symbol': 'EUR/MXN', 'Long Points': 453.16, 'Short Points': 0.0, 'Symbol Group Path': '*', 'digits': 5}, \
@@ -374,14 +429,15 @@ def Swap_upload_form():
                          {'Core Symbol': 'ITA40', 'Long Points': 152.91, 'Short Points': -240.78, 'Symbol Group Path': '*', 'digits': 2}, {'Core Symbol': 'UKOUSD', 'Long Points': -14.05, 'Short Points': -32.41, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': 'USOUSD', 'Long Points': -3.55, 'Short Points': -16.32, 'Symbol Group Path': '*', 'digits': 3}, {'Core Symbol': '*', 'Long Points': 0, 'Short Points': 0, 'Symbol Group Path': '*', 'digits': 0}]
 
         else:
-            return redirect(url_for('swaps.upload_Swaps_csv'))
+            return redirect(url_for('swaps.upload_Swaps_csv'))  # Go to the swap upload page
+        return redirect(url_for('swaps.upload_Swaps_csv'))   # Go to the Swap Upload Page
 
     if request.method != 'POST':
 
-        df = calculate_swaps_bgi(file_data, db) # Get the data processed by the helper function
+        df_swap_data = calculate_swaps_bgi(file_data, db) # Get the data processed by the helper function
         #print(df)
-        df.fillna("-", inplace=True) # Fill the NAs so that it will not appear weird.
-        data = df.to_dict("records")
+        df_swap_data.fillna("-", inplace=True) # Fill the NAs so that it will not appear weird.
+        data = df_swap_data.to_dict("records")
 
         form = All_Swap_Form()
         # Live = form.Live.data  # Get the Data.
@@ -390,8 +446,8 @@ def Swap_upload_form():
 
         for f in data:  # Loop thru all swaps uploaded.
             if all([u in f for u in ['bgi_coresymbol', 'long_markup_value_PlusFixed', 'short_markup_value_PlusFixed',
-                        'swap_markup_profile', 'long_markup_value_Plus_Insti_Fixed',
-                        'short_markup_value_Plus_Insti_Fixed',
+                        'swap_markup_profile', "long_markup_value_Plus_Insti_Fixed",
+                        "short_markup_value_Plus_Insti_Fixed",
                         'avg_long',  'avg_short', 'tv Long',
                         "dividend", "Markup_Style",
                         'tv Short',  'gp Long', 'gp Short']]):
@@ -408,10 +464,6 @@ def Swap_upload_form():
                 symbol_form.short = f["short_markup_value_PlusFixed"]
 
 
-                ## Save the Insti Values
-                symbol_form.insti_long = f['long_markup_value_Plus_Insti_Fixed']
-                symbol_form.insti_short = f['short_markup_value_Plus_Insti_Fixed']
-
                 symbol_form.avg_short = f["avg_short"]
                 symbol_form.avg_long = f["avg_long"]
 
@@ -427,6 +479,8 @@ def Swap_upload_form():
                 symbol_form.symbol_markup_type = f["swap_markup_profile"]
                 symbol_form.symbol_markup_style = f["Markup_Style"]
 
+                symbol_form.insti_long = f["long_markup_value_Plus_Insti_Fixed"]
+                symbol_form.insti_short  = f["short_markup_value_Plus_Insti_Fixed"]
 
                 # The cell color
                 symbol_form.long_style = compare_swap_values(f["long_markup_value_PlusFixed"], f["avg_long"])
@@ -437,6 +491,7 @@ def Swap_upload_form():
 
                 symbol_form.broker_2_long_style = compare_swap_values(f["long_markup_value_PlusFixed"], f["tv Long"])
                 symbol_form.broker_2_short_style = compare_swap_values(f["short_markup_value_PlusFixed"], f["tv Short"])
+
 
                 # symbol_form.short.render_kw = {"class": "danger"}
 
@@ -449,46 +504,24 @@ def Swap_upload_form():
     if request.method == 'POST':
         form = All_Swap_Form()
         #print("POST!")
-        all_data = []
+        #all_data = []
         #print(form)
-        for s in form.core_symbols:
-            # Append to the list.
-            all_data.append([s.symbol.data, s.long.data, s.short.data, s.insti_long.data, s.insti_short.data])
-
-            #print("{} | {} | {} | {} | {}".format(s.symbol.data, s.long.data, s.short.data, s.insti_long.data, s.insti_short.data))
 
 
         if form.validate_on_submit():
-            session['swap_validated_data']  = all_data
-            # For the Swaps to expire.
-            #session['swap_validated_data_datetime'] = datetime.datetime.timestamp(datetime.datetime.now())
-            session.pop("Swap_excel_upload", None)
 
-            # # Want to return the Excel.
-            # df = pd.DataFrame(all_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
-            # df.sort_values("Core Symbol (BGI)", inplace=True)
-            # retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
-            # insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
-            #
-            # content = {'retail': retail_sheet,
-            #            'insti': insti_sheet,
-            #            }
-            #
-            # book = pyexcel.Book(content)
-            # # pip install pyexcel-xls
-            # return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
+            all_data = [[s.symbol.data, s.long.data, s.short.data, s.insti_long.data, s.insti_short.data] for s in form.core_symbols ]
+            # for s in form.core_symbols:
+            #     # Append to the list.
+            #     all_data.append([s.symbol.data, s.long.data, s.short.data])
+            # # print("{} | {} | {} | {} | {}".format(s.symbol.data, s.long.data, s.short.data, s.insti_long.data, s.insti_short.data))
+
+            process_validated_swaps(all_data) # Get it inserted into SQL and run upload to MT4/5
 
             return redirect(url_for('swaps.Swap_download_page'))
-            #print(str(form.data))
+
         else:
-            print("Can't validate.")
-        # postvars = variabledecode.variable_decode(request.form, dict_char='_')
-        #     for k, v in postvars.iteritems():
-
-
-        # # Want to redirect this to some other pages.
-        # return redirect(url_for('analysis.Client_trades_Analysis', Live=Live, Login=Login))
-
+            print("Can't validate Swap results.")
 
     return render_template("Swap_Calculate_results.html",
                            title=title, backgroud_Filename = background_pic("Swap_upload_form"),
@@ -497,7 +530,6 @@ def Swap_upload_form():
                            description=description)
 
 
-# To view Client's trades as well as some simple details.
 @swaps.route('/Swap_download', methods=['GET', 'POST'])
 @roles_required()
 def Swap_download_page():
@@ -506,110 +538,10 @@ def Swap_download_page():
     title = "Swap Upload File"
     header = "Swap Upload File"
     description = Markup("Swap Upload File")
-    # file_form = File_Form()
-    # and form.validate_on_submit()
-
-    #print(request.method)
-
-    # Get the data from cookies.
-    if "swap_validated_data" in session:
-        swap_data =  session["swap_validated_data"]
-        #session.pop("swap_validated_data", None)
-    else:
-        return redirect(url_for('swaps.upload_Swaps_csv'))
-    #
-    # if "swap_validated_data_datetime" in session:
-    #     print("{}".format(Session["swap_validated_data_datetime"]))
-
-    #print(datetime.datetime.now())
-
-
-    df = pd.DataFrame(swap_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
-
-    # Trying to cast to float so that it will be saved as float.. hopefully?
-    for c in ["Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]:
-        if c in df:
-            df[c] = df[c].astype(float)
-
-    df.sort_values("Core Symbol (BGI)", inplace=True)
-
-    # Get the data into a Bracket format to be ready to inset into SQL
-    # We will do a 2 hours back so that swaps can still be uploaded near midnight.
-    swap_insert_list = [ "(" + ",".join(["'{}'".format(x) for x in X]) + ", DATE(DATE_SUB(now(), INTERVAL 2 HOUR)))" \
-                         for X in df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()]
-    swap_insert_str = " , ".join(swap_insert_list)
-
-
-
-    # Insert into Risk 64.73 Database
-    #sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
-
-
-    sql_header_risk = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
-    footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
-    risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_risk, values=[swap_insert_str], footer=footer, sql_max_insert=500)
-    flash("Risk (64.73) Swaps Insert Successful.")
-
-
-    # Insert into BO DB
-    sql_query_bo = "INSERT INTO bgiswap.table_swap ( bgi_symbol, bgi_long, bgi_short, Update_Date ) Values  " + swap_insert_str
-    # #To make it to SQL friendly text.
-    raw_insert_result = db.session.execute(text("delete from bgiswap.table_swap"), bind=db.get_engine(current_app, 'bo_swaps'))
-    raw_insert_result = db.session.execute(text(sql_query_bo), bind=db.get_engine(current_app, 'bo_swaps'))
-    db.session.commit()  # Since we are using session, we need to commit.
-    flash("BO Swaps Insert Successful.")
-
-    # Need to upload to MT5
-
-
-
-
-    # Need to upload to MT4
-
-    #
-    #
-    retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
-    insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
-
-    content = {'retail': retail_sheet,
-               'insti': insti_sheet,
-               }
-
-    #book = pyexcel.Book(content)
-
-
-    # Save the file as an Excel first.
-    # pip install pyexcel-xls
-    pe.save_book_as(bookdict = content,
-    dest_file_name = current_app.config["SWAPS_MT4_UPLOAD_FOLDER"] + \
-                     'MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
-
-
-    # # Run the real prog
-    # USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Setting.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
-    #                            0.01 : {'path':'Close_USOil_Trade_0.01.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
-    # c_run_return = Run_C_Prog(Path=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['path'],
-    #                           cwd=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['cwd'])
-
-
-    # Run the C++ Prog for the Upload.
-    #C_Return_Val, output, err = Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=current_app.config["SWAPS_MT4_UPLOAD_FOLDER"])
-
-
-
-    #return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
-
-    #print(str(form.data))
-
-    # postvars = variabledecode.variable_decode(request.form, dict_char='_')
-    #     for k, v in postvars.iteritems():
-
-# # Want to redirect this to some other pages.
-# return redirect(url_for('analysis.Client_trades_Analysis', Live=Live, Login=Login))
 
 
     return render_template("Swap_Calculate_results.html",
-                           title=title,
+                           title=title, show_table=True,
                            header=header, backgroud_Filename = background_pic("Swap_download_page"),
                            no_backgroud_Cover=True,
                            description=description)
@@ -623,19 +555,36 @@ def Swap_download_page():
 @roles_required()
 def Swap_download_excel():
 
-    # Get the data from cookies.
-    if "swap_validated_data" in session:
-        swap_data =  session["swap_validated_data"]
-        #session.pop("swap_validated_data", None)
-    else:
-        print("swap_validated_data NOT in session")
+    # Get it from SQL.
+    today_swap_SQL_Query = """SELECT S.Core_Symbol AS `Core Symbol (BGI)`, `Long Points (BGI)`, `Short Points (BGI)`,
+        COALESCE(swap_bgifixedswap_insti.`long`,  `Long Points (BGI)`) AS `Insti Long Points (BGI)`, 
+        COALESCE(swap_bgifixedswap_insti.`short`,  `Short Points (BGI)`) AS `Insti Short Points (BGI)`
+        FROM	
+        (SELECT Core_Symbol, 
+        BGI_LONG AS `Long Points (BGI)`, 
+        BGI_SHORT AS `Short Points (BGI)`         
+        FROM aaron.`bgi_swaps` AS s
+        WHERE  s.DATE = '{}'
+        AND s.Core_Symbol not like "*") AS S
+        LEFT JOIN
+        aaron.swap_bgifixedswap_insti ON swap_bgifixedswap_insti.core_symbol = S.Core_Symbol
+        """.format(datetime.datetime.now().strftime("%Y-%m-%d"))
+
+    swap_data = query_SQL_return_record(today_swap_SQL_Query)   # Get the uploaded swaps from SQL.
+
+    # Check that there are returns. Else, remove it all.
+    if len(swap_data) == 0:
+        print("swap_validated_data NOT in SQL. ")
         return redirect(url_for('swaps.upload_Swaps_csv'))
 
-
-    # if "swap_validated_data_datetime" in session:
-    #     print(Session["swap_validated_data_datetime"])
-
+    #Make the pandas dataframe.
     df = pd.DataFrame(swap_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
+
+    # Need to cast to float so that it would be saved as "number" in excel.
+    for c in ["Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]:
+        df[c] = df[c].astype(float)
+
+
     df.sort_values("Core Symbol (BGI)", inplace=True)
 
 
@@ -643,8 +592,7 @@ def Swap_download_excel():
     insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
 
     content = {'retail': retail_sheet,
-               'insti': insti_sheet,
-               }
+               'insti': insti_sheet, }
 
     book = pyexcel.Book(content)
     # pip install pyexcel-xls
