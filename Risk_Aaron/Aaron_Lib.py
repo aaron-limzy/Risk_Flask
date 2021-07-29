@@ -55,7 +55,7 @@ TELE_CLIENT_ID = ["486797751"]        # Aaron's Telegram ID.
 
 
 
-def Send_Email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name):
+def Send_Email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name, virtual_file={}):
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.ehlo()  # Hello to SMTP server
     server.starttls()  # Need to start the TLS connection
@@ -86,10 +86,20 @@ def Send_Email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name
                         "attachment; filename= " + filename.split("\\")[len(filename.split("\\")) - 1])
         msg.attach(part)
 
+    for k,d in virtual_file.items():
+        m_1 = MIMEBase('application', "octet-stream")
+        m_1.set_payload(d.getvalue())
+        encoders.encode_base64(m_1)
+        m_1.add_header('Content-Disposition',
+                       'attachment',
+                       filename='{}.txt'.format(k))
+        msg.attach(m_1)
+
     p = MIMEText(HTML_Text, 'html')
     msg.attach(p)
     server.sendmail(me, To_recipients + cc_recipients, msg.as_string())
     # server.sendmail(me, To_recipients + Bcc_recipients + cc_recipients, msg.as_string())
+    return
 
 
 def Get_time_String(datetime_format = None):
@@ -267,12 +277,12 @@ def Check_Float(element):
 def Run_C_Prog(Path, cwd=None):
 
     path = Path  # Need as Buffer, to append the added cwd if needed
-    print(os.getcwd())
+    #print(os.getcwd())
 
     if cwd != None:  # We need to append the full (relative) path
         path = cwd + "\\" + path
 
-    print("Run C Prog: {}".format(path))
+    #print("Run C Prog: {}".format(path))
 
     p = subprocess.Popen(path, stdout=subprocess.PIPE, cwd=cwd)
     (output, err) = p.communicate()  # Want to capture the COUT

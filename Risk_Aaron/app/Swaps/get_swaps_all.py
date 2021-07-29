@@ -39,6 +39,10 @@ from sqlalchemy import text
 # For Excel saving
 import pyexcel as pe
 
+# For moving Files around.
+from os import listdir
+from os.path import isfile, join
+
 
 #logging.basicConfig(level=logging.INFO)
 #logging.getLogger('suds.client').setLevel(logging.INFO)
@@ -1167,19 +1171,23 @@ def process_validated_swaps(all_data):
         db.session.commit()  # Since we are using session, we need to commit.
         flash("BO Swaps Insert Successful.")
 
-    upload_swaps_mt_servers(df, current_app.config["SWAPS_MT4_UPLOAD_FOLDER"])
+    upload_swaps_mt_servers(df, current_app.config["SWAPS_MT4_UPLOAD_FOLDER"], \
+                            current_app.config["SWAPS_MT5_LIVE1_UPLOAD_FOLDER"], \
+                            current_app.config["SWAPS_MT5_LIVE2_UPLOAD_FOLDER"])
 
     return
 
 
 @async_fun
-def upload_swaps_mt_servers(df, base_folder):
+def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base_folder ):
 
 
     retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
     insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
 
     c_run_results = []
+    email_result_dict = {}
+
 
     # ----------------------------------------- Need to upload to MT4
 
@@ -1190,36 +1198,100 @@ def upload_swaps_mt_servers(df, base_folder):
     # Save the file as an Excel first.
     # pip install pyexcel-xls
     pe.save_book_as(bookdict = content,
-    dest_file_name = base_folder + 'MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
+    dest_file_name = mt4_base_folder + 'MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
 
     # Run the C++ Prog for the Upload.
     print(os.getcwd())
     # mt4_unsync_res = unsync_Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=base_folder)
     # C_Return_Val, output, err = mt4_unsync_res.result()
 
-    C_Return_Val, output, err  = Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=base_folder)
+    if False:
+        C_Return_Val_mt4, output_mt4, err_mt4  = Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=mt4_base_folder)
+    else:
+        C_Return_Val_mt4, output_mt4, err_mt4 = 1, b"Testing", 0
 
-    if C_Return_Val == 1:
-        c_run_results.append(["MT4", "Swaps uploaded Successfully."])
+    if C_Return_Val_mt4 == 1:
+        c_run_results.append(["MT4 Live/Demo", "Swaps uploaded Successfully.", C_Return_Val_mt4])
+    else:
+        c_run_results.append(["MT4 Live/Demo", "Swaps upload Error: {}.".format(err_mt4), C_Return_Val_mt4])
 
-    print("{}, {}, {}".format(C_Return_Val, output, err))
+    f_mt4 = StringIO()
+    f_mt4.write(output_mt4.decode("utf-8"))
+    f_mt4.seek(0)
+    email_result_dict["MT4_Upload"] =  f_mt4
+
+
+    #print("mt4 output : {}".format(type(output_mt4)))
+
+    #print("{}, {}, {}".format(C_Return_Val, output, err))
+
+    # Need to tidy up the excel files into the archive folder
+    clean_up_folder(mt4_base_folder, file_header="mt4swaps")
+
+
+    # ------------------------------ Need to upload to MT5 - Live 1---------------------------
+    content_mt5_live1 = {'ALL': retail_sheet}
+
+    # Save the file as an Excel first.
+    # pip install pyexcel-xls
+    pe.save_book_as(bookdict = content_mt5_live1,
+    dest_file_name = mt5_L1_base_folder + 'MT5 Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
+
+
+    C_Return_Val_mt5_1, output_mt5_1, err_mt5_1  = Run_C_Prog(Path="Upload_Swaps_MT5.exe", cwd=mt5_L1_base_folder)
+    C_Return_Val_mt5_1D, output_mt5_1D, err_mt5_1D  = Run_C_Prog(Path="Upload_Swaps_MT5_DEMO.exe", cwd=mt5_L1_base_folder)
+
+
+    if C_Return_Val_mt5_1 == 0:
+        c_run_results.append(["MT5 Live", "Swaps uploaded Successfully.", C_Return_Val_mt5_1])
+    else:
+        c_run_results.append(["MT5 Live", "Swaps upload Error: {}.".format(err_mt5_1), C_Return_Val_mt5_1])
+    # email_result_list.append(output_mt5_1) ## To output the results
+    # email_result_list.append(output_mt5_1D) ## To output the results
+
+    f_mt5_L1 = StringIO()
+    f_mt5_L1.write(output_mt5_1.decode("utf-8"))
+    f_mt5_L1.seek(0)
+    email_result_dict["MT5_Live1_Upload"] =  f_mt5_L1
+
+    f_mt5_D1 = StringIO()
+    f_mt5_D1.write(output_mt5_1D.decode("utf-8"))
+    f_mt5_D1.seek(0)
+    email_result_dict["MT5_Demo1_Upload"] =  f_mt5_D1
+
+
+    #print("mt5L output : {}".format(type(output_mt5_1)))
+    #print("mt5D output : {}".format(type(output_mt5_1D)))
+
+
+    if C_Return_Val_mt5_1D == 0:
+        c_run_results.append(["MT5 Live", "Swaps uploaded Successfully.", C_Return_Val_mt5_1D])
+    else:
+        c_run_results.append(["MT5 Live", "Swaps upload Error: {}.".format(err_mt5_1D), C_Return_Val_mt5_1])
+
+    # Need to tidy up the excel files into the archive folder
+    clean_up_folder(mt5_L1_base_folder, file_header="mt5 swaps")
+
+
+    # ------------------------------ Need to upload to MT5 - Live 2 (UK)---------------------------
 
     # Need to tidy up the excel files into the archive folder
 
-    # Need to upload to MT5
+    #clean_up_folder(mt5_L2_base_folder, file_header="mt5 swaps")
+    # email_result_list.append(output_mt5_2) ## To output the results
+    # email_result_list.append(output_mt5_2D) ## To output the results
 
-    # Need to tidy up the excel files into the archive folder
 
     # Send email to say that upload is done.
     Send_Email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[],
                Subject="Swaps Upload [{}]".format(datetime.datetime.now().strftime("%Y-%m-%d")),
                HTML_Text="""{Email_Header}Hi all,<br><br>Swaps upload results for today:  
-                                    {table}   <br><br>{mt4_output}           
+                                    {table}        
                                        <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
                    Email_Header=Email_Header,
-                   table=Array_To_HTML_Table(Table_Header=["Server", "Results"], Table_Data=c_run_results),
-                   datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), mt4_output=output.decode("utf-8").replace("\r\n", "<br>"),
-                   Email_Footer=Email_Footer), Attachment_Name=[])
+                   table=Array_To_HTML_Table(Table_Header=["Server", "Results", "Return Code"], Table_Data=c_run_results),
+                   datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                   Email_Footer=Email_Footer), Attachment_Name=[], virtual_file=email_result_dict)
 
 
     # # Run the real prog
@@ -1238,4 +1310,28 @@ def upload_swaps_mt_servers(df, base_folder):
 
     # # Want to redirect this to some other pages.
     # return redirect(url_for('analysis.Client_trades_Analysis', Live=Live, Login=Login))
+    return
+
+# Will clean up the folders by clearing all the excel file into the "year" folder
+# base_folder - The folder to clean up
+# file_header - Start of the file name.
+def clean_up_folder(base_folder, file_header):
+    # For moving Files around.
+    folder_files = [f for f in listdir(base_folder) if isfile(join(base_folder, f))]
+    files_to_move = [f for f in folder_files if f.lower().find(file_header) >= 0]
+
+    # Need to ensure that there is an Archive folder. Else, Create it.
+    # If there isn't a folder with the year on it.
+    file_archive_folder = base_folder + "{}".format(datetime.datetime.now().strftime("%Y"))
+    #print("Creating folder: " + file_archive_folder)
+    if not os.path.isdir(file_archive_folder):
+        os.mkdir(file_archive_folder)         #Create the folder.
+
+    for f in files_to_move:
+        file_new_path = "{}\{}".format( file_archive_folder, f)
+        if os.path.isfile(file_new_path):        #Check if there's already that file in the archive folder
+            os.remove(file_new_path)    # If there is, delete it.
+        # Move the new file in.
+        os.rename("{}\{}".format(base_folder, f), "{}\{}".format( file_archive_folder, f))
+
     return
