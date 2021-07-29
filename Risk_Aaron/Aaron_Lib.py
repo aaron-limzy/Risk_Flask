@@ -103,7 +103,7 @@ def Send_Email(To_recipients, cc_recipients, Subject, HTML_Text, Attachment_Name
     # server.sendmail(me, To_recipients + Bcc_recipients + cc_recipients, msg.as_string())
     return
 
-def create_email_virtual_file(txt)
+def create_email_virtual_file(txt):
 
     f = StringIO()
     f.write(txt)
