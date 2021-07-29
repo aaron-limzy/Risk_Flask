@@ -1127,9 +1127,6 @@ def predict_cfd_swaps(db, return_predict_only=True):
 
 def process_validated_swaps(all_data):
 
-
-
-
     # Cast it into a df
     df = pd.DataFrame(all_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
 
@@ -1149,24 +1146,23 @@ def process_validated_swaps(all_data):
     # -------------------------------Insert into Risk 64.73 Database
     # sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
 
-    sql_header_risk = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
-    footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
-
-    Insert_into_sql("{} {} {}".format(sql_header_risk, swap_insert_str, footer))  # Go insert into SQL.
-
-    # risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_risk,
-    #                                           values=[swap_insert_str], footer=footer, sql_max_insert=500)
-    flash("Risk (64.73) Swaps Insert Successful.")
-
-    # ----------------------------------------Insert into BO DB
-    sql_query_bo = "INSERT INTO bgiswap.table_swap ( bgi_symbol, bgi_long, bgi_short, Update_Date ) Values  " + swap_insert_str
-    # #To make it to SQL friendly text.
-    raw_insert_result = db.session.execute(text("delete from bgiswap.table_swap"),
-                                           bind=db.get_engine(current_app, 'bo_swaps'))
-    raw_insert_result = db.session.execute(text(sql_query_bo), bind=db.get_engine(current_app, 'bo_swaps'))
-    db.session.commit()  # Since we are using session, we need to commit.
-    flash("BO Swaps Insert Successful.")
-
+    # sql_header_risk = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
+    # footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
+    #
+    # Insert_into_sql("{} {} {}".format(sql_header_risk, swap_insert_str, footer))  # Go insert into SQL.
+    #
+    # # risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_risk,
+    # #                                           values=[swap_insert_str], footer=footer, sql_max_insert=500)
+    # flash("Risk (64.73) Swaps Insert Successful.")
+    #
+    # # ----------------------------------------Insert into BO DB
+    # sql_query_bo = "INSERT INTO bgiswap.table_swap ( bgi_symbol, bgi_long, bgi_short, Update_Date ) Values  " + swap_insert_str
+    # # #To make it to SQL friendly text.
+    # raw_insert_result = db.session.execute(text("delete from bgiswap.table_swap"),
+    #                                        bind=db.get_engine(current_app, 'bo_swaps'))
+    # raw_insert_result = db.session.execute(text(sql_query_bo), bind=db.get_engine(current_app, 'bo_swaps'))
+    # db.session.commit()  # Since we are using session, we need to commit.
+    # flash("BO Swaps Insert Successful.")
 
 
     retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
