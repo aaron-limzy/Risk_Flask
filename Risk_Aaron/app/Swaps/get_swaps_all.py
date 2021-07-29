@@ -1215,10 +1215,10 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     else:
         c_run_results.append(["MT4 Live/Demo", "Swaps upload Error: {}.".format(err_mt4), C_Return_Val_mt4])
 
-    f_mt4 = StringIO()
-    f_mt4.write(output_mt4.decode("utf-8"))
-    f_mt4.seek(0)
-    email_result_dict["MT4_Upload"] =  f_mt4
+    # f_mt4 = StringIO()
+    # f_mt4.write(output_mt4.decode("utf-8"))
+    # f_mt4.seek(0)
+    email_result_dict["MT4_Upload"] =  create_email_virtual_file(output_mt4.decode("utf-8"))
 
 
     #print("mt4 output : {}".format(type(output_mt4)))
@@ -1249,15 +1249,19 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     # email_result_list.append(output_mt5_1) ## To output the results
     # email_result_list.append(output_mt5_1D) ## To output the results
 
-    f_mt5_L1 = StringIO()
-    f_mt5_L1.write(output_mt5_1.decode("utf-8"))
-    f_mt5_L1.seek(0)
-    email_result_dict["MT5_Live1_Upload"] =  f_mt5_L1
+    # f_mt5_L1 = StringIO()
+    # f_mt5_L1.write(output_mt5_1.decode("utf-8"))
+    # f_mt5_L1.seek(0)
+    # email_result_dict["MT5_Live1_Upload"] =  f_mt5_L1
+    #
+    # f_mt5_D1 = StringIO()
+    # f_mt5_D1.write(output_mt5_1D.decode("utf-8"))
+    # f_mt5_D1.seek(0)
+    # email_result_dict["MT5_Demo1_Upload"] =  f_mt5_D1
 
-    f_mt5_D1 = StringIO()
-    f_mt5_D1.write(output_mt5_1D.decode("utf-8"))
-    f_mt5_D1.seek(0)
-    email_result_dict["MT5_Demo1_Upload"] =  f_mt5_D1
+    email_result_dict["MT5_Live1_Upload"] =  create_email_virtual_file(output_mt5_1.decode("utf-8"))
+    email_result_dict["MT5_Demo1_Upload"] =  create_email_virtual_file(output_mt5_1D.decode("utf-8"))
+
 
 
     #print("mt5L output : {}".format(type(output_mt5_1)))
