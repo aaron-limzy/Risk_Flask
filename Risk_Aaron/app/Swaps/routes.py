@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, Markup, url_for, request, current_app, jsonify, flash, redirect
+from flask import Blueprint, render_template, Markup, url_for, request, current_app, jsonify, flash, redirect, Response
 from flask_login import current_user, login_user, logout_user, login_required
 
 from Aaron_Lib import *
@@ -20,11 +20,16 @@ from werkzeug.utils import secure_filename
 from app.decorators import roles_required
 from app.background import *
 
+from openpyxl import Workbook
+from openpyxl.writer.excel import save_virtual_workbook
+from flask import make_response
 
 
-
-from openpyxl.workbook import Workbook
-
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import NamedStyle
+from openpyxl.styles import Font, Color, Alignment, Border, Side
+from openpyxl.styles import Border, Side, PatternFill, Font, GradientFill, Alignment
+from openpyxl.utils import get_column_letter
 
 #from formencode import variabledecode
 
@@ -623,6 +628,74 @@ def Swap_download_excel():
     book = pyexcel.Book(content)
     # pip install pyexcel-xls
     return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
+
+
+
+@swaps.route('/Swap_download_excel_test', methods=['GET', 'POST'])
+@roles_required()
+def test_openpyxl():
+
+
+    # Get it from SQL.
+    today_swap_SQL_Query = """SELECT S.Core_Symbol AS `Core Symbol (BGI)`, `Long Points (BGI)`, `Short Points (BGI)`,
+        COALESCE(swap_bgifixedswap_insti.`long`,  `Long Points (BGI)`) AS `Insti Long Points (BGI)`, 
+        COALESCE(swap_bgifixedswap_insti.`short`,  `Short Points (BGI)`) AS `Insti Short Points (BGI)`
+        FROM	
+        (SELECT Core_Symbol, 
+        BGI_LONG AS `Long Points (BGI)`, 
+        BGI_SHORT AS `Short Points (BGI)`         
+        FROM aaron.`bgi_swaps` AS s
+        WHERE  s.DATE = '{}'
+        AND s.Core_Symbol not like "*") AS S
+        LEFT JOIN
+        aaron.swap_bgifixedswap_insti ON swap_bgifixedswap_insti.core_symbol = S.Core_Symbol
+        """.format(datetime.datetime.now().strftime("%Y-%m-%d"))
+
+    swap_data = query_SQL_return_record(today_swap_SQL_Query)   # Get the uploaded swaps from SQL.
+
+    # Check that there are returns. Else, remove it all.
+    if len(swap_data) == 0:
+        print("swap_validated_data NOT in SQL. ")
+        return redirect(url_for('swaps.upload_Swaps_csv'))
+
+    #Make the pandas dataframe.
+    df = pd.DataFrame(swap_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
+
+    # Need to cast to float so that it would be saved as "number" in excel.
+    for c in ["Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]:
+        df[c] = df[c].astype(float)
+
+
+    df.sort_values("Core Symbol (BGI)", inplace=True)
+
+
+    retail_sheet_col = ["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]
+    insti_sheet = ["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]
+
+    # ---- Start Drawing the Excel Style.
+    # Let's create a style template for the header row
+
+
+    workbook = Workbook()
+    sheet = workbook.active
+    generate_pretty_Swap_file(df[retail_sheet_col], sheet, "retail")
+
+    insti_sheet = workbook.create_sheet("Insti")
+    generate_pretty_Swap_file(df[insti_sheet], insti_sheet, "insti")
+
+
+
+    content = save_virtual_workbook(workbook)
+    resp = make_response(content)
+    resp.headers["Content-Disposition"] = 'attachment; filename={}.xls'.format('MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
+    resp.headers['Content-Type'] = 'application/x-xls'
+    return resp
+    # return Response(
+    #         save_virtual_workbook(wb),
+    #         headers={
+    #             'Content-Disposition': 'attachment; filename=sheet.xlsx',
+    #             'Content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    #         })
 
 
 

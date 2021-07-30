@@ -39,6 +39,15 @@ from sqlalchemy import text
 # For Excel saving
 import pyexcel as pe
 
+# Openpyxl for excel styling.
+# Different lib from pyexcel
+from openpyxl.utils.dataframe import dataframe_to_rows
+from openpyxl.styles import NamedStyle
+from openpyxl.styles import Font, Color, Alignment, Border, Side
+from openpyxl.styles import Border, Side, PatternFill, Font, GradientFill, Alignment
+from openpyxl.utils import get_column_letter
+
+
 # For moving Files around.
 from os import listdir
 from os.path import isfile, join
@@ -1381,3 +1390,40 @@ def run_meta_swap_upload(prog_name, cwd, server_name, c_default_return=0):
     print("Done... Running C for {}".format(server_name))
 
     return [c_run_results, f]
+
+
+
+# Need to generate the file with some formatting and styling.
+# Using openpyxl to do so.
+def generate_pretty_Swap_file(df, sheet, sheet_name):
+
+    # ---- Start Drawing the Excel Style.
+    # Let's create a style template for the header row
+    header = NamedStyle(sheet_name)
+    header.font = Font(bold=True)
+    header.fill = PatternFill("solid", fgColor="00C7E2FF")
+    thin = Side(border_style="thin", color="000000")
+
+    header.border = Border(top=thin, left=thin, right=thin, bottom=thin)
+    header.alignment = Alignment(horizontal="center", vertical="center")
+
+
+    # Now let's apply this to all first row (header) cells
+    header_row = sheet[1]
+    for cell in header_row:
+        cell.style = header
+
+    for row in sheet:
+        for cell in row:
+            cell.border = Border(top=thin, left=thin, right=thin, bottom=thin)
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    sheet.title = sheet_name
+    for row in dataframe_to_rows(df, index=False, header=True):
+        sheet.append(row)
+
+    # We know that this would be 3. But we'll check it anyway
+    for i in range(len(sheet[1])):
+        sheet.column_dimensions[get_column_letter(i + 1)].width = 18
+
+    return sheet
