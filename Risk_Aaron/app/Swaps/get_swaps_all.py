@@ -1143,25 +1143,26 @@ def process_validated_swaps(all_data):
     df.sort_values("Core Symbol (BGI)", inplace=True)
 
     # We want to upload to MT4 First.
+
+    # Get the data into a Bracket format to be ready to inset into SQL
+    # We will do a 2 hours back so that swaps can still be uploaded near midnight.
+    swap_insert_list = ["(" + ",".join(["'{}'".format(x) for x in X]) + ", DATE(DATE_SUB(now(), INTERVAL 2 HOUR)))" \
+                        for X in df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()]
+    swap_insert_str = " , ".join(swap_insert_list)
+
+    # -------------------------------Insert into Risk 64.73 Database
+    # sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
+
+    sql_header_risk = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
+    footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
+
+    Insert_into_sql("{} {} {}".format(sql_header_risk, swap_insert_str, footer))  # Go insert into SQL.
+
+    # risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_risk,
+    #                                           values=[swap_insert_str], footer=footer, sql_max_insert=500)
+    flash("Risk (64.73) Swaps Insert Successful.")
+
     if False:
-        # Get the data into a Bracket format to be ready to inset into SQL
-        # We will do a 2 hours back so that swaps can still be uploaded near midnight.
-        swap_insert_list = ["(" + ",".join(["'{}'".format(x) for x in X]) + ", DATE(DATE_SUB(now(), INTERVAL 2 HOUR)))" \
-                            for X in df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()]
-        swap_insert_str = " , ".join(swap_insert_list)
-
-        # -------------------------------Insert into Risk 64.73 Database
-        # sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
-
-        sql_header_risk = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
-        footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
-
-        Insert_into_sql("{} {} {}".format(sql_header_risk, swap_insert_str, footer))  # Go insert into SQL.
-
-        # risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_risk,
-        #                                           values=[swap_insert_str], footer=footer, sql_max_insert=500)
-        flash("Risk (64.73) Swaps Insert Successful.")
-
         # ----------------------------------------Insert into BO DB
         sql_query_bo = "INSERT INTO bgiswap.table_swap ( bgi_symbol, bgi_long, bgi_short, Update_Date ) Values  " + swap_insert_str
         # #To make it to SQL friendly text.
@@ -1171,6 +1172,7 @@ def process_validated_swaps(all_data):
         db.session.commit()  # Since we are using session, we need to commit.
         flash("BO Swaps Insert Successful.")
 
+    flash("Swaps uploading to MT4/5. An Email will be sent when it's done.")
     upload_swaps_mt_servers(df, current_app.config["SWAPS_MT4_UPLOAD_FOLDER"], \
                             current_app.config["SWAPS_MT5_LIVE1_UPLOAD_FOLDER"], \
                             current_app.config["SWAPS_MT5_LIVE2_UPLOAD_FOLDER"])
@@ -1181,7 +1183,7 @@ def process_validated_swaps(all_data):
 @async_fun
 def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base_folder ):
 
-    Test=True
+    Test = True
 
     retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
     insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
@@ -1238,15 +1240,16 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     else:
         c_run_results.append(["MT5 Live 1", "Swaps upload Error: {}.".format(err_mt5_1), C_Return_Val_mt5_1])
 
+    if C_Return_Val_mt5_1D == 0:
+        c_run_results.append(["MT5 Demo 1", "Swaps uploaded Successfully.", C_Return_Val_mt5_1D])
+    else:
+        c_run_results.append(["MT5 Demo 1", "Swaps upload Error: {}.".format(err_mt5_1D), C_Return_Val_mt5_1D])
+
     # Create the virtual file to be uploaded
     email_result_dict["MT5_Live1_Upload"] =  create_email_virtual_file(output_mt5_1.decode("utf-8"))
     email_result_dict["MT5_Demo1_Upload"] =  create_email_virtual_file(output_mt5_1D.decode("utf-8"))
 
 
-    if C_Return_Val_mt5_1D == 0:
-        c_run_results.append(["MT5 Demo 1", "Swaps uploaded Successfully.", C_Return_Val_mt5_1D])
-    else:
-        c_run_results.append(["MT5 Demo 1", "Swaps upload Error: {}.".format(err_mt5_1D), C_Return_Val_mt5_1])
 
     # Need to tidy up the excel files into the archive folder
     clean_up_folder(mt5_L1_base_folder, file_header="mt5 swaps")
@@ -1255,10 +1258,47 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     # ------------------------------ Need to upload to MT5 - Live 2 (UK)---------------------------
 
     # Need to tidy up the excel files into the archive folder
+    content_mt5_live2 = {'ALL': retail_sheet}
 
-    #clean_up_folder(mt5_L2_base_folder, file_header="mt5 swaps")
-    # email_result_list.append(output_mt5_2) ## To output the results
-    # email_result_list.append(output_mt5_2D) ## To output the results
+    # Save the file as an Excel first.
+    # pip install pyexcel-xls
+    pe.save_book_as(bookdict = content_mt5_live2,
+    dest_file_name = mt5_L2_base_folder + 'MT5 Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
+
+
+    # Run the C prog to upload Swaps.
+    MT5_L2_run_res, email_result_dict["MT5_Live2_Upload"] =  run_meta_swap_upload(prog_name="Upload_Swaps_MT5_UK.exe",
+                                                                                  cwd=mt5_L2_base_folder,
+                                                                                  server_name="MT5 Live 2 [UK]")
+    c_run_results.append(MT5_L2_run_res)
+
+    
+
+
+    # C_Return_Val_mt5_2, output_mt5_2, err_mt5_2  = Run_C_Prog(Path="Upload_Swaps_MT5_UK.exe", cwd=mt5_L2_base_folder)
+    #
+    #
+    # if C_Return_Val_mt5_2 == 0:
+    #     c_run_results.append(["MT5 Live 2", "Swaps uploaded Successfully.", C_Return_Val_mt5_2])
+    # else:
+    #     c_run_results.append(["MT5 Live 2", "Swaps upload Error: {}.".format(err_mt5_2), C_Return_Val_mt5_2])
+    #
+    # email_result_dict["MT5_Live2_Upload"] =  create_email_virtual_file(output_mt5_2.decode("utf-8"))
+    #
+
+    C_Return_Val_mt5_2D, output_mt5_2D, err_mt5_2D  = Run_C_Prog(Path="Upload_Swaps_MT5_UK_Demo.exe", cwd=mt5_L2_base_folder)
+
+    if C_Return_Val_mt5_2D == 0:
+        c_run_results.append(["MT5 Demo 2 [UK]", "Swaps uploaded Successfully.", C_Return_Val_mt5_2D])
+    else:
+        c_run_results.append(["MT5 Demo 2 [UK]", "Swaps upload Error: {}.".format(err_mt5_2D), C_Return_Val_mt5_2D])
+
+    # Create the virtual file to be uploaded
+
+    email_result_dict["MT5_Demo2_Upload"] =  create_email_virtual_file(output_mt5_2D.decode("utf-8"))
+
+    # Need to tidy up the excel files into the archive folder
+    clean_up_folder(mt5_L2_base_folder, file_header="mt5 swaps")
 
 
     # Send email to say that upload is done.
@@ -1267,28 +1307,13 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
                HTML_Text="""{Email_Header}Hi all,<br><br>Swaps upload results for today:  
                                     {table}        
                                        <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
-                   Email_Header=Email_Header,
-                   table=Array_To_HTML_Table(Table_Header=["Server", "Results", "Return Code"], Table_Data=c_run_results),
-                   datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                   Email_Footer=Email_Footer), Attachment_Name=[], virtual_file=email_result_dict)
+                           Email_Header=Email_Header,
+                           table=Array_To_HTML_Table(Table_Header=["Server", "Results", "Return Code"], Table_Data=c_run_results),
+                           datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                           Email_Footer=Email_Footer),
+            Attachment_Name=[],
+            virtual_file=email_result_dict)
 
-
-    # # Run the real prog
-    # USOil_Price_Alert_Array = {5: {'path':'Edit_Symbol_Setting.exe Check', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Symbol_Closed_Only')},
-    #                            0.01 : {'path':'Close_USOil_Trade_0.01.exe', 'cwd':".\\app" + url_for('static', filename='Exec/USOil_Close_Trades')}} # The 2 values that we need to care about.
-    # c_run_return = Run_C_Prog(Path=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['path'],
-    #                           cwd=USOil_Price_Alert_Array[USOil_Price_Alert_Actual]['cwd'])
-
-
-    # return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
-
-    # print(str(form.data))
-
-    # postvars = variabledecode.variable_decode(request.form, dict_char='_')
-    #     for k, v in postvars.iteritems():
-
-    # # Want to redirect this to some other pages.
-    # return redirect(url_for('analysis.Client_trades_Analysis', Live=Live, Login=Login))
     return
 
 # Will clean up the folders by clearing all the excel file into the "year" folder
@@ -1314,3 +1339,19 @@ def clean_up_folder(base_folder, file_header):
         os.rename("{}\{}".format(base_folder, f), "{}\{}".format( file_archive_folder, f))
 
     return
+
+# To run and upload the swaps to the servers.
+# prog_name = "Upload_Swaps_MT5.exe"
+# cwd = mt5_L1_base_folder
+def run_meta_swap_upload(prog_name, cwd, server_name):
+
+    C_Return_Val, output, err  = Run_C_Prog(Path=prog_name, cwd=cwd)
+
+    if C_Return_Val == 0:
+        c_run_results =[ server_name, "Swaps uploaded Successfully.", C_Return_Val]
+    else:
+        c_run_results =[ server_name, "Swaps upload Error: {}.".format(output), C_Return_Val]
+
+    # Create the virtual file to be uploaded
+    f = create_email_virtual_file(output.decode("utf-8"))
+    return [c_run_results, f]
