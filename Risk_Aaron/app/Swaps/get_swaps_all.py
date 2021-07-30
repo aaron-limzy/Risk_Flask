@@ -1248,7 +1248,7 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     # Run the C prog to upload Swaps to MT5 Demo 1
     MT5_D1_run_res, email_result_dict["MT5_Demo1_Upload"] =  run_meta_swap_upload(prog_name="Upload_Swaps_MT5_DEMO.exe",
                                                                                   cwd=mt5_L1_base_folder,
-                                                                                  server_name="MT5 Demo Live 1")
+                                                                                  server_name="MT5 Demo 1")
     c_run_results.append(MT5_D1_run_res)
 
     #C_Return_Val_mt5_1, output_mt5_1, err_mt5_1  = Run_C_Prog(Path="Upload_Swaps_MT5.exe", cwd=mt5_L1_base_folder)
