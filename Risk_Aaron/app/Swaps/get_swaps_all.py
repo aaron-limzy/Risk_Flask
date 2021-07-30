@@ -1202,20 +1202,29 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     dest_file_name = mt4_base_folder + 'MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
 
     # Run the C++ Prog for the Upload.
+    #
+    # if Test == True:
+    #     C_Return_Val_mt4, output_mt4, err_mt4 = 1, b"Testing", 0
+    # else:
+    #     C_Return_Val_mt4, output_mt4, err_mt4  = Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=mt4_base_folder)
+    #
+    #
+    # if C_Return_Val_mt4 == 1:
+    #     c_run_results.append(["MT4 Live/Demo", "Swaps uploaded Successfully.", C_Return_Val_mt4])
+    # else:
+    #     c_run_results.append(["MT4 Live/Demo", "Swaps upload Error: {}.".format(err_mt4), C_Return_Val_mt4])
+    #
+    # # Create the virtual file to be uploaded
+    # email_result_dict["MT4_Upload"] =  create_email_virtual_file(output_mt4.decode("utf-8"))
 
-    if Test == True:
-        C_Return_Val_mt4, output_mt4, err_mt4 = 1, b"Testing", 0
-    else:
-        C_Return_Val_mt4, output_mt4, err_mt4  = Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=mt4_base_folder)
 
+    # Run the C prog to upload Swaps to MT5 Live 1
+    MT4_run_res, email_result_dict["MT4_Upload"] =  run_meta_swap_upload(prog_name="Swaps_Upload_NoWait.exe",
+                                                                                  cwd=mt4_base_folder,
+                                                                                  server_name="MT4 Live/Demo",
+                                                            c_default_return=1) # The MT4 C prog default return is 1.
+    c_run_results.append(MT4_run_res)
 
-    if C_Return_Val_mt4 == 1:
-        c_run_results.append(["MT4 Live/Demo", "Swaps uploaded Successfully.", C_Return_Val_mt4])
-    else:
-        c_run_results.append(["MT4 Live/Demo", "Swaps upload Error: {}.".format(err_mt4), C_Return_Val_mt4])
-
-    # Create the virtual file to be uploaded
-    email_result_dict["MT4_Upload"] =  create_email_virtual_file(output_mt4.decode("utf-8"))
 
 
     # Need to tidy up the excel files into the archive folder
@@ -1230,24 +1239,35 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     pe.save_book_as(bookdict = content_mt5_live1,
     dest_file_name = mt5_L1_base_folder + 'MT5 Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
 
+    # Run the C prog to upload Swaps to MT5 Live 1
+    MT5_L1_run_res, email_result_dict["MT5_Live1_Upload"] =  run_meta_swap_upload(prog_name="Upload_Swaps_MT5.exe",
+                                                                                  cwd=mt5_L1_base_folder,
+                                                                                  server_name="MT5 Live 1")
+    c_run_results.append(MT5_L1_run_res)
 
-    C_Return_Val_mt5_1, output_mt5_1, err_mt5_1  = Run_C_Prog(Path="Upload_Swaps_MT5.exe", cwd=mt5_L1_base_folder)
-    C_Return_Val_mt5_1D, output_mt5_1D, err_mt5_1D  = Run_C_Prog(Path="Upload_Swaps_MT5_DEMO.exe", cwd=mt5_L1_base_folder)
+    # Run the C prog to upload Swaps to MT5 Demo 1
+    MT5_D1_run_res, email_result_dict["MT5_Demo1_Upload"] =  run_meta_swap_upload(prog_name="Upload_Swaps_MT5_DEMO.exe",
+                                                                                  cwd=mt5_L1_base_folder,
+                                                                                  server_name="Demo Live 1")
+    c_run_results.append(MT5_D1_run_res)
+
+    #C_Return_Val_mt5_1, output_mt5_1, err_mt5_1  = Run_C_Prog(Path="Upload_Swaps_MT5.exe", cwd=mt5_L1_base_folder)
+    #C_Return_Val_mt5_1D, output_mt5_1D, err_mt5_1D  = Run_C_Prog(Path="Upload_Swaps_MT5_DEMO.exe", cwd=mt5_L1_base_folder)
 
 
-    if C_Return_Val_mt5_1 == 0:
-        c_run_results.append(["MT5 Live 1", "Swaps uploaded Successfully.", C_Return_Val_mt5_1])
-    else:
-        c_run_results.append(["MT5 Live 1", "Swaps upload Error: {}.".format(err_mt5_1), C_Return_Val_mt5_1])
+    # if C_Return_Val_mt5_1 == 0:
+    #     c_run_results.append(["MT5 Live 1", "Swaps uploaded Successfully.", C_Return_Val_mt5_1])
+    # else:
+    #     c_run_results.append(["MT5 Live 1", "Swaps upload Error: {}.".format(err_mt5_1), C_Return_Val_mt5_1])
 
-    if C_Return_Val_mt5_1D == 0:
-        c_run_results.append(["MT5 Demo 1", "Swaps uploaded Successfully.", C_Return_Val_mt5_1D])
-    else:
-        c_run_results.append(["MT5 Demo 1", "Swaps upload Error: {}.".format(err_mt5_1D), C_Return_Val_mt5_1D])
+    # if C_Return_Val_mt5_1D == 0:
+    #     c_run_results.append(["MT5 Demo 1", "Swaps uploaded Successfully.", C_Return_Val_mt5_1D])
+    # else:
+    #     c_run_results.append(["MT5 Demo 1", "Swaps upload Error: {}.".format(err_mt5_1D), C_Return_Val_mt5_1D])
 
     # Create the virtual file to be uploaded
-    email_result_dict["MT5_Live1_Upload"] =  create_email_virtual_file(output_mt5_1.decode("utf-8"))
-    email_result_dict["MT5_Demo1_Upload"] =  create_email_virtual_file(output_mt5_1D.decode("utf-8"))
+    #email_result_dict["MT5_Live1_Upload"] =  create_email_virtual_file(output_mt5_1.decode("utf-8"))
+    #email_result_dict["MT5_Demo1_Upload"] =  create_email_virtual_file(output_mt5_1D.decode("utf-8"))
 
 
 
@@ -1266,13 +1286,17 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     dest_file_name = mt5_L2_base_folder + 'MT5 Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
 
 
-    # Run the C prog to upload Swaps.
+    # Run the C prog to upload Swaps to MT5 Live 2
     MT5_L2_run_res, email_result_dict["MT5_Live2_Upload"] =  run_meta_swap_upload(prog_name="Upload_Swaps_MT5_UK.exe",
                                                                                   cwd=mt5_L2_base_folder,
                                                                                   server_name="MT5 Live 2 [UK]")
     c_run_results.append(MT5_L2_run_res)
 
-    
+    # Run the C prog to upload Swaps to MT5 Demo 2
+    MT5_D2_run_res, email_result_dict["MT5_Demo2_Upload"] =  run_meta_swap_upload(prog_name="Upload_Swaps_MT5_UK_Demo.exe",
+                                                                                  cwd=mt5_L2_base_folder,
+                                                                                  server_name="MT5 Demo 2 [UK]")
+    c_run_results.append(MT5_D2_run_res)
 
 
     # C_Return_Val_mt5_2, output_mt5_2, err_mt5_2  = Run_C_Prog(Path="Upload_Swaps_MT5_UK.exe", cwd=mt5_L2_base_folder)
@@ -1285,17 +1309,15 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     #
     # email_result_dict["MT5_Live2_Upload"] =  create_email_virtual_file(output_mt5_2.decode("utf-8"))
     #
-
-    C_Return_Val_mt5_2D, output_mt5_2D, err_mt5_2D  = Run_C_Prog(Path="Upload_Swaps_MT5_UK_Demo.exe", cwd=mt5_L2_base_folder)
-
-    if C_Return_Val_mt5_2D == 0:
-        c_run_results.append(["MT5 Demo 2 [UK]", "Swaps uploaded Successfully.", C_Return_Val_mt5_2D])
-    else:
-        c_run_results.append(["MT5 Demo 2 [UK]", "Swaps upload Error: {}.".format(err_mt5_2D), C_Return_Val_mt5_2D])
+    # C_Return_Val_mt5_2D, output_mt5_2D, err_mt5_2D  = Run_C_Prog(Path="Upload_Swaps_MT5_UK_Demo.exe", cwd=mt5_L2_base_folder)
+    #
+    # if C_Return_Val_mt5_2D == 0:
+    #     c_run_results.append(["MT5 Demo 2 [UK]", "Swaps uploaded Successfully.", C_Return_Val_mt5_2D])
+    # else:
+    #     c_run_results.append(["MT5 Demo 2 [UK]", "Swaps upload Error: {}.".format(err_mt5_2D), C_Return_Val_mt5_2D])
 
     # Create the virtual file to be uploaded
-
-    email_result_dict["MT5_Demo2_Upload"] =  create_email_virtual_file(output_mt5_2D.decode("utf-8"))
+    # email_result_dict["MT5_Demo2_Upload"] =  create_email_virtual_file(output_mt5_2D.decode("utf-8"))
 
     # Need to tidy up the excel files into the archive folder
     clean_up_folder(mt5_L2_base_folder, file_header="mt5 swaps")
@@ -1343,15 +1365,18 @@ def clean_up_folder(base_folder, file_header):
 # To run and upload the swaps to the servers.
 # prog_name = "Upload_Swaps_MT5.exe"
 # cwd = mt5_L1_base_folder
-def run_meta_swap_upload(prog_name, cwd, server_name):
+def run_meta_swap_upload(prog_name, cwd, server_name, c_default_return=0):
 
+    print("Running C for {}".format(server_name))
     C_Return_Val, output, err  = Run_C_Prog(Path=prog_name, cwd=cwd)
 
-    if C_Return_Val == 0:
+    if C_Return_Val == c_default_return:
         c_run_results =[ server_name, "Swaps uploaded Successfully.", C_Return_Val]
     else:
-        c_run_results =[ server_name, "Swaps upload Error: {}.".format(output), C_Return_Val]
+        c_run_results =[ server_name, "Swaps upload Error: {}.".format(err), C_Return_Val]
 
     # Create the virtual file to be uploaded
     f = create_email_virtual_file(output.decode("utf-8"))
+    print("Done... Running C for {}".format(server_name))
+
     return [c_run_results, f]
