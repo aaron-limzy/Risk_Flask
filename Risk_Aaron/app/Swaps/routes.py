@@ -179,6 +179,7 @@ def upload_Swaps_csv():
             session.pop(s, None)
 
 
+
     if request.method == 'POST' and form.validate_on_submit():
 
         # The columns to check.
@@ -188,13 +189,13 @@ def upload_Swaps_csv():
         missing_col = []
 
         record_dict = request.get_records(field_name='upload', name_columns_by_row=0)
-        print(record_dict)
+        #print(record_dict)
 
         # We want to check the Valtage file to access if it's usable.
         #pd.set_option('display.max_rows', None)
         # Get the dataframe of the records.
         df = pd.DataFrame(record_dict)
-        print(df)
+        #print(df)
         # Want to check how many "long" and "Short" Columns there are.
         error_found = 0    # Counter for any issues on the file.
 
@@ -216,8 +217,8 @@ def upload_Swaps_csv():
         # Check if the Symbol is empty.
         # Because it's taken from Flask, the NAN turns to ""
         df_na_symbol = df[(df['Core Symbol'].isna()) | (df['Core Symbol'] == "")]
-        print("df_na_symbol: ")
-        print(df_na_symbol)
+        #print("df_na_symbol: ")
+        #print(df_na_symbol)
         na_symbol_index = [c + 2 for c in df_na_symbol.index.to_list()]
         for n in na_symbol_index:
             error_found = error_found + 1 # Increment Error Count

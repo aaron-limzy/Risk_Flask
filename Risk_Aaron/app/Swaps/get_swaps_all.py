@@ -1175,13 +1175,13 @@ def process_validated_swaps(all_data):
     flash("Swaps uploading to MT4/5. An Email will be sent when it's done.")
     upload_swaps_mt_servers(df, current_app.config["SWAPS_MT4_UPLOAD_FOLDER"], \
                             current_app.config["SWAPS_MT5_LIVE1_UPLOAD_FOLDER"], \
-                            current_app.config["SWAPS_MT5_LIVE2_UPLOAD_FOLDER"])
+                            current_app.config["SWAPS_MT5_LIVE2_UPLOAD_FOLDER"], current_user.username, current_user.email)
 
     return
 
 
 @async_fun
-def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base_folder ):
+def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base_folder, username, uploader_email ):
 
     Test = True
 
@@ -1324,11 +1324,12 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
 
 
     # Send email to say that upload is done.
-    Send_Email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[],
+    Send_Email(To_recipients=[uploader_email], cc_recipients=["aaron.lim@blackwellglobal.com"],
                Subject="Swaps Upload [{}]".format(datetime.datetime.now().strftime("%Y-%m-%d")),
-               HTML_Text="""{Email_Header}Hi all,<br><br>Swaps upload results for today:  
-                                    {table}        
+               HTML_Text="""{Email_Header}Hi {username},<br><br>Swaps upload results for today:  
+                                    {table}<br><br>Kindly find the upload logs attached.
                                        <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}""".format(
+                           username=username,
                            Email_Header=Email_Header,
                            table=Array_To_HTML_Table(Table_Header=["Server", "Results", "Return Code"], Table_Data=c_run_results),
                            datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
