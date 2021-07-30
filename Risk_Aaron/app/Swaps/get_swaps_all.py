@@ -849,7 +849,7 @@ def calculate_swaps_bgi(excel_data, db):
 
     # Want to note Symbols are on fixed swaps
     df['Markup_Style'] = np.where( (~df['BGI_fixed_long'].isna()) | (~df['BGI_fixed_short'].isna()), \
-                                                  "#3498DB", "")
+                                                  "#CCD1D1", "")
 
     #print(df)
     #--- Want to show which
@@ -1175,7 +1175,7 @@ def process_validated_swaps(all_data):
     flash("Swaps uploading to MT4/5. An Email will be sent when it's done.")
     upload_swaps_mt_servers(df, current_app.config["SWAPS_MT4_UPLOAD_FOLDER"], \
                             current_app.config["SWAPS_MT5_LIVE1_UPLOAD_FOLDER"], \
-                            current_app.config["SWAPS_MT5_LIVE2_UPLOAD_FOLDER"], current_user.username, current_user.email)
+                            current_app.config["SWAPS_MT5_LIVE2_UPLOAD_FOLDER"], current_user.id, current_user.email)
 
     return
 
