@@ -545,10 +545,11 @@ def Swap_upload_form():
             # for s in form.core_symbols:
             #     # Append to the list.
             #     all_data.append([s.symbol.data, s.long.data, s.short.data])
-            # # print("{} | {} | {} | {} | {}".format(s.symbol.data, s.long.data, s.short.data, s.insti_long.data, s.insti_short.data))
+            # for s in all_data:
+            #     print(s)
+            #print("{} | {} | {} | {} | {}".format(s.symbol.data, s.long.data, s.short.data, s.insti_long.data, s.insti_short.data))
 
             process_validated_swaps(all_data) # Get it inserted into SQL and run upload to MT4/5
-
             return redirect(url_for('swaps.Swap_download_page'))
 
         else:

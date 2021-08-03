@@ -46,6 +46,7 @@ from openpyxl.styles import NamedStyle
 from openpyxl.styles import Font, Color, Alignment, Border, Side
 from openpyxl.styles import Border, Side, PatternFill, Font, GradientFill, Alignment
 from openpyxl.utils import get_column_letter
+from openpyxl import Workbook
 
 
 # For moving Files around.
@@ -1154,21 +1155,19 @@ def process_validated_swaps(all_data):
     swap_insert_str = " , ".join(swap_insert_list)
 
     # -------------------------------Insert into Risk 64.73 Database (Aaron Database)
-    # sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
 
     sql_header_risk = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
     footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
 
     Insert_into_sql("{} {} {}".format(sql_header_risk, swap_insert_str, footer))  # Go insert into SQL.
 
-    flash("Risk (64.73) Swaps Insert Successful.")
+    flash("Risk (64.73) Swaps Insert Successful. [aaron.bgi_Swaps]")
 
     # -------------------------------Insert into Risk 64.73 Database (Risk Test DataBase)
     sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
-    sql_header_risk = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
     footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
 
-    risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_risk,
+    risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_test,
                                               values=[swap_insert_str], footer=footer, sql_max_insert=500)
 
     # ----------------------------------------Insert into BO DB
@@ -1193,10 +1192,9 @@ def process_validated_swaps(all_data):
 @async_fun
 def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base_folder, username, uploader_email ):
 
-    Test = True
 
     retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
-    insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
+    #insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
 
     c_run_results = []
     email_result_dict = {}
@@ -1204,35 +1202,57 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
 
     # ----------------------------------------- Need to upload to MT4
 
-    content = {'retail': retail_sheet, 'insti': insti_sheet }
+    # content = {'retail': retail_sheet, 'insti': insti_sheet }
+    #
+    # # Save the file as an Excel first.
+    # # pip install pyexcel-xls
+    # pe.save_book_as(bookdict = content,
+    # dest_file_name = mt4_base_folder + 'MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
 
-    # Save the file as an Excel first.
-    # pip install pyexcel-xls
-    pe.save_book_as(bookdict = content,
-    dest_file_name = mt4_base_folder + 'MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
+    ## Trying to use Pandas to write to excel.
+    df_retail = df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]]
+    df_insti = df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].rename(
+                                            columns={"Insti Long Points (BGI)" : "Long Points (BGI)",
+                                                "Insti Short Points (BGI)": "Short Points (BGI)"})
+
+    with pd.ExcelWriter(mt4_base_folder + 'MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now())) as writer:
+        df_retail.to_excel(writer, sheet_name='retail', index=False)
+        df_insti.to_excel(writer, sheet_name='insti', index=False)
+
+
+    # Trying to save the data into an excel using openpyxl
+    #
+    # workbook = Workbook()
+    # sheet = workbook.active
+    # sheet.title = "retail"        # Rename the sheet
+    #
+    # # First, we add the data into the Excel.
+    # for row in dataframe_to_rows(df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]],
+    #                              index=False, header=True):
+    #     sheet.append(row)
+    #
+    # df_insti = df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].rename(columns={"Insti Long Points (BGI)" : "Long Points (BGI)",
+    #                                                "Insti Short Points (BGI)": "Short Points (BGI)"})
+    #
+    # insti_sheet = workbook.create_sheet("insti")  # Insti Sheet
+    # # First, we add the data into the Excel.
+    # for row in dataframe_to_rows(df_insti, index=False, header=True):
+    #     insti_sheet.append(row)
+    # workbook.save(filename= mt4_base_folder + 'MT4Swaps {dt.day} {dt:%b} {dt.year}_1.xls'.format(dt=datetime.datetime.now()))
+
 
     # Run the C++ Prog for the Upload.
-    #
-    # if Test == True:
-    #     C_Return_Val_mt4, output_mt4, err_mt4 = 1, b"Testing", 0
-    # else:
-    #     C_Return_Val_mt4, output_mt4, err_mt4  = Run_C_Prog(Path="Swaps_Upload_NoWait.exe", cwd=mt4_base_folder)
-    #
-    #
-    # if C_Return_Val_mt4 == 1:
-    #     c_run_results.append(["MT4 Live/Demo", "Swaps uploaded Successfully.", C_Return_Val_mt4])
-    # else:
-    #     c_run_results.append(["MT4 Live/Demo", "Swaps upload Error: {}.".format(err_mt4), C_Return_Val_mt4])
-    #
-    # # Create the virtual file to be uploaded
-    # email_result_dict["MT4_Upload"] =  create_email_virtual_file(output_mt4.decode("utf-8"))
-
 
     # Run the C prog to upload Swaps to MT5 Live 1
     MT4_run_res, email_result_dict["MT4_Upload"] =  run_meta_swap_upload(prog_name="Swaps_Upload_NoWait.exe",
                                                                                   cwd=mt4_base_folder,
                                                                                   server_name="MT4 Live/Demo",
                                                             c_default_return=1) # The MT4 C prog default return is 1.
+
+
+
+
+
     c_run_results.append(MT4_run_res)
 
 
@@ -1245,9 +1265,15 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     content_mt5_live1 = {'ALL': retail_sheet}
 
     # Save the file as an Excel first.
+    df_retail.to_excel(mt5_L1_base_folder + 'MT5 Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()),
+                       sheet_name='ALL', index=False)
+
+
     # pip install pyexcel-xls
-    pe.save_book_as(bookdict = content_mt5_live1,
-    dest_file_name = mt5_L1_base_folder + 'MT5 Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
+    # pe.save_book_as(bookdict = content_mt5_live1,
+    # dest_file_name = mt5_L1_base_folder + 'MT5 Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
+    #
+    #
 
     # Run the C prog to upload Swaps to MT5 Live 1
     MT5_L1_run_res, email_result_dict["MT5_Live1_Upload"] =  run_meta_swap_upload(prog_name="Upload_Swaps_MT5.exe",
@@ -1287,14 +1313,17 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
 
     # ------------------------------ Need to upload to MT5 - Live 2 (UK)---------------------------
 
-    # Need to tidy up the excel files into the archive folder
-    content_mt5_live2 = {'ALL': retail_sheet}
+
 
     # Save the file as an Excel first.
     # pip install pyexcel-xls
-    pe.save_book_as(bookdict = content_mt5_live2,
-    dest_file_name = mt5_L2_base_folder + 'MT5 Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
+    # pe.save_book_as(bookdict = content_mt5_live2,
+    # dest_file_name = mt5_L2_base_folder + 'MT5 Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()))
+    #
 
+    # Save the file as an Excel first.
+    df_retail.to_excel(mt5_L2_base_folder + 'MT5 Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()),
+                       sheet_name='ALL', index=False)
 
     # Run the C prog to upload Swaps to MT5 Live 2
     MT5_L2_run_res, email_result_dict["MT5_Live2_Upload"] =  run_meta_swap_upload(prog_name="Upload_Swaps_MT5_UK.exe",
