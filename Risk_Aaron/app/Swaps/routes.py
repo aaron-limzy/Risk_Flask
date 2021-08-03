@@ -494,6 +494,10 @@ def Swap_upload_form():
                 symbol_form.long = f["long_markup_value_PlusFixed"]
                 symbol_form.short = f["short_markup_value_PlusFixed"]
 
+                # To keep track if the Long and Short data has been changed.
+                symbol_form.Long_Hidden = f["long_markup_value_PlusFixed"]
+                symbol_form.Short_Hidden = f["short_markup_value_PlusFixed"]
+
 
                 symbol_form.avg_short = f["avg_short"]
                 symbol_form.avg_long = f["avg_long"]
@@ -541,7 +545,8 @@ def Swap_upload_form():
 
         if form.validate_on_submit():
 
-            all_data = [[s.symbol.data, s.long.data, s.short.data, s.insti_long.data, s.insti_short.data] for s in form.core_symbols ]
+            all_data = [[s.symbol.data, s.long.data, s.short.data, s.insti_long.data, s.insti_short.data,
+                                        s.Long_Hidden.data, s.Short_Hidden.data ] for s in form.core_symbols ]
             # for s in form.core_symbols:
             #     # Append to the list.
             #     all_data.append([s.symbol.data, s.long.data, s.short.data])

@@ -1137,14 +1137,63 @@ def predict_cfd_swaps(db, return_predict_only=True):
 def process_validated_swaps(all_data):
 
     # Cast it into a df
-    df = pd.DataFrame(all_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
+    # Hidden data is so that we can check what has been changed.
+    df = pd.DataFrame(all_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)",
+                                         "Insti Long Points (BGI)", "Insti Short Points (BGI)",
+                                         "Long_Hidden", "Short_Hidden" ])
 
     # Trying to cast to float so that it will be saved as float.. hopefully?
-    for c in ["Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]:
+    for c in ["Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)",
+              "Insti Short Points (BGI)", "Long_Hidden", "Short_Hidden"]:
         if c in df:
             df[c] = df[c].astype(float)
 
     df.sort_values("Core Symbol (BGI)", inplace=True)
+
+    # First, we want to check if anything has changed manually.
+    # # If there has been, we will want to know.
+    df_changed = df[(df["Long Points (BGI)"] != df["Long_Hidden"]) | (df["Short Points (BGI)"] != df["Short_Hidden"])]
+    print(df_changed)
+
+    for s in df_changed["Core Symbol (BGI)"].unique():
+        flash("{} swap details were changed manually.".format(s))
+
+
+    # If there has been swaps that were manually changed, we would wanna change it on the Insi as well as the Retail side.
+
+    if len(df_changed) > 0: # There has been some changes
+
+        # Need to ensure that the Insti Fixed Isn't changed
+        # If it's not the ones that are fixed (For insti), it will follow the long/short points that were changed manually.
+        df["Insti Long Points (BGI)"] = np.where(df["Insti Long Points (BGI)"] != df["Long_Hidden"],
+                                                 df["Insti Long Points (BGI)"], df["Long Points (BGI)"])
+
+        df["Insti Short Points (BGI)"] = np.where(df["Insti Short Points (BGI)"] != df["Short_Hidden"],
+                                                 df["Insti Short Points (BGI)"], df["Short Points (BGI)"])
+
+        #
+        # pd.set_option('display.max_rows', 500)
+        # print(df)
+        #
+        #
+        # ## Trying to use Pandas to write to excel.
+        # df_retail = df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]]
+        # df_insti = df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].rename(
+        #     columns={"Insti Long Points (BGI)": "Long Points (BGI)",
+        #              "Insti Short Points (BGI)": "Short Points (BGI)"})
+        #
+        # with pd.ExcelWriter(current_app.config["SWAPS_MT4_UPLOAD_FOLDER"] + \
+        #                         'MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(
+        #         dt=datetime.datetime.now())) as writer:
+        #     df_retail.to_excel(writer, sheet_name='retail', index=False)
+        #     df_insti.to_excel(writer, sheet_name='insti', index=False)
+
+
+
+    df_changed = None  # Clear.
+
+    #return
+
 
     # We want to upload to MT4 First.
 
@@ -1193,7 +1242,7 @@ def process_validated_swaps(all_data):
 def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base_folder, username, uploader_email ):
 
 
-    retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
+    #retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
     #insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
 
     c_run_results = []
@@ -1262,7 +1311,7 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
 
 
     # ------------------------------ Need to upload to MT5 - Live 1---------------------------
-    content_mt5_live1 = {'ALL': retail_sheet}
+    #content_mt5_live1 = {'ALL': retail_sheet}
 
     # Save the file as an Excel first.
     df_retail.to_excel(mt5_L1_base_folder + 'MT5 Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now()),
@@ -1286,26 +1335,6 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
                                                                                   cwd=mt5_L1_base_folder,
                                                                                   server_name="MT5 Demo 1")
     c_run_results.append(MT5_D1_run_res)
-
-    #C_Return_Val_mt5_1, output_mt5_1, err_mt5_1  = Run_C_Prog(Path="Upload_Swaps_MT5.exe", cwd=mt5_L1_base_folder)
-    #C_Return_Val_mt5_1D, output_mt5_1D, err_mt5_1D  = Run_C_Prog(Path="Upload_Swaps_MT5_DEMO.exe", cwd=mt5_L1_base_folder)
-
-
-    # if C_Return_Val_mt5_1 == 0:
-    #     c_run_results.append(["MT5 Live 1", "Swaps uploaded Successfully.", C_Return_Val_mt5_1])
-    # else:
-    #     c_run_results.append(["MT5 Live 1", "Swaps upload Error: {}.".format(err_mt5_1), C_Return_Val_mt5_1])
-
-    # if C_Return_Val_mt5_1D == 0:
-    #     c_run_results.append(["MT5 Demo 1", "Swaps uploaded Successfully.", C_Return_Val_mt5_1D])
-    # else:
-    #     c_run_results.append(["MT5 Demo 1", "Swaps upload Error: {}.".format(err_mt5_1D), C_Return_Val_mt5_1D])
-
-    # Create the virtual file to be uploaded
-    #email_result_dict["MT5_Live1_Upload"] =  create_email_virtual_file(output_mt5_1.decode("utf-8"))
-    #email_result_dict["MT5_Demo1_Upload"] =  create_email_virtual_file(output_mt5_1D.decode("utf-8"))
-
-
 
     # Need to tidy up the excel files into the archive folder
     clean_up_folder(mt5_L1_base_folder, file_header="mt5 swaps")

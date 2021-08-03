@@ -46,6 +46,10 @@ class Individual_symbol_Form(FlaskForm):
     long = FloatField('Long')
     short = FloatField('Short')
 
+    # To keep track if the Long and Short data has been changed.
+    Long_Hidden = HiddenField('Long_Hidden', render_kw={'readonly': True})
+    Short_Hidden =  HiddenField('Short_Hidden', render_kw={'readonly': True})
+
     insti_long = HiddenField('insti_long', render_kw={'readonly': True})
     insti_short = HiddenField('insti_short', render_kw={'readonly': True})
 
