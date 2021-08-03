@@ -579,62 +579,12 @@ def Swap_download_page():
 
 
 
-
-#To Let the user download the Swap file, IF it's in the session's cookie.
-# To view Client's trades as well as some simple details.
+# #To Let the user download the Swap file, IF it's in the session's cookie.
+# # To view Client's trades as well as some simple details.
 @swaps.route('/Swap_download_excel', methods=['GET', 'POST'])
 @roles_required()
 def Swap_download_excel():
 
-    # Get it from SQL.
-    today_swap_SQL_Query = """SELECT S.Core_Symbol AS `Core Symbol (BGI)`, `Long Points (BGI)`, `Short Points (BGI)`,
-        COALESCE(swap_bgifixedswap_insti.`long`,  `Long Points (BGI)`) AS `Insti Long Points (BGI)`, 
-        COALESCE(swap_bgifixedswap_insti.`short`,  `Short Points (BGI)`) AS `Insti Short Points (BGI)`
-        FROM	
-        (SELECT Core_Symbol, 
-        BGI_LONG AS `Long Points (BGI)`, 
-        BGI_SHORT AS `Short Points (BGI)`         
-        FROM aaron.`bgi_swaps` AS s
-        WHERE  s.DATE = '{}'
-        AND s.Core_Symbol not like "*") AS S
-        LEFT JOIN
-        aaron.swap_bgifixedswap_insti ON swap_bgifixedswap_insti.core_symbol = S.Core_Symbol
-        """.format(datetime.datetime.now().strftime("%Y-%m-%d"))
-
-    swap_data = query_SQL_return_record(today_swap_SQL_Query)   # Get the uploaded swaps from SQL.
-
-    # Check that there are returns. Else, remove it all.
-    if len(swap_data) == 0:
-        print("swap_validated_data NOT in SQL. ")
-        return redirect(url_for('swaps.upload_Swaps_csv'))
-
-    #Make the pandas dataframe.
-    df = pd.DataFrame(swap_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
-
-    # Need to cast to float so that it would be saved as "number" in excel.
-    for c in ["Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]:
-        df[c] = df[c].astype(float)
-
-
-    df.sort_values("Core Symbol (BGI)", inplace=True)
-
-
-    retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
-    insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
-
-    content = {'retail': retail_sheet,
-               'insti': insti_sheet, }
-
-    book = pyexcel.Book(content)
-    # pip install pyexcel-xls
-    return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
-
-
-
-@swaps.route('/Swap_download_excel_test', methods=['GET', 'POST'])
-@roles_required()
-def test_openpyxl():
-
 
     # Get it from SQL.
     today_swap_SQL_Query = """SELECT S.Core_Symbol AS `Core Symbol (BGI)`, `Long Points (BGI)`, `Short Points (BGI)`,
@@ -661,7 +611,7 @@ def test_openpyxl():
     #Make the pandas dataframe.
     df = pd.DataFrame(swap_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
 
-    print(df)
+    #print(df)
 
     # Need to cast to float so that it would be saved as "number" in excel.
     for c in ["Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]:
@@ -706,17 +656,64 @@ def test_openpyxl():
     resp = make_response(content)
     resp.headers["Content-Disposition"] = 'attachment; filename=MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now())
     #resp.headers['Content-Type'] = 'application/x-xls'
-    resp.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    resp.headers["Content-type"] = "application/vnd.ms-excel"
 
 
     return resp
-    # return Response(
-    #         save_virtual_workbook(wb),
-    #         headers={
-    #             'Content-Disposition': 'attachment; filename=sheet.xlsx',
-    #             'Content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    #         })
 
+
+
+
+# # # NOT USING as this was the excel with no formatting.
+# #To Let the user download the Swap file, IF it's in the session's cookie.
+# # To view Client's trades as well as some simple details.
+# @swaps.route('/Swap_download_excel_2', methods=['GET', 'POST'])
+# @roles_required()
+# def Swap_download_excel_2():
+#
+#     # Get it from SQL.
+#     today_swap_SQL_Query = """SELECT S.Core_Symbol AS `Core Symbol (BGI)`, `Long Points (BGI)`, `Short Points (BGI)`,
+#         COALESCE(swap_bgifixedswap_insti.`long`,  `Long Points (BGI)`) AS `Insti Long Points (BGI)`,
+#         COALESCE(swap_bgifixedswap_insti.`short`,  `Short Points (BGI)`) AS `Insti Short Points (BGI)`
+#         FROM
+#         (SELECT Core_Symbol,
+#         BGI_LONG AS `Long Points (BGI)`,
+#         BGI_SHORT AS `Short Points (BGI)`
+#         FROM aaron.`bgi_swaps` AS s
+#         WHERE  s.DATE = '{}'
+#         AND s.Core_Symbol not like "*") AS S
+#         LEFT JOIN
+#         aaron.swap_bgifixedswap_insti ON swap_bgifixedswap_insti.core_symbol = S.Core_Symbol
+#         """.format(datetime.datetime.now().strftime("%Y-%m-%d"))
+#
+#     swap_data = query_SQL_return_record(today_swap_SQL_Query)   # Get the uploaded swaps from SQL.
+#
+#     # Check that there are returns. Else, remove it all.
+#     if len(swap_data) == 0:
+#         print("swap_validated_data NOT in SQL. ")
+#         return redirect(url_for('swaps.upload_Swaps_csv'))
+#
+#     #Make the pandas dataframe.
+#     df = pd.DataFrame(swap_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
+#
+#     # Need to cast to float so that it would be saved as "number" in excel.
+#     for c in ["Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]:
+#         df[c] = df[c].astype(float)
+#
+#
+#     df.sort_values("Core Symbol (BGI)", inplace=True)
+#
+#
+#     retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
+#     insti_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].values.tolist()
+#
+#     content = {'retail': retail_sheet,
+#                'insti': insti_sheet, }
+#
+#     book = pyexcel.Book(content)
+#
+#     # pip install pyexcel-xls
+#     return excel.make_response(book, file_type="xls", file_name='MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
 
 
 
