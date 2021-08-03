@@ -916,16 +916,10 @@ def calculate_swaps_bgi(excel_data, db):
 # To see if there's any issue with the swap values
 def compare_swap_values(x, y):
 
-    # The color list:
-    # RED:  #FF0000/ #E74C3C
-    # YELLOW:  #F9F34C/ #F1C40F
-    # BLUE:  #3498DB/ #85C1E9
-    # GREEN:  #29AE60/ #44F846
-    # ORANGE:  #EB984E/ #F39C12
-
-    # color_dict = {"Red": "#E74C3C", "Yellow": "#F1C40F", \
-    #            "Blue" : "#85C1E9", "Green": "#44F846", \
-    #            "Orange": "#F39C12", "White": "#FFFFFF"}
+    # minimum difference: White
+    # different in sign : Yellow
+    # significant difference : Red
+    # minor difference: Orange
 
 
     color_dict = {"Red": "#E74C3C", "Yellow": "#F1C40F", \
@@ -945,7 +939,7 @@ def compare_swap_values(x, y):
 
     # If they are different in sign, and past a certain threshold
     if ((x > 0 and y < 0) or (x < 0 and y > 0)) and diff > min_allow_difference_opposing_sign:
-        return color_dict["Yellow"]
+        return color_dict["Green"]
 
     if diff < min_allow_difference:  # To allow for minimum difference
         return color_dict["White"]
@@ -1159,7 +1153,7 @@ def process_validated_swaps(all_data):
                         for X in df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()]
     swap_insert_str = " , ".join(swap_insert_list)
 
-    # -------------------------------Insert into Risk 64.73 Database
+    # -------------------------------Insert into Risk 64.73 Database (Aaron Database)
     # sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
 
     sql_header_risk = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
@@ -1167,19 +1161,26 @@ def process_validated_swaps(all_data):
 
     Insert_into_sql("{} {} {}".format(sql_header_risk, swap_insert_str, footer))  # Go insert into SQL.
 
-    # risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_risk,
-    #                                           values=[swap_insert_str], footer=footer, sql_max_insert=500)
     flash("Risk (64.73) Swaps Insert Successful.")
 
-    if False:
-        # ----------------------------------------Insert into BO DB
-        sql_query_bo = "INSERT INTO bgiswap.table_swap ( bgi_symbol, bgi_long, bgi_short, Update_Date ) Values  " + swap_insert_str
-        # #To make it to SQL friendly text.
-        raw_insert_result = db.session.execute(text("delete from bgiswap.table_swap"),
-                                               bind=db.get_engine(current_app, 'bo_swaps'))
-        raw_insert_result = db.session.execute(text(sql_query_bo), bind=db.get_engine(current_app, 'bo_swaps'))
-        db.session.commit()  # Since we are using session, we need to commit.
-        flash("BO Swaps Insert Successful.")
+    # -------------------------------Insert into Risk 64.73 Database (Risk Test DataBase)
+    sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
+    sql_header_risk = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
+    footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
+
+    risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_risk,
+                                              values=[swap_insert_str], footer=footer, sql_max_insert=500)
+
+    # ----------------------------------------Insert into BO DB
+    sql_query_bo = "INSERT INTO bgiswap.table_swap ( bgi_symbol, bgi_long, bgi_short, Update_Date ) Values  " + swap_insert_str
+    # #To make it to SQL friendly text.
+    raw_insert_result = db.session.execute(text("delete from bgiswap.table_swap"),
+                                           bind=db.get_engine(current_app, 'bo_swaps'))
+    raw_insert_result = db.session.execute(text(sql_query_bo), bind=db.get_engine(current_app, 'bo_swaps'))
+    db.session.commit()  # Since we are using session, we need to commit.
+    flash("BO Swaps Insert Successful.")
+
+
 
     flash("Swaps uploading to MT4/5. An Email will be sent when it's done.")
     upload_swaps_mt_servers(df, current_app.config["SWAPS_MT4_UPLOAD_FOLDER"], \
