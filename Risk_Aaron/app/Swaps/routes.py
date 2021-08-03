@@ -661,6 +661,8 @@ def test_openpyxl():
     #Make the pandas dataframe.
     df = pd.DataFrame(swap_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"])
 
+    print(df)
+
     # Need to cast to float so that it would be saved as "number" in excel.
     for c in ["Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]:
         df[c] = df[c].astype(float)
@@ -670,25 +672,43 @@ def test_openpyxl():
 
 
     retail_sheet_col = ["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]
-    insti_sheet = ["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]
+    insti_sheet_col = ["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]
 
     # ---- Start Drawing the Excel Style.
     # Let's create a style template for the header row
 
+    #print(df[retail_sheet_col])
 
     workbook = Workbook()
     sheet = workbook.active
-    generate_pretty_Swap_file(df[retail_sheet_col], sheet, "retail")
 
-    insti_sheet = workbook.create_sheet("Insti")
-    generate_pretty_Swap_file(df[insti_sheet], insti_sheet, "insti")
+    # ---- Start Drawing the Excel Style.
+    # Let's create a style template for the header row
+    header = NamedStyle("Header")
+    header.font = Font(bold=True)
+    header.fill = PatternFill("solid", fgColor="00C7E2FF")
+    thin = Side(border_style="thin", color="000000")
+    header.border = Border(top=thin, left=thin, right=thin, bottom=thin)
+    header.alignment = Alignment(horizontal="center", vertical="center")
 
+    insti_sheet = workbook.create_sheet("new")    # Insti Sheet
+
+    # Two Tabs. The functions will overwrite the sheets they are given
+    # Need to rename the columns
+    df_insti = df[insti_sheet_col].rename(columns={"Insti Long Points (BGI)" : "Long Points (BGI)",
+                                                   "Insti Short Points (BGI)": "Short Points (BGI)"})
+
+    generate_pretty_Swap_file(df[retail_sheet_col], sheet, "retail", header_style=header)
+    generate_pretty_Swap_file(df_insti, insti_sheet, "insti", header_style=header)
 
 
     content = save_virtual_workbook(workbook)
     resp = make_response(content)
-    resp.headers["Content-Disposition"] = 'attachment; filename={}.xls'.format('MT4Swaps {dt.day} {dt:%b} {dt.year}'.format(dt=datetime.datetime.now()))
-    resp.headers['Content-Type'] = 'application/x-xls'
+    resp.headers["Content-Disposition"] = 'attachment; filename=MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(dt=datetime.datetime.now())
+    #resp.headers['Content-Type'] = 'application/x-xls'
+    resp.headers["Content-type"] = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
     return resp
     # return Response(
     #         save_virtual_workbook(wb),
