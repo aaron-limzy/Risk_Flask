@@ -268,52 +268,7 @@ def upload_Swaps_csv():
             Insert_into_sql(sql_insert) # Go insert into SQL.
             print("Time Taken to send swaps to SQL: {}".format((datetime.datetime.now() - start_time).total_seconds()))
 
-            # month_year = datetime.datetime.now().strftime('%b-%Y')
-            # month_year_folder = swaps.config["VANTAGE_UPLOAD_FOLDER"] + "/" + month_year
-            #
-            # filename = secure_filename(request.files['upload'].filename)
-            #
-            # filename_postfix_xlsx = Check_File_Exist(month_year_folder, ".".join(
-            #     filename.split(".")[:-1]) + ".xlsx")  # Checks, Creates folders and return AVAILABLE filename
-            #
-            # # Want to Let the users download the File..
-            # # return excel.make_response_from_records(record_dict, "xls", status=200, file_name=filename_without_postfix)
-            #
-            # pyexcel.save_as(records=record_dict, dest_file_name=filename_postfix_xlsx)
-
-            # file_data = []
-            # for cc, record in enumerate(record_dict):
-            #     if cc == 0:
-            #         column_name = list(record_dict[cc].keys())
-            #     buffer = dict()
-            #     #print(record)
-            #     for i, j in record.items():
-            #         if i == "":
-            #             i = "Empty"
-            #         buffer[i] = j
-            #         #print(i, j)
-            #         #print(i, j)
-            #     file_data.append(buffer)
-            # #print(file_data)
-            #
-            # # Save it into the cookies first.
-            # session["Swap_excel_upload"] = file_data
             return redirect(url_for('swaps.Swap_upload_form'))
-
-        # table = T(file_data, classes=["table", "table-striped", "table-bordered", "table-hover"])
-        # if (len(file_data) > 0) and isinstance(file_data[0], dict):
-        #     for c in file_data[0]:
-        #         if c != "\n":
-        #             table.add_column(c, Col(c, th_html_attrs={"style": "background-color:# afcdff"}))
-        #
-
-        # table_col = list(file_data[0].keys())
-        # table_values = [list(d.values()) for d in file_data]
-
-        #return render_template("upload_form.html", form=form, table=table)
-        # return render_template("General_Form.html", backgroud_Filename=background_pic('upload_Swaps_csv'),
-        #                        form=form, Table_name="Swaps", header=header, description=description, title=title, html=Markup(Array_To_HTML_Table(table_col, table_values,
-        #                                                                                                                                            )))
 
     return render_template("General_Form.html", backgroud_Filename=background_pic('upload_Swaps_csv'),
                            form=form, Table_name="Swaps", header=header, description=description, title=title, no_backgroud_Cover=True)
@@ -367,16 +322,11 @@ def Other_Brokers_Ajax():
 
     df_other_broker_swaps = df_bgi_core_symbol.merge(df_other_broker_swaps, on="Symbol", how="left")
 
-    #print(df_bgi_core_symbol)
-    #print("Other Brokers")
-    #print(df_other_broker_swaps)
     df_other_broker_swaps.fillna("-", inplace=True)
-    #print(df_other_broker_swaps)
 
     #return json.dumps(pd_dataframe_to_dict(df_fdc))
     print("Swap Compare took: {}s".format((datetime.datetime.now() - start).total_seconds()))
     return json.dumps(pd_dataframe_to_dict(df_other_broker_swaps))
-    #return json.dumps([{"Testing": "12345"}])
 
 
 
@@ -445,9 +395,6 @@ def Swap_upload_form():
     #                        WHERE date='2020-01-01' """
 
     file_data = query_SQL_return_record(today_swap_SQL_Query)   # Get the uploaded swaps from SQL.
-    # print(file_data)
-    # print("Length: {}".format(len(file_data)))
-
 
     # Check that we got data from SQL.
     if len(file_data) == 0:
@@ -484,12 +431,6 @@ def Swap_upload_form():
                         'avg_long',  'avg_short', 'tv Long',
                         "dividend", "Markup_Style",
                         'tv Short',  'gp Long', 'gp Short']]):
-
-
-                # sym = f["bgi_coresymbol"]
-                # long = f["long_markup_value_PlusFixed"]
-                # short = f["short_markup_value_PlusFixed"]
-
 
                 symbol_form = Individual_symbol_Form()
                 symbol_form.symbol = f["bgi_coresymbol"]
@@ -529,9 +470,6 @@ def Swap_upload_form():
                 symbol_form.broker_2_long_style = compare_swap_values(f["long_markup_value_PlusFixed"], f["tv Long"])
                 symbol_form.broker_2_short_style = compare_swap_values(f["short_markup_value_PlusFixed"], f["tv Short"])
 
-
-                # symbol_form.short.render_kw = {"class": "danger"}
-
                 # Append to the Swaps for all.
                 form.core_symbols.append_entry(symbol_form)
             else:
@@ -540,9 +478,6 @@ def Swap_upload_form():
 
     if request.method == 'POST':
         form = All_Swap_Form()
-        #print("POST!")
-        #all_data = []
-        #print(form)
 
 
         if form.validate_on_submit():
