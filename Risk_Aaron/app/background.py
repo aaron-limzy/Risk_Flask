@@ -48,8 +48,9 @@ def background_pic(website):
                  "symbolspread_hourly":                 "css/restaurant_icons.png",
                  "individual_symbol_spread" :              "css/foggy_birds.png",
 
-                  "Swap_upload_form":                       "css/witewall_3.png",
-                 "upload_Swaps_csv"  :                      "css/Charts.jpg",
+                # "Swap_upload_form":                       "css/witewall_3.png",
+                # "upload_Swaps_csv"  :                      "css/Charts.jpg",
+                 "upload_Swaps_csv":                        "css/memphis-mini-dark.png",
 
                  "Swap_upload_form":                        "css/foggy_birds.png",
 

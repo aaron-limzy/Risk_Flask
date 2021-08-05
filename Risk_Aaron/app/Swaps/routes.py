@@ -175,14 +175,16 @@ def upload_Swaps_csv():
 
     title = "Swaps Upload"
     header = "Swaps Upload"
-    description = Markup("Swaps<br>Upload")
+    description = Markup("""Upload Swap files from LP [Vantage].<br>Kindly ensure that the file is correct and includes the following columns.<br>
+                        - Core Symbol<br>
+                        - Long Points<br>
+                        - Short Points<br>""")
     form = UploadForm()
 
     session_to_pop = ["swap_validated_data_datetime", "swap_validated_data", "Swap_excel_upload"]
     for s in session_to_pop:
         if s in session:
             session.pop(s, None)
-
 
 
     if request.method == 'POST' and form.validate_on_submit():
@@ -314,7 +316,7 @@ def upload_Swaps_csv():
         #                                                                                                                                            )))
 
     return render_template("General_Form.html", backgroud_Filename=background_pic('upload_Swaps_csv'),
-                           form=form, Table_name="Swaps", header=header, description=description, title=title)
+                           form=form, Table_name="Swaps", header=header, description=description, title=title, no_backgroud_Cover=True)
 
 
 @swaps.route('/Swaps/Other_Brokers', methods=['GET', 'POST'])

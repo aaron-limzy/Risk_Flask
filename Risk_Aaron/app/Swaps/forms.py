@@ -13,7 +13,7 @@ class UploadForm(FlaskForm):
     #recipe_description = StringField('Recipe Description', validators=[DataRequired()])
     #recipe_image = FileField('Recipe Image', validators=[FileRequired(), FileAllowed(images, 'Excel Files only!')])
     upload = FileField('Swap Excel File: ', validators=[FileRequired(), FileAllowed(excel_format,  'CSV Files only!')])
-    submit = SubmitField('Upload')
+    submit = SubmitField('Calculate')
 
 # Form to be output into a table
 class Individual_symbol_Form(FlaskForm):
