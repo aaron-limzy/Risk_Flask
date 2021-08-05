@@ -137,18 +137,13 @@ def Get_Vol_snapshot(app, symbol="", book="", day_backwards_count=5, entities = 
                                        country_condition=country_condition,
                                        symbol_condition=symbol_condition, book_condition=book_condition)
 
-    # [res, col] = Query_SQL(SQL_Query)
+    print(SQL_Query_Volume_Recent)
 
-
-    #
     SQL_current_Volume_Query = SQL_Query_Volume_Recent.replace("\n", " ").replace("\t", " ")
 
     # Use the unsync version to query SQL
     results_current = unsync_query_SQL_return_record(SQL_current_Volume_Query, app)
     df_data_vol_current = pd.DataFrame(results_current)
-
-
-
 
     day_backwards = "{}".format(get_working_day_date(datetime.date.today(), -1 * day_backwards_count))
 
@@ -181,8 +176,16 @@ def Get_Vol_snapshot(app, symbol="", book="", day_backwards_count=5, entities = 
 
     # concat the past, and the currently saved data together.
     df_data_vol = pd.concat([df_data_vol_current, df_data_vol_past])
+
+    # If it's empty. Return empty DataFrame
+    if len(df_data_vol) == 0:
+        return pd.DataFrame([])
+
     # Drop Duplicate as there's a chance that the same data are in Past, and current data
     df_data_vol.drop_duplicates(inplace=True)
+
+    print("Get_Vol_snapshot: ")
+    print(df_data_vol)
 
     # We want to show a Total Volume, if it's just 1 symbol.
     # It would make sense to add them up.
