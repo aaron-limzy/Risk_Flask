@@ -521,7 +521,6 @@ def Swap_download_page():
                            description=description)
 
 
-
 # #To Let the user download the Swap file, IF it's in the session's cookie.
 # # To view Client's trades as well as some simple details.
 @swaps.route('/Swap_download_excel', methods=['GET', 'POST'])

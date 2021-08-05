@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block styles %}
+{{ super() }}
+<style>
+  body {
+
+    {% if backgroud_Filename %}
+      background: #eee url({{ url_for('static', filename=backgroud_Filename) }});
+      {% if not no_backgroud_Cover %}
+        background-size: cover;
+      {% endif %}
+    {% else %}
+      background: #eee url({{ url_for('static', filename='css/cactus.jpg') }})
+    {% endif %}
+
+  }
+  }
+
+  );
+  }
+</style>
+{% endblock %}
+
+{% block app_content %}
+<div class="container">
+  <br>
+  <div class="jumbotron text-center">
+    <div class="container" id="title">
+      <h1 class="display-4 text-center font-weight-bold">
+
+        {% if header %}
+        {{ header }}
+        {% else %}
+        Risk Tool.
+        {% endif %}
+      </h1>
+      <p class="lead">
+        {% if description %}
+        {{ description }}
+
+        {% endif %}
+
+      </p>
+    </div>
+  </div>
+</div>
+<div class="container general_form">
+  {% if form %}
+
+          <div>
+              <form action="{{ url_for('swaps.Swap_upload_form') }}" method="post">
+                  {{ form.hidden_tag() }}
+                  <div class="container">
+                      <table class="table table-bordered table-sm table-hover">
+                          <tr style="background-color: #317BDF">
+                            <th> Symbol (交易品種)	 </th>
+                            <th> Spread Dollar (美元) </th>
+                            <th> Spread Points (點差)</th>
+                          </tr>
+                          {% for core_symbol in form.core_symbols %}
+                          <tr>
+                            <td style="background-color: #8851DC;">{{ core_symbol.hidden_tag() }}<b>{{ core_symbol.Symbol.data }}</b></td>
+                            <td>{{ core_symbol.Spread_Dollar(class_="form-control") }} </td>
+                            <td>{{ core_symbol.Spread_Points.data }}</td>
+                          </tr>
+                          {% endfor %}
+                      </table>
+                  </div>
+                  <p><input type="submit" name="edit" value="Send"></p>
+              </form>
+          </div>
+
+  <!-- <div class="row">
+    <div class="col">
+      {{ wtf.quick_form(form, extra_classes ="", button_map={'submit': 'btn-lg btn-success'}) }}
+    </div>
+  </div> -->
+
+{% endif %}
+<br>
+
+  {% if show_table %}
+  <table class="table basic_table">
+    <tr>
+      <th>Description</th>
+      <th>Comment</th>
+      <th>Download</th>
+    </tr>
+    <tr>
+      <td><b>Swap File</b></td>
+      <td>Download Swaps in excel format.</td>
+      <td><a href="{{ url_for('swaps.Swap_download_excel') }}"><input class="btn btn-primary btn-lg btn-block" type="button" value="Download"></a></td>
+    </tr>
+
+  </table>
+  <br>
+  {% endif %}
+
+  </div>
+{% endblock %}

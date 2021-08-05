@@ -19,7 +19,6 @@ class Config(object):
             'risk_ticks': 'mysql+pymysql://risk:Riskrisk321@192.168.64.56/aaron',
             'mt5_futures': 'mysql+pymysql://mt4-risk:1qaz2wsx@192.168.10.25/live1',
             'bo_swaps': 'mysql+pymysql://risk:Risk6%$&2@175.41.54.146/bgiswap'
-
         }
 
         print("On server (64.73). Will use local host connection.")

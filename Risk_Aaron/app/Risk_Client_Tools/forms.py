@@ -1,5 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField, IntegerField, DecimalField, RadioField, SelectField, SelectMultipleField
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField, IntegerField, \
+    FieldList, DecimalField, RadioField, SelectField, SelectMultipleField
 from wtforms.validators import DataRequired, ValidationError, Email, EqualTo, Length, NumberRange, InputRequired, AnyOf
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 from flask_uploads import UploadSet, IMAGES, configure_uploads
@@ -43,3 +44,23 @@ class noTrade_ChangeGroup_Form(FlaskForm):
     Current_Group = StringField('Current Group', validators=[DataRequired()])
     New_Group = StringField('New Group', validators=[DataRequired()])
     submit = SubmitField('Submit')
+
+
+
+# Form to be output into a table
+class Individual_symbol_Spread_Form(FlaskForm):
+
+    Symbol = StringField("Symbol")
+    Spread_Dollar = FloatField('Spread_Dollar')
+    Spread_Points = FloatField('Spread_Points')
+
+    # To keep track if the data has been changed.
+    Spread_Dollar_Hidden = HiddenField('Spread_Dollar_Hidden', render_kw={'readonly': True})
+    Spread_Points_Hidden = HiddenField('Spread_Points_Hidden', render_kw={'readonly': True})
+
+
+
+class All_Symbol_Spread_HK_Form(FlaskForm):
+    #title = StringField('title')
+    core_symbols = FieldList(FormField(Individual_symbol_Spread_Form))
+

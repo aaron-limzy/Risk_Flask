@@ -36,21 +36,21 @@ def Query_SQL_ticks_db_engine(sql_query):
     return zip_results
 
 
-# Input: sql_query.
-# Return a Dict, using Zip for the results and the col names.
-def Query_Symbol_Markup_db_engine(sql_query):
-
-    raw_result = db.session.execute(text(sql_query), bind=db.get_engine(current_app, 'mt5_futures'))
-    #raw_result = db5.engine.execute(text(sql_query))
-
-    #db.session.execute(sql_query, bind=db.get_engine(current_app, 'mt5_live1'))
-    #return raw_result
-
-    result_data = raw_result.fetchall()
-    result_data_decimal = [[float(a) if isinstance(a, decimal.Decimal) else a for a in d ] for d in result_data]    # correct The decimal.Decimal class to float.
-    result_col = raw_result.keys()
-    zip_results = [dict(zip(result_col,d)) for d in result_data_decimal]
-    return zip_results
+# # Input: sql_query.
+# # Return a Dict, using Zip for the results and the col names.
+# def Query_Symbol_Markup_db_engine(sql_query):
+#
+#     raw_result = db.session.execute(text(sql_query), bind=db.get_engine(current_app, 'mt5_futures'))
+#     #raw_result = db5.engine.execute(text(sql_query))
+#
+#     #db.session.execute(sql_query, bind=db.get_engine(current_app, 'mt5_live1'))
+#     #return raw_result
+#
+#     result_data = raw_result.fetchall()
+#     result_data_decimal = [[float(a) if isinstance(a, decimal.Decimal) else a for a in d ] for d in result_data]    # correct The decimal.Decimal class to float.
+#     result_col = raw_result.keys()
+#     zip_results = [dict(zip(result_col,d)) for d in result_data_decimal]
+#     return zip_results
 
 
 

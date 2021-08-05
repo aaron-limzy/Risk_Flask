@@ -54,8 +54,8 @@ def background_pic(website):
 
                  "Swap_upload_form":                        "css/foggy_birds.png",
 
-                 "Swap_download_page":                      "css/pink dust.png"
-
+                 "Swap_download_page":                      "css/pink dust.png",
+                "HK_Change_Spread" :                        "css/Hexagon_repeat.jpg",
 
         }
 

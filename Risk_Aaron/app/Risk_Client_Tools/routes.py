@@ -848,6 +848,78 @@ def NoTrade_Change_ReadOnly_Settings():
 
 
 
+
+
+
+# Want to add and remove clients into SQ's tools
+# SQ will change if the clients have open trades.
+# If not, they will be changed to read only.
+@Risk_Client_Tools_bp.route('/HK_Change_Spread', methods=['GET', 'POST'])
+@roles_required()
+def HK_Change_Spread():
+
+
+    title = Markup("HK Change Spread")
+    header = "HK Change Spread"
+    description = Markup("<b>Change Spread</b><br>Spread change tool for HK Symbols.")
+
+    form = All_Symbol_Spread_HK_Form()
+
+    #Query_Symbol_Markup_db_engine("")
+
+
+    if request.method == 'POST' and form.validate_on_submit():
+        # Live = form.Live.data
+        # Login = form.Login.data
+        #
+        # # # If it's not for all, we want to select the user.
+        # # tele_name_condition = " WHERE T.Tele_Name = '{}' ".format(Telegram_User) if Telegram_User != "All" else " "
+        # #
+        # sql_insert =  """INSERT INTO shiqi.readonly_live (`Live`, `Login`, `UPDATE_TIME`, `DISABLED_TIME`)
+        #  VALUES ('{Live}', '{Login}', now(), '1970-01-01 00:00:00') ON DUPLICATE KEY UPDATE `UPDATE_TIME` = VALUES(`UPDATE_TIME`)""".format(Live=Live,Login=Login)
+        #
+        # sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+        # #print(sql_insert)
+        #
+        # #print(sql_insert)
+        # db.engine.execute(text(sql_insert))  # Insert into DB
+
+        flash("Does Nothing for now!")
+
+        # So that we will generate a fresh form.
+        return redirect(url_for('Risk_Client_Tools_bp.NoTrade_Change_ReadOnly_Settings'))
+
+
+    # Want to select all the Telegram user ID
+    # sql_query = """select * FROM shiqi.readonly_live where disabled_time = '1970-01-01 00:00:00'"""
+    # raw_result = db.engine.execute(sql_query)
+
+    # result_data = raw_result.fetchall()
+    # names = [r[0] for r in result_data]
+    # name_list = [("All", "All")] + [(r, r) for r in names]  # Want to add in "All" Options
+    #
+    # # passing group_list to the form
+    # form.Telegram_User.choices = name_list
+    #
+    #
+    #
+    # table = Delete_NoTrades_Readonly_Table_fun()
+
+    # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
+    # backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut",  replace_words=Markup(["Today"])
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    #table = table,
+    #form=form,
+    return render_template("HK_Change_Spread.html",
+                           title=title, header=header,
+                            description=description, no_backgroud_Cover = True,
+                           backgroud_Filename=background_pic("HK_Change_Spread"))
+
+
+
+
+
+
 def Delete_NoTrades_Readonly_Table_fun():
     # Want to select all the accounts that we are monitoring.
     # Flask Table, that has Delete button that allows us to delete with 1 click.

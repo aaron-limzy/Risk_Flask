@@ -299,7 +299,7 @@ def symbol_spread_ajax():
         print(split_symbol)
 
     return_dict = {}  # The dict that is used for returning, thru JSON
-    return_dict["H1"] = df_pivot.to_dict("record")
+    return_dict["H1"] = df_pivot.to_dict("records")
     return_dict["P_Long_0"] = plot_symbol_Spread(df, "All Symbol Spread", x_axis="DATE")
     return_dict["P_Long_1"] = plot_symbol_Spread(df[df["SYMBOL"].str.startswith(".")], "All CFD Spread", x_axis="DATE")
 
@@ -549,7 +549,7 @@ def symbol_spread_custom_ajax(type="hourly"):
     df_pivot_return = df_pivot.copy()
     df_pivot_return["SYMBOL"] = df_pivot_return["SYMBOL"].apply(lambda x: Symbol_spread_url_External(x))
 
-    return_dict["H_y_scroll_1"] = df_pivot_return.to_dict("record")
+    return_dict["H_y_scroll_1"] = df_pivot_return.to_dict("records")
 
     df_pivot_return = None # Free up some space.
 
@@ -643,7 +643,6 @@ def individual_symbol_spread_ajax(symbol):
                                                                date_start=date, symbol_digits=symbol_digits,
                                                                app_unsync=current_app._get_current_object(),
                                                                pre_fix="GP")
-
 
 
     # Get it from the Ticks DB
@@ -743,7 +742,7 @@ def individual_symbol_spread_ajax(symbol):
     if test:
         print(df_pivot)
 
-    return_dict["H_y_scroll_1"] = df_pivot.to_dict("record")
+    return_dict["H_y_scroll_1"] = df_pivot.to_dict("records")
 
 
 
