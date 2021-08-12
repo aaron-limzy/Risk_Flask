@@ -882,7 +882,18 @@ def HK_Change_Spread():
         df["digits"]= df["digits"].astype(int)
         df["fixed"] = df["Spread_Dollar"] * (10**df["digits"])
         print(df)
-        print(HK_Change_Spread_SQL(df, database="aaron"))
+
+        sql_Statement = HK_Change_Spread_SQL(df, database="risk")
+        print(sql_Statement)
+
+        raw_insert_result = db.session.execute(sql_Statement, bind=db.get_engine(current_app, 'mt5_futures'))
+        db.session.commit()  # Since we are using session, we need to commit.
+
+        # C_Return_Val, output, err = Run_C_Prog(
+        #     "app" + url_for('static', filename='Exec/changepluginparameter/Live1.exe') )
+
+
+
         # Live = form.Live.data
         # Login = form.Login.data
         #
