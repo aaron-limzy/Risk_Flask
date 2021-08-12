@@ -50,13 +50,14 @@ class noTrade_ChangeGroup_Form(FlaskForm):
 # Form to be output into a table
 class symbol_form(FlaskForm):
 
-    Symbol = StringField("Symbol")
+    Symbol = HiddenField("Symbol",render_kw={'readonly': True})
     Spread_Dollar = FloatField('Spread_Dollar')
-    Spread_Points = FloatField('Spread_Points')
+    Spread_Points = HiddenField('Spread_Points',render_kw={'readonly': True})
 
     # To keep track if the data has been changed.
     Spread_Dollar_Hidden = HiddenField('Spread_Dollar_Hidden', render_kw={'readonly': True})
     Spread_Points_Hidden = HiddenField('Spread_Points_Hidden', render_kw={'readonly': True})
+    digits = HiddenField('Digits')
 
 
 

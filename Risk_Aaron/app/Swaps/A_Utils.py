@@ -49,3 +49,29 @@ def Check_File_Exist(path, filename):
             FileName = ".".join(FileName_Split)
 
     return path + "/" + FileName
+
+# SF wrote this function.
+# To craft the SQL statement for the update of symbol spread.
+def HK_Change_Spread_SQL(df, database):
+    draft01 = """WHEN '{x2}' THEN {x1} """
+    list01 = df['fixed']
+    list02 = df['postfixsymb']
+    #
+    # print(list02)
+    # print(",".join(["'{}'".format(s) for s in list02]))
+
+    temp = []
+    for a, b in zip(list01, list02):
+        temp.append(draft01.format(x1=a, x2=b))
+    draft02 = "".join(temp)
+
+    Update_query = text("""
+    Update """ + database + """.`symbol_o`
+    SET fixedspread = CASE postfixsymb
+    """ + draft02 + """ END
+    WHERE symbol_o.postfixsymb IN ({})
+    """.format(",".join(["'{}'".format(s) for s in list02])))
+
+    return Update_query
+
+

@@ -868,10 +868,21 @@ def HK_Change_Spread():
     symbol_to_change = ["XAUUSD.Tkk", "XAUUSD.TK", "XAGUSD.TKK", "XAGUSD.TK"]
 
 
-
-
-
     if request.method == 'POST' and form.validate_on_submit():
+
+        all_data = [[s.Symbol.data, s.Spread_Dollar.data, s.Spread_Points.data, s.Spread_Dollar_Hidden.data,
+                     s.Spread_Points_Hidden.data,  s.digits.data]
+                    for s in form.core_symbols]
+        #print(all_data)
+        col=["postfixsymb","Spread_Dollar", "Spread_Points", "Spread_Dollar_Hidden","Spread_Points_Hidden", "digits"]
+
+        # Need to Create the columns from the the Spread dollar that was previously input.
+
+        df = pd.DataFrame(all_data, columns=col)
+        df["digits"]= df["digits"].astype(int)
+        df["fixed"] = df["Spread_Dollar"] * (10**df["digits"])
+        print(df)
+        print(HK_Change_Spread_SQL(df, database="aaron"))
         # Live = form.Live.data
         # Login = form.Login.data
         #
@@ -889,8 +900,6 @@ def HK_Change_Spread():
 
         flash("Does Nothing for now!")
 
-        # So that we will generate a fresh form.
-        return redirect(url_for('Risk_Client_Tools_bp.NoTrade_Change_ReadOnly_Settings'))
 
     else:
         sql_query = """SELECT * FROM risk.`symbol_o`
@@ -914,11 +923,12 @@ def HK_Change_Spread():
             # To keep track if the data has been changed.
             individual_symbol_form.Spread_Dollar_Hidden = round(s["fixedspread"] / (10 ** s["digits"]), 2)
             individual_symbol_form.Spread_Points_Hidden = s["fixedspread"]
+            individual_symbol_form.digits = s["digits"]
 
             form.core_symbols.append_entry(individual_symbol_form)
 
 
-        # HKG details are from C.
+        # # HKG details are from C.
         C_Return_Val, output, err = Run_C_Prog(
             "app" + url_for('static', filename='Exec/HK_Change_Spread/Live1_HKG_SpreadChange.exe') + " Check")
 
@@ -931,9 +941,11 @@ def HK_Change_Spread():
         # To keep track if the data has been changed.
         individual_symbol_form.Spread_Dollar_Hidden = C_Return_Val
         individual_symbol_form.Spread_Points_Hidden = C_Return_Val
+        individual_symbol_form.digits = 1
 
         form.core_symbols.append_entry(individual_symbol_form)
-
+        # individual_symbol_form = symbol_form()
+        #
 
 
     # Want to select all the Telegram user ID
