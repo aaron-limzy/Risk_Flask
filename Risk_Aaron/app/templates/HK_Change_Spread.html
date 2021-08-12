@@ -57,12 +57,14 @@
                           <tr style="background-color: #317BDF">
                             <th> Symbol (交易品種)	 </th>
                             <th> Spread Dollar (美元) </th>
+                            <th> Currency </th>
                             <th> Spread Points (點差)</th>
                           </tr>
                           {% for core_symbol in form.core_symbols %}
                           <tr>
                             <td style="background-color: #8851DC;">{{ core_symbol.hidden_tag() }}<b>{{ core_symbol.Symbol.data }}</b></td>
                             <td>{{ core_symbol.Spread_Dollar(class_="form-control") }} </td>
+                            <td><b>USD</b></td>
                             <td>{{ core_symbol.Spread_Points.data }}</td>
                           </tr>
                           {% endfor %}

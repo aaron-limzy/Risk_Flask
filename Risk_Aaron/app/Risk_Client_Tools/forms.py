@@ -48,7 +48,7 @@ class noTrade_ChangeGroup_Form(FlaskForm):
 
 
 # Form to be output into a table
-class Individual_symbol_Spread_Form(FlaskForm):
+class symbol_form(FlaskForm):
 
     Symbol = StringField("Symbol")
     Spread_Dollar = FloatField('Spread_Dollar')
@@ -62,5 +62,5 @@ class Individual_symbol_Spread_Form(FlaskForm):
 
 class All_Symbol_Spread_HK_Form(FlaskForm):
     #title = StringField('title')
-    core_symbols = FieldList(FormField(Individual_symbol_Spread_Form))
+    core_symbols = FieldList(FormField(symbol_form))
 

@@ -182,6 +182,7 @@ def upload_Swaps_csv():
     form = UploadForm()
 
     session_to_pop = ["swap_validated_data_datetime", "swap_validated_data", "Swap_excel_upload"]
+
     for s in session_to_pop:
         if s in session:
             session.pop(s, None)
@@ -223,30 +224,31 @@ def upload_Swaps_csv():
 
         # Check if the Symbol is empty.
         # Because it's taken from Flask, the NAN turns to ""
-        df_na_symbol = df[(df['Core Symbol'].isna()) | (df['Core Symbol'] == "")]
-        #print("df_na_symbol: ")
-        #print(df_na_symbol)
-        na_symbol_index = [c + 2 for c in df_na_symbol.index.to_list()]
-        for n in na_symbol_index:
-            error_found = error_found + 1 # Increment Error Count
-            flash(Markup("Row {} in csv file is missing Core Symbol.".format(n)))
-
+        if error_found == 0: # If there are already errors, we will not be able to check that if the columns are not around
+            df_na_symbol = df[(df['Core Symbol'].isna()) | (df['Core Symbol'] == "")]
+            #print("df_na_symbol: ")
+            #print(df_na_symbol)
+            na_symbol_index = [c + 2 for c in df_na_symbol.index.to_list()]
+            for n in na_symbol_index:
+                error_found = error_found + 1 # Increment Error Count
+                flash(Markup("Row {} in csv file is missing Core Symbol.".format(n)))
 
         # Check if there are blanks in the LONG/SHORT Columns
         # Because it's taken from Flask, the NAN turns to ""
+            df_na = df[(df['Long Points'].isna()) | (df['Long Points']=="") |
+                        (df['Short Points'].isna()) | (df['Short Points']=="")] # Check for Blanks
 
-        df_na = df[(df['Long Points'].isna()) | (df['Long Points']=="") |
-                    (df['Short Points'].isna()) | (df['Short Points']=="")] # Check for Blanks
-        for s in df_na["Core Symbol"].to_list():
-            error_found = error_found + 1 # Increment Error Count
-            flash(Markup("<b>{}</b> in csv file is <u>missing Long/Short Points</u>".format(s)))
 
-        # Check if there the LONG/SHORT Columns are all just numbers
-        df_not_float = df[ df["Long Points"].apply(lambda x: not isfloat(str(x))) |
-                    df["Short Points"].apply(lambda x: not isfloat(str(x)))] # Check for non-float
-        for s in df_not_float["Core Symbol"].to_list():
-            error_found = error_found + 1 # Increment Error Count
-            flash(Markup("<b>{}</b> : Long/Short points <u>isn't a number.</u>".format(s)))
+            for s in df_na["Core Symbol"].to_list():
+                error_found = error_found + 1 # Increment Error Count
+                flash(Markup("<b>{}</b> in csv file is <u>missing Long/Short Points</u>".format(s)))
+
+            # Check if there the LONG/SHORT Columns are all just numbers
+            df_not_float = df[ df["Long Points"].apply(lambda x: not isfloat(str(x))) |
+                        df["Short Points"].apply(lambda x: not isfloat(str(x)))] # Check for non-float
+            for s in df_not_float["Core Symbol"].to_list():
+                error_found = error_found + 1 # Increment Error Count
+                flash(Markup("<b>{}</b> : Long/Short points <u>isn't a number.</u>".format(s)))
 
         if error_found == 0 :   ## If Only there are no issues.
             start_time = datetime.datetime.now()
@@ -267,8 +269,8 @@ def upload_Swaps_csv():
             sql_insert = sql_header + sql_data + sql_footer
             Insert_into_sql(sql_insert) # Go insert into SQL.
             print("Time Taken to send swaps to SQL: {}".format((datetime.datetime.now() - start_time).total_seconds()))
-
             return redirect(url_for('swaps.Swap_upload_form'))
+
 
     return render_template("General_Form.html", backgroud_Filename=background_pic('upload_Swaps_csv'),
                            form=form, Table_name="Swaps", header=header, description=description, title=title, no_backgroud_Cover=True)

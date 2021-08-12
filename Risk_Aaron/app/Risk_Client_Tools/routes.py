@@ -865,7 +865,10 @@ def HK_Change_Spread():
 
     form = All_Symbol_Spread_HK_Form()
 
-    #Query_Symbol_Markup_db_engine("")
+    symbol_to_change = ["XAUUSD.Tkk", "XAUUSD.TK", "XAGUSD.TKK", "XAGUSD.TK"]
+
+
+
 
 
     if request.method == 'POST' and form.validate_on_submit():
@@ -889,6 +892,49 @@ def HK_Change_Spread():
         # So that we will generate a fresh form.
         return redirect(url_for('Risk_Client_Tools_bp.NoTrade_Change_ReadOnly_Settings'))
 
+    else:
+        sql_query = """SELECT * FROM risk.`symbol_o`
+         WHERE postfixsymb in ({}) 
+         ORDER BY postfixsymb""".format(",".join(["'{}'".format(s) for s in symbol_to_change]))
+
+        data = Query_Symbol_Markup_db_engine(sql_query)
+        df = pd.DataFrame(data)
+        print(df)
+
+        records_data = df.to_dict("records")
+        # df.to_csv("HK_Change_Spread.csv")
+
+        for s in records_data:
+            individual_symbol_form = symbol_form()
+
+            individual_symbol_form.Symbol = s["postfixsymb"]
+            individual_symbol_form.Spread_Dollar = s["fixedspread"] / (10 ** s["digits"])
+            individual_symbol_form.Spread_Points = s["fixedspread"]
+
+            # To keep track if the data has been changed.
+            individual_symbol_form.Spread_Dollar_Hidden = round(s["fixedspread"] / (10 ** s["digits"]), 2)
+            individual_symbol_form.Spread_Points_Hidden = s["fixedspread"]
+
+            form.core_symbols.append_entry(individual_symbol_form)
+
+
+        # HKG details are from C.
+        C_Return_Val, output, err = Run_C_Prog(
+            "app" + url_for('static', filename='Exec/HK_Change_Spread/Live1_HKG_SpreadChange.exe') + " Check")
+
+        individual_symbol_form = symbol_form()
+
+        individual_symbol_form.Symbol = "HKG"
+        individual_symbol_form.Spread_Dollar = C_Return_Val
+        individual_symbol_form.Spread_Points = C_Return_Val
+
+        # To keep track if the data has been changed.
+        individual_symbol_form.Spread_Dollar_Hidden = C_Return_Val
+        individual_symbol_form.Spread_Points_Hidden = C_Return_Val
+
+        form.core_symbols.append_entry(individual_symbol_form)
+
+
 
     # Want to select all the Telegram user ID
     # sql_query = """select * FROM shiqi.readonly_live where disabled_time = '1970-01-01 00:00:00'"""
@@ -911,7 +957,7 @@ def HK_Change_Spread():
     #table = table,
     #form=form,
     return render_template("HK_Change_Spread.html",
-                           title=title, header=header,
+                           title=title, header=header, form=form,
                             description=description, no_backgroud_Cover = True,
                            backgroud_Filename=background_pic("HK_Change_Spread"))
 
