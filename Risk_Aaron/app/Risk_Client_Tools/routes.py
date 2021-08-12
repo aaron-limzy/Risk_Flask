@@ -909,7 +909,7 @@ def HK_Change_Spread():
         # #print(sql_insert)
         # db.engine.execute(text(sql_insert))  # Insert into DB
 
-        flash("Does Nothing for now!")
+        flash("Changed Risk Database. Spread not uploaded to live server.")
 
 
     else:
