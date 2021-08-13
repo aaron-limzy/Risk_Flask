@@ -892,22 +892,11 @@ def HK_Change_Spread():
         # C_Return_Val, output, err = Run_C_Prog(
         #     "app" + url_for('static', filename='Exec/changepluginparameter/Live1.exe') )
 
-
-
-        # Live = form.Live.data
-        # Login = form.Login.data
-        #
-        # # # If it's not for all, we want to select the user.
-        # # tele_name_condition = " WHERE T.Tele_Name = '{}' ".format(Telegram_User) if Telegram_User != "All" else " "
-        # #
-        # sql_insert =  """INSERT INTO shiqi.readonly_live (`Live`, `Login`, `UPDATE_TIME`, `DISABLED_TIME`)
-        #  VALUES ('{Live}', '{Login}', now(), '1970-01-01 00:00:00') ON DUPLICATE KEY UPDATE `UPDATE_TIME` = VALUES(`UPDATE_TIME`)""".format(Live=Live,Login=Login)
-        #
-        # sql_insert = sql_insert.replace("\t", "").replace("\n", "")
-        # #print(sql_insert)
-        #
-        # #print(sql_insert)
-        # db.engine.execute(text(sql_insert))  # Insert into DB
+        # Re-calculate the values that has changed. 
+        for s in form.core_symbols:
+            s.Spread_Points.data = s.Spread_Dollar.data * (10 ** int(s.digits.data))
+            s.Spread_Dollar_Hidden.data = s.Spread_Dollar.data
+            s.Spread_Points_Hidden.data = s.Spread_Dollar.data * (10 ** int(s.digits.data))
 
         flash("Changed Risk Database. Spread not uploaded to live server.")
 
