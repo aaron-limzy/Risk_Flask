@@ -59,6 +59,10 @@ class symbol_form(FlaskForm):
     Spread_Points_Hidden = HiddenField('Spread_Points_Hidden', render_kw={'readonly': True})
     digits = HiddenField('Digits')
 
+    # Need to have a delicated counter for the sequence
+    # To be added for HTML id number.
+    counter = HiddenField('counter')
+
 
 
 class All_Symbol_Spread_HK_Form(FlaskForm):

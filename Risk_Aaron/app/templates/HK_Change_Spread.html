@@ -23,6 +23,9 @@
 </style>
 {% endblock %}
 
+
+
+
 {% block app_content %}
 <div class="container">
   <br>
@@ -54,7 +57,7 @@
                   {{ form.hidden_tag() }}
                   <div class="container">
                       <table class="table table-bordered table-sm table-hover">
-                          <tr style="background-color: #317BDF">
+                          <tr style="background-color: #5AF1D8;">
                             <th> Symbol (交易品種)	 </th>
                             <th> Spread Dollar (美元) </th>
                             <th> Currency </th>
@@ -62,10 +65,16 @@
                           </tr>
                           {% for core_symbol in form.core_symbols %}
                           <tr>
-                            <td style="background-color: #8851DC;">{{ core_symbol.hidden_tag() }}<b>{{ core_symbol.Symbol.data }}</b></td>
-                            <td>{{ core_symbol.Spread_Dollar(class_="form-control") }} </td>
+                            <td style="background-color: #93FFD9;">{{ core_symbol.hidden_tag() }}<b>{{ core_symbol.Symbol.data }}</b></td>
+                            <td>{{ core_symbol.Spread_Dollar(class_="form-control", id='SD_' + core_symbol.counter.data) }}
+
+                              <!-- {% for error in core_symbol.Spread_Dollar.errors %}
+                               <span style="color: red;">[{{ error }}]</span>
+                               {% endfor %} -->
+
+                            </td>
                             <td><b>USD</b></td>
-                            <td>{{ core_symbol.Spread_Points.data }}</td>
+                            <td id="{{ 'SP_Updated_' + core_symbol.counter.data  }}"">{{ core_symbol.Spread_Points.data }}</td>
                           </tr>
                           {% endfor %}
                       </table>
@@ -73,6 +82,8 @@
                   <p><input type="submit" name="edit" value="Send"></p>
               </form>
           </div>
+
+
 
   <!-- <div class="row">
     <div class="col">
@@ -101,4 +112,40 @@
   {% endif %}
 
   </div>
+{% endblock %}
+
+
+{% block scripts %}
+{{ super() }}
+<script>
+
+  {% if form %}
+  // For Dynamic change when the figures are manually changed.
+  // When the form changes, the values will be shown real time.
+  $(window).on('load', function() {
+      console.log('All assets are loaded');
+
+      {% for core_symbol in form.core_symbols %}
+
+      $("#{{ 'SD_' + core_symbol.counter.data }}").on('input', function()
+      {$("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text(
+        $("#{{ 'SD_' + core_symbol.counter.data }}").val() * (10 ** {{core_symbol.digits.data}} )
+      );
+      // Want to show a color change when there has been a value change
+      if ($("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text() != {{core_symbol.Spread_Points.data}} ){
+          $("#{{ 'SP_Updated_' + core_symbol.counter.data }}").css("background-color", "yellow");
+          //console.log($("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text());
+      }else{
+          $("#{{ 'SP_Updated_' + core_symbol.counter.data }}").css("background-color", "white");
+      }
+
+      });
+
+      {% endfor %}
+
+
+  })
+{% endif %}
+
+</script>
 {% endblock %}

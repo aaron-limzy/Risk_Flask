@@ -892,7 +892,7 @@ def HK_Change_Spread():
         # C_Return_Val, output, err = Run_C_Prog(
         #     "app" + url_for('static', filename='Exec/changepluginparameter/Live1.exe') )
 
-        # Re-calculate the values that has changed. 
+        # Re-calculate the values that has changed.
         for s in form.core_symbols:
             s.Spread_Points.data = s.Spread_Dollar.data * (10 ** int(s.digits.data))
             s.Spread_Dollar_Hidden.data = s.Spread_Dollar.data
@@ -912,7 +912,7 @@ def HK_Change_Spread():
 
         records_data = df.to_dict("records")
         # df.to_csv("HK_Change_Spread.csv")
-
+        counter=0
         for s in records_data:
             individual_symbol_form = symbol_form()
 
@@ -924,8 +924,10 @@ def HK_Change_Spread():
             individual_symbol_form.Spread_Dollar_Hidden = round(s["fixedspread"] / (10 ** s["digits"]), 2)
             individual_symbol_form.Spread_Points_Hidden = s["fixedspread"]
             individual_symbol_form.digits = s["digits"]
+            individual_symbol_form.counter = str(counter)
 
             form.core_symbols.append_entry(individual_symbol_form)
+            counter = counter+1
 
 
         # # HKG details are from C.
@@ -941,9 +943,11 @@ def HK_Change_Spread():
         # To keep track if the data has been changed.
         individual_symbol_form.Spread_Dollar_Hidden = C_Return_Val
         individual_symbol_form.Spread_Points_Hidden = C_Return_Val
-        individual_symbol_form.digits = 1
+        individual_symbol_form.digits = 0
+        individual_symbol_form.counter = str(counter)
 
         form.core_symbols.append_entry(individual_symbol_form)
+        counter = counter + 1
         # individual_symbol_form = symbol_form()
         #
 
