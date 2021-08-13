@@ -857,49 +857,84 @@ def NoTrade_Change_ReadOnly_Settings():
 @Risk_Client_Tools_bp.route('/HK_Change_Spread', methods=['GET', 'POST'])
 @roles_required()
 def HK_Change_Spread():
+    test = True
 
 
     title = Markup("HK Change Spread")
     header = "HK Change Spread"
-    description = Markup("<b>Change Spread</b><br>Spread change tool for HK Symbols.")
+    description = Markup("""在必要時刻替 symbol 調整固定點差 (NFP, FOMC…)
+        <br>最右側欄框會試算點差, 按下送出後會立即執行更新
+        <br>送出數字前請再三確認.
+        """)
 
     form = All_Symbol_Spread_HK_Form()
-
     symbol_to_change = ["XAUUSD.Tkk", "XAUUSD.TK", "XAGUSD.TKK", "XAGUSD.TK"]
 
 
-    if request.method == 'POST' and form.validate_on_submit():
+    if request.method == 'POST':
+        if form.validate_on_submit():
 
-        all_data = [[s.Symbol.data, s.Spread_Dollar.data, s.Spread_Points.data, s.Spread_Dollar_Hidden.data,
-                     s.Spread_Points_Hidden.data,  s.digits.data]
-                    for s in form.core_symbols]
-        #print(all_data)
-        col=["postfixsymb","Spread_Dollar", "Spread_Points", "Spread_Dollar_Hidden","Spread_Points_Hidden", "digits"]
+            all_data = [[s.Symbol.data, s.Spread_Dollar.data,
+                         s.Spread_Points.data,
+                         s.Spread_Dollar_Hidden.data,
+                         s.Spread_Points_Hidden.data,  s.digits.data]
+                        for s in form.core_symbols]
+            #print(all_data)
+            col=["postfixsymb","Spread_Dollar", "Spread_Points", "Spread_Dollar_Hidden","Spread_Points_Hidden", "digits"]
 
-        # Need to Create the columns from the the Spread dollar that was previously input.
+            # Need to Create the columns from the the Spread dollar that was previously input.
 
-        df = pd.DataFrame(all_data, columns=col)
-        df["digits"]= df["digits"].astype(int)
-        df["fixed"] = df["Spread_Dollar"] * (10**df["digits"])
-        print(df)
+            df = pd.DataFrame(all_data, columns=col)
+            df["digits"]= df["digits"].astype(int)
+            df["fixed"] = df["Spread_Dollar"] * (10**df["digits"])
+            print(df)
 
-        sql_Statement = HK_Change_Spread_SQL(df, database="risk")
-        print(sql_Statement)
+            sql_Statement = HK_Change_Spread_SQL(df, database="risk")
+            print(sql_Statement)
 
-        raw_insert_result = db.session.execute(sql_Statement, bind=db.get_engine(current_app, 'mt5_futures'))
-        db.session.commit()  # Since we are using session, we need to commit.
+            raw_insert_result = db.session.execute(sql_Statement, bind=db.get_engine(current_app, 'mt5_futures'))
+            db.session.commit()  # Since we are using session, we need to commit.
 
-        # C_Return_Val, output, err = Run_C_Prog(
-        #     "app" + url_for('static', filename='Exec/changepluginparameter/Live1.exe') )
 
-        # Re-calculate the values that has changed.
-        for s in form.core_symbols:
-            s.Spread_Points.data = s.Spread_Dollar.data * (10 ** int(s.digits.data))
-            s.Spread_Dollar_Hidden.data = s.Spread_Dollar.data
-            s.Spread_Points_Hidden.data = s.Spread_Dollar.data * (10 ** int(s.digits.data))
+            # ----------------- Change the value of HKG -----------------
 
-        flash("Changed Risk Database. Spread not uploaded to live server.")
+            HKG_dollar_value_df = df[df["postfixsymb"] == "HKG"]["Spread_Dollar"]
+            if len(HKG_dollar_value_df) > 0:
+                HKG_dollar_value = int(HKG_dollar_value_df.to_list()[0])
 
+                hkg_prog_name = "Lab_HKG_SpreadChange.exe" if test == True else "Live1_HKG_SpreadChange.exe"
+                C_Return_Val_HKG, output_HKG, err_HKG = Run_C_Prog(
+                    "app" + url_for('static',
+                                    filename='Exec/HK_Change_Spread/{}'.format(hkg_prog_name)) + " {:.0f}".format(
+                                                HKG_dollar_value))
+
+                if C_Return_Val_HKG == 0:
+                    flash("HKG Change Successfully.")
+                else:
+                    flash("HKG Change ERORR. Error Code: {}".format(C_Return_Val_HKG))
+
+
+
+            if test==True:
+                C_Return_Val = 0
+            else:
+                C_Return_Val, output, err = Run_C_Prog(
+                    "app" + url_for('static', filename='Exec/changepluginparameter/Live1.exe') )
+
+
+            if C_Return_Val != 0:
+                flash("Error: Spread not uploaded on Bridge. Kindly contact Risk.")
+            else:
+
+                # Re-calculate the values that has changed.
+                for s in form.core_symbols:
+                    s.Spread_Points.data = s.Spread_Dollar.data * (10 ** int(s.digits.data))
+                    s.Spread_Dollar_Hidden.data = s.Spread_Dollar.data
+                    s.Spread_Points_Hidden.data = s.Spread_Dollar.data * (10 ** int(s.digits.data))
+
+                flash("Changed Risk Database. Spread not uploaded to live server.")
+        else:
+            flash("ERROR: 只能輸入數字")
 
     else:
         sql_query = """SELECT * FROM risk.`symbol_o`
@@ -930,9 +965,14 @@ def HK_Change_Spread():
             counter = counter+1
 
 
+
         # # HKG details are from C.
-        C_Return_Val, output, err = Run_C_Prog(
-            "app" + url_for('static', filename='Exec/HK_Change_Spread/Live1_HKG_SpreadChange.exe') + " Check")
+        hkg_prog_name = "Lab_HKG_SpreadChange.exe" if test == True else "Live1_HKG_SpreadChange.exe"
+        C_Return_Val, output, err  = Run_C_Prog(
+            "app" + url_for('static',
+                            filename='Exec/HK_Change_Spread/{}'.format(hkg_prog_name)) + " Check")
+
+
 
         individual_symbol_form = symbol_form()
 
@@ -948,33 +988,13 @@ def HK_Change_Spread():
 
         form.core_symbols.append_entry(individual_symbol_form)
         counter = counter + 1
-        # individual_symbol_form = symbol_form()
-        #
 
-
-    # Want to select all the Telegram user ID
-    # sql_query = """select * FROM shiqi.readonly_live where disabled_time = '1970-01-01 00:00:00'"""
-    # raw_result = db.engine.execute(sql_query)
-
-    # result_data = raw_result.fetchall()
-    # names = [r[0] for r in result_data]
-    # name_list = [("All", "All")] + [(r, r) for r in names]  # Want to add in "All" Options
-    #
-    # # passing group_list to the form
-    # form.Telegram_User.choices = name_list
-    #
-    #
-    #
-    # table = Delete_NoTrades_Readonly_Table_fun()
-
-    # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
-    # backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut",  replace_words=Markup(["Today"])
     # TODO: Add Form to add login/Live/limit into the exclude table.
     #table = table,
     #form=form,
     return render_template("HK_Change_Spread.html",
                            title=title, header=header, form=form,
-                            description=description, no_backgroud_Cover = True,
+                            description=description, no_backgroud_Cover = True, icon=icon_pic("HK_Change_Spread"),
                            backgroud_Filename=background_pic("HK_Change_Spread"))
 
 

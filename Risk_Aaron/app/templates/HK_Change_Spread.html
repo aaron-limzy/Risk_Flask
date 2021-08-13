@@ -57,20 +57,20 @@
                   {{ form.hidden_tag() }}
                   <div class="container">
                       <table class="table table-bordered table-sm table-hover">
-                          <tr style="background-color: #5AF1D8;">
+                          <tr style="background-color: #B0F7FF;">
                             <th> Symbol (交易品種)	 </th>
-                            <th> Spread Dollar (美元) </th>
-                            <th> Currency </th>
+                            <th> Spread Dollar </th>
+                            <th> Currency (货币) </th>
                             <th> Spread Points (點差)</th>
                           </tr>
                           {% for core_symbol in form.core_symbols %}
                           <tr>
-                            <td style="background-color: #93FFD9;">{{ core_symbol.hidden_tag() }}<b>{{ core_symbol.Symbol.data }}</b></td>
+                            <td style="background-color: #B0F7FF;">{{ core_symbol.hidden_tag() }}<b>{{ core_symbol.Symbol.data }}</b></td>
                             <td>{{ core_symbol.Spread_Dollar(class_="form-control", id='SD_' + core_symbol.counter.data) }}
 
-                              <!-- {% for error in core_symbol.Spread_Dollar.errors %}
+                              {% for error in core_symbol.Spread_Dollar.errors %}
                                <span style="color: red;">[{{ error }}]</span>
-                               {% endfor %} -->
+                               {% endfor %}
 
                             </td>
                             <td><b>USD</b></td>
@@ -79,7 +79,7 @@
                           {% endfor %}
                       </table>
                   </div>
-                  <p><input type="submit" name="edit" value="Send"></p>
+                  <p><input type="submit" name="edit" value="Send" class="btn btn-secondary btn-lg"></p>
               </form>
           </div>
 
@@ -133,7 +133,12 @@
       );
       // Want to show a color change when there has been a value change
       if ($("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text() != {{core_symbol.Spread_Points.data}} ){
-          $("#{{ 'SP_Updated_' + core_symbol.counter.data }}").css("background-color", "yellow");
+        if ($("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text() > 500){
+            $("#{{ 'SP_Updated_' + core_symbol.counter.data }}").css("background-color", "red");
+        }else{
+            $("#{{ 'SP_Updated_' + core_symbol.counter.data }}").css("background-color", "yellow");
+        }
+
           //console.log($("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text());
       }else{
           $("#{{ 'SP_Updated_' + core_symbol.counter.data }}").css("background-color", "white");

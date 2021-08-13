@@ -85,6 +85,7 @@ def icon_pic(website):
     gb_return = {"ABook_BGI" :                           "css/icon/MickeyMouseIcon.png",
                  "ABook_Matching":                                   "css/icon/bank.png",
                  "Risk_auto_cut":                               "css/icon/cut.png",
+                 "HK_Change_Spread" :                           "css/Lightning_bolt.png",
 
                  }
 

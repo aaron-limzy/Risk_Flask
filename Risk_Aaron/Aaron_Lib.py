@@ -292,7 +292,7 @@ def Run_C_Prog(Path, cwd=None):
     if cwd != None:  # We need to append the full (relative) path
         path = cwd + "\\" + path
 
-    #print("Run C Prog: {}".format(path))
+    print("Run C Prog: {}".format(path))
 
     p = subprocess.Popen(path, stdout=subprocess.PIPE, cwd=cwd)
     (output, err) = p.communicate()  # Want to capture the COUT
