@@ -859,7 +859,6 @@ def NoTrade_Change_ReadOnly_Settings():
 def HK_Change_Spread():
     test = True
 
-
     title = Markup("HK Change Spread")
     header = "HK Change Spread"
     description = Markup("""在必要時刻替 symbol 調整固定點差 (NFP, FOMC…)
