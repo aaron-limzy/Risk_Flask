@@ -87,7 +87,7 @@ def get_HK_Spread(symbol_list, database="risk"):
 
     data = Query_Symbol_Markup_db_engine(sql_query)
     df = pd.DataFrame(data)
-    print(df)
+    #print(df)
 
     return df
 
@@ -101,7 +101,7 @@ def get_HKG_spread(test=False):
 
 def combine_spread_sql_hkg(symbol_list, test, database):
 
-    start_time = datetime.datetime.now()
+    #start_time = datetime.datetime.now()
     df_spread = get_HK_Spread(symbol_list, database=database)
     hkg_spread = get_HKG_spread(test=test)
 
@@ -116,6 +116,6 @@ def combine_spread_sql_hkg(symbol_list, test, database):
 
     df_return["spread_dollar"] =  df_return["fixedspread"] / (10 ** df_return["digits"])
 
-    print("Time taken: {}".format((datetime.datetime.now() - start_time).total_seconds()))
+    #print("Time taken: {}".format((datetime.datetime.now() - start_time).total_seconds()))
 
     return df_return

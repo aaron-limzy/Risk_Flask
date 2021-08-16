@@ -855,7 +855,7 @@ def NoTrade_Change_ReadOnly_Settings():
 # SQ will change if the clients have open trades.
 # If not, they will be changed to read only.
 @Risk_Client_Tools_bp.route('/HK_Change_Spread', methods=['GET', 'POST'])
-@roles_required()
+@roles_required(["Dealing", "Risk", "Admin", "Risk_TW"])
 def HK_Change_Spread():
     test = True
     database_name = "risk" if test else "live1"
@@ -867,9 +867,10 @@ def HK_Change_Spread():
 
     title = Markup("HK Change Spread")
     header = "HK Change Spread"
-    description = Markup("""在必要時刻替 symbol 調整固定點差 (NFP, FOMC…)
-        <br>最右側欄框會試算點差, 按下送出後會立即執行更新
-        <br>送出數字前請再三確認.
+    description = Markup("""# 在必要時刻替 symbol 調整固定點差 (NFP, FOMC…) <br>
+        # 最右側欄框會試算點差, 確認無誤後再送出 <br>
+        # 每次更新需要3-5秒完成 , 確認點差改好後再執行下次更新 <br>
+        # 盡量避免短時間頻繁使用, 更新間隔10秒以上為佳 <br>
         """)
 
     form = All_Symbol_Spread_HK_Form()
@@ -999,7 +1000,7 @@ def change_HK_spread_function(df, database):
 
             # df_change_result = df_change_result.append(["HKG", HKG_dollar_value, HKG_dollar_value, "0", "successfully Changed" ])
             df_change_result.append({'postfixsymb': 'HKG',
-                     'Spread_Dollar': HKG_dollar_value,
+                                        'Spread_Dollar': HKG_dollar_value,
                                      'Spread_Points': HKG_dollar_value,
                                      'digits': 0,
                                      "Results": "Successfully Changed" },
@@ -1035,6 +1036,8 @@ def change_HK_spread_function(df, database):
     html_code += Email_Header
 
     # EMAIL_LIST_BGI
+    # EMAIL_LIST_BGI
+    email_recipients = ["risk@blackwellglobal.com", "mis@austeinweisz.com", "CustomerService@blackwellglobal.com", "Dealing @ blackwellglobal.com"]
     async_send_email(To_recipients=["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com"], cc_recipients=[],
                      Subject="HK Change Spread",
                      HTML_Text=html_code, Attachment_Name=[])
