@@ -1,5 +1,7 @@
 
 from Aaron_Lib import *
+from Helper_Flask_Lib import *
+import numpy as np
 
 # Get the dividend value from the list of dicts.
 def find_dividend(data, symbol, date):
@@ -75,3 +77,45 @@ def HK_Change_Spread_SQL(df, database):
     return Update_query
 
 
+
+# Want to get the spread from the MT5_Futures Database
+def get_HK_Spread(symbol_list):
+
+    sql_query = """SELECT * FROM risk.`symbol_o`
+     WHERE postfixsymb in ({}) 
+     ORDER BY postfixsymb""".format(",".join(["'{}'".format(s) for s in symbol_list]))
+
+    data = Query_Symbol_Markup_db_engine(sql_query)
+    df = pd.DataFrame(data)
+    print(df)
+
+    return df
+
+def get_HKG_spread(test=False):
+    # # HKG details are from C.
+    hkg_prog_name = "Lab_HKG_SpreadChange.exe" if test == True else "Live1_HKG_SpreadChange.exe"
+    C_Return_Val, output, err = Run_C_Prog(
+        "app" + url_for('static',
+                        filename='Exec/HK_Change_Spread/{}'.format(hkg_prog_name)) + " Check")
+    return C_Return_Val
+
+def combine_spread_sql_hkg(symbol_list, test):
+
+    start_time = datetime.datetime.now()
+    df_spread = get_HK_Spread(symbol_list)
+    hkg_spread = get_HKG_spread(test=test)
+
+    df_return = df_spread[["postfixsymb", "fixedspread", "digits"]]
+
+
+    # Hard code the details of HKG in.
+    df_return=df_return.append({'postfixsymb': 'HKG',
+                      'fixedspread': hkg_spread,
+                                "digits" : 0},
+                     ignore_index=True)
+
+    df_return["spread_dollar"] =  df_return["fixedspread"] / (10 ** df_return["digits"])
+
+    print("Time taken: {}".format((datetime.datetime.now() - start_time).total_seconds()))
+
+    return df_return

@@ -129,13 +129,16 @@
 
       $("#{{ 'SD_' + core_symbol.counter.data }}").on('input', function()
       {$("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text(
-        $("#{{ 'SD_' + core_symbol.counter.data }}").val() * (10 ** {{core_symbol.digits.data}} )
+        $("#{{ 'SD_' + core_symbol.counter.data }}").val() * (Math.round(10 ** {{core_symbol.digits.data}}+ Number.EPSILON) * 1000) / 1000
       );
       // Want to show a color change when there has been a value change
       if ($("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text() != {{core_symbol.Spread_Points.data}} ){
         if ($("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text() > 500){
             $("#{{ 'SP_Updated_' + core_symbol.counter.data }}").css("background-color", "red");
-        }else{
+        }else if (isNaN($("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text())){
+            $("#{{ 'SP_Updated_' + core_symbol.counter.data }}").css("background-color", "red");
+
+        }else {
             $("#{{ 'SP_Updated_' + core_symbol.counter.data }}").css("background-color", "yellow");
         }
 
