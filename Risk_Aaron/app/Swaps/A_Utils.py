@@ -79,11 +79,11 @@ def HK_Change_Spread_SQL(df, database):
 
 
 # Want to get the spread from the MT5_Futures Database
-def get_HK_Spread(symbol_list):
+def get_HK_Spread(symbol_list, database="risk"):
 
-    sql_query = """SELECT * FROM risk.`symbol_o`
+    sql_query = """SELECT * FROM {}.`symbol_o`
      WHERE postfixsymb in ({}) 
-     ORDER BY postfixsymb""".format(",".join(["'{}'".format(s) for s in symbol_list]))
+     ORDER BY postfixsymb""".format(database, ",".join(["'{}'".format(s) for s in symbol_list]))
 
     data = Query_Symbol_Markup_db_engine(sql_query)
     df = pd.DataFrame(data)
@@ -99,10 +99,10 @@ def get_HKG_spread(test=False):
                         filename='Exec/HK_Change_Spread/{}'.format(hkg_prog_name)) + " Check")
     return C_Return_Val
 
-def combine_spread_sql_hkg(symbol_list, test):
+def combine_spread_sql_hkg(symbol_list, test, database):
 
     start_time = datetime.datetime.now()
-    df_spread = get_HK_Spread(symbol_list)
+    df_spread = get_HK_Spread(symbol_list, database=database)
     hkg_spread = get_HKG_spread(test=test)
 
     df_return = df_spread[["postfixsymb", "fixedspread", "digits"]]

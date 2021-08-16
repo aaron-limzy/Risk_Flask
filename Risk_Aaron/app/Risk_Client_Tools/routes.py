@@ -858,6 +858,12 @@ def NoTrade_Change_ReadOnly_Settings():
 @roles_required()
 def HK_Change_Spread():
     test = True
+    database_name = "risk" if test else "live1"
+
+    #Force it to be live 1.
+    # But we don't want to test it on HKG yet.
+    database_name = "live1"
+
 
     title = Markup("HK Change Spread")
     header = "HK Change Spread"
@@ -882,44 +888,9 @@ def HK_Change_Spread():
             # Need to Create the columns from the the Spread dollar that was previously input.
 
             df = pd.DataFrame(all_data, columns=col)
-            c_return_hkg, c_return_plugin = change_HK_spread_function(df)
-            #
-            # df["digits"]= df["digits"].astype(int)
-            # df["fixed"] = df["Spread_Dollar"] * (10**df["digits"])
-            # print(df)
-            #
-            # sql_Statement = HK_Change_Spread_SQL(df, database="risk")
-            # print(sql_Statement)
-            #
-            # raw_insert_result = db.session.execute(sql_Statement, bind=db.get_engine(current_app, 'mt5_futures'))
-            # db.session.commit()  # Since we are using session, we need to commit.
-            #
-            #
-            # # ----------------- Change the value of HKG -----------------
-            #
-            # HKG_dollar_value_df = df[df["postfixsymb"] == "HKG"]["Spread_Dollar"]
-            # if len(HKG_dollar_value_df) > 0:
-            #     HKG_dollar_value = int(HKG_dollar_value_df.to_list()[0])
-            #
-            #     hkg_prog_name = "Lab_HKG_SpreadChange.exe" if test == True else "Live1_HKG_SpreadChange.exe"
-            #     C_Return_Val_HKG, output_HKG, err_HKG = Run_C_Prog(
-            #         "app" + url_for('static',
-            #                         filename='Exec/HK_Change_Spread/{}'.format(hkg_prog_name)) + " {:.0f}".format(
-            #                                     HKG_dollar_value))
-            #
-            #     if C_Return_Val_HKG == 0:
-            #         flash("HKG Change Successfully.")
-            #     else:
-            #         flash("HKG Change ERORR. Error Code: {}".format(C_Return_Val_HKG))
-            #
-            #
-            #
-            # if test==True:
-            #     C_Return_Val = 0
-            # else:
-            #     C_Return_Val, output, err = Run_C_Prog(
-            #         "app" + url_for('static', filename='Exec/changepluginparameter/Live1.exe') )
 
+            # Does the change of the spread as well as sending emails.
+            c_return_hkg, c_return_plugin = change_HK_spread_function(df, database_name)
 
             if c_return_plugin != 0:
                 flash("Error: Spread not uploaded on Bridge. Kindly contact Risk.")
@@ -931,25 +902,16 @@ def HK_Change_Spread():
                     # s.Spread_Dollar_Hidden.data = s.Spread_Dollar.data
                     # s.Spread_Points_Hidden.data = s.Spread_Dollar.data * (10 ** int(s.digits.data))
 
-                flash("Changed Risk Database. Spread not uploaded to live server.")
+                flash("Changed live1 Database.")
         else:
             flash("ERROR: 只能輸入數字")
 
     else:
-        # sql_query = """SELECT * FROM risk.`symbol_o`
-        #  WHERE postfixsymb in ({})
-        #  ORDER BY postfixsymb""".format(",".join(["'{}'".format(s) for s in symbol_to_change]))
-        #
-        # data = Query_Symbol_Markup_db_engine(sql_query)
-        # df = pd.DataFrame(data)
-        # print(df)
-        #
-        # records_data = df.to_dict("records")
-        # df.to_csv("HK_Change_Spread.csv")
-        counter=0
+
+        counter = 0 # counter for Javascript/HTML ID. Since it's not friendly for "." symbols
 
         # Get the records of spread from DB, as well as the HKG Spread from C++
-        records_data = combine_spread_sql_hkg(symbol_to_change, test).to_dict("records")
+        records_data = combine_spread_sql_hkg(symbol_to_change, test, database=database_name).to_dict("records")
 
         for s in records_data:
             individual_symbol_form = symbol_form()
@@ -958,9 +920,6 @@ def HK_Change_Spread():
             individual_symbol_form.Spread_Dollar = s["spread_dollar"]
             individual_symbol_form.Spread_Points = s["fixedspread"]
 
-            # To keep track if the data has been changed.
-            # individual_symbol_form.Spread_Dollar_Hidden = round(s["fixedspread"] / (10 ** s["digits"]), 2)
-            # individual_symbol_form.Spread_Points_Hidden = s["fixedspread"]
             individual_symbol_form.digits = s["digits"]
             individual_symbol_form.counter = str(counter)
 
@@ -968,32 +927,6 @@ def HK_Change_Spread():
             counter = counter+1
 
 
-
-        # # HKG details are from C.
-        # hkg_prog_name = "Lab_HKG_SpreadChange.exe" if test == True else "Live1_HKG_SpreadChange.exe"
-        # C_Return_Val, output, err  = Run_C_Prog(
-        #     "app" + url_for('static',
-        #                     filename='Exec/HK_Change_Spread/{}'.format(hkg_prog_name)) + " Check")
-
-        #
-        # # # HKG details are from C.
-        # C_Return_Val = get_HKG_spread(test=test)
-        #
-        #
-        # individual_symbol_form = symbol_form()
-        #
-        # individual_symbol_form.Symbol = "HKG"
-        # individual_symbol_form.Spread_Dollar = C_Return_Val
-        # individual_symbol_form.Spread_Points = C_Return_Val
-        #
-        # # To keep track if the data has been changed.
-        # # individual_symbol_form.Spread_Dollar_Hidden = C_Return_Val
-        # # individual_symbol_form.Spread_Points_Hidden = C_Return_Val
-        # individual_symbol_form.digits = 0
-        # individual_symbol_form.counter = str(counter)
-        #
-        # form.core_symbols.append_entry(individual_symbol_form)
-        # counter = counter + 1
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
     #table = table,
@@ -1007,9 +940,10 @@ def HK_Change_Spread():
 
 # Does the changes on the SQL as well as running the C++ exe for HKG
 # Takes in a df that has col=["postfixsymb","Spread_Dollar", "Spread_Points", "Spread_Dollar_Hidden","Spread_Points_Hidden", "digits"]
-def change_HK_spread_function(df):
+def change_HK_spread_function(df, database):
 
     test = True     # Sets the Testing to True or False
+
 
     df["digits"] = df["digits"].astype(int)
     df["fixed"] = df["Spread_Dollar"] * (10 ** df["digits"]) # Calculates the fixed spread
@@ -1017,13 +951,31 @@ def change_HK_spread_function(df):
     #print(df)
 
     # Gets the SQL Statement that will be used to change the SQL Spread
-    sql_Statement = HK_Change_Spread_SQL(df, database="risk")
+    sql_Statement = HK_Change_Spread_SQL(df, database=database)
 
     #print(sql_Statement)
 
     # Commit the changes to the SQL on MT5_futures DB
     raw_insert_result = db.session.execute(sql_Statement, bind=db.get_engine(current_app, 'mt5_futures'))
     db.session.commit()  # Since we are using session, we need to commit.
+
+    # Get all the values are not HKG
+    df_change_result = df[df["postfixsymb"] != "KHG"][["postfixsymb", "Spread_Dollar", "Spread_Points", "digits"]]
+    #result_list = [df_db_change.values.tolist()]
+
+    # ----- Change the parameter on Live 1 plugin
+    # if test == True:
+    #     C_Return_Val_plugin_Change = 0
+    # else:
+
+    C_Return_Val_plugin_Change, output, err = Run_C_Prog(
+        "app" + url_for('static', filename='Exec/changepluginparameter/Live1.exe'))
+
+    # Want to check if the Plugin was changed successfully.
+    if C_Return_Val_plugin_Change == 0:
+        df_change_result["Result"] = "Successfully Changed"
+    else:
+        df_change_result["Results"] = "Failed. Error Code: {}".format(C_Return_Val_plugin_Change)
 
     # ----------------- Change the value of HKG -----------------
 
@@ -1042,19 +994,50 @@ def change_HK_spread_function(df):
 
         if C_Return_Val_HKG == 0:
             flash("HKG Change Successfully.")
+            #["postfixsymb", "fixed", "fixedspread", "digits"]
+
+
+            # df_change_result = df_change_result.append(["HKG", HKG_dollar_value, HKG_dollar_value, "0", "successfully Changed" ])
+            df_change_result.append({'postfixsymb': 'HKG',
+                     'Spread_Dollar': HKG_dollar_value,
+                                     'Spread_Points': HKG_dollar_value,
+                                     'digits': 0,
+                                     "Results": "Successfully Changed" },
+                    ignore_index=True)
         else:
             flash("HKG Change ERORR. Error Code: {}".format(C_Return_Val_HKG))
+            # df_change_result = df_change_result.append(["HKG", HKG_dollar_value, HKG_dollar_value, "0", "Failed. Error Code: {}".format(C_Return_Val_HKG)])
 
-    if test == True:
-        C_Return_Val_plugin_Change = 0
-    else:
-        C_Return_Val_plugin_Change, output, err = Run_C_Prog(
-            "app" + url_for('static', filename='Exec/changepluginparameter/Live1.exe'))
-
+            df_change_result.append({'postfixsymb': 'HKG',
+                     'Spread_Dollar': HKG_dollar_value,
+                                     'Spread_Points': HKG_dollar_value,
+                                     'digits': 0,
+                                     "Results": "Failed. Error Code: {}".format(C_Return_Val_HKG) },
+                    ignore_index=True)
 
 
     # ----------------------- Need to send email out.
 
+
+    # rename so that it appears nicer on the Email.
+    df_change_result.rename(columns={'postfixsymb': 'Symbol', \
+                    'Spread_Dollar': "Spread Dollar (USD)", \
+                    'Spread_Points': "Spread Points", \
+                    'digits': "Digits"},
+                inplace=True)
+
+    html_code = "{}".format(Email_Header)
+    html_code += "Hi,<br><br>The change of spread for the following symbols has been done."
+    html_code += "<br>Kindly find the details of the change in the table below.<br><br>"
+    html_code += List_of_Dict_To_Horizontal_HTML_Table(df_change_result.to_dict("records"))
+    html_code += "The change was done at SG/TW time: {}.<br><br>".format(Get_time_String())
+    html_code += "Thanks,<br>Aaron."
+    html_code += Email_Header
+
+    # EMAIL_LIST_BGI
+    async_send_email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[],
+                     Subject="HK Change Spread",
+                     HTML_Text=html_code, Attachment_Name=[])
 
     return [C_Return_Val_HKG, C_Return_Val_plugin_Change]
 
