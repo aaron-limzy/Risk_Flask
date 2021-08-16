@@ -1035,7 +1035,7 @@ def change_HK_spread_function(df, database):
     html_code += Email_Header
 
     # EMAIL_LIST_BGI
-    async_send_email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[],
+    async_send_email(To_recipients=["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com"], cc_recipients=[],
                      Subject="HK Change Spread",
                      HTML_Text=html_code, Attachment_Name=[])
 
