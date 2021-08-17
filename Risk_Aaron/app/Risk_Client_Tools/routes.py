@@ -1016,7 +1016,8 @@ def change_HK_spread_function(df, database):
                                      "Results": "Failed. Error Code: {}".format(C_Return_Val_HKG) },
                     ignore_index=True)
 
-
+    # Re-calculate the correct values. SS
+    df_change_result["Spread_Points"] = df_change_result["Spread_Dollar"] * (10**df_change_result["digits"])
     # ----------------------- Need to send email out.
 
 
