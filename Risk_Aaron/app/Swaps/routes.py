@@ -171,6 +171,7 @@ def Bloomberg_Dividend_ajax():     # Return the Bloomberg dividend table in Json
 
 
 @swaps.route('/Swaps/upload_LP_Swaps', methods=['GET', 'POST'])
+@roles_required(["Risk", "Risk_TW","Risk_KH", "Admin", "Dealing"])
 def upload_Swaps_csv():
 
     title = "Swaps Upload"
