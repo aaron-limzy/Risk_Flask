@@ -46,12 +46,16 @@ class noTrade_ChangeGroup_Form(FlaskForm):
     submit = SubmitField('Submit')
 
 
+def positive_only(form, field):
+    if field.data <= 0 :
+        raise ValidationError('Field must be Positive')
+
 
 # Form to be output into a table
 class symbol_form(FlaskForm):
 
     Symbol = HiddenField("Symbol",render_kw={'readonly': True})
-    Spread_Dollar = FloatField('Spread_Dollar')
+    Spread_Dollar = FloatField('Spread_Dollar', [InputRequired(), positive_only])
     Spread_Points = HiddenField('Spread_Points',render_kw={'readonly': True})
 
     # To keep track if the data has been changed.
@@ -62,6 +66,8 @@ class symbol_form(FlaskForm):
     # Need to have a delicated counter for the sequence
     # To be added for HTML id number.
     counter = HiddenField('counter')
+
+
 
 
 

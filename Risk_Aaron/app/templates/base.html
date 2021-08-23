@@ -49,6 +49,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=2.1.2">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/styles_opacity.css') }}?v=1.0.0">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/bootnavbar.css') }}?v=1.0.0">
+
+
   {% endblock %}
 
 </head>
@@ -629,12 +631,17 @@
 
   {% block content %}
   <div class="main_body">
+
     {% with messages = get_flashed_messages() %}
+
     {% if messages %}
+    <div id="flash_div_1">
     <br>
     {% for message in messages %}
     <div class="alert alert-info text-center" role="alert">{{ message }}</div>
     {% endfor %}
+
+    </div>
     {% endif %}
     {% endwith %}
 

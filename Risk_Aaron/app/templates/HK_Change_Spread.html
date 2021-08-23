@@ -53,7 +53,10 @@
   {% if form %}
 
           <div>
-              <form action="{{ url_for('Risk_Client_Tools_bp.HK_Change_Spread') }}" method="post">
+            <!-- action="{{ url_for('Risk_Client_Tools_bp.HK_Change_Spread') }}" -->
+              <!-- <form onSubmit="  $('#flash_div_1').text(''); if(!confirm('Is the form filled out correctly?')){return false;}"  method="post"> -->
+              <form id="form_1"  method="post">
+
                   {{ form.hidden_tag() }}
                   <div class="container">
                       <table class="table table-bordered table-sm table-hover">
@@ -79,7 +82,7 @@
                           {% endfor %}
                       </table>
                   </div>
-                  <p><input type="submit" name="edit" value="Send" class="btn btn-secondary btn-lg"></p>
+                  <p><input id="submitBtn_1" type="button" name="edit" value="Send" class="btn btn-secondary btn-lg"></p>
               </form>
           </div>
 
@@ -117,6 +120,8 @@
 
 {% block scripts %}
 {{ super() }}
+<script src="{{ url_for('static', filename='js/sweetalert2.all.min.js') }}"></script>
+
 <script>
 
   {% if form %}
@@ -124,20 +129,23 @@
   // When the form changes, the values will be shown real time.
   $(window).on('load', function() {
       console.log('All assets are loaded');
-
+      //Message_Box();
       {% for core_symbol in form.core_symbols %}
 
+      // We want to change the Spread Points accordingly, when the user inputs the details.
       $("#{{ 'SD_' + core_symbol.counter.data }}").on('input', function()
       {$("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text(
         $("#{{ 'SD_' + core_symbol.counter.data }}").val() * (Math.round(10 ** {{core_symbol.digits.data}}+ Number.EPSILON) * 1000) / 1000
       );
       // Want to show a color change when there has been a value change
       if ($("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text() != {{core_symbol.Spread_Points.data}} ){
-        if ($("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text() > 500){
+        if ($("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text() > 500){   // If it's above 500
             $("#{{ 'SP_Updated_' + core_symbol.counter.data }}").css("background-color", "red");
-        }else if (isNaN($("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text())){
-            $("#{{ 'SP_Updated_' + core_symbol.counter.data }}").css("background-color", "red");
+        }else if ($("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text() < min_spread( {{ core_symbol.digits.data }} ) ){ // If it's below 10. However, we need to take care of the HKG
+          $("#{{ 'SP_Updated_' + core_symbol.counter.data }}").css("background-color", "red");
 
+        }else if (isNaN($("#{{ 'SP_Updated_' + core_symbol.counter.data }}").text())){  // If it's not a number
+            $("#{{ 'SP_Updated_' + core_symbol.counter.data }}").css("background-color", "red");
         }else {
             $("#{{ 'SP_Updated_' + core_symbol.counter.data }}").css("background-color", "yellow");
         }
@@ -152,8 +160,86 @@
       {% endfor %}
 
 
+      function min_spread(digits){
+        if (digits > 0){
+          return 10
+        }else{
+          return 1
+        }
+
+        return 1;
+      }
+
+
+      // When the button to submit is clicked.
+      // We will open a message box.
+      $("#submitBtn_1").click(function(){
+        $("#flash_div_1").empty();  // Empty all the flash Text
+         Message_Box();
+      });
+
+      // Message box to ask for confirmation
+      function Message_Box(){
+
+
+        var txt = "<div style=text-align: center;'>" + "Confirm Details." + "</div>";
+
+        swal({
+          title: '<b><u>Please confirm (請確認)</u></b>',
+          html:txt,
+          showCancelButton: true,
+           cancelButtonText:'No! Don\'t change （取消）',
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          confirmButtonText: 'Yes, Change Spread （確認）'
+        }).then((result) => {
+          if (result.value) {
+            //this.form.submit();
+            $( "#form_1" ).submit();
+            //return true;
+
+            swal(
+            'Confirmed (確認)',
+             'Spread is being changed now (點差正在更改)',
+             'success'
+           );
+
+         }else {
+          swal(
+          'Cancelled (取消)',
+           'Spread is not changed (點差未更改)',
+           'error'
+         );
+          return false;
+          }
+
+        })
+        return false;
+      }
+
+
+
+
+
+
   })
 {% endif %}
+
+// Not working
+// function show_alert() {
+//   console.log($("#flash_div_1").text());
+//   $("#flash_div_1").text("");
+//   $("#flash_div_1").empty();  // Empty all the flash Text
+//
+//   if(!confirm("Do you really want to do this?")) {
+//     console.log("Confirm return False");
+//     return false;
+//   }
+//   console.log("Confirm Submit");
+//   return false;
+//   this.form.submit();
+// }
+
 
 </script>
 {% endblock %}

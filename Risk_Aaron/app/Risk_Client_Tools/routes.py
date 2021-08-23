@@ -883,7 +883,8 @@ def HK_Change_Spread():
             all_data = [[s.Symbol.data, s.Spread_Dollar.data,
                          s.Spread_Points.data, s.digits.data]
                         for s in form.core_symbols]
-            #print(all_data)
+            print(all_data)
+
             col=["postfixsymb","Spread_Dollar", "Spread_Points", "digits"]
 
             # Need to Create the columns from the the Spread dollar that was previously input.
@@ -1039,13 +1040,13 @@ def change_HK_spread_function(df, database):
     # EMAIL_LIST_BGI
     # EMAIL_LIST_BGI
     email_recipients = ["risk@blackwellglobal.com", "mis@austeinweisz.com", "CustomerService@blackwellglobal.com", "Dealing @ blackwellglobal.com"]
+
+    email_recipients = ["aaron.lim@blackwellglobal.com"]
     async_send_email(To_recipients=email_recipients, cc_recipients=[],
                      Subject="HK Change Spread",
                      HTML_Text=html_code, Attachment_Name=[])
 
     return [C_Return_Val_HKG, C_Return_Val_plugin_Change]
-
-
 
 
 def Delete_NoTrades_Readonly_Table_fun():
