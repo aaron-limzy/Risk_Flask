@@ -906,7 +906,7 @@ def HK_Change_Spread():
 
                 flash("Changed live1 Database.")
         else:
-            flash("ERROR: 只能輸入數字")
+            flash("ERROR: 只能輸入數字, 只允许正数。")
 
     else:
 
