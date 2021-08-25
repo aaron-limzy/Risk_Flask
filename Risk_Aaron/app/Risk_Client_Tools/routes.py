@@ -874,7 +874,8 @@ def HK_Change_Spread():
         """)
 
     form = All_Symbol_Spread_HK_Form()
-    symbol_to_change = ["XAUUSD.Tkk", "XAUUSD.TK", "XAGUSD.TKK", "XAGUSD.TK"]
+    #symbol_to_change = ["XAUUSD.Tkk", "XAUUSD.TK", "XAGUSD.TKK", "XAGUSD.TK"]
+    symbol_to_change = ["XAUUSD.hkk", "XAUUSD.hK", "XAGUSD.hkk", "XAGUSD.hk"]
 
 
     if request.method == 'POST':
@@ -944,7 +945,7 @@ def HK_Change_Spread():
 # Takes in a df that has col=["postfixsymb","Spread_Dollar", "Spread_Points", "Spread_Dollar_Hidden","Spread_Points_Hidden", "digits"]
 def change_HK_spread_function(df, database):
 
-    test = True     # Sets the Testing to True or False
+    test = False     # Sets the Testing to True or False
 
 
     df["digits"] = df["digits"].astype(int)
