@@ -855,7 +855,7 @@ def NoTrade_Change_ReadOnly_Settings():
 # SQ will change if the clients have open trades.
 # If not, they will be changed to read only.
 @Risk_Client_Tools_bp.route('/HK_Change_Spread', methods=['GET', 'POST'])
-@roles_required(["Dealing", "Risk", "Admin", "Risk_TW"])
+@roles_required(["Dealing", "Risk", "Admin", "Risk_TW", "CS", "MIS"])
 def HK_Change_Spread():
     test = True
     database_name = "risk" if test else "live1"
