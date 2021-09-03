@@ -1425,14 +1425,18 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     df_postion = df_mt4_postion.merge(df_mt5_postion, on="SYMBOL")
 
     # Need to recalculate the Discrepancy as we need to add in MT5 Codes as well.
-    df_postion["Discrepancy"] = df_postion["Lp_Net_lot"]  - (df_postion["MT4_Net_Lots"] + df_postion["MT5 Net Lots"] + df_postion["Offset_lot"])
+    #df_postion["Offset_lot"] = np.where(df_postion["SYMBOL"] == "XAUUSD", -3.9, df_postion["Offset_lot"]) # For test
+    #df_postion["Discrepancy"].astype(float)
+    df_postion["Discrepancy"] = df_postion["Lp_Net_lot"]  - (df_postion["MT4_Net_Lots"] + df_postion["MT5 Net Lots"])
     df_postion["Discrepancy"] =  df_postion["Discrepancy"].apply(lambda x: round(x, 2))
     df_postion["Total_Revenue"] = df_postion["MT4_Revenue"] + df_postion["MT5_REVENUE"] + df_postion["MT5_Swaps"]
 
+
     curent_result = df_postion.to_dict("record")
 
-    #print(df_postion)
 
+    print("Initial Print")
+    print(df_postion)
 
     # Variables to return.
     Play_Sound = 0  # To play sound if needed
@@ -1701,6 +1705,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 
 
     df_postion = pd.DataFrame(data=curent_result)
+    print(df_postion)
     df_postion["SYMBOL"] = df_postion.apply(lambda x: Symbol_Trades_url(symbol=x["SYMBOL"], book="a"), axis = 1)
 
 
