@@ -153,7 +153,7 @@ def add_off_set():
         ticket = form.Ticket.data
         lp = form.LP.data
         comment = form.Comment.data
-        sql_insert = "INSERT INTO  test.`offset_live_trades` (`symbol`, `ticket`, `lots`, `Comment`, `datetime`, `lp`) VALUES" \
+        sql_insert = "INSERT INTO  aaron.`offset_live_trades` (`symbol`, `ticket`, `lots`, `Comment`, `datetime`, `lp`) VALUES" \
             " ('{}','{}','{}','{}',NOW(),'{}' )".format(symbol, ticket, offset, comment, lp)
         # print(sql_insert)
         db.engine.execute(sql_insert)   # Insert into DB
@@ -163,7 +163,7 @@ def add_off_set():
     # For FLASK-TABLE to work. We need to get the names from SQL right.
     # Also, we want to get the Symbols to upper for better display. That's all. ha ha
 
-    sql_query = "SELECT UPPER(SYMBOL) as `Symbol`, SUM(LOTS) as 'Lots' FROM test.`offset_live_trades` GROUP BY `SYMBOL` ORDER BY `Lots` DESC"
+    sql_query = "SELECT UPPER(SYMBOL) as `Symbol`, SUM(LOTS) as 'Lots' FROM aaron.`offset_live_trades` GROUP BY `SYMBOL` ORDER BY `Lots` DESC"
     collate = query_SQL_return_record(text(sql_query))
     if len(collate) == 0:   # There is no data.
         empty_table = [{"Result": "There are currently no single account excluded from the autocut."}]
@@ -185,10 +185,10 @@ def Delete_Risk_ABook_Offset_Button_Endpoint(Symbol=""):
 
     # # # Write the SQL Statement to write the values into SQL to clear the offset, By Symbols.
     # # # It will write -1 * consolidated value into SQL.
-    sql_insert_statement = """INSERT INTO test.`offset_live_trades` (`SYMBOL`, `TICKET`, `LOTS`, `COMMENT`, `DATETIME`, `LP`)
+    sql_insert_statement = """INSERT INTO aaron.`offset_live_trades` (`SYMBOL`, `TICKET`, `LOTS`, `COMMENT`, `DATETIME`, `LP`)
     SELECT SYMBOL, "000" as TICKET, -1 *SUM(LOTS) as `LOTS`, "Clear Offset" as `COMMENT`,
     NOW() AS `DATETIME`, "CLEAR off set" as `LP`
-    FROM test.`offset_live_trades`
+    FROM aaron.`offset_live_trades`
     WHERE SYMBOL='{Symbol}'
     GROUP BY SYMBOL""".format(Symbol=Symbol)
 
@@ -716,7 +716,7 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
                         SYMBOL AS offset_SYMBOL,
                         ROUND(SUM(LOTS), 2)AS offset_LOT
                     FROM
-                        test.offset_live_trades
+                        aaron.offset_live_trades
                     GROUP BY
                         SYMBOL
                 )AS P ON core_symbol.SYMBOL = P.offset_SYMBOL
@@ -1380,7 +1380,7 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
         df_postion["MT4_Revenue"] = df_postion["MT4_Revenue"].apply(profit_red_green)
 
 
-    curent_result = df_postion.to_dict("record")
+    curent_result = df_postion.to_dict("records")
 
 
     #print("Current Results: {}".format(curent_result))
@@ -1411,11 +1411,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 
     df_mt4_postion = pd.DataFrame(data=curent_result)
 
-    # If we want to put in an artificial off set for testing.
-    if artificial_offset:
-        print(df_mt4_postion)
-        df_mt4_postion["Offset_lot"][df_mt4_postion["SYMBOL"] == "XAUUSD"] = 10
-        print(df_mt4_postion)
+
 
     # ------------------ MT5 Calculations. Need to redo this to make it more elegant --------
     # Need to rename some Columns.
@@ -1427,16 +1423,22 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     # Need to recalculate the Discrepancy as we need to add in MT5 Codes as well.
     #df_postion["Offset_lot"] = np.where(df_postion["SYMBOL"] == "XAUUSD", -3.9, df_postion["Offset_lot"]) # For test
     #df_postion["Discrepancy"].astype(float)
-    df_postion["Discrepancy"] = df_postion["Lp_Net_lot"]  - (df_postion["MT4_Net_Lots"] + df_postion["MT5 Net Lots"])
+    df_postion["Discrepancy"] = df_postion["Lp_Net_lot"]  - (df_postion["MT4_Net_Lots"] + df_postion["MT5 Net Lots"]) - df_postion["Offset_lot"]
     df_postion["Discrepancy"] =  df_postion["Discrepancy"].apply(lambda x: round(x, 2))
     df_postion["Total_Revenue"] = df_postion["MT4_Revenue"] + df_postion["MT5_REVENUE"] + df_postion["MT5_Swaps"]
 
+    # If we want to put in an artificial off set for testing.
+    if artificial_offset:
+        #print(df_mt4_postion)
+        df_postion["Discrepancy"][df_postion["SYMBOL"] == "XAUUSD"] = 10
+        print(df_mt4_postion)
 
-    curent_result = df_postion.to_dict("record")
+
+    curent_result = df_postion.to_dict("records")
 
 
-    print("Initial Print")
-    print(df_postion)
+    #print("Initial Print")
+    #print(df_postion)
 
     # Variables to return.
     Play_Sound = 0  # To play sound if needed
@@ -1491,7 +1493,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
         if "SYMBOL" in df_past_details:
             df_past_details["SYMBOL"] = df_past_details["SYMBOL"].apply(lambda x: BeautifulSoup(x, features="lxml").a.text \
                                                                     if BeautifulSoup(x, features="lxml").a != None else x)
-        Past_Details = df_past_details.to_dict("record")
+        Past_Details = df_past_details.to_dict("records")
 
         if 1 == 2:
             # Checking if the columns are all in.
@@ -1581,12 +1583,12 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 
         Current_discrepancy = [d["SYMBOL"] for d in Notify_Mismatch]        # Get all the Mimatch Symbols only
 
-
         #print("Current Discrepency: {}".format(Current_discrepancy))
+        print("send_email_total : {}".format(send_email_total))
 
         if (send_email_total == 1): # for sending the total position.
 
-            email_table_html = Array_To_HTML_Table(list(curent_result[0].keys()),
+            email_table_html = Array_To_HTML_Table([c.replace("_", "<br>") for c in list(curent_result[0].keys())],
                                                             [list(d.values()) for d in curent_result])
 
             email_title = "ABook Position(Total, with {} mismatches.)".format(len(Notify_Mismatch)) \
@@ -1613,88 +1615,100 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
                     #print("Mismatch. Will Send SOAP to refresh all trades.")
 
 
-            Tele_Message = "<b>MT4/LP Position</b> \n\n"  # To compose Telegram outgoing message
-            email_html_body = "Hi, <br><br>";
-            Email_Title_Array = []
+        Tele_Message = "<b>MT4/LP Position</b> \n\n"  # To compose Telegram outgoing message
+        email_html_body = "Hi, <br><br>";
+        Email_Title_Array = []
 
-            # If there are mismatch count that are either mismatch_count_1 or mismatch_count_2, we will send the email.
-            if any([ d["Mismatch_count"] in mismatch_count for d in Notify_Mismatch]):    # If there are to be notified.
+        if artificial_offset == True:               # Force it to send an email. 
+            Notify_Mismatch[0]["Mismatch_count"] = mismatch_count[len(mismatch_count)-1]    # Induce a mismatch so that the email will be sent.
+            print("Notify_Mismatch : {}".format(Notify_Mismatch))
 
-                Play_Sound += 1  # Raise the flag to play sound.
-                Notify_mismatch_table_html = Array_To_HTML_Table(list(Notify_Mismatch[0].keys()), [list(d.values()) for d in Notify_Mismatch])
-                Email_Title_Array.append("Mismatch")
-                email_html_body +=  "There is a mismatch for A-Book LP/MT4 trades.<br>{}".format(Notify_mismatch_table_html)
+        # If there are mismatch count that are either mismatch_count_1 or mismatch_count_2, we will send the email.
+        if any([ d["Mismatch_count"] in mismatch_count for d in Notify_Mismatch]):    # If there are to be notified.
 
+            Play_Sound += 1  # Raise the flag to play sound.
 
-                # Want to find the potential mismatch trades from MT4 and Bridge
-                ##bridge_trades = Mismatch_trades_bridge(symbol=Current_discrepancy, hours=7, mins=16)
-                ##mt4_trades = Mismatch_trades_mt4(symbol=Current_discrepancy, hours=7, mins=16)
-
-                # Bridge data is in GMT.
-                # Mins would take the max of mismatch_count + 1 for good measure.
-                bridge_trades = Mismatch_trades_bridge(symbol=Current_discrepancy, hours=8, mins=max(mismatch_count) + 1)
-
-                # MT4 Live 1 server difference timing.
-                # Mins would take the max of mismatch_count + 1 for good measure.
-                live1_server_difference = session[
-                    "live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else get_live1_time_difference()
-                mt4_trades = Mismatch_trades_mt4(symbol=Current_discrepancy, hours=live1_server_difference, mins=max(mismatch_count) + 1)
-
-                # Converts it to a HTML table if there are trades. Else, show that there is no trades found.
-                bridge_trades_html_table = Array_To_HTML_Table(Table_Header = bridge_trades[0], Table_Data=bridge_trades[1]) \
-                    if len(bridge_trades[1]) > 0 else "- No Trades Found for that time perid.\n"
-
-                mt4_trades_html_table = Array_To_HTML_Table(Table_Header=mt4_trades[0], Table_Data=mt4_trades[1]) \
-                    if len(mt4_trades[1]) > 0 else "- No Trades Found for that time perid.\n"
-
-                email_html_body += "<br><b><u>MT4 trades</u></b><br> - Time is Approx<br> - CMD < 2 trades only.<br>{mt4_table}<br><br><b><u>Bridge(SQ) trades</u></b> around that time:<br>{bridge_table}<br>".format(
-                    mt4_table=mt4_trades_html_table,bridge_table=bridge_trades_html_table)
-
-                # print(Notify_Mismatch)
-                Tele_Message += "<pre>{} Mismatch</pre>\n {}".format(len(Current_discrepancy), " ".join(["{}: {} Lots, {} Mins.\n".format(c["SYMBOL"], c["Discrepancy"], c["Mismatch_count"]) for c in Notify_Mismatch]))
-
-            Cleared_Symbol = [sym for sym,count in Past_discrepancy.items() if (sym not in Current_discrepancy) and count >= min(mismatch_count) ]    # Symbol that had mismatches and now it's been cleared.
-
-            # If Mismatchs have been cleared.
-            if len(Cleared_Symbol) > 0:     # There are symbols that have been cleared
-                # Get the Symbol data from current SQL return data.
+            # Want to replace the _ with <br> for pretty printing
+            Notify_mismatch_table_html = Array_To_HTML_Table([c.replace("_", "<br>") for c in list(Notify_Mismatch[0].keys())],
+                                                             [list(d.values()) for d in Notify_Mismatch])
+            Email_Title_Array.append("Mismatch")
+            email_html_body +=  "There is a mismatch for A-Book LP/MT4 trades.<br>{}".format(Notify_mismatch_table_html)
 
 
-                Cleared_Symbol_data = [d for d in curent_result if "SYMBOL" in d and d["SYMBOL"] in Cleared_Symbol]
-                # Create the HTML Table
-                Notify_cleared_table_html = Array_To_HTML_Table(list(Cleared_Symbol_data[0].keys()),
-                                                                 [list(d.values()) for d in Cleared_Symbol_data])
-                Email_Title_Array.append("Cleared")
-                email_html_body += "The Following symbol/s mismatch have been cleared: {} <br> {}".format(", ".join(Cleared_Symbol), Notify_cleared_table_html)
-                Tele_Message += "{} Cleared: <b>{}</b>\n".format(len(Cleared_Symbol), ", ".join(Cleared_Symbol))
+            # Want to find the potential mismatch trades from MT4 and Bridge
+            ##bridge_trades = Mismatch_trades_bridge(symbol=Current_discrepancy, hours=7, mins=16)
+            ##mt4_trades = Mismatch_trades_mt4(symbol=Current_discrepancy, hours=7, mins=16)
+
+            # Bridge data is in GMT.
+            # Mins would take the max of mismatch_count + 1 for good measure.
+            bridge_trades = Mismatch_trades_bridge(symbol=Current_discrepancy, hours=8, mins=max(mismatch_count) + 1)
+
+            # MT4 Live 1 server difference timing.
+            # Mins would take the max of mismatch_count + 1 for good measure.
+            live1_server_difference = session[
+                "live1_sgt_time_diff"] if "live1_sgt_time_diff" in session else get_live1_time_difference()
+            mt4_trades = Mismatch_trades_mt4(symbol=Current_discrepancy, hours=live1_server_difference, mins=max(mismatch_count) + 1)
+
+            # Converts it to a HTML table if there are trades. Else, show that there is no trades found.
+            bridge_trades_html_table = Array_To_HTML_Table(Table_Header = bridge_trades[0], Table_Data=bridge_trades[1]) \
+                if len(bridge_trades[1]) > 0 else "- No Trades Found for that time perid.\n"
+
+            mt4_trades_html_table = Array_To_HTML_Table(Table_Header=mt4_trades[0], Table_Data=mt4_trades[1]) \
+                if len(mt4_trades[1]) > 0 else "- No Trades Found for that time perid.\n"
+
+            email_html_body += "<br><b><u>MT4 trades</u></b><br> - Time is Approx<br> - CMD < 2 trades only.<br>{mt4_table}<br><br><b><u>Bridge(SQ) trades</u></b> around that time:<br>{bridge_table}<br>".format(
+                mt4_table=mt4_trades_html_table,bridge_table=bridge_trades_html_table)
+
+            # print(Notify_Mismatch)
+            Tele_Message += "<pre>{} Mismatch</pre>\n {}".format(len(Current_discrepancy), " ".join(["{}: {} Lots, {} Mins.\n".format(c["SYMBOL"], c["Discrepancy"], c["Mismatch_count"]) for c in Notify_Mismatch]))
 
 
 
-            if Send_Email_Flag == 1 and len(Email_Title_Array) > 0:    # If there are things to be sent, we determine by looking at the title array
-                api_update_details = json.loads(LP_Margin_UpdateTime())  # Want to get the API/LP Update time.
+        Cleared_Symbol = [sym for sym,count in Past_discrepancy.items() if (sym not in Current_discrepancy) and count >= min(mismatch_count) ]    # Symbol that had mismatches and now it's been cleared.
 
-                email_html_body +=  "The API/LP Update timings:<br>" + Array_To_HTML_Table(
-                    list(api_update_details[0].keys()), [list(api_update_details[0].values())], ["Update Slow"])
-                email_html_body += "This Email was generated at: SGT {}.<br><br>Thanks,<br>Aaron".format(
-                    datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        # If Mismatchs have been cleared.
+        if len(Cleared_Symbol) > 0:     # There are symbols that have been cleared
+            # Get the Symbol data from current SQL return data.
 
-                #print(EMAIL_LIST_ALERT)
 
-                # Send the email
-                async_send_email(EMAIL_LIST_ALERT, [], "A Book Position ({}) ".format("/ ".join(Email_Title_Array)),
-                       Email_Header + email_html_body + Email_Footer, [])
+            Cleared_Symbol_data = [d for d in curent_result if "SYMBOL" in d and d["SYMBOL"] in Cleared_Symbol]
+            # Create the HTML Table
+            Notify_cleared_table_html = Array_To_HTML_Table([ c.replace("_", "<br>") for c in  list(Cleared_Symbol_data[0].keys())],
+                                                            [list(d.values()) for d in Cleared_Symbol_data])
+            Email_Title_Array.append("Cleared")
+            email_html_body += "The Following symbol/s mismatch have been cleared: {} <br> {}".format(", ".join(Cleared_Symbol), Notify_cleared_table_html)
+            Tele_Message += "{} Cleared: <b>{}</b>\n".format(len(Cleared_Symbol), ", ".join(Cleared_Symbol))
 
-                # Send_Email(EMAIL_LIST_ALERT, [], "A Book Position ({}) ".format("/ ".join(Email_Title_Array)), Email_Header + email_html_body + Email_Footer, [])
+        if artificial_offset:              # If we want to set the artificial off set, we might also want to print the data for debugging. 
+            print("Send_Email_Flag: {}".format(Send_Email_Flag))
+            print("len(Email_Title_Array) : {}".format(len(Email_Title_Array)))
 
-                # Want to send to telegram the timing that the API was updated.
-                api_update_time = api_update_details[0] if len(api_update_details) else {}
-                api_update_str = "\n<pre>Update time</pre>\n" + "\n".join(["{k} : {d}".format(k=k, d=d.replace("<br>", " ")) for k,d in api_update_time.items()]) \
-                                        if len(api_update_details) else ""
 
-                Tele_Message += api_update_str
+        if Send_Email_Flag == 1 and len(Email_Title_Array) > 0:    # If there are things to be sent, we determine by looking at the title array
+            api_update_details = json.loads(LP_Margin_UpdateTime())  # Want to get the API/LP Update time.
 
-                # Send the Telegram message.
-                async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Message, TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+            email_html_body +=  "The API/LP Update timings:<br>" + Array_To_HTML_Table(
+                list(api_update_details[0].keys()), [list(api_update_details[0].values())], ["Update Slow"])
+            email_html_body += "This Email was generated at: SGT {}.<br><br>Thanks,<br>Aaron".format(
+                datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+            print(EMAIL_LIST_ALERT)
+
+            # Send the email
+            async_send_email(EMAIL_LIST_ALERT, [], "A Book Position ({}) ".format("/ ".join(Email_Title_Array)),
+                   Email_Header + email_html_body + Email_Footer, [])
+
+            # Send_Email(EMAIL_LIST_ALERT, [], "A Book Position ({}) ".format("/ ".join(Email_Title_Array)), Email_Header + email_html_body + Email_Footer, [])
+
+            # Want to send to telegram the timing that the API was updated.
+            api_update_time = api_update_details[0] if len(api_update_details) else {}
+            api_update_str = "\n<pre>Update time</pre>\n" + "\n".join(["{k} : {d}".format(k=k, d=d.replace("<br>", " ")) for k,d in api_update_time.items()]) \
+                                    if len(api_update_details) else ""
+
+            Tele_Message += api_update_str
+
+            # Send the Telegram message.
+            async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Message, TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
 
         # '[{"Vantage_Update_Time": "2019-09-17 16:54:20", "BGI_Margin_Update_Time": "2019-09-17 16:54:23"}]'
 
@@ -1730,7 +1744,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
         df_postion["Total_Revenue"] = df_postion["Total_Revenue"].apply(profit_red_green)
 
 
-    curent_result = df_postion.to_dict("record")
+    curent_result = df_postion.to_dict("records")
 
     if Send_Email_Flag == 1:  # Only when Send Email Alert is set, we will
         async_update_Runtime(app=current_app._get_current_object(),
