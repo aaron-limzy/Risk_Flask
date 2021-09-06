@@ -1554,7 +1554,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
                 df_merge_past_present["Mismatch_count"] = df_merge_past_present.apply(lambda x: x["Mismatch_count_past"] + 1 if x["Discrepancy"] != 0 else 0, axis=1)
 
 
-                print(df_merge_past_present)
+                #print(df_merge_past_present)
 
 
         # To tally off with current mismatches. If there are, add 1 to count. Else, Zero it.
@@ -1584,7 +1584,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
         Current_discrepancy = [d["SYMBOL"] for d in Notify_Mismatch]        # Get all the Mimatch Symbols only
 
         #print("Current Discrepency: {}".format(Current_discrepancy))
-        print("send_email_total : {}".format(send_email_total))
+        #print("send_email_total : {}".format(send_email_total))
 
         if (send_email_total == 1): # for sending the total position.
 
@@ -1719,7 +1719,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 
 
     df_postion = pd.DataFrame(data=curent_result)
-    print(df_postion)
+    #print(df_postion)
     df_postion["SYMBOL"] = df_postion.apply(lambda x: Symbol_Trades_url(symbol=x["SYMBOL"], book="a"), axis = 1)
 
 
