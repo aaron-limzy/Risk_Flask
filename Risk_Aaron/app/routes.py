@@ -1403,15 +1403,12 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 
     curent_result = Query_SQL_db_engine(sql_query)  # Function to do the Query and return zip dict.
 
-
     # Get the MT5 ABook data from SQL, using the MT5 lib.
     #SQL Stored Procedure
     mt5_result = mt5_ABook_data()
     #print(mt5_result)
 
     df_mt4_postion = pd.DataFrame(data=curent_result)
-
-
 
     # ------------------ MT5 Calculations. Need to redo this to make it more elegant --------
     # Need to rename some Columns.
