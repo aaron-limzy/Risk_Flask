@@ -1539,3 +1539,19 @@ def clear_df_datetime(df_original, counter_limit = 3):
     # Want to have at least 3 counters, else, it could possibily be a rouge time
     df_datetime_count = df_datetime_count[df_datetime_count["counter_buffer"] > counter_limit]
     return df_datetime_count["DATETIME"].to_list()
+
+# make the list of dicts printable for flask
+# input should be a list of dicts
+def flask_printable_list(l):
+    return_list = []
+    for dict_loop in l:
+        dict_buff = {} # Dict buffer
+        for k,d in dict_loop.items():
+            # If it's a datetime, want to change it to a string
+            if (type(d) == datetime.datetime) | (type(d) == pd.Timestamp):
+                d = d.strftime("%Y-%m-%d %H:%M:%S")
+
+            dict_buff[k] = d
+
+        return_list.append(dict_buff)
+    return return_list
