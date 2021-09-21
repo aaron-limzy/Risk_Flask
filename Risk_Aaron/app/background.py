@@ -56,10 +56,11 @@ def background_pic(website):
 
                  "Swap_download_page":                      "css/pink dust.png",
                 "HK_Change_Spread" :                        "css/Hexagon_repeat.jpg",
+                 "AB_Hedge_Close":                     "css/leaves-pattern.png"
 
         }
 
-    #background_pic("Monitor_Account_Trades")
+    #background_pic("Monitor_Account_Trades")mo
 
     # Christmas series
     # "css/Christmas_vector_1.jpg"

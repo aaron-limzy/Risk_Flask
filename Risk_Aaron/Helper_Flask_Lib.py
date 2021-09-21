@@ -27,7 +27,7 @@ else:
     print("On Aaron's Computer")
 
 EMAIL_AARON =  ["aaron.lim@blackwellglobal.com"]     # For test Groups.
-EMAIL_LIST_RISKTW = ["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com", "nicole.cheng@blackwellglobal.com"]
+EMAIL_LIST_RISKTW = ["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com", "nicole.cheng@blackwellglobal.com", "joyce.liou@blackwellglobal.com"]
 
 
 
@@ -1211,9 +1211,6 @@ def liveserver_Previousday_start_timing(live1_server_difference=6, hour_from_230
 
     #print("server_Time:{}, start_time: {}".format(live1_server_timing, return_time))
     return return_time
-
-
-
 
 
 # Query SQL to get MT4 Symbol BID/ASK

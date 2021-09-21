@@ -1131,17 +1131,6 @@ def AB_Hedge_Close():
 @Risk_Client_Tools_bp.route('/AB_Hedge_Close_ajax', methods=['GET', 'POST'])
 @roles_required()
 def AB_Hedge_Close_ajax(update_tool_time=1):
-    # TODO: Check if user exist first.
-
-    return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
-
-
-    #print("Risk Auto Cut Ajax")
-    # Using External Table
-    # aaron.risk_autocut_exclude
-    # aaron.risk_autocut_group
-
-    Live_server = [1,2,3,5]
 
 
     # Get all the clients that needs to be changed.
@@ -1152,145 +1141,99 @@ def AB_Hedge_Close_ajax(update_tool_time=1):
     raw_sql_statement = sql_statement.replace("\t", " ").replace("\n", " ")
     sql_result = Query_SQL_db_engine(text(raw_sql_statement))  # Query SQL
 
+
+    # # Need to update Run time on SQL Update table.
+    if update_tool_time ==1:
+        async_update_Runtime(app=current_app._get_current_object(), Tool="AB_Hedge_Close")
+
     if len(sql_result) == 0:
         return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
         return json.dumps(return_val)
 
-
-
     df = pd.DataFrame(sql_result)
-    col = ["DateTime"	,"Live"	,"Login","Book",	"PairLogin","Balance",	"Equity",	"Credit",	"Change","ChangedDateTime"]
+    col = ["DateTime" , "Live" , "Login", "Book", "PairLogin", "Balance", "Equity", "Credit", "Change","ChangedDateTime"]
     col = [c for c in col if c in df.columns.tolist()]
 
 
     # To Return to SQL
     return_val = flask_printable_list(df[col].to_dict("records"))
 
-
     print(return_val)
+
+    # return json.dumps(return_val)
+
 
     # Get a list of pairs for the change.
     # Don't need duplicates.
     df_to_change = df[df["Book"] == "B"][["Live", "Book", "Login", "PairLogin", "Equity"]].drop_duplicates(subset=["Live", "Book", "Login", "PairLogin"])
 
     login_data = df_to_change.to_dict("records")
+    #print(login_data)
 
-    changed_login = []
+    all_return_df_list = []
     for d in login_data:
-        return_dict = Change_readonly_CloseTrades( d['Live'], d['Login'], d['PairLogin'], d['Equity'])
+        return_df = Change_readonly_CloseTrades( d['Live'], d['Login'], d['PairLogin'], d['Equity'])
+        all_return_df_list.append(return_df)
+        # data = [{"Live": Live,
+        #          "Login": Login_B,
+        #          "Return": C_Return_Val_B,
+        #          "Error": err_B},
+        #         {"Live": Live,
+        #          "Login": Login_A,
+        #          "Return": C_Return_Val_A,
+        #          "Error": err_A}
+        #         ]
+        # df = pd.DataFrame(data)
 
-        print(return_dict)
 
-        changed_login = changed_login + [ d['Login'] , d['PairLogin'] ]
+    all_return_df = pd.concat(all_return_df_list, ignore_index=True)
+    # Merge the Dataframes for all the logins that has been changed/or failed.
+    changed_login = all_return_df[all_return_df["Return"] == 0][["Live", "Login"]].values.tolist()
 
+    # print(df)
+    # Merge the dataframe for all the data from SQL
+    df_email = df.merge(all_return_df, how="outer",  left_on=['Live','Login'], right_on = ['Live','Login'])
+    sql_data = df_email[df_email["Return"] == 0][['Live','Login']].values.tolist()
 
+    for live, login in sql_data:
 
+        sql_statement = """ UPDATE  yudi.`ab_hedged_readonly_login`
+        SET`Change` = "Y", ChangedDateTime=now()
+        WHERE Login = '{login}' AND Live='{live}' """.format(login=login, live=live)
+        print(sql_statement)
 
+        # Change on the SQL
+        sql_result = Insert_into_sql(sql_statement)  # Query SQL
 
-    # [{"C_Return_Val_B": C_Return_Val_B,
-    #   "output_B": output_B,
-    #   "err_B": err_B,
-    #   "C_Return_Val_A": C_Return_Val_A,
-    #   "output_A": output_A,
-    #   "err_A": err_A}]
-
-    changed_login = ['"{}"'.format(c) for c in changed_login] # Add the commas
-
-    sql_statement = """ UPDATE  yudi.`ab_hedged_readonly_login`
-    SET`Change` = "Y", ChangedDateTime=now()
-    WHERE Login IN ({})""".format(",".join(changed_login))
+    # Need to call the update to refresh the timing as well as the equity
+    sql_statement = """call `yudi`.ab_hedged_balance_update_all() """
     print(sql_statement)
 
-    # Change on the SQL
     sql_result = Insert_into_sql(sql_statement)  # Query SQL
 
+    # Want to send an email.
+    # Make it print pretty
+    df_email["Margin"] = round(df_email["Margin"], 2)
+    df_email["TotalPnl"] = round(df_email["TotalPnl"], 2)
+    df_email["ClosedPnl"] = round(df_email["ClosedPnl"], 2)
+    df_email["CutoffPnl"] = round(df_email["CutoffPnl"], 2)
+
+    table_data_html = Array_To_HTML_Table(df_email.columns.tolist(), df_email.values.tolist())
+
+    #EMAIL_LIST_RISKTW
+    Send_Email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[],
+                     Subject="AB Hedge Cut.",
+                     HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as part of the AB Hedge Agreement. \
+                            <br><br> {table_data_html} \
+                           <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
+                         Email_Header=Email_Header,
+                         table_data_html=table_data_html,
+                         datetime_now=datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                         Email_Footer=Email_Footer), Attachment_Name=[])
 
     return json.dumps(return_val)
 
-    #sql_result3 = []
 
-
-
-    C_Return = dict()  # The returns from C++
-    C_Return[0] = "User Changed to Read-Only, position forced closed";
-    C_Return[-1] = "C++ ERROR: Params Wrong";
-    C_Return[1] = "C++ ERROR: Login Param Error";
-    C_Return[2] = "C++ ERROR: Server Param Error";
-    C_Return[3] = "C++ ERROR: Login Number Error on MT4";
-    C_Return[4] = "C++ ERROR: Equity Above Credit";
-    C_Return[6] = "C++ ERROR: MT4 Update Error!";
-    C_Return[7] = "C++ ERROR: MT4 Connection Error";
-    C_Return[-100] = "User changed to Read-only, but SQL ERROR. ";
-
-    To_SQL = []     # To save onto SQL
-
-    for k,d in total_result.items():
-        live = d['LIVE'] if "LIVE" in d else None
-        login = d['LOGIN'] if "LOGIN" in d else None
-        equity_limit = d['EQUITY_LIMIT'] if "EQUITY_LIMIT" in d and  d['EQUITY_LIMIT'] != "-" else 0
-        if equity_limit == 0:   # Adding this in to beautify the Table.
-            total_result[k]["EQUITY_LIMIT"] = "-"
-        if not None in [live, login]:   # If both are not None.
-
-            # # print("Live = {}, Login = {}, equity_limit = {}".format(live, login, equity_limit))
-            c_run_return = Run_C_Prog("Risk_Auto_Cut.exe " + " {live} {login} {equity_limit}".format( live=live,
-                login=login, equity_limit=equity_limit), cwd=".\\app" + url_for('static', filename='Exec/Risk_Auto_Cut/'))
-
-            #print("c_run_return = {}".format(c_run_return))
-            # c_run_return = 0
-
-            if c_run_return[0] == 0:  # Need to save things into SQL as well.
-                To_SQL.append(d)
-            # elif c_run_return[0] not in C_Return:
-            #     print(c_run_return)
-
-            total_result[k]["RESULT"] = C_Return[c_run_return[0]] if c_run_return[0] in C_Return else "Unknown Error"
-            if equity_limit != 0:    # Want to state that it's doing a equity protection.
-                total_result[k]["RESULT"] += "<br><span style='color:green'>[Equity Protection]</span>"
-
-    return_val = dict()  # Return value to be used
-    if len(total_result) > 0:   # Want to send out an email should any changes have been made.
-
-        if len(To_SQL) > 0: # There might not be anything here due to an error in C exe
-            raw_insert_sql = " ({live}, {login}, {equity}, {credit}, '{group}', now()) "    # Raw template for insert.
-            sql_insert_w_values = ",".join([raw_insert_sql.format(live=d["LIVE"], login=d["LOGIN"], equity=d["EQUITY"], credit=d["CREDIT"], group=d["GROUP"]) for d in To_SQL]) # SQL insert with the values.
-            sql_insert = "INSERT INTO  aaron.`risk_autocut_results` (LIVE, LOGIN, EQUITY, CREDIT, `GROUP`, DATE_TIME) VALUES {}".format(sql_insert_w_values)   # Add it to the header.
-            sql_insert += " ON DUPLICATE KEY UPDATE `EQUITY`=VALUES(`EQUITY`), `CREDIT`=VALUES(`CREDIT`), `GROUP`=VALUES(`GROUP`)  "
-
-
-            #print("SQL Statement: {}".format(sql_insert))
-            raw_insert_result = db.engine.execute(sql_insert)   # Insert into SQL
-
-        #print("total_result: {}".format(total_result))
-
-        total_result_value = list(total_result.values())
-        # print(total_result_value)
-        table_data_html =  Array_To_HTML_Table(list(total_result_value[0].keys()),[list(d.values()) for d in total_result_value])
-
-        # Want to set to test, if it's just test accounts.
-        # If it's just TEST account. Send to just Aaron and TW.
-        email_list = EMAIL_LIST_RISKTW if all([d["GROUP"].lower().find("test") >= 0 for d in To_SQL]) else EMAIL_LIST_BGI
-        email_flag, email_recipients = email_flag_fun("risk_autocut")
-
-        if email_flag:
-            async_send_email(To_recipients=email_list, cc_recipients=[],
-                         Subject="AutoCut: Equity Below Credit.",
-                         HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as their equity was below credit. \
-                                    <br><br> {table_data_html} This is done to prevent client from trading on credit. \
-                                   <br><br>This Email was generated at: {datetime_now} (SGT)<br><br>Thanks,<br>Aaron{Email_Footer}".format(
-                             Email_Header = Email_Header, table_data_html = table_data_html, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                             Email_Footer=Email_Footer), Attachment_Name=[])
-
-
-
-        return_val = list(total_result.values())
-
-    else:   # If there are nothing to change. We want to show the time
-        return_val = [{"RESULT": "No clients to be changed. Time: {}".format(time_now())}]
-
-    # # Need to update Run time on SQL Update table.
-    if update_tool_time ==1:
-        async_update_Runtime(app=current_app._get_current_object(), Tool="Risk_Auto_Cut")
 
 
     return json.dumps(return_val)
@@ -1301,17 +1244,24 @@ def Change_readonly_CloseTrades(Live, Login_B, Login_A, Equity_B):
 
     # First, run the Login_B.
 
+
     # Use format to change equity to be an int.
     C_Return_Val_B, output_B, err_B = Run_C_Prog('ReadOnly_CloseTrades.exe {} {} {:.0f}'.format(Live, Login_B, Equity_B),
                               cwd=".\\app" + url_for('static', filename='Exec/AB_Hedge_Client_Close/'))
 
     if C_Return_Val_B != 0:     # If the B book fails, we won't need to close off the A book trades.
-        return [{"C_Return_Val_B": C_Return_Val_B,
-                 "output_B": output_B,
-                 "err_B": err_B,
-                 "C_Return_Val_A": -1,
-                 "output_A": "-1",
-                 "err_A": "-1"}]
+        data = [{"Live": Live,
+          "Login": Login_B,
+          "Return": C_Return_Val_B,
+          "Error": err_B},
+         {"Live": Live,
+          "Login": Login_A,
+          "Return": -1,
+          "Error": "B Book account closure Error."}
+         ]
+        df = pd.DataFrame(data)
+
+        return df
 
 
     # Run the A Book Trades.
@@ -1320,14 +1270,18 @@ def Change_readonly_CloseTrades(Live, Login_B, Login_A, Equity_B):
     C_Return_Val_A, output_A, err_A = Run_C_Prog('ReadOnly_CloseTrades.exe {} {}'.format(Live, Login_A),
                  cwd=".\\app" + url_for('static', filename='Exec/AB_Hedge_Client_Close/'))
 
+    data = [{"Live": Live,
+             "Login": Login_B,
+             "Return": C_Return_Val_B,
+             "Error": err_B},
+            {"Live": Live,
+             "Login": Login_A,
+             "Return": C_Return_Val_A,
+             "Error": err_A}
+            ]
+    df = pd.DataFrame(data)
 
-    return [{"C_Return_Val_B": C_Return_Val_B,
-             "output_B": output_B,
-             "err_B": err_B,
-             "C_Return_Val_A": C_Return_Val_A,
-             "output_A": output_A,
-             "err_A": err_A}]
-
+    return df
 
 
 
