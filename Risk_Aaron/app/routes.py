@@ -1394,6 +1394,8 @@ def ABook_Matching_Position_Vol(update_tool_time=0):    # To upload the Files, o
 def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
 
     artificial_offset = False
+    #pd.set_option('display.max_rows', None)
+
 
     # The amount of time that a mismatch must happen before it emails
     mismatch_count = [10,15]
@@ -1410,12 +1412,19 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 
     df_mt4_postion = pd.DataFrame(data=curent_result)
 
+
+    #print(df_mt4_postion)
+
+
     # ------------------ MT5 Calculations. Need to redo this to make it more elegant --------
     # Need to rename some Columns.
     df_mt5_postion = pd.DataFrame(data=mt5_result)
     df_mt5_postion = df_mt5_postion.rename(columns={"BaseSymbol": "SYMBOL", "Profit" : "MT5_REVENUE", "Net_Vol":"MT5 Net Lots", "Storage": "MT5_Swaps"})
     df_mt5_postion = df_mt5_postion[["SYMBOL", "MT5 Net Lots", "MT5_REVENUE", "MT5_Swaps"]]
-    df_postion = df_mt4_postion.merge(df_mt5_postion, on="SYMBOL")
+    df_postion = df_mt4_postion.merge(df_mt5_postion, on="SYMBOL", how="outer")
+    df_postion.fillna(0, inplace=True)
+
+    #print(df_postion)
 
     # Need to recalculate the Discrepancy as we need to add in MT5 Codes as well.
     #df_postion["Offset_lot"] = np.where(df_postion["SYMBOL"] == "XAUUSD", -3.9, df_postion["Offset_lot"]) # For test
@@ -1428,7 +1437,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     if artificial_offset:
         #print(df_mt4_postion)
         df_postion["Discrepancy"][df_postion["SYMBOL"] == "XAUUSD"] = 10
-        print(df_mt4_postion)
+        #print(df_mt4_postion)
 
 
     curent_result = df_postion.to_dict("records")
