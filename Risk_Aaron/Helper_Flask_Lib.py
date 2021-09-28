@@ -982,7 +982,7 @@ def Country_Trades_url(country, text=""):
 def split_root_symbol(sym):
 
     if sym.find(".") == 0: # CFD
-        cfd_list = [".A50", ".AUS200", ".DE30", ".ES35", ".F40", ".HK50", ".JP225",
+        cfd_list = [".A50", ".AUS200", ".DE40", ".ES35", ".F40", ".HK50", ".JP225",
             ".STOXX50", ".UK100", ".UKOil",  ".US100", ".US30", ".US500", ".USOil"]
         for c in cfd_list:
             if sym.find(c) == 0: # Found that CFD
@@ -1240,7 +1240,7 @@ def get_live2_ask_bid(symbols=[]):
     # Want to clear up the CFDs.
     # Only want to return 1 CFD.
     if len(return_df) > 0 and "SYMBOL" in return_df:
-        all_cfds = ['.A50', '.AUS200', '.DE30', '.ES35', '.F40', '.HK50', '.JP225', '.STOXX50', '.UK100', '.UKOil', '.US100', '.US30', '.US500', '.USOil']
+        all_cfds = ['.A50', '.AUS200', '.DE40', '.ES35', '.F40', '.HK50', '.JP225', '.STOXX50', '.UK100', '.UKOil', '.US100', '.US30', '.US500', '.USOil']
         return_df = return_df[ (~ return_df["SYMBOL"].str.contains(".",  regex=False)) | (return_df["SYMBOL"].isin(all_cfds))]
         #print(return_df)
 

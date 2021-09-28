@@ -312,6 +312,7 @@ def save_BGI_MT4_float_Ajax(update_tool_time=1):
 @roles_required()
 def BGI_Country_Float():
 
+
     title = "Country Float"
     header = "Country Float"
 

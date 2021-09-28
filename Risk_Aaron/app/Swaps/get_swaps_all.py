@@ -779,7 +779,7 @@ def swap_markup(swap_val, markup_percentage):
 
 def calculate_swaps_bgi(excel_data, db):
 
-    pd.set_option('display.max_rows', 200)
+    #pd.set_option('display.max_rows', 200)
 
     df_bgi_excel = pd.DataFrame(excel_data)
 
@@ -828,8 +828,6 @@ def calculate_swaps_bgi(excel_data, db):
 
     # Merge in CFD Regression Swaps Value
     df = df.merge(df_swaps_predict, how="left", left_on="bgi_coresymbol", right_on="Symbol")
-
-
 
 
 
