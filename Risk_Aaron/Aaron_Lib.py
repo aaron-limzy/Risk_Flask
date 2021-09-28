@@ -384,8 +384,8 @@ def cfd_core_symbol(str_val):
 
     if str_val.find(".") != 0:
         return str_val
-    cfd_symbol = ['.A50', '.AUS200', '.DE30', '.ES35', '.F40', '.HK50', '.JP225', '.STOXX50', '.UK100', '.UKOil', '.US100', '.US30',
-     '.US500', '.USOil']
+    cfd_symbol = ['.A50', '.AUS200', '.DE40', '.ES35', '.F40', '.HK50', '.JP225', '.STOXX50', '.UK100', '.UKOil', '.US100', '.US30',
+     '.US500', '.USOil', ".DE30"]
     for c in cfd_symbol:
         if str_val.lower().find(c.lower()) == 0:
             return c

@@ -242,7 +242,7 @@ def save_BGI_MT4_float_Ajax(update_tool_time=1):
     country_symbol = {}
     for r in result_data:
         country = r[1]
-        symbol = cfd_core_symbol(r[2]) # Want to get core value
+        symbol = cfd_core_symbol(r[2])        # ## Want to get core value
         net_floating_volume = r[3]
         sum_floating_volume = r[4]
         floating_revenue = r[5]
