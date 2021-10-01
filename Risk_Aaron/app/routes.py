@@ -1408,7 +1408,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     # Get the MT5 ABook data from SQL, using the MT5 lib.
     #SQL Stored Procedure
     mt5_result = mt5_ABook_data()
-    #print(mt5_result)
+
 
     df_mt4_postion = pd.DataFrame(data=curent_result)
 
@@ -1421,6 +1421,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     df_mt5_postion = pd.DataFrame(data=mt5_result)
     df_mt5_postion = df_mt5_postion.rename(columns={"BaseSymbol": "SYMBOL", "Profit" : "MT5_REVENUE", "Net_Vol":"MT5 Net Lots", "Storage": "MT5_Swaps"})
     df_mt5_postion = df_mt5_postion[["SYMBOL", "MT5 Net Lots", "MT5_REVENUE", "MT5_Swaps"]]
+    #print(df_mt5_postion)
     df_postion = df_mt4_postion.merge(df_mt5_postion, on="SYMBOL", how="outer")
     df_postion.fillna(0, inplace=True)
 

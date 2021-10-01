@@ -1179,6 +1179,20 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
      total_sum, largest_login, open_by_country] = open_trades_analysis(df_open_trades,
                                                                        book, col2, col3, symbol=symbol, entity=entity)
 
+    # Want to add in MT5 Details here.
+    mt5_symbol_results_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="""call aaron.`BGI_MT5_Float_Query`()""", unsync_app=current_app._get_current_object())
+    mt5_symbol_results = mt5_symbol_results_unsync.result()
+    mt5_symbol_results_df = color_profit_for_df(mt5_symbol_results, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
+
+    # print(mt5_symbol_results_df[mt5_symbol_results_df["SYMBOL"] == "{}".format(symbol)])
+    # print(total_sum)
+
+    if "SYMBOL" in mt5_symbol_results_df and len(mt5_symbol_results_df[mt5_symbol_results_df["SYMBOL"] == "{}".format(symbol)]) == 1:
+        mt5_columns= [("NET_LOTS", False),  ("FLOATING_LOTS", False),  ("REVENUE", True), ("TODAY_LOTS", False), ("TODAY_REVENUE", False)]
+        for (c, t) in mt5_columns:
+            if c in mt5_symbol_results_df:
+                total_sum[f"{c} [MT5]"] = profit_red_green(mt5_symbol_results_df[c].values[0]) if t else mt5_symbol_results_df[c].values[0]
+
 
     # Closed trades for today!
     df_closed_trades = df_all_trades[df_all_trades["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only Closed trades.

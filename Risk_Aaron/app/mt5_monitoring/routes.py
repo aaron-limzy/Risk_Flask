@@ -194,6 +194,9 @@ def BGI_MT5_Symbol_Float_ajax():
     if not cfh_fix_timing():
         return json.dumps([[{'Update time': "Not updating, as Market isn't opened. {}".format(Get_time_String())}]])
 
+    # pd.set_option("display.max_rows", 101)
+    # pd.set_option("display.max_columns", 101)
+
     df_to_table = mt5_symbol_float_data()
 
     #print(df_to_table)
@@ -208,7 +211,7 @@ def BGI_MT5_Symbol_Float_ajax():
         # Get Datetime into string
         df_to_table['YESTERDAY_DATETIME_PULL'] = df_to_table['YESTERDAY_DATETIME_PULL'].apply(lambda x: Get_time_String(x) if isinstance(x, pd.Timestamp) else x)
         #print( df_to_table['YESTERDAY_DATETIME_PULL'] )
-        yesterday_datetime_pull = [c for c in list(df_to_table['YESTERDAY_DATETIME_PULL'][df_to_table['YESTERDAY_DATETIME_PULL'].notnull()].unique()) if c != 0]
+        yesterday_datetime_pull = ["{}".format(c) for c in list(df_to_table['YESTERDAY_DATETIME_PULL'][df_to_table['YESTERDAY_DATETIME_PULL'].notnull()].unique()) if c != 0]
         #print(yesterday_datetime_pull)
 
 
@@ -256,6 +259,10 @@ def BGI_MT5_Symbol_Float_ajax():
 
     # Pandas return list of dicts.
     return_val = df_to_table[col].to_dict("record")
+
+    # print(df_to_table[col])
+    # print(datetime_pull)
+    # print(yesterday_datetime_pull)
 
     return json.dumps([return_val, ", ".join(datetime_pull), ", ".join(yesterday_datetime_pull)], cls=plotly.utils.PlotlyJSONEncoder)
 
