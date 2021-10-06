@@ -97,7 +97,11 @@ def symbol_float_tableau():
     # <param name='toolbar' value='yes' />
     # <param name='showAppBanner' value='false' /></object></div>"""
 
-    url = "https://202.88.105.5/views/SymbolFloatAll/SymbolFloatVolume?:showAppBanner=false&:display_count=n&:showVizHome=n&:origin=viz_share_link"
+    url = "https://202.88.105.5/views/FEI_MT5Floating/MT5FloatingB"
+
+    #url = "https://192.168.64.56/views/FEI_MT5Floating/MT5FloatingB?:showAppBanner=false&:display_count=n&:showVizHome=n&:origin=viz_share_link"
+    #url = "https://202.88.105.5/views/SymbolFloatAll/SymbolFloatVolume?:showAppBanner=false&:display_count=n&:showVizHome=n&:origin=viz_share_link"
     height = 1350
     width = 1680
-    return [url, height, width]
+    #return [url, height, width]
+    return url

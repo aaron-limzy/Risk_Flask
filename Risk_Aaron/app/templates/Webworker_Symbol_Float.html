@@ -711,7 +711,14 @@
     var viz;
     function initViz() {
         var containerDiv = document.getElementById("vizContainer"),
-        url = "https://202.88.105.5/views/SymbolFloatAll/SymbolFloatVolume";
+
+        {% if tableau_url %}
+          url = "{{ tableau_url }}";
+
+        {% endif %}
+
+
+        //url = "https://202.88.105.5/views/SymbolFloatAll/SymbolFloatVolume";
         viz = new tableau.Viz(containerDiv, url);
         //viz.setFrameSize(parseInt(1600, 10), parseInt(950, 10));
     }
