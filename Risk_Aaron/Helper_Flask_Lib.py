@@ -807,7 +807,8 @@ def Query_SQL_db_engine(sql_query):
 # Will have to wait for it to be done.
 def Insert_into_sql(sql_Insert_query):
     sql_insert = sql_Insert_query.replace("\t", "").replace("\n", "")
-    sql_insert = text(sql_insert)  # To make it to SQL friendly text.
+    #sql_insert = text(sql_insert) ## Added the auto commit because the call to functions won't work otherwise.
+    sql_insert = text(sql_insert).execution_options(autocommit=True)  # To make it to SQL friendly text.
     raw_insert_result = db.engine.execute(sql_insert)
     return
 

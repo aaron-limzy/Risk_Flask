@@ -1087,6 +1087,63 @@ def Delete_NoTrades_ReadOnly_Button_Endpoint(Live="", Login=""):
 
 
 
+
+
+# # Want to check and close off account/trades.
+# @Risk_Client_Tools_bp.route('/AB_Hedge_Close_Test', methods=['GET', 'POST'])
+# @roles_required()
+# def AB_Hedge_Close_Test():
+#
+#     start = datetime.datetime.now()
+#     title = "AB Hedge Close"
+#     header = "AB Hedge Close"
+#
+#     # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+#     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+#     # For Login in aaron.Risk_autocut and Credit_limit != 0
+#
+#
+#     description = Markup("")
+#
+#     # Need to call the update to refresh the timing as well as the equity
+#     #sql_statement = """call `yudi`.ab_hedged_balance_update_all() """
+#
+#     sql_statement = """call yudi.`SF_TEST`() """
+#
+#     #sql_statement = """insert into yudi.misc VALUES("test",1)"""
+#
+#     print(sql_statement)
+#
+#     sql_result = Insert_into_sql(sql_statement)  # Query SQL
+#
+#     #
+#     # client_include_tab = Delete_Risk_Autocut_Include_Table_fun()
+#     # client_group_include_tab = Delete_Risk_Autocut_Group_Table_fun()
+#     # client_exclude = Delete_Risk_Autocut_Exclude_Table_fun()
+#     #
+#     # # client_include_tab = create_table()
+#     # # client_group_include_tab = create_table()
+#     # # client_exclude = create_table()
+#
+#
+#
+#     print("Generating of tables at risk auto cut took:{}s".format((datetime.datetime.now()-start).total_seconds()))
+#
+#     # TODO: Add Form to add login/Live/limit into the exclude table.
+#     return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("AB_Hedge_Close"),
+#                            Table_name="AB Hedge Close", \
+#                            title=title, no_backgroud_Cover=True, \
+#                            header=header, icon=icon_pic("AB_Hedge_Close"),
+#                            description=description, replace_words=Markup(["Today"]),
+#                            # varibles = {"Client Include": client_include_tab,
+#                            #             "Client Group Include": client_group_include_tab,
+#                            #             "Client Exclude": client_exclude}
+#                            )
+
+
+
+
+
 # Want to check and close off account/trades.
 @Risk_Client_Tools_bp.route('/AB_Hedge_Close', methods=['GET', 'POST'])
 @roles_required()
@@ -1099,6 +1156,9 @@ def AB_Hedge_Close():
     # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
     # For Login in aaron.Risk_autocut and Credit_limit != 0
+
+
+
 
 
     description = Markup("")
@@ -1115,6 +1175,7 @@ def AB_Hedge_Close():
 
 
     print("Generating of tables at risk auto cut took:{}s".format((datetime.datetime.now()-start).total_seconds()))
+
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("AB_Hedge_Close"), Table_name="AB Hedge Close", \
@@ -1200,6 +1261,7 @@ def AB_Hedge_Close_ajax(update_tool_time=1):
         sql_statement = """ UPDATE  yudi.`ab_hedged_readonly_login`
         SET`Change` = "Y", ChangedDateTime=now()
         WHERE Login = '{login}' AND Live='{live}' """.format(login=login, live=live)
+
         print(sql_statement)
 
         # Change on the SQL
