@@ -884,7 +884,7 @@ def calculate_swaps_bgi(excel_data, db):
 
 
 
-    custom_dict = {"FX": 0, "FX_20%": 0, "Exotic Pairs": 1, "PM": 2, "CFD": 4, "CFD_20%": 4}
+    custom_dict = {"FX": 0, "FX_20%": 0, "FX_30%": 0, "Exotic Pairs": 1, "PM": 2, "CFD": 4, "CFD_20%": 4}
     df.sort_values(by=["swap_markup_profile", "bgi_coresymbol"], key=lambda x: x.map(custom_dict), inplace=True)
 
     # df.sort_values(["swap_markup_profile", "bgi_coresymbol"],ascending=[False, True],  inplace=True)
