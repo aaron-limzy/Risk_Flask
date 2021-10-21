@@ -438,10 +438,11 @@ $(document).ready(function(){
             // }
         }
 
+        // If there are no A book position at all.
+        // We want to show that it's empty.
         if (Table_Data_Updated.length == 0){
           Table_Data_Updated.push({"Comment": "No A Book Position"});
-
-      }
+        }
 
         return Table_Data_Updated;
     }
