@@ -86,7 +86,7 @@ class OZ_Rest_Class:
         Post_Return = requests.post(url='https://' + self.BRIDGE_IP + '/api/rest/{url}'.format(url=url), verify=False,
                                     data=json.dumps(payload) ,headers=Authorization)
         return Post_Return
-        print(Post_Return.text)
+        # print(Post_Return.text)
 
     # Will CREDIT/CASH into the Margin Account
     # Will return a tuple of  (True/False, Json)

@@ -1154,13 +1154,16 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
     df_all_trades = pd.DataFrame(all_trades)
 
 
+
+
     if len(df_all_trades) <= 0:
-        return json.dumps({"H1": [{"Error": "No Trades for {} Found".format(symbol)}],
-                           "H2": [{"Error": "No Trades for {} Found".format(symbol)}] })
+        return json.dumps({"H1": [{"Details": "No Trades for {} Found".format(symbol)}],
+                           "H2": [{"Details": "No Trades for {} Found".format(symbol)}] })
 
     # Do transformation for all subsequent dfs.
     df_all_trades["LOTS"] = df_all_trades["LOTS"].apply(lambda x: float(x))  # Convert from decimal.decimal
     # Use for calculating net volume. Want to know if net buy or sell
+
     df_all_trades["NET_LOTS"] = df_all_trades.apply(lambda x: x["LOTS"] if x['CMD'] == 0 else -1 * x["LOTS"], axis=1)
 
     df_all_trades["TOTAL_PROFIT"] = df_all_trades.apply(lambda x: x["CONVERTED_REVENUE"] + x['REBATE'], axis=1)
@@ -1181,6 +1184,7 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
     # Want to add in MT5 Details here.
     mt5_symbol_results_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="""call aaron.`BGI_MT5_Float_Query`()""", unsync_app=current_app._get_current_object())
+
     mt5_symbol_results = mt5_symbol_results_unsync.result()
     mt5_symbol_results_df = color_profit_for_df(mt5_symbol_results, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
 

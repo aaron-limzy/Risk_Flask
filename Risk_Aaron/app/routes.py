@@ -1413,6 +1413,8 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     df_mt4_postion = pd.DataFrame(data=curent_result)
 
 
+
+
     #print(df_mt4_postion)
 
 
@@ -1433,6 +1435,8 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     df_postion["Discrepancy"] = df_postion["Lp_Net_lot"]  - (df_postion["MT4_Net_Lots"] + df_postion["MT5 Net Lots"]) - df_postion["Offset_lot"]
     df_postion["Discrepancy"] =  df_postion["Discrepancy"].apply(lambda x: round(x, 2))
     df_postion["Total_Revenue"] = df_postion["MT4_Revenue"] + df_postion["MT5_REVENUE"] + df_postion["MT5_Swaps"]
+
+
 
     # If we want to put in an artificial off set for testing.
     if artificial_offset:
@@ -1543,7 +1547,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 
 
         # # #To Artificially induce a mismatch
-        # # curent_result[0]["Discrepancy"] = 0.01
+        # curent_result[0]["Discrepancy"] = 0.01
         # # curent_result[1]["Discrepancy"] = 0.01
         # # curent_result[2]["Discrepancy"] = 0.01
 
@@ -1749,6 +1753,8 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     # Want to color the Revenue column
     if "Total_Revenue" in df_postion:
         df_postion["Total_Revenue"] = df_postion["Total_Revenue"].apply(profit_red_green)
+
+
 
 
     curent_result = df_postion.to_dict("records")

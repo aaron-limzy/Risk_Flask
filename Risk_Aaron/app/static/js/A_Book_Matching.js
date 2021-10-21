@@ -385,6 +385,7 @@ $(document).ready(function(){
         sString += '</table>';
         return sString;
     }
+
     // Function to delete all the rows that has it all as 0.
     function Table_Zero_Out(Table_Data){
 
@@ -436,6 +437,12 @@ $(document).ready(function(){
             //     Table_Data_Updated.push(Table_Data[x]);	// Push it in if its non-empty.
             // }
         }
+
+        if (Table_Data_Updated.length == 0){
+          Table_Data_Updated.push({"Comment": "No A Book Position"});
+
+      }
+
         return Table_Data_Updated;
     }
 
