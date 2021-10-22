@@ -1067,8 +1067,8 @@ def symbol_float_trades(symbol="", book="b"):
     #
 
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("symbol_float_trades"), icon="",
-                           Table_name={ "Total Floating (BGI Side)": "V1",
-                                        "Country Floating (BGI Side)": "Hs5",
+                           Table_name={ "Country MT5 Float (BGI Side)": "Hs7",
+                                        "Country MT4 Float (BGI Side)": "Hs5",
                                         "Winning Floating Groups (Client Side)": "Hs1",
                                         "Losing Floating Groups (Client Side)": "Hs2",
                                         "Winning Floating Accounts (Client Side)": "H1",
@@ -1122,6 +1122,54 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
     all_open_trades_start = datetime.datetime.now()
     print("entities : {}".format(entities))
 
+    # We want to show the MT5 Position on the top left table. For now...
+    country_mt5_res = {}
+    if symbol != None:
+        # Want to add in MT5 Details here.
+        mt5_symbol_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="""call yudi.`getFloatingTradesBySymbol`('{}', '{}')""".format(symbol, book),
+                                                              unsync_app=current_app._get_current_object())
+
+        mt5_symbol_results = mt5_symbol_unsync.result()
+        df_mt5_country = pd.DataFrame(mt5_symbol_results)
+        # print(df_mt5_country)
+
+        # # All the columns
+        # ['Book', 'Live', 'PositionID', 'Login', 'Group', 'Symbol', 'BaseSymbol', 'Action', 'TimeCreate', 'TimeUpdate',
+        #  'PriceOpen', 'PriceCurrent', 'PriceSL', 'PriceTP', 'Volume', 'Profit', 'Storage', 'Country']
+
+        mt5_symbol_cols = ['COUNTRY', 'LOTS', 'NET_LOTS',  'PROFIT', 'REBATE', 'CONVERTED_REVENUE']
+
+        df_mt5_country.rename(columns={"Volume" : "NET_LOTS", "Country" : "COUNTRY",
+                                       "Profit" : "PROFIT", "Storage" : "SWAP", 'Rebate':'REBATE'}, inplace=True)
+
+        # To calculate the net lots
+        if all([c in df_mt5_country.columns for c in ['NET_LOTS', 'Action']]):
+            df_mt5_country['LOTS'] = df_mt5_country.apply(lambda x: x['NET_LOTS'] if x['Action']==0 else -1*x['NET_LOTS'], axis=1)
+
+        # To calculate the total profit.
+        if all([c in df_mt5_country.columns for c in ['SWAP', 'PROFIT']]):
+            df_mt5_country['CONVERTED_REVENUE'] = df_mt5_country['SWAP'] + df_mt5_country['PROFIT']
+
+
+        print(df_mt5_country)
+
+        if len(df_mt5_country) == 0:
+            country_mt5_res = [{f"MT5 {symbol} Floating": f"No Open trades for {symbol}"}]
+        else:
+            df_mt5_country_group = df_mt5_country[[c for c in mt5_symbol_cols if c in df_mt5_country.columns]]
+            df_mt5_country_group = df_mt5_country_group.groupby("COUNTRY").sum().reset_index()
+
+            # Color the Profits
+            df_mt5_country_group["CONVERTED_REVENUE"] = df_mt5_country_group["CONVERTED_REVENUE"].apply(profit_red_green)
+            df_mt5_country_group["PROFIT"] = df_mt5_country_group["PROFIT"].apply(profit_red_green)
+
+
+            country_mt5_res = df_mt5_country_group.to_dict("records")
+
+    else:
+        country_mt5_res = [{f"MT5 {symbol} Floating": f"No Open trades for {symbol}"}]
+
+
     # Want to reduce the overheads
     # We can't do this in the threads.
     ServerTimeDiff_Query = "{}".format(session["live1_sgt_time_diff"]) if "live1_sgt_time_diff" in session \
@@ -1157,8 +1205,14 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
 
     if len(df_all_trades) <= 0:
-        return json.dumps({"H1": [{"Details": "No Trades for {} Found".format(symbol)}],
-                           "H2": [{"Details": "No Trades for {} Found".format(symbol)}] })
+        return_dict = {"H1": [{"Details": "No Trades for {} Found".format(symbol)}],
+                               "H2": [{"Details": "No Trades for {} Found".format(symbol)}] }
+
+        # If there are trades on MT5, we want to be able to add it in as well. 
+        if len(country_mt5_res) != 0:
+            return_dict['Hs7'] = country_mt5_res
+
+        return json.dumps(return_dict)
 
     # Do transformation for all subsequent dfs.
     df_all_trades["LOTS"] = df_all_trades["LOTS"].apply(lambda x: float(x))  # Convert from decimal.decimal
@@ -1263,7 +1317,7 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
     # Return the values as json.
     # Each item in the returned dict will become a table, or a plot
-    return json.dumps({"V1": [total_sum.to_dict()],
+    return json.dumps({"Hs7": [total_sum.to_dict()] if symbol == None else country_mt5_res,
                        "Hs5" : open_by_country.to_dict("records"),
                         "Hs1": top_groups.to_dict("records"),
                        "Hs2": bottom_groups.to_dict("records"),
