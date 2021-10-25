@@ -321,9 +321,27 @@ def mt4_Symbol_Float_Data():
     if "SYMBOL" in df_floating and "SYMBOL" in df_yesterday_symbol_pnl:
         df_to_table = df_floating.merge(df_yesterday_symbol_pnl, on="SYMBOL", how='outer')
         #df_to_table.fillna("-", inplace=True)  # Want to fill up all the empty ones with -
+
     return df_to_table
 
 
+# Want to get the moving average of all the symbols from MT4
+def mt4_symbol_average_data():
+
+    sql_statement = """ SELECT DATE, Basesymbol, MA10_VOL as `CLOSE_MA10`
+         FROM aaron.sf_daily_close_vol as sf 
+         WHERE sf.DATE in (SELECT CASE WEEKDAY(NOW())
+                                                        WHEN 6 THEN DATE(DATE_SUB(NOW(), INTERVAL 2 DAY))
+                                                        WHEN 0 THEN DATE(DATE_SUB(NOW(), INTERVAL 3 DAY))
+                                                        ELSE DATE(DATE_SUB(NOW(), INTERVAL 1 DAY))
+                                                END as `Last_Weekday`
+                                                )
+        """
+
+
+    result = query_SQL_return_record(text(sql_statement))
+    result = pd.DataFrame(result)
+    return result
 
 
 @mt4_mt5_bp.route('/BGI_All_Symbol_Float', methods=['GET', 'POST'])
@@ -368,7 +386,7 @@ def BGI_All_Symbol_Float():
                            title=title, ajax_url=url_for('mt4_mt5.BGI_All_Symbol_Float_ajax', _external=True),
                            header=header, setinterval=15,
                            tableau_url=Markup(symbol_float_tableau()),
-                           description=description, no_backgroud_Cover=True, replace_words=Markup(['(Client Side)']))
+                           description=description, no_backgroud_Cover=True, replace_words=Markup(['(High)']))
 
 
 # Get BGI Float by Symbol
@@ -390,6 +408,9 @@ def BGI_All_Symbol_Float_ajax():
     # print("Time taken for MT4 call: {}".format((datetime.datetime.now() - start_time).total_seconds()))
     start_time = datetime.datetime.now()
     df_mt5 = mt5_symbol_float_data()
+
+    # df_mt4_average = mt4_symbol_average_data()
+    #print(df_mt4_average)
 
     # print("Time taken for MT5 Call: {}".format((datetime.datetime.now() - start_time).total_seconds()))
 
@@ -444,7 +465,11 @@ def BGI_All_Symbol_Float_ajax():
     # # df_to_table = pd.concat([df_mt4, df_mt5], ignore_index=True)
     # print(df_to_table)
 
-
+    # Want to merge it to compare it with the average of MT4 to compare.
+    # df_to_table = df_to_table.merge(df_mt4_average, left_on="SYMBOL", right_on="Basesymbol", how="left")
+    #
+    #
+    # print(df_to_table)
 
     #['SYMBOL', 'FLOATING_LOTS', 'NET_LOTS', 'REVENUE', 'TODAY_LOTS','TODAY_REVENUE', 'ASK', 'BID', 'DATETIME', 'YESTERDAY_LOTS','YESTERDAY_REVENUE', 'YESTERDAY_DATE']
 
@@ -510,15 +535,21 @@ def BGI_All_Symbol_Float_ajax():
     if "YESTERDAY_LOTS" in df_to_table:
         # Hyperlink it.
         df_to_table["YESTERDAY_LOTS"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_LOTS}</a>""".format( \
+
                                                             url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
                                                             YESTERDAY_LOTS=round(x["YESTERDAY_LOTS"], 2) if isfloat(x["YESTERDAY_LOTS"]) else x["YESTERDAY_LOTS"]),
                                                             axis=1)
 
 
     if "TODAY_LOTS" in df_to_table:
-    # Want to hyperlink it.
-        df_to_table["TODAY_LOTS"] = df_to_table.apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{TODAY_LOTS:.2f}</a>'.format(TODAY_LOTS=x['TODAY_LOTS'],
-                                                                    url=url_for('analysis.symbol_float_trades', _external=True, symbol=x['SYMBOL'], book="b")), axis=1)
+        # Want to hyperlink it.
+        # Will need to write in '(High)' so that Javascript can pick it up and highlight the cell
+        df_to_table["TODAY_LOTS"] = df_to_table.apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{TODAY_LOTS:.2f}</a>'.format( \
+                                                        TODAY_LOTS=x['TODAY_LOTS'],
+                                                        url=url_for('analysis.symbol_float_trades',
+                                                                    _external=True, symbol=x['SYMBOL'],
+                                                                    book="b")),
+                                                      axis=1)
 
 
     if "FLOATING_LOTS" in df_to_table:
@@ -561,7 +592,10 @@ def BGI_All_Symbol_Float_ajax():
 
     # Want only those columns that are in the df
     # Might be missing cause the PnL could still be saving.
-    col_of_df_return = [c for c in ["SYMBOL", "NET_LOTS", "FLOATING_LOTS", "REVENUE", "TODAY_LOTS", \
+
+
+
+    col_of_df_return = [c for c in ["SYMBOL", "NET_LOTS", "FLOATING_LOTS", "REVENUE", "TODAY_LOTS", "CLOSE_MA10",\
                                     "TODAY_REVENUE", "BID", "ASK","YESTERDAY_LOTS", "YESTERDAY_REVENUE"] \
                         if c in  list(df_to_table.columns)]
 
@@ -605,6 +639,309 @@ def BGI_All_Symbol_Float_ajax():
     return json.dumps([return_val, ", ".join(datetime_pull), ", ".join(yesterday_datetime_pull)], cls=plotly.utils.PlotlyJSONEncoder)
 
 
+
+###################
+
+
+
+@mt4_mt5_bp.route('/BGI_All_Symbol_Float2', methods=['GET', 'POST'])
+@roles_required()
+def BGI_All_Symbol_Float2():
+
+    title = "MT4/MT5 Symbol Float"
+    header = "MT4/MT5 Symbol Float"
+
+    # For %TW% Clients where EQUITY < CREDIT AND ((CREDIT = 0 AND BALANCE > 0) OR CREDIT > 0) AND `ENABLE` = 1 AND ENABLE_READONLY = 0
+    # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
+    # For Login in aaron.Risk_autocut and Credit_limit != 0
+
+
+    description = Markup("<b>Floating PnL By Symbol for MT4 and MT5.</b><br>"+
+                         "Includes B book Groups. <br>"+
+                         'Using Live5.group_table where book = "B" for MT4 Groups<br>' +
+                         'HK Is excluded from all symbols <br>'  +
+                         '<br><br>' +
+
+                         'NET LOTS : Net Lots BGI is holding. (Buy +ve, Sell -ve)<br>' +
+                         'FLOATING LOTS : Total Open Lots (Regardless of Buy or sell)<br>' +
+                         'REVENUE : Floating USD Converted Profit + Swaps. (BGI SIde)<br>' +
+                         'TODAY LOTS : Lots closed today.<br>' +
+                         'TODAY REVENUE : Closed Revenue for today<br>' +
+                         'YESTERDAY LOTS : Total Lots closed in the last trading day<br>' +
+                         'YESTERDAY REVENUE : REVENUE of all closed trades in the last trading day<br>' +
+                         '<br><br>' +
+                         'Values are all on <b>BGI Side</b>. <br>' +
+                         'Sort by absolute net volume.<br>'+
+                         "Yesterday Data saved in cookies.<br>" +
+                         "Taking Live prices from Live 1 q Symbols.<br>" + \
+                         "For ticks that Live 1 dosn't have, Ticks are taken from Live 2.")
+
+
+
+
+        # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("Webworker_Symbol_Float.html", backgroud_Filename=background_pic("BGI_Symbol_Float"),
+                           icon= "",
+                           Table_name="MT4/MT5 Symbol Float (B 📘)", \
+                           title=title, ajax_url=url_for('mt4_mt5.BGI_All_Symbol_Float_ajax2', _external=True),
+                           header=header, setinterval=15,
+                           tableau_url=Markup(symbol_float_tableau()),
+                           description=description, no_backgroud_Cover=True, replace_words=Markup(['(High)']))
+
+
+# Get BGI Float by Symbol
+@mt4_mt5_bp.route('/BGI_All_Symbol_Float_ajax2', methods=['GET', 'POST'])
+@roles_required()
+def BGI_All_Symbol_Float_ajax2():
+
+
+
+    # start_time = datetime.datetime.now()
+    #start = datetime.datetime.now()
+    # TODO: Only want to save during trading hours.
+    # TODO: Want to write a custom function, and not rely on using CFH timing.
+    if not cfh_fix_timing():
+        return json.dumps([[{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}]])
+
+    # Get all the data that is pertainint to MT4 Floating.
+    df_mt4 = mt4_Symbol_Float_Data()
+    # print("Time taken for MT4 call: {}".format((datetime.datetime.now() - start_time).total_seconds()))
+    start_time = datetime.datetime.now()
+    df_mt5 = mt5_symbol_float_data()
+
+    df_mt4_average = mt4_symbol_average_data()
+    #print(df_mt4_average)
+
+    # print("Time taken for MT5 Call: {}".format((datetime.datetime.now() - start_time).total_seconds()))
+
+    # print()
+    # print(df_mt4.columns)
+    # print()
+    # print(df_mt5.columns)
+
+    #MT4 #['SYMBOL', 'VOLUME', 'NETVOL', 'REVENUE', 'TODAY_VOL', 'TODAY_REVENUE', 'ASK', 'BID', 'DATETIME', 'YESTERDAY_VOLUME', 'YESTERDAY_REVENUE', 'YESTERDAY_DATE'],
+    #MT5 %['SYMBOL', 'FLOATING_LOTS', 'NET_LOTS', 'REVENUE', 'TODAY_LOTS', 'TODAY_REVENUE', 'YESTERDAY_LOTS', 'YESTERDAY_REVENUE', 'YESTERDAY_REBATE', 'YESTERDAY_DATETIME_PULL', 'DATETIME']
+
+    df_mt4.rename(columns={"NETVOL": "NET_LOTS", "VOLUME": "FLOATING_LOTS", "TODAY_VOL" : "TODAY_LOTS", "YESTERDAY_VOLUME": "YESTERDAY_LOTS"}, inplace=True)
+
+    # Clearing up columns that is not needed.
+    if "DATETIME" in df_mt5:
+        df_mt5.pop("DATETIME")
+    if "YESTERDAY_DATETIME_PULL" in df_mt5:
+        df_mt5.pop("YESTERDAY_DATETIME_PULL")
+    if "YESTERDAY_REBATE" in df_mt5:
+        df_mt5.pop("YESTERDAY_REBATE")
+
+
+    # Concat the MT4 and MT5 Tables
+    df_to_table = pd.concat([df_mt4, df_mt5], ignore_index=True)
+
+    # Want to get the ticks that Live 1 don't have from Live 2.
+    # Need to do some Clean up for CFDs as well.
+    missing_ticks_df = get_live2_ask_bid(list(df_to_table[df_to_table['BID'].isnull()]['SYMBOL'].unique()) + [".DE30"])
+
+
+    if 'MODIFY_TIME' in missing_ticks_df:
+        missing_ticks_df.pop("MODIFY_TIME")
+    df_to_table = pd.concat([df_to_table, missing_ticks_df], ignore_index=True)
+
+
+
+
+    # Want to Aggregate the columns accordingly.
+    df_to_table = df_to_table.groupby("SYMBOL").agg(
+        NET_LOTS=           pd.NamedAgg(column="NET_LOTS", aggfunc="sum"),
+        FLOATING_LOTS=      pd.NamedAgg(column="FLOATING_LOTS", aggfunc="sum"),
+        REVENUE=            pd.NamedAgg(column="REVENUE", aggfunc="sum"),
+        TODAY_LOTS=         pd.NamedAgg(column="TODAY_LOTS", aggfunc="sum"),
+        TODAY_REVENUE=      pd.NamedAgg(column="TODAY_REVENUE", aggfunc="sum"),
+        BID=                pd.NamedAgg(column="BID", aggfunc="mean"),
+        ASK=                pd.NamedAgg(column="ASK", aggfunc="mean"),
+        YESTERDAY_LOTS=     pd.NamedAgg(column="YESTERDAY_LOTS", aggfunc="sum"),
+        YESTERDAY_REVENUE=  pd.NamedAgg(column="YESTERDAY_REVENUE", aggfunc="sum")   ).reset_index()
+
+    # # pd.set_option('display.max_columns', None)
+    # print()
+    # # df_to_table = pd.concat([df_mt4, df_mt5], ignore_index=True)
+    # print(df_to_table)
+
+    # Want to merge it to compare it with the average of MT4 to compare.
+    df_to_table = df_to_table.merge(df_mt4_average, left_on="SYMBOL", right_on="Basesymbol", how="left")
+
+
+    print(df_to_table)
+
+    #['SYMBOL', 'FLOATING_LOTS', 'NET_LOTS', 'REVENUE', 'TODAY_LOTS','TODAY_REVENUE', 'ASK', 'BID', 'DATETIME', 'YESTERDAY_LOTS','YESTERDAY_REVENUE', 'YESTERDAY_DATE']
+
+    # print(df_to_table)
+    # print()
+    yesterday_datetime_pull = ["No YESTERDAY_DATE in df."]
+    # We already know the date. No need to carry on with this data.
+    if "YESTERDAY_DATE" in df_to_table:
+
+        # Want to get the Unique date for the "Yesterday" date.
+        # Want to know the date of the symbol "yesterday" details.
+        yesterday_datetime_pull = [c for c in list(df_to_table[df_to_table['YESTERDAY_DATE'].notna()]['YESTERDAY_DATE'].unique()) if c != 0]
+
+        # We have no need for the column anymore.
+        df_to_table.pop('YESTERDAY_DATE')
+
+
+    #end = datetime.datetime.now()
+    #print("\nGetting SYMBOL PnL tool[After Query]: {}s\n".format((end - start).total_seconds()))
+
+    datetime_pull = ["No Datetime in df."]   # Default Value
+    if "DATETIME" in df_to_table:
+        # Get Datetime into string
+        df_to_table['DATETIME'] = df_to_table['DATETIME'].apply(lambda x: Get_time_String(x) if isinstance(x, pd.Timestamp) else x)
+        #print(df_to_table['DATETIME'])
+        datetime_pull =  [c for c in list(df_to_table['DATETIME'][df_to_table['DATETIME'].notnull()].unique()) if c != 0]
+        df_to_table.pop('DATETIME')
+
+
+
+    # Sort by abs net volume
+    df_to_table["ABS_NET"] = df_to_table["NET_LOTS"].apply(lambda x: abs(x))
+    df_to_table.sort_values(by=["ABS_NET"], inplace=True, ascending=False)
+    df_to_table.pop('ABS_NET')
+
+
+    # SQL sometimes return values with lots of decimal points.
+    # We only want to show afew. Else, it takes up too much screen space.
+    # Want to do this for both BID and ASK column
+    col_from_exp_to_str = ["BID", "ASK"]
+    for c in col_from_exp_to_str:
+        if c in df_to_table:
+            df_to_table[c] = df_to_table[c].apply(lambda x: "{:2.5f}".format(float(x)) if (isfloat(decimal.Decimal(str(x)).as_tuple().exponent)
+                                                                                            and (decimal.Decimal(str(x)).as_tuple().exponent < -5)) else x)
+
+    # Time to fill in the NAs
+    df_to_table.fillna("-", inplace=True)
+
+
+
+    # Hyperlink this.
+    if "YESTERDAY_REVENUE" in df_to_table:
+        # Hyperlink it.
+        df_to_table["YESTERDAY_REVENUE"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_REVENUE}</a>""".format( \
+                                                            url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
+                                                            YESTERDAY_REVENUE=profit_red_green(x["YESTERDAY_REVENUE"]) if isfloat(x["YESTERDAY_REVENUE"]) else x["YESTERDAY_REVENUE"] ),
+                                                            axis=1)
+
+
+    # Also want to hyperlink this.
+    # Just.. to have more hypterlink. HA ha ha.
+    # Haven changed name yet. So it's still names "volume"
+    if "YESTERDAY_LOTS" in df_to_table:
+        # Hyperlink it.
+        df_to_table["YESTERDAY_LOTS"] = df_to_table.apply(lambda x: """<a style="color:black" href="{url}" target="_blank">{YESTERDAY_LOTS}</a>""".format( \
+
+                                                            url=url_for('analysis.symbol_closed_trades', _external=True, symbol=x["SYMBOL"], book="b", days=-1),
+                                                            YESTERDAY_LOTS=round(x["YESTERDAY_LOTS"], 2) if isfloat(x["YESTERDAY_LOTS"]) else x["YESTERDAY_LOTS"]),
+                                                            axis=1)
+
+
+    if "TODAY_LOTS" in df_to_table:
+        # Want to hyperlink it.
+        # Will need to write in '(High)' so that Javascript can pick it up and highlight the cell
+        df_to_table["TODAY_LOTS"] = df_to_table.apply(lambda x: '{High_vol}<a style="color:black" href="{url}" target="_blank">{TODAY_LOTS:.2f}</a>'.format( \
+                                                        High_vol="(High)" if x['TODAY_LOTS'] >= x["CLOSE_MA10"] else "",
+                                                        TODAY_LOTS=x['TODAY_LOTS'],
+                                                        url=url_for('analysis.symbol_float_trades',
+                                                                    _external=True, symbol=x['SYMBOL'],
+                                                                    book="b")),
+                                                      axis=1)
+
+
+    if "FLOATING_LOTS" in df_to_table:
+        # Want to hyperlink it.
+        df_to_table["FLOATING_LOTS"] = df_to_table.apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{FLOATING_LOTS'
+                                                                   '}</a>'.format(\
+                                                                        FLOATING_LOTS="{:.2f}".format(x['FLOATING_LOTS']) if isfloat(x['FLOATING_LOTS']) else x['FLOATING_LOTS'],
+                                                                        url=url_for('analysis.symbol_float_trades', _external=True, symbol=x['SYMBOL'], book="b")), axis=1)
+
+
+    # Want to hyperlink it.
+    df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{symbol}</a>'.format(symbol=x,
+                                                                    url=url_for('analysis.symbol_float_trades', _external=True, symbol=x, book="b")))
+
+
+   # # # Want to add colors to the words.
+    # Want to color the REVENUE
+    cols = ["REVENUE", "TODAY_REVENUE", "NET_LOTS"]
+    for c in cols:
+        if c in df_to_table:
+            df_to_table[c] = df_to_table[c].apply(lambda x: """{c}""".format(c=profit_red_green(x) if isfloat(x) else x))
+
+    #Rename the VOLUME to LOTs
+    # df_to_table.rename(columns={"NETVOL": "NET_LOTS", "VOLUME": "FLOATING_LOTS",
+    #                             "TODAY_VOL" : "TODAY_LOTS", "YESTERDAY_VOLUME": "YESTERDAY_LOTS"}, inplace=True)
+
+    ## Want to check if YESTERDAY_VOLUME and YESTERDAY_REVENUE are in.
+    # # Ment for debugging the 5.10am to 7.55am issue.
+    if 'YESTERDAY_LOTS' not in df_to_table.columns or 'YESTERDAY_REVENUE' not in df_to_table.columns:
+        # Send email
+        #print(session)
+        session_array = []
+        for u in list(session.keys()):
+            session_array.append("{} : {}".format(u, session[u]))
+        #print("<br><br>".join(session_array))
+        # async_send_email(To_recipients=["aaron.lim@blackwellglobal.com"], cc_recipients=[], Subject="Yesterday_lots or Yesterday_revenue Missing",
+        #                  HTML_Text="df_to_table <br><br>{}<br><br>session<br><br>{}".format(df_to_table.to_html() , "<br><br>".join(session_array)),
+        #                  Attachment_Name=[])
+
+
+    # Want only those columns that are in the df
+    # Might be missing cause the PnL could still be saving.
+
+
+
+    col_of_df_return = [c for c in ["SYMBOL", "NET_LOTS", "FLOATING_LOTS", "REVENUE", "TODAY_LOTS", "CLOSE_MA10",\
+                                    "TODAY_REVENUE", "BID", "ASK","YESTERDAY_LOTS", "YESTERDAY_REVENUE"] \
+                        if c in  list(df_to_table.columns)]
+
+    # Pandas return list of dicts.
+    return_val = df_to_table[col_of_df_return].to_dict("record")
+
+
+
+    #end = datetime.datetime.now()
+    #print("\nGetting Country PnL tool[Before Chart]: {}s\n".format((end - start).total_seconds()))
+
+    # For plotting.
+
+    fig = []
+    # bar_color = df_to_table['REVENUE'].apply(lambda x: "green" if x >= 0 else 'red')
+    # fig = go.Figure(data=[
+    #     go.Bar(name="Total Volume", y=df_to_table['REVENUE'], x=chart_Country, text=df_to_table['REVENUE'], textposition='outside',
+    #            cliponaxis=False, textfont=dict(size=14), marker_color=bar_color)
+    # ])
+    #
+    # fig.update_layout(
+    #     autosize=True,
+    #     margin=dict(pad=1),
+    #     yaxis=dict(
+    #         title_text="Revenue",
+    #         ticks="outside", tickcolor='white', ticklen=15,
+    #         layer='below traces'
+    #     ),
+    #     yaxis_tickfont_size=14,
+    #     xaxis=dict(
+    #         title_text="Country"
+    #     ),
+    #     xaxis_tickfont_size=15,
+    #     title_text='Floating Revenue by Country',
+    #     titlefont=dict(size=28, family="'Montserrat', sans-serif"),
+    #     title_x=0.5
+    # )
+
+    #end = datetime.datetime.now()
+    #print("\nGetting SYMBOL PnL tool: {}s\n".format((end - start).total_seconds()))
+    return json.dumps([return_val, ", ".join(datetime_pull), ", ".join(yesterday_datetime_pull)], cls=plotly.utils.PlotlyJSONEncoder)
+
+
+
+#####################
 
 
 
