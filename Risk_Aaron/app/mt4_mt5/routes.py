@@ -768,7 +768,7 @@ def BGI_All_Symbol_Float_ajax2():
         df_to_table = df_to_table.merge(df_mt4_average, left_on="SYMBOL", right_on="Basesymbol", how="left")
 
 
-    print(df_to_table)
+    #print(df_to_table)
 
     #['SYMBOL', 'FLOATING_LOTS', 'NET_LOTS', 'REVENUE', 'TODAY_LOTS','TODAY_REVENUE', 'ASK', 'BID', 'DATETIME', 'YESTERDAY_LOTS','YESTERDAY_REVENUE', 'YESTERDAY_DATE']
 
