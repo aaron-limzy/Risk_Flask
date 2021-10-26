@@ -446,8 +446,6 @@ def BGI_All_Symbol_Float_ajax():
     df_to_table = pd.concat([df_to_table, missing_ticks_df], ignore_index=True)
 
 
-
-
     # Want to Aggregate the columns accordingly.
     df_to_table = df_to_table.groupby("SYMBOL").agg(
         NET_LOTS=           pd.NamedAgg(column="NET_LOTS", aggfunc="sum"),
@@ -766,7 +764,8 @@ def BGI_All_Symbol_Float_ajax2():
     # print(df_to_table)
 
     # Want to merge it to compare it with the average of MT4 to compare.
-    df_to_table = df_to_table.merge(df_mt4_average, left_on="SYMBOL", right_on="Basesymbol", how="left")
+    if "Basesymbol" in df_mt4_average and len(df_mt4_average) > 0:
+        df_to_table = df_to_table.merge(df_mt4_average, left_on="SYMBOL", right_on="Basesymbol", how="left")
 
 
     print(df_to_table)
@@ -845,7 +844,7 @@ def BGI_All_Symbol_Float_ajax2():
         # Want to hyperlink it.
         # Will need to write in '(High)' so that Javascript can pick it up and highlight the cell
         df_to_table["TODAY_LOTS"] = df_to_table.apply(lambda x: '{High_vol}<a style="color:black" href="{url}" target="_blank">{TODAY_LOTS:.2f}</a>'.format( \
-                                                        High_vol="(High)" if x['TODAY_LOTS'] >= x["CLOSE_MA10"] else "",
+                                                        High_vol="(High)" if ('CLOSE_MA10' in x and x['TODAY_LOTS'] >= x["CLOSE_MA10"]) else "",
                                                         TODAY_LOTS=x['TODAY_LOTS'],
                                                         url=url_for('analysis.symbol_float_trades',
                                                                     _external=True, symbol=x['SYMBOL'],
