@@ -328,16 +328,16 @@ def mt4_Symbol_Float_Data():
 # Want to get the moving average of all the symbols from MT4
 def mt4_symbol_average_data():
 
-    sql_statement = """ SELECT DATE, Basesymbol, MA10_VOL as `CLOSE_MA10`
-         FROM aaron.sf_daily_close_vol as sf 
-         WHERE sf.DATE in (SELECT CASE WEEKDAY(NOW())
-                                                        WHEN 6 THEN DATE(DATE_SUB(NOW(), INTERVAL 2 DAY))
-                                                        WHEN 0 THEN DATE(DATE_SUB(NOW(), INTERVAL 3 DAY))
-                                                        ELSE DATE(DATE_SUB(NOW(), INTERVAL 1 DAY))
-                                                END as `Last_Weekday`
-                                                )
-        """
-
+    # sql_statement = """ SELECT DATE, Basesymbol, MA10_VOL as `CLOSE_MA10`
+    #      FROM aaron.sf_daily_close_vol as sf
+    #      WHERE sf.DATE in (SELECT CASE WEEKDAY(NOW())
+    #                                                     WHEN 6 THEN DATE(DATE_SUB(NOW(), INTERVAL 2 DAY))
+    #                                                     WHEN 0 THEN DATE(DATE_SUB(NOW(), INTERVAL 3 DAY))
+    #                                                     ELSE DATE(DATE_SUB(NOW(), INTERVAL 1 DAY))
+    #                                             END as `Last_Weekday`
+    #                                             )
+    #     """
+    sql_statement = """ call aaron.`sf_BBOOK_Daily_close_MA10`"""
 
     result = query_SQL_return_record(text(sql_statement))
     result = pd.DataFrame(result)
@@ -708,7 +708,8 @@ def BGI_All_Symbol_Float_ajax2():
     df_mt5 = mt5_symbol_float_data()
 
     df_mt4_average = mt4_symbol_average_data()
-    #print(df_mt4_average)
+    print("df_mt4_average")
+    print(df_mt4_average)
 
     # print("Time taken for MT5 Call: {}".format((datetime.datetime.now() - start_time).total_seconds()))
 
@@ -766,6 +767,8 @@ def BGI_All_Symbol_Float_ajax2():
     # Want to merge it to compare it with the average of MT4 to compare.
     if "Basesymbol" in df_mt4_average and len(df_mt4_average) > 0:
         df_to_table = df_to_table.merge(df_mt4_average, left_on="SYMBOL", right_on="Basesymbol", how="left")
+    else:
+        print("Nothing to join on.")
 
 
     #print(df_to_table)
@@ -844,7 +847,7 @@ def BGI_All_Symbol_Float_ajax2():
         # Want to hyperlink it.
         # Will need to write in '(High)' so that Javascript can pick it up and highlight the cell
         df_to_table["TODAY_LOTS"] = df_to_table.apply(lambda x: '{High_vol}<a style="color:black" href="{url}" target="_blank">{TODAY_LOTS:.2f}</a>'.format( \
-                                                        High_vol="(High)" if ('CLOSE_MA10' in x and x['TODAY_LOTS'] >= x["CLOSE_MA10"]) else "",
+                                                        High_vol="(High)" if ('MA10_VOL' in x and x['TODAY_LOTS'] >= x["MA10_VOL"]) else "",
                                                         TODAY_LOTS=x['TODAY_LOTS'],
                                                         url=url_for('analysis.symbol_float_trades',
                                                                     _external=True, symbol=x['SYMBOL'],
@@ -895,7 +898,7 @@ def BGI_All_Symbol_Float_ajax2():
 
 
 
-    col_of_df_return = [c for c in ["SYMBOL", "NET_LOTS", "FLOATING_LOTS", "REVENUE", "TODAY_LOTS", "CLOSE_MA10",\
+    col_of_df_return = [c for c in ["SYMBOL", "NET_LOTS", "FLOATING_LOTS", "REVENUE", "TODAY_LOTS", "MA10_VOL",\
                                     "TODAY_REVENUE", "BID", "ASK","YESTERDAY_LOTS", "YESTERDAY_REVENUE"] \
                         if c in  list(df_to_table.columns)]
 

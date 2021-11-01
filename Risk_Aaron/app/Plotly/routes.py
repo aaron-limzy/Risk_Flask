@@ -1067,8 +1067,8 @@ def symbol_float_trades(symbol="", book="b"):
     #
 
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("symbol_float_trades"), icon="",
-                           Table_name={ "Country MT5 Float (BGI Side)": "Hs7",
-                                        "Country MT4 Float (BGI Side)": "Hs5",
+                           Table_name={ "Country MT4 Float (BGI Side)": "Hs5",
+                                        "Country MT5 Float (BGI Side)": "Hs7",
                                         "Winning Floating Groups (Client Side)": "Hs1",
                                         "Losing Floating Groups (Client Side)": "Hs2",
                                         "Winning Floating Accounts (Client Side)": "H1",
@@ -1139,8 +1139,12 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
         mt5_symbol_cols = ['COUNTRY', 'LOTS', 'NET_LOTS',  'PROFIT', 'REBATE', 'CONVERTED_REVENUE']
 
-        df_mt5_country.rename(columns={"Volume" : "NET_LOTS", "Country" : "COUNTRY",
-                                       "Profit" : "PROFIT", "Storage" : "SWAP", 'Rebate':'REBATE'}, inplace=True)
+        # Want to rename the columns. 
+        df_mt5_country.rename(columns={"Volume" : "NET_LOTS",
+                                       "Country" : "COUNTRY",
+                                       "Profit" : "PROFIT",
+                                       "Storage" : "SWAP",
+                                       'Rebate':'REBATE'}, inplace=True)
 
         # To calculate the net lots
         if all([c in df_mt5_country.columns for c in ['NET_LOTS', 'Action']]):
@@ -1151,7 +1155,7 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
             df_mt5_country['CONVERTED_REVENUE'] = df_mt5_country['SWAP'] + df_mt5_country['PROFIT']
 
 
-        print(df_mt5_country)
+        #print(df_mt5_country)
 
         if len(df_mt5_country) == 0:
             country_mt5_res = [{f"MT5 {symbol} Floating": f"No Open trades for {symbol}"}]
@@ -1317,25 +1321,26 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
     # Return the values as json.
     # Each item in the returned dict will become a table, or a plot
-    return json.dumps({"Hs7": [total_sum.to_dict()] if symbol == None else country_mt5_res,
-                       "Hs5" : open_by_country.to_dict("records"),
+    return json.dumps({
+                        "Hs5": open_by_country.to_dict("records"),
+                        "Hs7": [total_sum.to_dict()] if symbol == None else country_mt5_res,
                         "Hs1": top_groups.to_dict("records"),
-                       "Hs2": bottom_groups.to_dict("records"),
-                       "H1": top_accounts.to_dict("records"),
-                       "H2" : bottom_accounts.to_dict("records"),
-                       "H5" : largest_login.to_dict("records"),
-                       "P1" : vol_fig,
-                       "P2": opentime_fig,
-                       "H3": closed_top_accounts.to_dict("records"),
-                       "H4": closed_bottom_accounts.to_dict("records"),
-                       "H6" : closed_largest_lot_accounts.to_dict("records"),
-                       "Hs3": top_closed_groups.to_dict("records"),
-                       "Hs4" : bottom_closed_groups.to_dict("records"),
-                       "P3": history_daily_vol_fig,
-                       "P4": history_daily_rev_fig,
-                       "V2": [total_sum_closed.to_dict()],
-                       "Hs6" : closed_by_country.to_dict("records")
-                       }, cls=plotly.utils.PlotlyJSONEncoder)
+                        "Hs2": bottom_groups.to_dict("records"),
+                        "H1": top_accounts.to_dict("records"),
+                        "H2" : bottom_accounts.to_dict("records"),
+                        "H5" : largest_login.to_dict("records"),
+                        "P1" : vol_fig,
+                        "P2": opentime_fig,
+                        "H3": closed_top_accounts.to_dict("records"),
+                        "H4": closed_bottom_accounts.to_dict("records"),
+                        "H6" : closed_largest_lot_accounts.to_dict("records"),
+                        "Hs3": top_closed_groups.to_dict("records"),
+                        "Hs4" : bottom_closed_groups.to_dict("records"),
+                        "P3": history_daily_vol_fig,
+                        "P4": history_daily_rev_fig,
+                        "V2": [total_sum_closed.to_dict()],
+                        "Hs6" : closed_by_country.to_dict("records")
+                        }, cls=plotly.utils.PlotlyJSONEncoder)
 
 
 
