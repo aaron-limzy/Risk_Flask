@@ -708,8 +708,8 @@ def BGI_All_Symbol_Float_ajax2():
     df_mt5 = mt5_symbol_float_data()
 
     df_mt4_average = mt4_symbol_average_data()
-    print("df_mt4_average")
-    print(df_mt4_average)
+    # print("df_mt4_average")
+    # print(df_mt4_average)
 
     # print("Time taken for MT5 Call: {}".format((datetime.datetime.now() - start_time).total_seconds()))
 
