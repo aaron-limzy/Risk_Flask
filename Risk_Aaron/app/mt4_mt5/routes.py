@@ -847,7 +847,7 @@ def BGI_All_Symbol_Float_ajax2():
         # Want to hyperlink it.
         # Will need to write in '(High)' so that Javascript can pick it up and highlight the cell
         df_to_table["TODAY_LOTS"] = df_to_table.apply(lambda x: '{High_vol}<a style="color:black" href="{url}" target="_blank">{TODAY_LOTS:.2f}</a>'.format( \
-                                                        High_vol="(High)" if ('MA10_VOL' in x and x['TODAY_LOTS'] >= x["MA10_VOL"]) else "",
+                                                        High_vol="(High)" if ('CLOSE_MA10_VOL' in x and x['TODAY_LOTS'] >= x["CLOSE_MA10_VOL"]) else "",
                                                         TODAY_LOTS=x['TODAY_LOTS'],
                                                         url=url_for('analysis.symbol_float_trades',
                                                                     _external=True, symbol=x['SYMBOL'],
@@ -898,7 +898,7 @@ def BGI_All_Symbol_Float_ajax2():
 
 
 
-    col_of_df_return = [c for c in ["SYMBOL", "NET_LOTS", "FLOATING_LOTS", "REVENUE", "TODAY_LOTS", "MA10_VOL",\
+    col_of_df_return = [c for c in ["SYMBOL", "NET_LOTS", "FLOATING_LOTS", "REVENUE", "TODAY_LOTS", "CLOSE_MA10_VOL",\
                                     "TODAY_REVENUE", "BID", "ASK","YESTERDAY_LOTS", "YESTERDAY_REVENUE"] \
                         if c in  list(df_to_table.columns)]
 

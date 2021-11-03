@@ -1139,7 +1139,7 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
         mt5_symbol_cols = ['COUNTRY', 'LOTS', 'NET_LOTS',  'PROFIT', 'REBATE', 'CONVERTED_REVENUE']
 
-        # Want to rename the columns. 
+        # Want to rename the columns.
         df_mt5_country.rename(columns={"Volume" : "NET_LOTS",
                                        "Country" : "COUNTRY",
                                        "Profit" : "PROFIT",
@@ -1207,62 +1207,77 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
 
 
-
-    if len(df_all_trades) <= 0:
+    # If both MT4 and MT5 has no floating trades.
+    if len(df_all_trades) == 0 and len(country_mt5_res) == 0:
         return_dict = {"H1": [{"Details": "No Trades for {} Found".format(symbol)}],
                                "H2": [{"Details": "No Trades for {} Found".format(symbol)}] }
-
-        # If there are trades on MT5, we want to be able to add it in as well. 
-        if len(country_mt5_res) != 0:
-            return_dict['Hs7'] = country_mt5_res
-
         return json.dumps(return_dict)
 
-    # Do transformation for all subsequent dfs.
-    df_all_trades["LOTS"] = df_all_trades["LOTS"].apply(lambda x: float(x))  # Convert from decimal.decimal
-    # Use for calculating net volume. Want to know if net buy or sell
-
-    df_all_trades["NET_LOTS"] = df_all_trades.apply(lambda x: x["LOTS"] if x['CMD'] == 0 else -1 * x["LOTS"], axis=1)
-
-    df_all_trades["TOTAL_PROFIT"] = df_all_trades.apply(lambda x: x["CONVERTED_REVENUE"] + x['REBATE'], axis=1)
 
 
-    # Want only those open trades.
-    df_open_trades = df_all_trades[df_all_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only open trades.
+    #
+    # # If there are trades on MT5, we want to be able to add it in as well.
+    # if len(country_mt5_res) != 0:
+    #     return_dict['Hs7'] = country_mt5_res
 
 
 
-    col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE', 'REBATE']
-    col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'REBATE']
+    if len(df_all_trades) > 0:
+        # Do transformation for all subsequent dfs.
+        df_all_trades["LOTS"] = df_all_trades["LOTS"].apply(lambda x: float(x))  # Convert from decimal.decimal
+        # Use for calculating net volume. Want to know if net buy or sell
+
+        df_all_trades["NET_LOTS"] = df_all_trades.apply(lambda x: x["LOTS"] if x['CMD'] == 0 else -1 * x["LOTS"], axis=1)
+
+        df_all_trades["TOTAL_PROFIT"] = df_all_trades.apply(lambda x: x["CONVERTED_REVENUE"] + x['REBATE'], axis=1)
 
 
-    [top_groups, bottom_groups, top_accounts, bottom_accounts,
-     total_sum, largest_login, open_by_country] = open_trades_analysis(df_open_trades,
-                                                                       book, col2, col3, symbol=symbol, entity=entity)
-
-    # Want to add in MT5 Details here.
-    mt5_symbol_results_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="""call aaron.`BGI_MT5_Float_Query`()""", unsync_app=current_app._get_current_object())
-
-    mt5_symbol_results = mt5_symbol_results_unsync.result()
-    mt5_symbol_results_df = color_profit_for_df(mt5_symbol_results, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
-
-    # print(mt5_symbol_results_df[mt5_symbol_results_df["SYMBOL"] == "{}".format(symbol)])
-    # print(total_sum)
-
-    if "SYMBOL" in mt5_symbol_results_df and len(mt5_symbol_results_df[mt5_symbol_results_df["SYMBOL"] == "{}".format(symbol)]) == 1:
-        mt5_columns= [("NET_LOTS", False),  ("FLOATING_LOTS", False),  ("REVENUE", True), ("TODAY_LOTS", False), ("TODAY_REVENUE", False)]
-        for (c, t) in mt5_columns:
-            if c in mt5_symbol_results_df:
-                total_sum[f"{c} [MT5]"] = profit_red_green(mt5_symbol_results_df[c].values[0]) if t else mt5_symbol_results_df[c].values[0]
+        # Want only those open trades.
+        df_open_trades = df_all_trades[df_all_trades["CLOSE_TIME"] == pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only open trades.
 
 
-    # Closed trades for today!
-    df_closed_trades = df_all_trades[df_all_trades["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only Closed trades.
+        col2 = ['LIVE', 'LOGIN', 'SYMBOL', "LOTS", 'NET_LOTS', 'COUNTRY', 'GROUP', 'SWAPS', 'PROFIT', 'CONVERTED_REVENUE', 'REBATE']
+        col3 = ['COUNTRY', 'GROUP', 'LOTS', 'NET_LOTS', 'CONVERTED_REVENUE', 'REBATE']
 
 
-    # List unpacking from the return of the function.
-    [closed_top_accounts, closed_bottom_accounts, total_sum_closed, top_closed_groups,
-     bottom_closed_groups, closed_largest_lot_accounts, closed_by_country] = symbol_closed_trades_analysis(df_closed_trades, book, symbol, entity=entity)
+        [top_groups, bottom_groups, top_accounts, bottom_accounts,
+         total_sum, largest_login, open_by_country] = open_trades_analysis(df_open_trades,
+                                                                           book, col2, col3, symbol=symbol, entity=entity)
+
+        # Closed trades for today!
+        df_closed_trades = df_all_trades[
+            df_all_trades["CLOSE_TIME"] != pd.Timestamp('1970-01-01 00:00:00')].copy()  # Only Closed trades.
+
+        # List unpacking from the return of the function.
+        [closed_top_accounts, closed_bottom_accounts, total_sum_closed, top_closed_groups,
+         bottom_closed_groups, closed_largest_lot_accounts, closed_by_country] = symbol_closed_trades_analysis(
+            df_closed_trades, book, symbol, entity=entity)
+
+
+
+    else:
+        [top_groups, bottom_groups, top_accounts, bottom_accounts,
+         total_sum, largest_login, open_by_country] = [pd.DataFrame() for i in range(7)]
+
+        [closed_top_accounts, closed_bottom_accounts, total_sum_closed, top_closed_groups,
+         bottom_closed_groups, closed_largest_lot_accounts, closed_by_country] = [pd.DataFrame() for i in range(7)]
+
+
+        # Want to add in MT5 Details here.
+    # mt5_symbol_results_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="""call aaron.`BGI_MT5_Float_Query`()""", unsync_app=current_app._get_current_object())
+
+    # mt5_symbol_results = mt5_symbol_results_unsync.result()
+    # mt5_symbol_results_df = color_profit_for_df(mt5_symbol_results, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
+    #
+    # # print(mt5_symbol_results_df[mt5_symbol_results_df["SYMBOL"] == "{}".format(symbol)])
+    # # print(total_sum)
+    #
+    # if "SYMBOL" in mt5_symbol_results_df and len(mt5_symbol_results_df[mt5_symbol_results_df["SYMBOL"] == "{}".format(symbol)]) == 1:
+    #     mt5_columns= [("NET_LOTS", False),  ("FLOATING_LOTS", False),  ("REVENUE", True), ("TODAY_LOTS", False), ("TODAY_REVENUE", False)]
+    #     for (c, t) in mt5_columns:
+    #         if c in mt5_symbol_results_df:
+    #             total_sum[f"{c} [MT5]"] = profit_red_green(mt5_symbol_results_df[c].values[0]) if t else mt5_symbol_results_df[c].values[0]
+
 
 
     # Get the results from unsync
@@ -1319,28 +1334,33 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
         history_daily_rev_fig = {}
 
 
+    return_vals = {"Hs5": open_by_country.to_dict("records") if len(open_by_country)>0 else [{"Comment": "No MT4 Floating Trades"}],
+                    "Hs7": [total_sum.to_dict()] if symbol == None else country_mt5_res,
+                    "Hs1": top_groups.to_dict("records"),
+                    "Hs2": bottom_groups.to_dict("records"),
+                    "H1": top_accounts.to_dict("records"),
+                    "H2" : bottom_accounts.to_dict("records"),
+                    "H5" : largest_login.to_dict("records"),
+                    "P1" : vol_fig,
+                    "P2": opentime_fig,
+                    "H3": closed_top_accounts.to_dict("records"),
+                    "H4": closed_bottom_accounts.to_dict("records"),
+                    "H6" : closed_largest_lot_accounts.to_dict("records"),
+                    "Hs3": top_closed_groups.to_dict("records"),
+                    "Hs4" : bottom_closed_groups.to_dict("records"),
+                    "P3": history_daily_vol_fig,
+                    "P4": history_daily_rev_fig,
+                    "V2": [total_sum_closed.to_dict()] if len(total_sum_closed) > 0 else [],
+                    "Hs6" : closed_by_country.to_dict("records")
+                    }
+
+    #print(return_vals)
+    # want to make sure we return something in the values.
+    return_vals = {k:d for k,d in return_vals.items() if not (d==None or d==[] or d=={})}
+
     # Return the values as json.
     # Each item in the returned dict will become a table, or a plot
-    return json.dumps({
-                        "Hs5": open_by_country.to_dict("records"),
-                        "Hs7": [total_sum.to_dict()] if symbol == None else country_mt5_res,
-                        "Hs1": top_groups.to_dict("records"),
-                        "Hs2": bottom_groups.to_dict("records"),
-                        "H1": top_accounts.to_dict("records"),
-                        "H2" : bottom_accounts.to_dict("records"),
-                        "H5" : largest_login.to_dict("records"),
-                        "P1" : vol_fig,
-                        "P2": opentime_fig,
-                        "H3": closed_top_accounts.to_dict("records"),
-                        "H4": closed_bottom_accounts.to_dict("records"),
-                        "H6" : closed_largest_lot_accounts.to_dict("records"),
-                        "Hs3": top_closed_groups.to_dict("records"),
-                        "Hs4" : bottom_closed_groups.to_dict("records"),
-                        "P3": history_daily_vol_fig,
-                        "P4": history_daily_rev_fig,
-                        "V2": [total_sum_closed.to_dict()],
-                        "Hs6" : closed_by_country.to_dict("records")
-                        }, cls=plotly.utils.PlotlyJSONEncoder)
+    return json.dumps(return_vals, cls=plotly.utils.PlotlyJSONEncoder)
 
 
 
