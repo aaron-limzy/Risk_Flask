@@ -969,10 +969,10 @@ def change_HK_spread_function(df, database):
     #     C_Return_Val_plugin_Change = 0
     # else:
 
-    # C_Return_Val_plugin_Change, output, err = Run_C_Prog(
-    #     "app" + url_for('static', filename='Exec/changepluginparameter/Live1.exe'))
+    C_Return_Val_plugin_Change, output, err = Run_C_Prog(
+        "app" + url_for('static', filename='Exec/changepluginparameter/Live1.exe'))
 
-    C_Return_Val_plugin_Change = 0
+    # C_Return_Val_plugin_Change = 0
 
     # Want to check if the Plugin was changed successfully.
     # if C_Return_Val_plugin_Change == 0:
@@ -995,45 +995,17 @@ def change_HK_spread_function(df, database):
         hkg_prog_name = "Lab_HKG_SpreadChange.exe" if test == True else "Live1_HKG_SpreadChange.exe"
 
 
-        # C_Return_Val_HKG, output_HKG, err_HKG = Run_C_Prog(
-        #     "app" + url_for('static',
-        #                     filename='Exec/HK_Change_Spread/{}'.format(hkg_prog_name)) + " {:.0f}".format(HKG_dollar_value) )
-
         C_Return_Val_HKG, output_HKG, err_HKG = Run_C_Prog(
             "app" + url_for('static',
-                            filename='Exec/HK_Change_Spread/{}'.format(hkg_prog_name)))
-
-        # C_Return_Val_HKG, output_HKG, err_HKG = Run_C_Prog(
-        #     "app" + url_for('static',
-        #                     filename='Exec/HK_Change_Spread/{} {:.0f}'.format(hkg_prog_name, HKG_dollar_value)))
+                            filename='Exec/HK_Change_Spread/{}'.format(hkg_prog_name)) + " {:.0f}".format(HKG_dollar_value) )
 
         # print(df_change_result)
         # print()
 
         if C_Return_Val_HKG == 0:
             flash("HKG Change Successfully.")
-            #["postfixsymb", "fixed", "fixedspread", "digits"]
-
-
-
-
-            # df_change_result = df_change_result.append(["HKG", HKG_dollar_value, HKG_dollar_value, "0", "successfully Changed" ])
-            # df_change_result.append({'postfixsymb': 'HKG',
-            #                             'Spread_Dollar': HKG_dollar_value,
-            #                          'Spread_Points': HKG_dollar_value,
-            #                          'digits': 0,
-            #                          "Results": "Successfully Changed" },
-            #         ignore_index=True)
         else:
             flash("HKG Change ERORR. Error Code: {}".format(C_Return_Val_HKG))
-            # df_change_result = df_change_result.append(["HKG", HKG_dollar_value, HKG_dollar_value, "0", "Failed. Error Code: {}".format(C_Return_Val_HKG)])
-
-            # df_change_result.append({'postfixsymb': 'HKG',
-            #                         'Spread_Dollar': HKG_dollar_value,
-            #                          'Spread_Points': HKG_dollar_value,
-            #                          'digits': 0,
-            #                          "Results": "Failed. Error Code: {}".format(C_Return_Val_HKG) },
-            #         ignore_index=True)
 
         df_change_result[df_change_result["postfixsymb"] == "HKG"]["Spread_Dollar"] = HKG_dollar_value
         df_change_result[df_change_result["postfixsymb"] == "HKG"]["Spread_Points"] = HKG_dollar_value
@@ -1064,7 +1036,6 @@ def change_HK_spread_function(df, database):
     html_code += "Thanks,<br>Aaron."
     html_code += Email_Header
 
-    # EMAIL_LIST_BGI
     # EMAIL_LIST_BGI
     email_recipients = ["risk@blackwellglobal.com", "mis@austeinweisz.com", "CustomerService@blackwellglobal.com", "Dealing @ blackwellglobal.com"]
 
