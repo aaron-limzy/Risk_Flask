@@ -258,7 +258,7 @@ def BGI_MT5_Symbol_Float_ajax():
     df_to_table.fillna("-", inplace=True)
 
     # Pandas return list of dicts.
-    return_val = df_to_table[col].to_dict("record")
+    return_val = df_to_table[col].to_dict("records")
 
     # print(df_to_table[col])
     # print(datetime_pull)
