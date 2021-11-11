@@ -135,6 +135,7 @@ def mt5_Query_SQL_mt5_db_engine_query(unsync_app, SQL_Query):
 
 # This function will return combined data of symbol float as well as yesterday's PnL for MT5
 def mt5_symbol_float_data():
+
     Testing = False
 
     # Want to get PnL For MT5 Yesterday.
