@@ -52,8 +52,6 @@ mt4_mt5_bp = Blueprint('mt4_mt5', __name__)
 
 
 
-
-
 @mt4_mt5_bp.route('/BGI_MT4_Symbol_Float2', methods=['GET', 'POST'])
 @roles_required()
 def BGI_MT4_Symbol_Float2():
@@ -393,8 +391,6 @@ def BGI_All_Symbol_Float():
 @mt4_mt5_bp.route('/BGI_All_Symbol_Float_ajax2', methods=['GET', 'POST'])
 @roles_required()
 def BGI_All_Symbol_Float_ajax2():
-
-
 
     # start_time = datetime.datetime.now()
     #start = datetime.datetime.now()
