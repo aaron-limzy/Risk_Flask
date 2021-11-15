@@ -187,7 +187,7 @@ def BGI_MT5_Symbol_Float():
 # Get BGI Float by Symbol
 @mt5_monitoring.route('/BGI_MT5_Symbol_Float_ajax', methods=['GET', 'POST'])
 @roles_required()
-def BGI_MT5_Symbol_Float_ajax():
+def BGI_MT5_Symbol_Float_ajax3():
     # start = datetime.datetime.now()
     # TODO: Only want to save during trading hours.
     # TODO: Want to write a custom function, and not rely on using CFH timing.

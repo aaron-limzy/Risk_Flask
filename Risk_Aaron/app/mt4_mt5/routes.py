@@ -390,9 +390,9 @@ def BGI_All_Symbol_Float():
 
 
 # Get BGI Float by Symbol
-@mt4_mt5_bp.route('/BGI_All_Symbol_Float_ajax', methods=['GET', 'POST'])
+@mt4_mt5_bp.route('/BGI_All_Symbol_Float_ajax2', methods=['GET', 'POST'])
 @roles_required()
-def BGI_All_Symbol_Float_ajax():
+def BGI_All_Symbol_Float_ajax2():
 
 
 
@@ -688,9 +688,9 @@ def BGI_All_Symbol_Float2():
 
 
 # Get BGI Float by Symbol
-@mt4_mt5_bp.route('/BGI_All_Symbol_Float_ajax2', methods=['GET', 'POST'])
+@mt4_mt5_bp.route('/BGI_All_Symbol_Float_ajax', methods=['GET', 'POST'])
 @roles_required()
-def BGI_All_Symbol_Float_ajax2():
+def BGI_All_Symbol_Float_ajax():
 
 
 
