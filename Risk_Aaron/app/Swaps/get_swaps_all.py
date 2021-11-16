@@ -1246,6 +1246,7 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     c_run_results = []
     email_result_dict = {}
 
+    print(df.to_dict("records"))
 
     # ----------------------------------------- Need to upload to MT4
 
@@ -1388,9 +1389,12 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     # Need to tidy up the excel files into the archive folder
     clean_up_folder(mt5_L2_base_folder, file_header="mt5 swaps")
 
+    cc_email_list = ["risk@blackwellglobal.com", "saret.theara@blackwellglobal-kh.com"] \
+            if get_machine_ip_address() == '192.168.64.73'\
+            else ["aaron.lim@blackwellglobal.com"]
 
     # Send email to say that upload is done.
-    Send_Email(To_recipients=[uploader_email], cc_recipients=["aaron.lim@blackwellglobal.com"],
+    Send_Email(To_recipients=[uploader_email], cc_recipients=cc_email_list,
                Subject="Swaps Upload [{}]".format(datetime.datetime.now().strftime("%Y-%m-%d")),
                HTML_Text="""{Email_Header}Hi {username},<br><br>Swaps upload results for today:  
                                     {table}<br><br>Kindly find the upload logs attached.
