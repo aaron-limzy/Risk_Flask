@@ -127,10 +127,6 @@ class OZ_Rest_Class:
 
     def Rest_put_OZ(self, payload, endpoint):
 
-        # if("ERROR" in Access_code) :   #There has been an error.
-        #     return Access_code
-        #     #return -1
-        #     1==1
 
         Access_code = self.ACCESS_CODE
 
@@ -639,6 +635,7 @@ def swap_id(swap_profiles, test=False):
                 and 'id' in d \
                 and d['name'] == to_search:
             return (to_search, d['id'])
+
 
 # Craft the payload needed to change Swaps on OZ.
 def get_swap_payload(DF_F, swaps_id, swaps_name):

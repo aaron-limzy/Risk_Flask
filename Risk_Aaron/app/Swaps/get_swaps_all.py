@@ -1415,6 +1415,7 @@ def upload_swaps_mt_servers(df, oz_big_mapping, mt4_base_folder, mt5_L1_base_fol
                              'Long Points (BGI)': 'longPoints',
                              'Short Points (BGI)': 'shortPoints'},
                     inplace=True)
+
         DF_M["symbolGroupPath"] = '*'
 
         # print(DF_M)
@@ -1436,9 +1437,9 @@ def upload_swaps_mt_servers(df, oz_big_mapping, mt4_base_folder, mt5_L1_base_fol
         hub_return = hub.Rest_put_OZ(swap_payload, swaps_URL)
 
         if hub_return.status_code == 200:
-            c_run_results.append(['OZ Margin Hub', 'Swaps uploaded <a style="color:green">Successfully.</a>', hub_return.status_code])
+            c_run_results.append(['OZ Margin Hub', 'Swaps uploaded <span style="color:green">Successfully.</span>', hub_return.status_code])
         else:
-            c_run_results.append(['OZ Margin Hub', '<a style="color:red">Swap Upload ERROR.</a>', hub_return.status_code])
+            c_run_results.append(['OZ Margin Hub', '<span style="color:red">Swap Upload ERROR.</span>', hub_return.status_code])
 
         # Create a virtual file to be sent via Email.
         email_result_dict["OZ_Upload"] = create_email_virtual_file(hub_return.text) #.decode("utf-8")
@@ -1502,9 +1503,9 @@ def run_meta_swap_upload(prog_name, cwd, server_name, c_default_return=0):
     C_Return_Val, output, err  = Run_C_Prog(Path=prog_name, cwd=cwd)
 
     if C_Return_Val == c_default_return:
-        c_run_results =[ server_name, 'Swaps uploaded <a style="color:green">Successfully.</a>', C_Return_Val]
+        c_run_results =[ server_name, 'Swaps uploaded <span style="color:green">Successfully.</span>', C_Return_Val]
     else:
-        c_run_results =[ server_name, 'Swaps upload <a style="color:red">Error</a>: {}.'.format(err), C_Return_Val]
+        c_run_results =[ server_name, 'Swaps upload <span style="color:red">Error</span>: {}.'.format(err), C_Return_Val]
 
 
 
