@@ -125,6 +125,29 @@ class OZ_Rest_Class:
         return Get_Return
 
 
+    def Rest_put_OZ(self, payload, endpoint):
+
+        # if("ERROR" in Access_code) :   #There has been an error.
+        #     return Access_code
+        #     #return -1
+        #     1==1
+
+        Access_code = self.ACCESS_CODE
+
+        #The request Header
+        Authorization = {"Authorization" : "Bearer " + Access_code}
+        #endpoint="settings/price-channel-rule"
+        #Get_Return = requests.get( "https://" + self.BRIDGE_IP + "/api/rest/bridge-settings/SymbolSettings", verify=False, headers = Authorization)
+        print("https://" + self.BRIDGE_IP + "/api/rest/{endpoint}".format(endpoint=endpoint))
+
+        Put_Return = requests.put("https://" + self.BRIDGE_IP + "/api/rest/{endpoint}".format(endpoint=endpoint),
+                                  data=json.dumps(payload),
+                                  verify=False, headers=Authorization)
+
+        return Put_Return
+
+
+
     # Returns
     # [
     # {'_links': {'brokerView': {'href': 'urn:mvc/controller/broker-view/21', 'requiresWrite': False}, 'readLedger': {'href': 'margin-account/21/ledger', 'requiresWrite': False}, 'self': {'href': 'margin-account/21/'}, 'writeLedger': {'href': 'margin-account/21/ledger', 'requiresWrite': True}}, 'id': 21, 'name': 'Squared', 'currency': 'USD', 'equityPrecisionDecimalPlaces': 2, 'reverseMakerPositions': False, 'takerIds': [], 'comment': '', 'balance': '0', 'accountCredit': '0', 'unrealizedPnL': '0', 'equity': '0', 'margin': '0', 'freeMargin': '0', 'marginUtilizationPercentage': '0', 'autoLiquidationEnabled': True, 'autoLiquidationPercentage': '150', 'marginCallPercentage': '110'}, {'_links': {'brokerView': {'href': 'urn:mvc/controller/broker-view/22', 'requiresWrite': False}, 'readLedger': {'href': 'margin-account/22/ledger', 'requiresWrite': False}, 'self': {'href': 'margin-account/22/'}, 'writeLedger': {'href': 'margin-account/22/ledger', 'requiresWrite': True}}, 'id': 22, 'name': 'Vantage', 'currency': 'USD', 'equityPrecisionDecimalPlaces': 2, 'reverseMakerPositions': False, 'takerIds': [], 'comment': '', 'balance': '-1570439.11', 'accountCredit': '3200000', 'unrealizedPnL': '5291.7', 'equity': '1634852.59', 'margin': '90949.1', 'freeMargin': '1543903.49', 'marginUtilizationPercentage': '5.563', 'autoLiquidationEnabled': False, 'marginCallPercentage': '110'}, {'_links': {'brokerView': {'href': 'urn:mvc/controller/broker-view/28', 'requiresWrite': False}, 'readLedger': {'href': 'margin-account/28/ledger', 'requiresWrite': False}, 'self': {'href': 'margin-account/28/'}, 'takers': {'href': 'margin-account/28/takers', 'requiresWrite': False}, 'trade': {'href': 'margin-account/28/trade', 'requiresWrite': True}, 'writeLedger': {'href': 'margin-account/28/ledger', 'requiresWrite': True}}, 'id': 28, 'name': 'RetailMT4-1-Guo', 'currency': 'USD', 'equityPrecisionDecimalPlaces': 2, 'reverseMakerPositions': False, 'takerIds': ['RetailMT4-1-Guo'], 'comment': '', 'balance': '5897856.45', 'accountCredit': '508000', 'unrealizedPnL': '0', 'equity': '6405856.45', 'margin': '0', 'freeMargin': '6405856.45', 'marginUtilizationPercentage': '0', 'autoLiquidationEnabled': False, 'marginCallPercentage': '125'}, {'_links': {'brokerView': {'href': 'urn:mvc/controller/broker-view/30', 'requiresWrite': False}, 'readLedger': {'href': 'margin-account/30/ledger', 'requiresWrite': False}, 'self': {'href': 'margin-account/30/'}, 'takers': {'href': 'margin-account/30/takers', 'requiresWrite': False}, 'trade': {'href': 'margin-account/30/trade', 'requiresWrite': True}, 'writeLedger': {'href': 'margin-account/30/ledger', 'requiresWrite': True}}, 'id': 30, 'name': 'V-Vantage', 'currency': 'USD', 'equityPrecisionDecimalPlaces': 2, 'reverseMakerPositions': False, 'takerIds': ['RB-Vantage'], 'comment': '', 'balance': '14483816.46', 'accountCredit': '0', 'unrealizedPnL': '-316052.25', 'equity': '14167764.21', 'margin': '0', 'freeMargin': '14167764.21', 'marginUtilizationPercentage': '0', 'autoLiquidationEnabled': False, 'marginCallPercentage': '125'}, {'_links': {'brokerView': {'href': 'urn:mvc/controller/broker-view/33', 'requiresWrite': False}, 'readLedger': {'href': 'margin-account/33/ledger', 'requiresWrite': False}, 'self': {'href': 'margin-account/33/'}, 'takers': {'href': 'margin-account/33/takers', 'requiresWrite': False}, 'trade': {'href': 'margin-account/33/trade', 'requiresWrite': True}, 'writeLedger': {'href': 'margin-account/33/ledger', 'requiresWrite': True}}, 'id': 33, 'name': 'V-CMC', 'currency': 'USD', 'equityPrecisionDecimalPlaces': 2, 'reverseMakerPositions': False, 'takerIds': ['RB-CMC'], 'comment': '', 'balance': '996206565.87', 'accountCredit': '100', 'unrealizedPnL': '-191819.88', 'equity': '996014845.99', 'margin': '0', 'freeMargin': '996014845.99', 'marginUtilizationPercentage': '0', 'autoLiquidationEnabled': False, 'marginCallPercentage': '120'}, {'_links': {'brokerView': {'href': 'urn:mvc/controller/broker-view/34', 'requiresWrite': False}, 'readLedger': {'href': 'margin-account/34/ledger', 'requiresWrite': False}, 'self': {'href': 'margin-account/34/'}, 'writeLedger': {'href': 'margin-account/34/ledger', 'requiresWrite': True}}, 'id': 34, 'name': 'CMC', 'currency': 'USD', 'equityPrecisionDecimalPlaces': 2, 'reverseMakerPositions': False, 'takerIds': [], 'comment': '', 'balance': '279152.56', 'accountCredit': '0', 'unrealizedPnL': '0', 'equity': '279152.56', 'margin': '0', 'freeMargin': '279152.56', 'marginUtilizationPercentage': '0', 'autoLiquidationEnabled': False, 'marginCallPercentage': '100'}, {'_links': {'brokerView': {'href': 'urn:mvc/controller/broker-view/35', 'requiresWrite': False}, 'readLedger': {'href': 'margin-account/35/ledger', 'requiresWrite': False}, 'self': {'href': 'margin-account/35/'}, 'takers': {'href': 'margin-account/35/takers', 'requiresWrite': False}, 'trade': {'href': 'margin-account/35/trade', 'requiresWrite': True}, 'writeLedger': {'href': 'margin-account/35/ledger', 'requiresWrite': True}}, 'id': 35, 'name': '1002_ATG', 'currency': 'USD', 'equityPrecisionDecimalPlaces': 2, 'reverseMakerPositions': False, 'takerIds': ['1002_ATG'], 'comment': '', 'balance': '56439.16', 'accountCredit': '0', 'unrealizedPnL': '158.83', 'equity': '56597.99', 'margin': '2746.64', 'freeMargin': '53851.35', 'marginUtilizationPercentage': '4.853', 'autoLiquidationEnabled': True, 'autoLiquidationPercentage': '140', 'marginCallPercentage': '100'}, {'_links': {'brokerView': {'href': 'urn:mvc/controller/broker-view/36', 'requiresWrite': False}, 'readLedger': {'href': 'margin-account/36/ledger', 'requiresWrite': False}, 'self': {'href': 'margin-account/36/'}, 'takers': {'href': 'margin-account/36/takers', 'requiresWrite': False}, 'trade': {'href': 'margin-account/36/trade', 'requiresWrite': True}, 'writeLedger': {'href': 'margin-account/36/ledger', 'requiresWrite': True}}, 'id': 36, 'name': '1003_PPDE', 'currency': 'USD', 'equityPrecisionDecimalPlaces': 2, 'reverseMakerPositions': False, 'takerIds': ['PPDE'], 'comment': '', 'balance': '0', 'accountCredit': '0', 'unrealizedPnL': '0', 'equity': '0', 'margin': '0', 'freeMargin': '0', 'marginUtilizationPercentage': '0', 'autoLiquidationEnabled': True, 'autoLiquidationPercentage': '140', 'marginCallPercentage': '100'}]
@@ -193,6 +216,15 @@ class OZ_Rest_Class:
             return position_json['data']
         else:
             return position_json['message']
+
+    # Want to get all swap profiles
+    def get_swap_profiles(self):
+        # Request for swaps (all swaps)
+        swaps_URL = 'settings/margin-swaps-profile'
+        swap_prof = self.Rest_Get_OZ(swaps_URL)
+        swap_profiles = swap_prof.json()
+        return swap_profiles
+
 
 
     def margin_acc_to_string(self,account_position):
@@ -597,7 +629,38 @@ def Create_Folder():
     return Dir_String
 
 
-# a = OZ_Rest_Class("retail")
-# print(a.BRIDGE_IP)
-# print(a.Get_OZ_margin_accounts())
-# a.balance_in_OZ_margin(21, -1, "CREDIT", "")
+def swap_id(swap_profiles, test=False):
+    # If we are testing or not.
+    to_search = "SwapTest02" if test == True else "BWL_SWAP_0"
+
+    # Want to get the id of the swap profile that we are going to change.
+    for d in swap_profiles:
+        if 'name' in d \
+                and 'id' in d \
+                and d['name'] == to_search:
+            return (to_search, d['id'])
+
+# Craft the payload needed to change Swaps on OZ.
+def get_swap_payload(DF_F, swaps_id, swaps_name):
+    # Fill in the NaN values
+    DF_F = DF_F.fillna(0)
+
+    # remove the values when Core Symbol = NaN
+    DF_F = DF_F.dropna(subset=["coreSymbol"])
+
+    # Change the value of the points into string format
+    DF_F['longPoints'] = DF_F['longPoints'].apply(format)
+    DF_F['shortPoints'] = DF_F['shortPoints'].apply(format)
+    # Change the column name to match the json file format
+
+    # Use dictionary to gather all the parts of payload
+
+    DIC_return = {} # declare to blank
+
+    DIC_return["id"] = swaps_id
+    DIC_return["name"] = swaps_name
+    DIC_return["mode"] = "LEDGER"
+    DIC_return["items"] = DF_F.to_dict("records")
+    DIC_return["useMultipleDayMarkup"] = True
+    return DIC_return
+

@@ -1151,7 +1151,7 @@ def process_validated_swaps(all_data):
     # First, we want to check if anything has changed manually.
     # # If there has been, we will want to know.
     df_changed = df[(df["Long Points (BGI)"] != df["Long_Hidden"]) | (df["Short Points (BGI)"] != df["Short_Hidden"])]
-    print(df_changed)
+
 
     for s in df_changed["Core Symbol (BGI)"].unique():
         flash("{} swap details were changed manually.".format(s))
@@ -1169,26 +1169,10 @@ def process_validated_swaps(all_data):
         df["Insti Short Points (BGI)"] = np.where(df["Insti Short Points (BGI)"] != df["Short_Hidden"],
                                                  df["Insti Short Points (BGI)"], df["Short Points (BGI)"])
 
-        #
-        # pd.set_option('display.max_rows', 500)
-        # print(df)
-        #
-        #
-        # ## Trying to use Pandas to write to excel.
-        # df_retail = df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]]
-        # df_insti = df[["Core Symbol (BGI)", "Insti Long Points (BGI)", "Insti Short Points (BGI)"]].rename(
-        #     columns={"Insti Long Points (BGI)": "Long Points (BGI)",
-        #              "Insti Short Points (BGI)": "Short Points (BGI)"})
-        #
-        # with pd.ExcelWriter(current_app.config["SWAPS_MT4_UPLOAD_FOLDER"] + \
-        #                         'MT4Swaps {dt.day} {dt:%b} {dt.year}.xls'.format(
-        #         dt=datetime.datetime.now())) as writer:
-        #     df_retail.to_excel(writer, sheet_name='retail', index=False)
-        #     df_insti.to_excel(writer, sheet_name='insti', index=False)
 
 
 
-    df_changed = None  # Clear.
+    # df_changed = None  # Clear.
 
     #return
 
@@ -1203,33 +1187,57 @@ def process_validated_swaps(all_data):
 
     # -------------------------------Insert into Risk 64.73 Database (Aaron Database)
 
+    # time_now = datetime.datetime.now()
+
     sql_header_risk = "INSERT INTO aaron.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
     footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
 
-    Insert_into_sql("{} {} {}".format(sql_header_risk, swap_insert_str, footer))  # Go insert into SQL.
+    #Insert_into_sql("{} {} {}".format(sql_header_risk, swap_insert_str, footer))  # Go insert into SQL.
+
+    risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_risk,
+                                              values=[swap_insert_str], footer=footer, sql_max_insert=500)
+
+
+    # print("1) Time taken: {}s".format((datetime.datetime.now() - time_now).total_seconds()))
 
     flash("Risk (64.73) Swaps Insert Successful. [aaron.bgi_Swaps]")
 
     # -------------------------------Insert into Risk 64.73 Database (Risk Test DataBase)
-    sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
-    footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
 
-    risk_sql_upload_unsync = async_sql_insert(app=current_app._get_current_object(), header=sql_header_test,
-                                              values=[swap_insert_str], footer=footer, sql_max_insert=500)
+    # time_now = datetime.datetime.now()
+    #
+    # sql_header_test = "INSERT INTO test.bgi_Swaps ( Core_Symbol, bgi_long, bgi_short, Date ) Values  "
+    # footer = " ON DUPLICATE KEY UPDATE bgi_long = Values(bgi_long), bgi_short = Values(bgi_short)"
+    #
+    # risk_sql_upload_unsync_1 = async_sql_insert(app=current_app._get_current_object(), header=sql_header_test,
+    #                                           values=[swap_insert_str], footer=footer, sql_max_insert=500)
+
+    # print("2) Time taken: {}s".format((datetime.datetime.now() - time_now).total_seconds()))
 
     # ----------------------------------------Insert into BO DB
+
+    # time_now = datetime.datetime.now()
     sql_query_bo = "INSERT INTO bgiswap.table_swap ( bgi_symbol, bgi_long, bgi_short, Update_Date ) Values  " + swap_insert_str
-    # #To make it to SQL friendly text.
-    raw_insert_result = db.session.execute(text("delete from bgiswap.table_swap"),
-                                           bind=db.get_engine(current_app, 'bo_swaps'))
-    raw_insert_result = db.session.execute(text(sql_query_bo), bind=db.get_engine(current_app, 'bo_swaps'))
-    db.session.commit()  # Since we are using session, we need to commit.
+
+    bo_sql_upload_unsync = async_sql_insert_swaps_BO(app=current_app._get_current_object(),
+                              sql_query_bo=sql_query_bo)
+
+    # print("3) Time taken: {}s".format((datetime.datetime.now() - time_now).total_seconds()))
+
+
     flash("BO Swaps Insert Successful.")
-
-
-
     flash("Swaps uploading to MT4/5. An Email will be sent when it's done.")
-    upload_swaps_mt_servers(df, current_app.config["SWAPS_MT4_UPLOAD_FOLDER"], \
+
+
+    # selecting from SQL for OZ Mapping.
+    # Can't be done in async function in a nice way.
+    bgi_oz_mapping_query = """SELECT * FROM aaron.swap_bgi_oz_symbols"""
+    bgi_oz_mapping = query_SQL_return_record(bgi_oz_mapping_query)  # Get the uploaded swaps from SQL.
+    oz_big_mapping = pd.DataFrame(bgi_oz_mapping)
+
+
+    upload_swaps_mt_servers(df, oz_big_mapping,
+                            current_app.config["SWAPS_MT4_UPLOAD_FOLDER"], \
                             current_app.config["SWAPS_MT5_LIVE1_UPLOAD_FOLDER"], \
                             current_app.config["SWAPS_MT5_LIVE2_UPLOAD_FOLDER"], current_user.id, current_user.email)
 
@@ -1237,7 +1245,7 @@ def process_validated_swaps(all_data):
 
 
 @async_fun
-def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base_folder, username, uploader_email ):
+def upload_swaps_mt_servers(df, oz_big_mapping, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base_folder, username, uploader_email ):
 
 
     #retail_sheet = [["Core Symbol (BGI)",	"Long Points (BGI)", "Short Points (BGI)"]] + df[["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)"]].values.tolist()
@@ -1246,7 +1254,7 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     c_run_results = []
     email_result_dict = {}
 
-    print(df.to_dict("records"))
+    # print(df.to_dict("records"))
 
     # ----------------------------------------- Need to upload to MT4
 
@@ -1296,10 +1304,6 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
                                                                                   cwd=mt4_base_folder,
                                                                                   server_name="MT4 Live/Demo",
                                                             c_default_return=1) # The MT4 C prog default return is 1.
-
-
-
-
 
     c_run_results.append(MT4_run_res)
 
@@ -1389,6 +1393,62 @@ def upload_swaps_mt_servers(df, mt4_base_folder, mt5_L1_base_folder, mt5_L2_base
     # Need to tidy up the excel files into the archive folder
     clean_up_folder(mt5_L2_base_folder, file_header="mt5 swaps")
 
+
+
+    upload_to_oz = True
+
+    if upload_to_oz:
+        print(c_run_results)
+        # pd.set_option('display.max_rows', None)
+
+        # print(oz_big_mapping)
+
+        # to Merge the two dataframes
+        DF_Merge = df.merge(oz_big_mapping, left_on='Core Symbol (BGI)', right_on="BGI_Core_Symbol", how="right")
+
+        # remove the values when Core Symbol = NaN or those that are empty
+        DF_M = DF_Merge.dropna(subset=["Core Symbol (BGI)"])
+        DF_M = DF_M[DF_M['OZ_Core_Symbol'] != ""]
+
+
+        DF_M.rename(columns={'OZ_Core_Symbol': 'coreSymbol',
+                             'Long Points (BGI)': 'longPoints',
+                             'Short Points (BGI)': 'shortPoints'},
+                    inplace=True)
+        DF_M["symbolGroupPath"] = '*'
+
+        # print(DF_M)
+
+        hub = OZ_Rest_Class("margin")
+        swap_profiles = hub.get_swap_profiles()
+        swaps_name, swaps_id = swap_id(swap_profiles)
+        # print("{} | {}".format(swaps_name, swaps_id))
+
+        # print(DF_M[['coreSymbol', 'symbolGroupPath', 'longPoints' ,'shortPoints']])
+
+        swap_payload = get_swap_payload(DF_M[['coreSymbol', 'symbolGroupPath', 'longPoints' ,'shortPoints']],
+                         swaps_id=swaps_id, swaps_name=swaps_name)
+
+        # print(swap_payload)
+
+        # URL for swaps (single)
+        swaps_URL = 'settings/margin-swaps-profile/{}'.format(swaps_id)
+        hub_return = hub.Rest_put_OZ(swap_payload, swaps_URL)
+
+        if hub_return.status_code == 200:
+            c_run_results.append(['OZ Margin Hub', 'Swaps uploaded <p style="color:green">Successfully.</p>', hub_return.status_code])
+        else:
+            c_run_results.append(['OZ Margin Hub', 'Swap Upload ERROR', hub_return.status_code])
+
+        # Create a virtual file to be sent via Email.
+        email_result_dict["OZ_Upload"] = create_email_virtual_file(hub_return.text) #.decode("utf-8")
+
+
+        # print(hub_return.status_code)
+        # print(hub_return.text)
+
+    # Get email list based on the machine IP
+    # IF the machine IP isn't on the 64.73 server, we will not send to everyone.
     cc_email_list = ["risk@blackwellglobal.com", "saret.theara@blackwellglobal-kh.com"] \
             if get_machine_ip_address() == '192.168.64.73'\
             else ["aaron.lim@blackwellglobal.com"]
@@ -1484,3 +1544,19 @@ def generate_pretty_Swap_file(df, sheet, sheet_name, header_style):
         sheet.column_dimensions[get_column_letter(i + 1)].width = 18
 
     return sheet
+
+
+# Just for swaps.
+# Will delete all swaps on BO Table
+# Will append the swaps back onto the BO Table.
+@async_fun
+def async_sql_insert_swaps_BO(app, sql_query_bo):
+    # ----------------------------------------Insert into BO DB
+    with app.app_context():  # Using current_app._get_current_object()
+        # #To make it to SQL friendly text.
+        raw_insert_result = db.session.execute(text("delete from bgiswap.table_swap"),
+                                               bind=db.get_engine(current_app, 'bo_swaps'))
+        raw_insert_result = db.session.execute(text(sql_query_bo), bind=db.get_engine(current_app, 'bo_swaps'))
+        db.session.commit()
+
+    return

@@ -89,7 +89,7 @@ def BGI_Swaps():
 def BGI_Swaps_ajax():     # Return the Bloomberg dividend table in Json.
 
     start_date = get_working_day_date(datetime.date.today(), -5)
-    sql_query = text("SELECT * FROM test.`bgi_swaps` where date >= '{}' ORDER BY Core_Symbol, Date".format(start_date.strftime("%Y-%m-%d")))
+    sql_query = text("SELECT * FROM aaron.`bgi_swaps` where date >= '{}' ORDER BY Core_Symbol, Date".format(start_date.strftime("%Y-%m-%d")))
     raw_result = db.engine.execute(sql_query)
     result_data = raw_result.fetchall()
     result_col = raw_result.keys()
@@ -173,6 +173,7 @@ def Bloomberg_Dividend_ajax():     # Return the Bloomberg dividend table in Json
 @swaps.route('/Swaps/upload_LP_Swaps', methods=['GET', 'POST'])
 @roles_required(["Risk", "Risk_TW","Risk_KH", "Admin", "Dealing"])
 def upload_Swaps_csv():
+
 
     title = "Swaps Upload"
     header = "Swaps Upload"
@@ -379,13 +380,16 @@ def markup_swaps(Val, positive_markup, negative_markup ):
 @roles_required()
 def Swap_upload_form():
 
-    test=True
+    test = False
 
     title = "Swap Upload"
     header = "Swap Upload"
     description = Markup("Swap Upload.")
     # file_form = File_Form()
     # and form.validate_on_submit()
+
+
+
 
     #print(request.method)
     today_swap_SQL_Query = """Select `core_symbol` as `Core Symbol`, `vantage_long` as `Long Points`, `vantage_short` as `Short Points`

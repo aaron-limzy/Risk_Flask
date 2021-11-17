@@ -47,6 +47,9 @@ def async_sql_insert(app, header="", values = [" "], footer = "", sql_max_insert
     return
 
 
+
+
+
 @async_fun
 def async_sql_insert_raw(app, sql_insert):
 
