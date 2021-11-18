@@ -49,7 +49,7 @@ def create_app(config_class=Config):
 # login = LoginManager(server)
 
 def register_extensions(server):
-    from app.extensions import db, login, bootstrap, excel, excel_format
+    from app.extensions import db, login, bootstrap, excel, excel_format, moment
     from flask_login import current_user
 
     db.init_app(server)
@@ -62,6 +62,9 @@ def register_extensions(server):
 
     bootstrap.init_app(server)
     excel.init_excel(server)
+    moment.init_app(server)
+
+    # excel.init_excel(server)
 
     # Configure the image uploading via Flask-Uploads
     configure_uploads(server, excel_format)

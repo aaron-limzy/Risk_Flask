@@ -1601,7 +1601,6 @@ def group_float_trades_ajax(group=""):
      total_sum, largest_login, open_by_country] = group_open_trades_analysis(df_open_trades, book, col2, col3, group=group)
 
 
-
     return json.dumps({"V2": client_group_details_data,
                        "Hs3" : Client_Group_Past_PnL.to_dict("record"),
                       "Hs1": top_accounts.to_dict("record"),
@@ -3441,6 +3440,13 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
                        "H3": closed_trades,
                         "P1":deposit_withdrawal_fig,
                        "P2": average_trade_duration_fig}, cls=plotly.utils.PlotlyJSONEncoder)
+
+
+@analysis.route('/symbol/popup')
+@login_required
+def symbol_popup():
+
+    return render_template('popup.html')
 
 #
 # @analysis.route('/mt5_test', methods=['GET', 'POST'])

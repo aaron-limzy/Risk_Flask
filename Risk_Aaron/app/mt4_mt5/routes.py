@@ -860,7 +860,7 @@ def BGI_All_Symbol_Float_ajax():
 
 
     # Want to hyperlink it.
-    df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<a style="color:black" href="{url}" target="_blank">{symbol}</a>'.format(symbol=x,
+    df_to_table["SYMBOL"] = df_to_table["SYMBOL"].apply(lambda x: '<span class="popup"><a style="color:black" href="{url}" target="_blank">{symbol}</a></span>'.format(symbol=x,
                                                                     url=url_for('analysis.symbol_float_trades', _external=True, symbol=x, book="b")))
 
 

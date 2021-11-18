@@ -365,14 +365,14 @@ def symbol_spread_ajax():
 
 # To Query for all open trades by a particular symbol
 # Shows the closed trades for the day as well.
-@Spread_bp.route('/Symbol_Spread/<type>', methods=['GET', 'POST'])
+@Spread_bp.route('/Symbol_Spread/<aggregate>/<type>', methods=['GET', 'POST'])
 @roles_required()
-def symbolSpread_custom(type):
+def symbolSpread_custom(aggregate, type):
 
-    title = Markup("Symbol Spread [{}]".format(type))
-    header = Markup("<b>Symbol Spread [{}]</b>".format(type))
+    title = Markup("Symbol {} Spread [{}]".format(aggregate.upper(), type))
+    header = Markup("<b>Symbol {} Spread [{}]</b>".format(aggregate.upper(), type))
 
-    description = Markup("""<b>Symbol Spread [{}]</b><br><br>
+    description = Markup("""<b>Symbol {} Spread [{}]</b><br><br>
                 Calculating the symbol spread using Live 1 q symbols.<br><br>
                 <b>Mark Up</b><br>
                 Mark up (If any) has been removed Based on SQ's current database. (no back tracking)<br><br>
@@ -385,7 +385,7 @@ def symbolSpread_custom(type):
                 - Times are based on Live 1 server time.<br>
                 - Date, for example, of 23th, means 22nd 2300 - 23 2259<br>
                 - Time, for example, at 0600, means 0600 - 0659<br><br>
-                Using Database: "sf_test" """.format(type))
+                Using Database: "sf_test" """.format(aggregate.upper(), type))
 
     return render_template("Wbwrk_Multitable_Borderless.html", backgroud_Filename=background_pic("symbolspread_{}".format(type)), icon="",
                            Table_name={ "Symbol Float": "H_y_scroll_1",
@@ -399,7 +399,7 @@ def symbolSpread_custom(type):
                                         "Plot Of Spread 7": "P_Long_7",
                                         },
                            title=title,
-                           ajax_url=url_for('Spread.symbol_spread_custom_ajax', type=type.lower(),  _external=True),
+                           ajax_url=url_for('Spread.symbol_spread_custom_ajax', aggregate=aggregate, type=type.lower(),  _external=True),
                            header=header, ajax_timeout_sec = 250,
                            description=description, no_backgroud_Cover=True,
                            replace_words=Markup(["Today"])) #setinterval=60,
@@ -410,9 +410,9 @@ def symbolSpread_custom(type):
 
 
 # The Ajax call for the symbols we want to query. B Book.
-@Spread_bp.route('/symbol_spread_custom_ajax/<type>', methods=['GET', 'POST'])
+@Spread_bp.route('/symbol_spread_custom_ajax/<aggregate>/<type>', methods=['GET', 'POST'])
 @roles_required()
-def symbol_spread_custom_ajax(type="hourly"):
+def symbol_spread_custom_ajax(aggregate="avg", type="hourly"):
 
     test = False
 
@@ -434,6 +434,7 @@ def symbol_spread_custom_ajax(type="hourly"):
 
     # Want to get all the tables that are in the DB
     sql_query = """SELECT * FROM {sf_database}.{table_name} WHERE DATE >= '{date}'""".format(sf_database=sf_database, date=date, table_name=table_name)
+    print(sql_query)
 
     # Get it from the Ticks DB
     res = unsync_Query_SQL_ticks_db_engine(sql_query=sql_query,
@@ -443,9 +444,20 @@ def symbol_spread_custom_ajax(type="hourly"):
     df = pd.DataFrame(res.result())
 
     # Change the name of the columns
-    df.rename(columns={"AVG_spread": "SPREAD", "AVG": "SPREAD"}, inplace=True)
+    # The 2 tables we're looking for has different  column naming.
+    # live1q_daily - AVG_spread
+    if aggregate.lower() == "avg":
+        col1 = "AVG_spread"
+        col2 = "AVG"
 
+        # df.rename(columns={"AVG_spread": "SPREAD", "AVG": "SPREAD"}, inplace=True)
+    else: # If we want the max, just need to change which column we're using.
+        col1 = "MAX_spread"
+        col2 = "MAX"
 
+        # df.rename(columns={"MAX_spread": "SPREAD", "MAX": "SPREAD"}, inplace=True)
+
+    df.rename(columns={col1: "SPREAD", col2: "SPREAD"}, inplace=True)
 
     # Want to get the actual symbol name.
     df_mt4_symbol = df["SYMBOL"].apply(lambda x: "'{}q'".format(x))
@@ -518,7 +530,11 @@ def symbol_spread_custom_ajax(type="hourly"):
 
     # Computing IQR. Want to split out some high spread symbols so that the chart looks better.
     df_grouped_max = df.groupby("SYMBOL").max().reset_index()
-    df_grouped_max.rename(columns={"AVG_spread": "SPREAD", "AVG": "SPREAD"}, inplace=True)
+
+
+    df_grouped_max.rename(columns={col1: "SPREAD", col2: "SPREAD"}, inplace=True)
+
+
 
     Q1 = df_grouped_max['SPREAD'].quantile(0.25)
     Q3 = df_grouped_max['SPREAD'].quantile(0.75)
