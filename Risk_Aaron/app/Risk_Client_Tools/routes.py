@@ -1284,7 +1284,7 @@ def AB_Hedge_Close_ajax(update_tool_time=1):
     table_data_html = Array_To_HTML_Table(df_email.columns.tolist(), df_email.values.tolist())
 
     #EMAIL_LIST_RISKTW
-    Send_Email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
+    Send_Email(To_recipients=EMAIL_LIST_ALERT + ["risk_eu@blackwellglobal.com"], cc_recipients=[],
                      Subject="AB Hedge Cut.",
                      HTML_Text="{Email_Header}Hi,<br><br>The following client/s have had their position closed, and has been changed to read-only, as part of the AB Hedge Agreement. \
                             <br><br> {table_data_html} \
