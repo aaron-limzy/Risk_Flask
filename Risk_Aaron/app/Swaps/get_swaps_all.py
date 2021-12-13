@@ -804,6 +804,7 @@ def calculate_swaps_bgi(excel_data, db):
     # The dataframe column names has to be unique.
     df_swaps_predict.rename(columns={"BGI_Long" : "BGI_Predict_Long", "BGI_Short" : "BGI_Predict_Short"}, inplace=True)
 
+    #print(df_swaps_predict)
 
     # Need to do Long point correction form the file that Vantage sent.
     df_bgi_excel["Long Points"] = df_bgi_excel["Long Points"] * -1
