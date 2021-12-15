@@ -1220,7 +1220,7 @@ def AB_Hedge_Close_ajax(update_tool_time=1):
     # To Return to SQL
     return_val = flask_printable_list(df[col].to_dict("records"))
 
-    print(return_val)
+    #print(return_val)
 
     # return json.dumps(return_val)
 

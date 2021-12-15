@@ -2,6 +2,7 @@
 import pandas as pd
 from Helper_Flask_Lib import *
 from unsync import unsync
+from app.mt5_queries.mt5_helper_functions import *
 
 
 # To return the open trades analysis.
@@ -247,3 +248,123 @@ def Client_Group_past_trades(app, live, group):
         #df.sort_values(by=["YEAR"])
         #print(df)
     return df
+
+# MT5 Calculations.
+def mt5_symbol_individual(symbol, book):
+
+    # Deciding if we need to flip the profits.
+    book_multiplier = -1 if book.lower() == "b" else 1
+
+    # Default returns in case there isn't any MT5 Trades.
+    df_mt5_country_group = [{f"MT5 {symbol} Floating": f"No Open trades for {symbol}"}]
+
+    df_mt5_group_winning = pd.DataFrame()
+    df_mt5_group_losing = pd.DataFrame()
+
+
+    # Want to add in MT5 Details here.
+    mt5_symbol_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="""call yudi.`getFloatingTradesBySymbol`('{}', '{}')""".format(symbol, book),
+                                                          unsync_app=current_app._get_current_object())
+
+    mt5_symbol_results = mt5_symbol_unsync.result()
+    df_mt5_single_symbol = pd.DataFrame(mt5_symbol_results)
+
+    if len(df_mt5_single_symbol) == 0:  # If there isn't any trades on MT5, let's just return everything that is empty.
+        return [df_mt5_country_group, df_mt5_group_winning, df_mt5_group_losing]
+
+    # print(df_mt5_country)
+
+    # # All the columns
+    # ['Book', 'Live', 'PositionID', 'Login', 'Group', 'Symbol', 'BaseSymbol', 'Action', 'TimeCreate', 'TimeUpdate',
+    #  'PriceOpen', 'PriceCurrent', 'PriceSL', 'PriceTP', 'Volume', 'Profit', 'Storage', 'Country']
+
+
+    # BGI Side only. Will be doing some flipping.
+    df_mt5_country_bgi_side = df_mt5_single_symbol.copy()
+
+    # Want to rename the columns.
+    df_mt5_country_bgi_side.rename(columns={"Volume" : "LOTS",
+                                   "Country" : "COUNTRY",
+                                   "Profit" : "PROFIT",
+                                   "Storage" : "SWAP",
+                                   'Rebate':'REBATE'}, inplace=True)
+
+    if all([c in df_mt5_country_bgi_side for c in ["PROFIT", "SWAP"]]):
+        df_mt5_country_bgi_side["PROFIT"] = book_multiplier * df_mt5_country_bgi_side["PROFIT"]  # Convert to BGI Side
+        df_mt5_country_bgi_side["SWAP"] = book_multiplier * df_mt5_country_bgi_side["SWAP"]  # Convert to BGI Side
+
+
+    mt5_symbol_cols = ['COUNTRY', 'LOTS', 'NET_LOTS',  'PROFIT', 'REBATE', 'CONVERTED_REVENUE']
+
+
+    # To calculate the net lots
+    if all([c in df_mt5_country_bgi_side.columns for c in ['LOTS', 'Action']]):
+        df_mt5_country_bgi_side['NET_LOTS'] = df_mt5_country_bgi_side.apply(lambda x: x['LOTS'] if x['Action']==0 else -1*x['LOTS'], axis=1)
+
+    # To calculate the total profit.
+    if all([c in df_mt5_country_bgi_side.columns for c in ['SWAP', 'PROFIT']]):
+        df_mt5_country_bgi_side['CONVERTED_REVENUE'] = df_mt5_country_bgi_side['SWAP'] + df_mt5_country_bgi_side['PROFIT']
+
+
+     # If there are MT5 Trades.
+    df_mt5_country_group = df_mt5_country_bgi_side[[c for c in mt5_symbol_cols if c in df_mt5_country_bgi_side.columns]]
+    df_mt5_country_group = df_mt5_country_group.groupby("COUNTRY").sum().reset_index()
+
+    # Color the Profits
+    df_mt5_country_group["CONVERTED_REVENUE"] = df_mt5_country_group["CONVERTED_REVENUE"].apply(profit_red_green)
+    df_mt5_country_group["PROFIT"] = df_mt5_country_group["PROFIT"].apply(profit_red_green)
+
+
+    # Want to rename some of the columns.
+    df_mt5_single_symbol.rename(columns={"Volume": "LOTS", "Group" : "GROUP", "Country" : "COUNTRY", "Profit" : "CONVERTED_REVENUE", "Storage" : "STORAGE"}, inplace=True)
+
+    # Want to get rid of all pre-fixes for MT5 Groupings.
+    if "GROUP" in df_mt5_single_symbol:
+        df_mt5_single_symbol["GROUP"] =  df_mt5_single_symbol["GROUP"].apply(lambda x: x.split("\\")[-1])
+
+    # Need to calculate the NET volume.
+    if "LOTS" in df_mt5_single_symbol:
+        df_mt5_single_symbol["NET_LOTS"] = df_mt5_single_symbol.apply(lambda x: x["LOTS"] if x["Action"]==0 else -1 * x["LOTS"] , axis=1)
+    #print(df_mt5_single_symbol)
+
+    # Group the groups together.
+    if "GROUP" in df_mt5_single_symbol:
+        df_mt5_single_symbol_group = df_mt5_single_symbol[["COUNTRY", "GROUP", "LOTS", "NET_LOTS", "CONVERTED_REVENUE"]].groupby(["COUNTRY", "GROUP"]).sum().reset_index()
+
+        df_mt5_single_symbol_group.insert(0, 'Server', 'MT5')  # Want to add this column to the front of the df
+        df_mt5_single_symbol_group.fillna("-", inplace=True)
+        #df_mt5_single_symbol_group["REBATE"] = "-"      # MT4 has REBATE. So we need to combine it in.
+
+        # Split the Winning and losing.
+        # Client Winning Groups
+        df_mt5_group_winning = df_mt5_single_symbol_group[df_mt5_single_symbol_group["CONVERTED_REVENUE"] >= 0]
+        df_mt5_group_winning.nlargest(10, "CONVERTED_REVENUE")
+        df_mt5_group_winning["CONVERTED_REVENUE"] = df_mt5_group_winning["CONVERTED_REVENUE"].apply(profit_red_green)
+
+        # Client Losing Groups.
+        df_mt5_group_losing = df_mt5_single_symbol_group[df_mt5_single_symbol_group["CONVERTED_REVENUE"] < 0]
+        df_mt5_group_losing.nsmallest(10, "CONVERTED_REVENUE")
+
+        print(df_mt5_group_losing)
+        df_mt5_group_losing["CONVERTED_REVENUE"] = df_mt5_group_losing["CONVERTED_REVENUE"].apply(profit_red_green)
+
+
+
+        #print(df_mt5_single_symbol_group)
+
+
+        return [df_mt5_country_group, df_mt5_group_winning, df_mt5_group_losing]
+
+
+
+# Combining two df for output
+def appending_df_results(df_mt5, df_mt4):
+    output_df = df_mt4.copy()
+
+    if len(df_mt5) > 0:  # If there's nothing on MT5, don't do anything
+        if "Comment" in output_df:
+            output_df = df_mt5
+        else:
+            output_df = output_df.append(df_mt5, sort=False)    # If both MT4 and MT5 has data. Append.
+            output_df.fillna("-", inplace=True)
+    return output_df
