@@ -1225,7 +1225,9 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
         #
         #     country_mt5_res = df_mt5_country_group.to_dict("records")
 
-        df_mt5_country_group, df_mt5_group_winning, df_mt5_group_losing, df_mt5_login_winning, df_mt5_login_losing = mt5_symbol_individual(symbol, book)
+        df_mt5_country_group, df_mt5_group_winning, df_mt5_group_losing, df_mt5_login_winning, df_mt5_login_losing, \
+            df_mt5_login_largestlots = mt5_symbol_individual(symbol, book)
+
         country_mt5_res = df_mt5_country_group.to_dict("records")
 
     else:
@@ -1333,10 +1335,13 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
     # To Consolidate the MT4 and MT5 Stuff together.
     # FLOATING only.
-    top_groups = appending_df_results(df_mt5_group_winning, top_groups)
-    bottom_groups = appending_df_results(df_mt5_group_losing, bottom_groups)
-    top_accounts = appending_df_results(df_mt5_login_winning, top_accounts)
-    bottom_accounts = appending_df_results(df_mt5_login_losing, bottom_accounts)
+    top_groups = appending_df_results(df_mt5_group_winning, top_groups, sort_col="CONVERTED_REVENUE", ascending=False)
+    bottom_groups = appending_df_results(df_mt5_group_losing, bottom_groups, sort_col="CONVERTED_REVENUE", ascending=True)
+
+    top_accounts = appending_df_results(df_mt5_login_winning, top_accounts, sort_col="CONVERTED_REVENUE", ascending=False)
+    bottom_accounts = appending_df_results(df_mt5_login_losing, bottom_accounts, sort_col="CONVERTED_REVENUE", ascending=True)
+
+    largest_login = appending_df_results(df_mt5_login_largestlots, largest_login, sort_col="LOTS", ascending=False)
 
 
 

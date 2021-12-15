@@ -266,6 +266,8 @@ def mt5_symbol_individual(symbol, book):
     df_mt5_login_winning = pd.DataFrame()
     df_mt5_login_losing = pd.DataFrame()
 
+    df_mt5_login_largestlots = pd.DataFrame()
+
 
     # Want to add in MT5 Details here.
     mt5_symbol_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="""call yudi.`getFloatingTradesBySymbol`('{}', '{}')""".format(symbol, book),
@@ -276,7 +278,8 @@ def mt5_symbol_individual(symbol, book):
     # print(df_mt5_single_symbol)
 
     if len(df_mt5_single_symbol) == 0:  # If there isn't any trades on MT5, let's just return everything that is empty.
-        return  [df_mt5_country_group, df_mt5_group_winning, df_mt5_group_losing, df_mt5_login_winning, df_mt5_login_losing]
+        return  [df_mt5_country_group, df_mt5_group_winning, df_mt5_group_losing, \
+                 df_mt5_login_winning, df_mt5_login_losing, df_mt5_login_largestlots]
 
     # print(df_mt5_country)
 
@@ -322,8 +325,9 @@ def mt5_symbol_individual(symbol, book):
     df_mt5_country_group = df_mt5_country_group.groupby("COUNTRY").sum().reset_index()
 
     # Color the Profits
-    df_mt5_country_group["CONVERTED_REVENUE"] = df_mt5_country_group["CONVERTED_REVENUE"].apply(profit_red_green)
-    df_mt5_country_group["PROFIT"] = df_mt5_country_group["PROFIT"].apply(profit_red_green)
+    df_mt5_country_group = format_df_print(df_mt5_country_group) # Color the Profit
+    # df_mt5_country_group["CONVERTED_REVENUE"] = df_mt5_country_group["CONVERTED_REVENUE"].apply(profit_red_green)
+    # df_mt5_country_group["PROFIT"] = df_mt5_country_group["PROFIT"].apply(profit_red_green)
 
 
     # Want to rename some of the columns.
@@ -384,9 +388,6 @@ def mt5_symbol_individual(symbol, book):
         # Get MT5 winning clients (Client side)
         df_mt5_login_winning = df_mt5_single_login[df_mt5_single_login["CONVERTED_REVENUE"] >= 0]
         df_mt5_login_winning.nlargest(10, "CONVERTED_REVENUE")
-        # df_mt5_login_winning["CONVERTED_REVENUE"] = df_mt5_login_winning["CONVERTED_REVENUE"].apply(profit_red_green)
-        # df_mt5_login_winning["SWAPS"] = df_mt5_login_winning["SWAPS"].apply(profit_red_green)
-        # df_mt5_login_winning["PROFIT"] = df_mt5_login_winning["PROFIT"].apply(profit_red_green)
         df_mt5_login_winning = format_df_print(df_mt5_login_winning)    # Apply profit_red_green to the seleced columns
 
         # Get MT5 Losing Clients (Client Side)
@@ -394,17 +395,22 @@ def mt5_symbol_individual(symbol, book):
         df_mt5_login_losing.nsmallest(10, "CONVERTED_REVENUE")
         df_mt5_login_losing = format_df_print(df_mt5_login_losing)  # Apply profit_red_green to the seleced columns
 
-
+        # Get Largest Floating Accounts.
+        df_mt5_login_largestlots = df_mt5_single_login.nlargest(10, "LOTS")
+        df_mt5_login_largestlots = format_df_print(df_mt5_login_largestlots)  # Apply profit_red_green to the seleced columns
         # print(df_mt5_single_login)
 
 
-    return [df_mt5_country_group, df_mt5_group_winning, df_mt5_group_losing, df_mt5_login_winning, df_mt5_login_losing]
+    return [df_mt5_country_group, df_mt5_group_winning, df_mt5_group_losing, \
+                df_mt5_login_winning, df_mt5_login_losing, df_mt5_login_largestlots]
 
 
 
 # Combining two df for output
-def appending_df_results(df_mt5, df_mt4):
+def appending_df_results(df_mt5, df_mt4, sort_col = None, ascending=True ):
+
     output_df = df_mt4.copy()
+
 
     if len(df_mt5) > 0:  # If there's nothing on MT5, don't do anything
         if "Comment" in output_df:
@@ -412,6 +418,12 @@ def appending_df_results(df_mt5, df_mt4):
         else:
             output_df = output_df.append(df_mt5, sort=False)    # If both MT4 and MT5 has data. Append.
             output_df.fillna("-", inplace=True)
+
+    print(output_df)
+
+    if sort_col != None and sort_col in output_df:
+        output_df.sort_values(by = sort_col, ascending=ascending, inplace=True)
+
     return output_df
 
 # To print the df with Color for certain rows.
