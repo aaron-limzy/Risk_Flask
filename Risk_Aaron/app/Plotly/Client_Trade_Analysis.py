@@ -366,14 +366,14 @@ def mt5_symbol_individual(symbol, book):
         # Client Winning Groups
         df_mt5_group_winning = df_mt5_single_symbol_group[df_mt5_single_symbol_group["CONVERTED_REVENUE"] >= 0]
         df_mt5_group_winning.nlargest(10, "CONVERTED_REVENUE")
-        df_mt5_group_winning["CONVERTED_REVENUE"] = df_mt5_group_winning["CONVERTED_REVENUE"].apply(profit_red_green)
+        # df_mt5_group_winning["CONVERTED_REVENUE"] = df_mt5_group_winning["CONVERTED_REVENUE"].apply(profit_red_green)
 
         # Client Losing Groups.
         df_mt5_group_losing = df_mt5_single_symbol_group[df_mt5_single_symbol_group["CONVERTED_REVENUE"] < 0]
         df_mt5_group_losing.nsmallest(10, "CONVERTED_REVENUE")
 
         # print(df_mt5_group_losing)
-        df_mt5_group_losing["CONVERTED_REVENUE"] = df_mt5_group_losing["CONVERTED_REVENUE"].apply(profit_red_green)
+        # df_mt5_group_losing["CONVERTED_REVENUE"] = df_mt5_group_losing["CONVERTED_REVENUE"].apply(profit_red_green)
 
     # # Want to get the winning and losing Logins.
     if all([c in df_mt5_single_symbol for c in ["LIVE", "LOGIN", "SYMBOL", "LOTS", "NET_LOTS", "COUNTRY", "GROUP", \
@@ -388,16 +388,16 @@ def mt5_symbol_individual(symbol, book):
         # Get MT5 winning clients (Client side)
         df_mt5_login_winning = df_mt5_single_login[df_mt5_single_login["CONVERTED_REVENUE"] >= 0]
         df_mt5_login_winning.nlargest(10, "CONVERTED_REVENUE")
-        df_mt5_login_winning = format_df_print(df_mt5_login_winning)    # Apply profit_red_green to the seleced columns
+        # df_mt5_login_winning = format_df_print(df_mt5_login_winning)    # Apply profit_red_green to the seleced columns
 
         # Get MT5 Losing Clients (Client Side)
         df_mt5_login_losing = df_mt5_single_login[df_mt5_single_login["CONVERTED_REVENUE"] < 0]
         df_mt5_login_losing.nsmallest(10, "CONVERTED_REVENUE")
-        df_mt5_login_losing = format_df_print(df_mt5_login_losing)  # Apply profit_red_green to the seleced columns
+        # df_mt5_login_losing = format_df_print(df_mt5_login_losing)  # Apply profit_red_green to the seleced columns
 
         # Get Largest Floating Accounts.
         df_mt5_login_largestlots = df_mt5_single_login.nlargest(10, "LOTS")
-        df_mt5_login_largestlots = format_df_print(df_mt5_login_largestlots)  # Apply profit_red_green to the seleced columns
+        # df_mt5_login_largestlots = format_df_print(df_mt5_login_largestlots)  # Apply profit_red_green to the seleced columns
         # print(df_mt5_single_login)
 
 
@@ -423,6 +423,8 @@ def appending_df_results(df_mt5, df_mt4, sort_col = None, ascending=True ):
 
     if sort_col != None and sort_col in output_df:
         output_df.sort_values(by = sort_col, ascending=ascending, inplace=True)
+
+    output_df = format_df_print(output_df) # Apply color to the profit and losses.
 
     return output_df
 

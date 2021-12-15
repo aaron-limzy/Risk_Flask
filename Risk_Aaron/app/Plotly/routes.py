@@ -2022,8 +2022,8 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="no
         live_login_sum['REBATE'] = live_login_sum.apply(lambda x: color_rebate(rebate=x['REBATE'], pnl=x["CONVERTED_REVENUE"]), axis=1)
         live_login_sum["CONVERTED_REVENUE"] = round(live_login_sum['CONVERTED_REVENUE'], 2)
         #live_login_sum["PROFIT"] = round(live_login_sum['PROFIT'], 2)
-        live_login_sum["PROFIT"] = live_login_sum["PROFIT"].apply(profit_red_green)
-        live_login_sum["SWAPS"] = live_login_sum["SWAPS"].apply(profit_red_green)
+        # live_login_sum["PROFIT"] = live_login_sum["PROFIT"].apply(profit_red_green)
+        # live_login_sum["SWAPS"] = live_login_sum["SWAPS"].apply(profit_red_green)
             #round(live_login_sum['SWAPS'], 2)
         live_login_sum["LOGIN"] = live_login_sum.apply(lambda x: live_login_analysis_url(\
                                     Live=x['LIVE'].lower().replace("live", ""), Login=x["LOGIN"]), axis=1)
@@ -2036,7 +2036,7 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="no
         # Want Top and winning accounts. If there are none. we will reflect accordingly.
         top_accounts = live_login_sum[live_login_sum['CONVERTED_REVENUE'] >= 0 ].sort_values('CONVERTED_REVENUE', ascending=False)[col].head(20)
         # Color the CONVERTED_REVENUE
-        top_accounts["CONVERTED_REVENUE"] = top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+        # top_accounts["CONVERTED_REVENUE"] = top_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
         top_accounts = pd.DataFrame([{"Comment": "There are currently no client with floating profit for {}".format(symbol)}]) \
                         if len(top_accounts) <= 0 else top_accounts
@@ -2046,7 +2046,7 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="no
         # Want bottom and Loosing accounts. If there are none, we will reflect it accordingly.
         bottom_accounts = live_login_sum[live_login_sum['CONVERTED_REVENUE'] < 0 ].sort_values('CONVERTED_REVENUE', ascending=True)[col].head(20)
         # Color the CONVERTED_REVENUE
-        bottom_accounts["CONVERTED_REVENUE"] = bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+        # bottom_accounts["CONVERTED_REVENUE"] = bottom_accounts["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
         bottom_accounts = pd.DataFrame(
             [{"Comment": "There are currently no client with floating losses for {}".format(symbol)}]) \
@@ -2074,7 +2074,7 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="no
         top_groups = group_sum[group_sum['CONVERTED_REVENUE']>=0].sort_values('CONVERTED_REVENUE',
                                                                               ascending=False)[col_1].head(20)
         # Color the CONVERTED_REVENUE
-        top_groups["CONVERTED_REVENUE"] = top_groups["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+        # top_groups["CONVERTED_REVENUE"] = top_groups["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
         top_groups = pd.DataFrame([{"Comment": "There are currently no groups with floating profit for {}".format(symbol)}]) if \
             len(top_groups) <= 0 else top_groups
@@ -2083,7 +2083,7 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="no
         # Only want those that are making a loss
         bottom_groups = group_sum[group_sum['CONVERTED_REVENUE']<=0].sort_values('CONVERTED_REVENUE', ascending=True)[col_1].head(20)
         # Color the CONVERTED_REVENUE
-        bottom_groups["CONVERTED_REVENUE"] = bottom_groups["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+        # bottom_groups["CONVERTED_REVENUE"] = bottom_groups["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
         bottom_groups = pd.DataFrame(
             [{"Comment": "There are currently no groups with floating losses for {}".format(symbol)}]) if \
@@ -2100,9 +2100,9 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="no
         total_sum =  total_sum.apply(lambda x: round(x * -1 if book.lower() != 'a' else x, 2)) # Flip it to be on BGI Side if it's not a book.
         total_sum["LOTS"] = "{:,}".format(abs(total_sum["LOTS"]))  # Since it's Total lots, we only want the abs value
         total_sum['REBATE'] = color_rebate(rebate=total_sum['REBATE'], pnl=total_sum["CONVERTED_REVENUE"])
-        total_sum["PROFIT"] = profit_red_green(total_sum["PROFIT"])
-        total_sum["SWAPS"] = profit_red_green(total_sum["SWAPS"])
-        total_sum["CONVERTED_REVENUE"] = profit_red_green(total_sum["CONVERTED_REVENUE"])
+        # total_sum["PROFIT"] = profit_red_green(total_sum["PROFIT"])
+        # total_sum["SWAPS"] = profit_red_green(total_sum["SWAPS"])
+        # total_sum["CONVERTED_REVENUE"] = profit_red_green(total_sum["CONVERTED_REVENUE"])
 
         #
         # for c in total_sum_Col: # Want to print it properly.
@@ -2138,9 +2138,12 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="no
 
         if book.lower() != "a": # Only want to flip sides when it's B book.
             open_by_country["CONVERTED_REVENUE"] = open_by_country["CONVERTED_REVENUE"].apply(
-                lambda x: profit_red_green(-1 * x))
-        else:   # If it's A book. We don't need to do that.
-            open_by_country["CONVERTED_REVENUE"] = open_by_country["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+                lambda x: -1 * x)
+
+        #     open_by_country["CONVERTED_REVENUE"] = open_by_country["CONVERTED_REVENUE"].apply(
+        #         lambda x: profit_red_green(-1 * x))
+        # else:   # If it's A book. We don't need to do that.
+        #     open_by_country["CONVERTED_REVENUE"] = open_by_country["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
 
         open_by_country["LOTS"] = abs(open_by_country["LOTS"])
@@ -2157,7 +2160,7 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="no
         # Largest (lots) Floating Account.
         largest_login = live_login_sum.sort_values('LOTS', ascending=False)[col].head(20)
         # Color the CONVERTED_REVENUE
-        largest_login["CONVERTED_REVENUE"] = largest_login["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
+        # largest_login["CONVERTED_REVENUE"] = largest_login["CONVERTED_REVENUE"].apply(lambda x: profit_red_green(x))
 
         largest_login = pd.DataFrame(
             [{"Comment": "There are currently no login with open trades for {}".format(symbol)}]) if \
