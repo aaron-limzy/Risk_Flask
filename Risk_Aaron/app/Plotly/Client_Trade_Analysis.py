@@ -1,5 +1,7 @@
 
 import pandas as pd
+from pandas import DataFrame
+
 from Helper_Flask_Lib import *
 from unsync import unsync
 from app.mt5_queries.mt5_helper_functions import *
@@ -261,20 +263,24 @@ def mt5_symbol_individual(symbol, book):
     df_mt5_group_winning = pd.DataFrame()
     df_mt5_group_losing = pd.DataFrame()
 
+    df_mt5_login_winning = pd.DataFrame()
+    df_mt5_login_losing = pd.DataFrame()
+
 
     # Want to add in MT5 Details here.
     mt5_symbol_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="""call yudi.`getFloatingTradesBySymbol`('{}', '{}')""".format(symbol, book),
                                                           unsync_app=current_app._get_current_object())
 
     mt5_symbol_results = mt5_symbol_unsync.result()
-    df_mt5_single_symbol = pd.DataFrame(mt5_symbol_results)
+    df_mt5_single_symbol: DataFrame = pd.DataFrame(mt5_symbol_results)
+    # print(df_mt5_single_symbol)
 
     if len(df_mt5_single_symbol) == 0:  # If there isn't any trades on MT5, let's just return everything that is empty.
-        return [df_mt5_country_group, df_mt5_group_winning, df_mt5_group_losing]
+        return  [df_mt5_country_group, df_mt5_group_winning, df_mt5_group_losing, df_mt5_login_winning, df_mt5_login_losing]
 
     # print(df_mt5_country)
 
-    # # All the columns
+    # # All the Original columns
     # ['Book', 'Live', 'PositionID', 'Login', 'Group', 'Symbol', 'BaseSymbol', 'Action', 'TimeCreate', 'TimeUpdate',
     #  'PriceOpen', 'PriceCurrent', 'PriceSL', 'PriceTP', 'Volume', 'Profit', 'Storage', 'Country']
 
@@ -285,9 +291,14 @@ def mt5_symbol_individual(symbol, book):
     # Want to rename the columns.
     df_mt5_country_bgi_side.rename(columns={"Volume" : "LOTS",
                                    "Country" : "COUNTRY",
+                                    "Login":"LOGIN",
+                                    "Live" : "LIVE",
                                    "Profit" : "PROFIT",
+                                    "Symbol":"SYMBOL",
                                    "Storage" : "SWAP",
                                    'Rebate':'REBATE'}, inplace=True)
+
+    # print(df_mt5_country_bgi_side)
 
     if all([c in df_mt5_country_bgi_side for c in ["PROFIT", "SWAP"]]):
         df_mt5_country_bgi_side["PROFIT"] = book_multiplier * df_mt5_country_bgi_side["PROFIT"]  # Convert to BGI Side
@@ -316,7 +327,19 @@ def mt5_symbol_individual(symbol, book):
 
 
     # Want to rename some of the columns.
-    df_mt5_single_symbol.rename(columns={"Volume": "LOTS", "Group" : "GROUP", "Country" : "COUNTRY", "Profit" : "CONVERTED_REVENUE", "Storage" : "STORAGE"}, inplace=True)
+    df_mt5_single_symbol.rename(columns={"Volume": "LOTS",
+                                        "Group" : "GROUP",
+                                        "Country" : "COUNTRY",
+                                        "Login": "LOGIN",
+                                        "Live": "LIVE",
+                                        "Symbol": "SYMBOL",
+                                        "Profit" : "PROFIT",
+                                        "Storage" : "SWAPS"}, inplace=True)
+
+
+    # Summation of the PROFIT and SWAPS
+    if all([c in df_mt5_single_symbol for c in ["PROFIT", "SWAPS"] ]):
+        df_mt5_single_symbol["CONVERTED_REVENUE"] = df_mt5_single_symbol["PROFIT"] + df_mt5_single_symbol["SWAPS"]
 
     # Want to get rid of all pre-fixes for MT5 Groupings.
     if "GROUP" in df_mt5_single_symbol:
@@ -345,15 +368,37 @@ def mt5_symbol_individual(symbol, book):
         df_mt5_group_losing = df_mt5_single_symbol_group[df_mt5_single_symbol_group["CONVERTED_REVENUE"] < 0]
         df_mt5_group_losing.nsmallest(10, "CONVERTED_REVENUE")
 
-        print(df_mt5_group_losing)
+        # print(df_mt5_group_losing)
         df_mt5_group_losing["CONVERTED_REVENUE"] = df_mt5_group_losing["CONVERTED_REVENUE"].apply(profit_red_green)
 
+    # # Want to get the winning and losing Logins.
+    if all([c in df_mt5_single_symbol for c in ["LIVE", "LOGIN", "SYMBOL", "LOTS", "NET_LOTS", "COUNTRY", "GROUP", \
+                                                "SWAPS", "PROFIT", "CONVERTED_REVENUE"] ]):
+
+        df_mt5_single_login = df_mt5_single_symbol[["LIVE", "LOGIN", "SYMBOL", "LOTS", "NET_LOTS", "COUNTRY", "GROUP" ,\
+                                                            "SWAPS" , "PROFIT", "CONVERTED_REVENUE"]].\
+                                    groupby(["COUNTRY", "GROUP", "LOGIN", "LIVE", "SYMBOL"]).sum().reset_index()
+
+        df_mt5_single_login.insert(0, 'Server', 'MT5')  # Want to add this column to the front of the df
+
+        # Get MT5 winning clients (Client side)
+        df_mt5_login_winning = df_mt5_single_login[df_mt5_single_login["CONVERTED_REVENUE"] >= 0]
+        df_mt5_login_winning.nlargest(10, "CONVERTED_REVENUE")
+        # df_mt5_login_winning["CONVERTED_REVENUE"] = df_mt5_login_winning["CONVERTED_REVENUE"].apply(profit_red_green)
+        # df_mt5_login_winning["SWAPS"] = df_mt5_login_winning["SWAPS"].apply(profit_red_green)
+        # df_mt5_login_winning["PROFIT"] = df_mt5_login_winning["PROFIT"].apply(profit_red_green)
+        df_mt5_login_winning = format_df_print(df_mt5_login_winning)    # Apply profit_red_green to the seleced columns
+
+        # Get MT5 Losing Clients (Client Side)
+        df_mt5_login_losing = df_mt5_single_login[df_mt5_single_login["CONVERTED_REVENUE"] < 0]
+        df_mt5_login_losing.nsmallest(10, "CONVERTED_REVENUE")
+        df_mt5_login_losing = format_df_print(df_mt5_login_losing)  # Apply profit_red_green to the seleced columns
 
 
-        #print(df_mt5_single_symbol_group)
+        # print(df_mt5_single_login)
 
 
-        return [df_mt5_country_group, df_mt5_group_winning, df_mt5_group_losing]
+    return [df_mt5_country_group, df_mt5_group_winning, df_mt5_group_losing, df_mt5_login_winning, df_mt5_login_losing]
 
 
 
@@ -368,3 +413,11 @@ def appending_df_results(df_mt5, df_mt4):
             output_df = output_df.append(df_mt5, sort=False)    # If both MT4 and MT5 has data. Append.
             output_df.fillna("-", inplace=True)
     return output_df
+
+# To print the df with Color for certain rows.
+def format_df_print(df):
+    df_c = df.copy()
+    for c in ["CONVERTED_REVENUE", "SWAPS", "PROFIT"]:
+        if c in df_c:
+            df_c[c] = df_c[c].apply(profit_red_green)
+    return df_c

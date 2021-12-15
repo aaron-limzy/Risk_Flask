@@ -1225,7 +1225,7 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
         #
         #     country_mt5_res = df_mt5_country_group.to_dict("records")
 
-        df_mt5_country_group, df_mt5_group_winning, df_mt5_group_losing = mt5_symbol_individual(symbol, book)
+        df_mt5_country_group, df_mt5_group_winning, df_mt5_group_losing, df_mt5_login_winning, df_mt5_login_losing = mt5_symbol_individual(symbol, book)
         country_mt5_res = df_mt5_country_group.to_dict("records")
 
     else:
@@ -1331,24 +1331,17 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
          bottom_closed_groups, closed_largest_lot_accounts, closed_by_country] = [pd.DataFrame() for i in range(7)]
 
 
-
     # To Consolidate the MT4 and MT5 Stuff together.
+    # FLOATING only.
     top_groups = appending_df_results(df_mt5_group_winning, top_groups)
     bottom_groups = appending_df_results(df_mt5_group_losing, bottom_groups)
+    top_accounts = appending_df_results(df_mt5_login_winning, top_accounts)
+    bottom_accounts = appending_df_results(df_mt5_login_losing, bottom_accounts)
 
-    # if len(df_mt5_group_winning) > 0:
-    #     if "Comment" in top_groups:
-    #         top_groups = df_mt5_group_winning
-    #     else:
-    #         top_groups = top_groups.append(df_mt5_group_winning, sort=False)
-    #         top_groups.fillna("-", inplace=True)
-    #
-    # if len(df_mt5_group_losing) > 0:
-    #     if "Comment" in bottom_groups:
-    #         bottom_groups = df_mt5_group_losing
-    #     else:
-    #         bottom_groups = bottom_groups.append(df_mt5_group_losing, sort=False)
-    #         bottom_groups.fillna("-", inplace=True)
+
+
+
+
 
         # Want to add in MT5 Details here.
     # mt5_symbol_results_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="""call aaron.`BGI_MT5_Float_Query`()""", unsync_app=current_app._get_current_object())
