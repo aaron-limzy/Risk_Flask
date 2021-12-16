@@ -258,8 +258,9 @@ def mt5_symbol_individual(symbol, book):
     book_multiplier = -1 if book.lower() == "b" else 1
 
     # Default returns in case there isn't any MT5 Trades.
-    df_mt5_country_group = [{f"MT5 {symbol} Floating": f"No Open trades for {symbol}"}]
-
+    # df_mt5_country_group = [{f"MT5 {symbol} Floating": f"No Open trades for {symbol}"}]
+    
+    df_mt5_country_group = pd.DataFrame([{f"MT5 {symbol} Floating": f"No Open trades for {symbol}"}])
     df_mt5_group_winning = pd.DataFrame()
     df_mt5_group_losing = pd.DataFrame()
 
