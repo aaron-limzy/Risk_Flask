@@ -411,7 +411,6 @@ def appending_df_results(df_mt5, df_mt4, sort_col = None, ascending=True ):
 
     output_df = df_mt4.copy()
 
-
     if len(df_mt5) > 0:  # If there's nothing on MT5, don't do anything
         if "Comment" in output_df:
             output_df = df_mt5
@@ -419,11 +418,12 @@ def appending_df_results(df_mt5, df_mt4, sort_col = None, ascending=True ):
             output_df = output_df.append(df_mt5, sort=False)    # If both MT4 and MT5 has data. Append.
             output_df.fillna("-", inplace=True)
 
-    print(output_df)
+    # print(output_df)
 
     if sort_col != None and sort_col in output_df:
         output_df.sort_values(by = sort_col, ascending=ascending, inplace=True)
 
+    # only Color it here.
     output_df = format_df_print(output_df) # Apply color to the profit and losses.
 
     return output_df
