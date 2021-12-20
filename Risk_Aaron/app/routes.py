@@ -101,13 +101,15 @@ def before_request():
 
     # Don't want to record any ajax calls.
     endpoint = "{}".format(request.endpoint)
+
+
     if endpoint.lower().find("ajax") >=0 or \
-            endpoint in ["main_app.ABook_Matching_Position_Vol",
-                                 "main_app.LP_Margin_UpdateTime",
-                                 "main_app.ABook_LP_Details"] :
+            endpoint in ["main_app.ABook_Matching_Position_Vol", "main_app.ABook_Matching_Position_Vol_2",
+                                 "main_app.LP_Margin_UpdateTime", "main_app.ABook_LP_Details"]:
+
         return
     else:
-
+        print("----------------------------------- Endpoint: " + endpoint)
         # check if the user is logged.
         if not current_user.is_authenticated:
             return
