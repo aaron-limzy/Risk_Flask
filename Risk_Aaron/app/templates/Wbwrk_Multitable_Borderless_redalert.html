@@ -372,7 +372,7 @@
 
 
                     Table_Column = xx;	// Get the Column Name
-                    if ((xx.search("Discrepancy") >= 0) && (table_Data[x][xx] != 0)){	// If its the discrepancy Column/Row, we want to Flag out any that isn't 0.
+                    if ((xx.search("Discrepancy") >= 0) && (table_Data[x][xx] != 0) && (table_Data[x][xx] != "-")){	// If its the discrepancy Column/Row, we want to Flag out any that isn't 0.
                         Alert_Word_found = 1;
                     }    function numberWithCommas(x) {
                           return x.toLocaleString(undefined, {maximumFractionDigits:4})

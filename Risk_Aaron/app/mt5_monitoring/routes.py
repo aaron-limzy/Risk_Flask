@@ -700,258 +700,63 @@ def UK_AB_Hedge():
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
 def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
 
-    #start_time = datetime.datetime.now()
-
-    #print("1")
-    # First table
-    # MT4 + MT5 Copy Trades Total PnL
-    #mt4_HK_CopyTrade_Total_Pnl_unsync = unsync_query_SQL_return_record_fun(SQL_Query="call aaron.HK_CopyTrade_Total_Pnl()", app=current_app._get_current_object())
+    # All the SQL that we need to call. CAll them first.
     mt5_Acc_trades_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.aif_netvolume()", unsync_app=current_app._get_current_object())
-
     mt5_Acc_details_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.aif_account_info()", unsync_app=current_app._get_current_object())
+
+
+    mt5_Acc_details = mt5_Acc_details_unsync.result()
+    mt5_Acc_details_df = color_profit_for_df(mt5_Acc_details, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+    #mt5_Acc_details_df.rename(columns={}, inplace=True)
+    #print(mt5_Acc_details_df)
+    table_1_concat_return_data = mt5_Acc_details_df.to_dict("records")
 
 
     mt5_Acc_trades = mt5_Acc_trades_unsync.result()
     mt5_Acc_trades_df = color_profit_for_df(mt5_Acc_trades, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
-    print(mt5_Acc_trades_df)
+    columns = mt5_Acc_trades_df.columns
+    #print(list(columns))
 
-    table_1_concat_return_data = mt5_Acc_trades_df.to_dict("record")
+    # ['BaseSymbol', '80001_NetVol', '80002_NetVol', '80003_NetVol', '80004_NetVol', 'TotalNetVol', 'Past Discrepancy', 'Past Discrepancy Time']
 
-    mt5_Acc_details = mt5_Acc_details_unsync.result()
-    mt5_Acc_details_df = color_profit_for_df(mt5_Acc_details, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
-    print(mt5_Acc_details_df)
+    # mt5_Acc_trades_df
 
-    table_2_concat_return_data = mt5_Acc_details_df.to_dict("record")
+    #Artificially create a mismatch
+    mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD"]), "TotalNetVol"] = 1
 
+    mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin([".DE30", ".JP225"]), "Past Discrepancy"] = 0.15
 
-    #
-    # table_1_concat = pd.concat([mt4_HK_CopyTrade_Total_Pnl_df, mt5_HK_CopyTrade_Total_Pnl_df])
-    # table_1_concat = table_1_concat if len(table_1_concat) > 0 else [{"Run Results": "No Open Trades"}]
-    # table_1_concat_return_data =  table_1_concat.to_dict("record")
+    # Want to sort to show the mismatches.
+    mt5_Acc_trades_df.sort_values(["TotalNetVol", "BaseSymbol"], inplace=True)
 
-    # mt4_HK_CopyTrade_Total_Pnl = None
-    # mt5_HK_CopyTrade_Total_Pnl = None
-    # mt4_HK_CopyTrade_Total_Pnl_df = None
-    # mt5_HK_CopyTrade_Total_Pnl_df = None
+    # Fill na since if there isn't Past discrepancy time, it would be null
+    if "Past Discrepancy Time" in mt5_Acc_trades_df:
+        mt5_Acc_trades_df["Past Discrepancy Time"] = mt5_Acc_trades_df["Past Discrepancy Time"].fillna(value="-")
 
-    # #print("2")
-    # # Second table ---
-    # mt4_HK_CopyTrade_NetLots_Difference = mt4_HK_CopyTrade_NetLots_Difference_unsync.result()
-    # mt4_HK_CopyTrade_NetLots_Difference_df = color_profit_for_df(mt4_HK_CopyTrade_NetLots_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
-    #
-    # mt5_HK_CopyTrade_NetLots_Difference = mt5_HK_CopyTrade_NetLots_Difference_unsync.result()
-    # mt5_HK_CopyTrade_NetLots_Difference_df = color_profit_for_df(mt5_HK_CopyTrade_NetLots_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
-    #
-    # table_2_return_data =  {}
-    #
-    # if all([c in mt4_HK_CopyTrade_NetLots_Difference_df for c in
-    #         ["Net Lots", "LP Net Lots", "STP%", "LP Net Lots - Net Lots * STP%"]]) and "Philip Net Lots" in mt5_HK_CopyTrade_NetLots_Difference_df:
-    #     table_2_return_data["Net Lots"] = mt4_HK_CopyTrade_NetLots_Difference_df["Net Lots"].sum()
-    #     table_2_return_data["LP Net Lots"] = mt4_HK_CopyTrade_NetLots_Difference_df["LP Net Lots"].sum() + mt5_HK_CopyTrade_NetLots_Difference_df["Philip Net Lots"].sum()
-    #     table_2_return_data["STP%"] = mt4_HK_CopyTrade_NetLots_Difference_df["STP%"].sum()
-    #     table_2_return_data["LP Net Lots - Net Lots * STP%"] = mt4_HK_CopyTrade_NetLots_Difference_df["LP Net Lots - Net Lots * STP%"].sum() + \
-    #                         mt5_HK_CopyTrade_NetLots_Difference_df["Philip Net Lots"].sum()
-    # else:
-    #     table_2_return_data = {"Run Results": "No Open Trades"}
-    #
-    # #print("3")
-    # # Third table
-    # mt4_HK_CopyTrade_Profit_Difference = mt4_HK_CopyTrade_Profit_Difference_unsync.result()
-    # mt4_HK_CopyTrade_Profit_Difference_df = color_profit_for_df(mt4_HK_CopyTrade_Profit_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
-    #
-    # mt5_HK_CopyTrade_Profit_Difference = mt5_HK_CopyTrade_Profit_Difference_unsync.result()
-    # mt5_HK_CopyTrade_Profit_Difference_df = color_profit_for_df(mt5_HK_CopyTrade_Profit_Difference, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
-    #
-    # # print(mt5_HK_CopyTrade_Profit_Difference_df)
-    # # print(mt5_HK_CopyTrade_Profit_Difference_df)
-    # #print("mt4_HK_CopyTrade_Profit_Difference_df")
-    # #print(mt4_HK_CopyTrade_Profit_Difference_df)
-    #
-    # table_3_return_data = {}
-    # if all([c in mt4_HK_CopyTrade_Profit_Difference_df for c in ["LP Profit", "Profit"]]) and \
-    #         all([c in mt5_HK_CopyTrade_Profit_Difference_df for c in ["Philip Profit" ]]):
-    #     #table_3_return_data = {}
-    #     table_3_return_data["LP Profit"] = mt4_HK_CopyTrade_Profit_Difference_df['LP Profit'].sum() + mt5_HK_CopyTrade_Profit_Difference_df["Philip Profit"].sum()
-    #     table_3_return_data["Profit USD"] = mt4_HK_CopyTrade_Profit_Difference_df["Profit"].sum()
-    #     table_3_return_data["Net Profit"] = table_3_return_data["LP Profit"] - table_3_return_data["Profit USD"]
-    #     # To color the profit columns
-    #     table_3_return_data = color_profit_for_df([table_3_return_data], default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=False)
-    # else:
-    #     table_3_return_data = [{"Run Results": "No Open Trades"}]
-    #
-    # #print("4")
-    # # 4th Table
-    # mt4_HK_CopyTrade_Price_Comparison = mt4_HK_CopyTrade_Price_Comparison_unsync.result()
-    # mt4_HK_CopyTrade_Price_Comparison_df = color_profit_for_df(mt4_HK_CopyTrade_Price_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
-    #
-    # mt5_HK_CopyTrade_Price_Comparison = mt5_HK_CopyTrade_Price_Comparison_unsync.result()
-    # mt5_HK_CopyTrade_Price_Comparison_df = color_profit_for_df(mt5_HK_CopyTrade_Price_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
-    #
-    # if "Merging Ticket" in mt4_HK_CopyTrade_Price_Comparison_df and "Merging Ticket" in mt5_HK_CopyTrade_Price_Comparison_df:
-    #     table_4_df = mt4_HK_CopyTrade_Price_Comparison_df.merge(mt5_HK_CopyTrade_Price_Comparison_df, how="left", left_on="Merging Ticket", right_on = "Merging Ticket")
-    #
-    #     # Create Extra Column, considering to check if the columns are around.
-    #     if all([c for c in ['Profit', 'CFH Profit', 'BIC Profit', 'SQ Profit', 'Philip Profit'] if
-    #             c in table_4_df]):
-    #         table_4_df["BGI Profit"] = table_4_df['CFH Profit'] + table_4_df['BIC Profit'] + table_4_df[
-    #             'SQ Profit'] + table_4_df['Philip Profit'] - table_4_df['Profit']
-    #     table_4_col = ['Ticket', 'Symbol', 'Open Price', 'CFH Open Price', 'BIC Open Price',
-    #                    'SQ Open Price', 'Philip Open Price', 'Profit', 'CFH Profit',
-    #                    'BIC Profit', 'SQ Profit', 'Philip Profit', "BGI Profit"]
-    #
-    #     # To color profit columns
-    #     table_4_df = color_profit_for_df(table_4_df.to_dict("record"), default=[{"Run Results": "No Open Trades"}],
-    #                                      words_to_find=["profit"], return_df=True)
-    #
-    #     table_4_df = table_4_df[[c for c in table_4_col if c in table_4_df]]
-    #     table_4_df.fillna("-", inplace=True)
-    #
-    # else:
-    #     table_4_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
-    #
-    # #print("5")
-    # # 5th Table
-    #
-    # mt4_HK_CopyTrade_Open_Time = mt4_HK_CopyTrade_Open_Time_unsync.result()
-    # mt4_HK_CopyTrade_Open_Timee_df = color_profit_for_df(mt4_HK_CopyTrade_Open_Time, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
-    #
-    # mt5_HK_CopyTrade_Open_Time = mt5_HK_CopyTrade_Open_Time_unsync.result()
-    # mt5_HK_CopyTrade_Open_Time_df = color_profit_for_df(mt5_HK_CopyTrade_Open_Time, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
-    #
-    #
-    # if "Merging Ticket" in mt4_HK_CopyTrade_Open_Timee_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_df:
-    #     table_5_df = mt4_HK_CopyTrade_Open_Timee_df.merge(mt5_HK_CopyTrade_Open_Time_df, how="left", left_on="Merging Ticket", right_on = "Merging Ticket")
-    #     table_5_col = ['Ticket', 'Symbol', 'Net Lots', 'CFH Net Lots', 'BIC Net Lots', 'SQ Net Lots', \
-    #                    'Philip Net Lots', 'Open Time', 'CFH Open Time', 'BIC Open Time', 'SQ Open Time',
-    #                    'Philip Open Time']
-    #     table_5_df = table_5_df[[c for c in table_5_col if c in table_5_df]]
-    #     table_5_df.fillna("-", inplace=True)
-    #
-    # else:
-    #     table_5_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
-    #
-    #
-    #
-    # #table_5_df.pop("Merging Ticket")
-    #
-    # #print("6")
-    # #6th Table
-    # # ----------------------- MT5 LP Details to look like standadize LP details. ----------------
-    #
-    # lp_details_return_result = lp_details["current_result"]
-    #
-    # # Using MT5 helper function to pretty print the table in HTML.
-    # mt5_hk_LP_Copy_futures_data = mt5_hk_LP_Copy_futures_data_unsync.result()
-    #
-    # # We want print it into the same structure as mt4 FX LP
-    # all_lp_details = pretty_print_mt5_futures_LP_details_2(futures_data=mt5_hk_LP_Copy_futures_data, \
-    #                                                        fx_lp_details=lp_details_return_result, return_df=False)
-    # #print("7")
-    # # 7th Table
-    # mt4_HK_CopyTrade_Profit_Comparison_last24hour = mt4_HK_CopyTrade_Profit_Comparison_last24hour_unsync.result()
-    # mt4_HK_CopyTrade_Profit_Comparison_last24hour_df = color_profit_for_df(mt4_HK_CopyTrade_Profit_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
-    #
-    # mt5_HK_CopyTrade_Profit_Comparison_last24hour = mt5_HK_CopyTrade_Profit_Comparison_last24hour_unsync.result()
-    # mt5_HK_CopyTrade_Profit_Comparison_last24hour_df = color_profit_for_df(mt5_HK_CopyTrade_Profit_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=[], return_df=True)
-    #
-    # if "Merging Ticket" in mt4_HK_CopyTrade_Profit_Comparison_last24hour_df and "Merging Ticket" in mt5_HK_CopyTrade_Profit_Comparison_last24hour_df:
-    #     table_7_df = mt4_HK_CopyTrade_Profit_Comparison_last24hour_df.merge(mt5_HK_CopyTrade_Profit_Comparison_last24hour_df, how="left", left_on="Merging Ticket", right_on = "Merging Ticket")
-    #     table_7_df['BGI Profit'] = table_7_df['BGI Profit'] + table_7_df['Philip Profit']
-    #
-    #     # to re-color the columns
-    #     table_7_df = color_profit_for_df(table_7_df.to_dict("record"), default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
-    #
-    #     table_7_col = ['Ticket', 'Close Time', 'Symbol', 'Net Lots', 'CFH Net Lots',
-    #                    'BIC Net Lots', 'SQ Net Lots', 'Philip Net Lots', 'Profit', 'CFH Profit', 'BIC Profit',
-    #                    'SQ Profit', 'Philip Profit', 'BGI Profit']
-    #     table_7_df = table_7_df[[c for c in table_7_col if c in table_7_df]]
-    #
-    #     #table_7_df.pop("Merging Ticket")
-    #     table_7_df.fillna("---", inplace=True)
-    # else:
-    #     table_7_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
-    #
-    #
-    #
-    # #print("8")
-    # # 8th Table
-    # mt4_HK_CopyTrade_Price_Comparison_last24hour = mt4_HK_CopyTrade_Price_Comparison_last24hour_unsync.result()
-    # mt4_HK_CopyTrade_Price_Comparison_last24hour_df = color_profit_for_df(mt4_HK_CopyTrade_Price_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
-    #
-    # mt5_HK_CopyTrade_Price_Comparison_last24hour = mt5_HK_CopyTrade_Price_Comparison_last24hour_unsync.result()
-    # mt5_HK_CopyTrade_Price_Comparison_last24hour_df = color_profit_for_df(mt5_HK_CopyTrade_Price_Comparison_last24hour, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
-    #
-    # if "Merging Ticket" in mt4_HK_CopyTrade_Price_Comparison_last24hour_df and "Merging Ticket" in mt5_HK_CopyTrade_Price_Comparison_last24hour_df:
-    #     table_8_df = mt4_HK_CopyTrade_Price_Comparison_last24hour_df.merge(
-    #         mt5_HK_CopyTrade_Price_Comparison_last24hour_df, how="left", left_on="Merging Ticket", right_on="Merging Ticket")
-    #     # if "Merging Ticket" in table_8_df:
-    #     #     table_8_df.pop("Merging Ticket")
-    #
-    #     table_8_col = ['Ticket', 'Close Time ', 'Symbol', 'Open Price', 'CFH Open Price',
-    #      'BIC Open Price', 'SQ Open Price', 'Close Price', 'Philip Open Price', 'CFH Close Price',
-    #      'BIC Close Price', 'SQ Close Price', 'Philip Close Price' ]
-    #
-    #     table_8_df = table_8_df[[c for c in table_8_col if c in table_8_df]]
-    #
-    #     table_8_df.fillna("---", inplace=True)
-    # else:
-    #     table_8_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
-    #
-    #
-    # # 9th Table
-    #
-    # mt4_HK_CopyTrade_Open_Time_Comparison = mt4_HK_CopyTrade_Open_Time_Comparison_unsync.result()
-    # mt4_HK_CopyTrade_Open_Time_Comparison_df = color_profit_for_df(mt4_HK_CopyTrade_Open_Time_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
-    #
-    # mt5_HK_CopyTrade_Open_Time_Comparison = mt5_HK_CopyTrade_Open_Time_Comparison_unsync.result()
-    # mt5_HK_CopyTrade_Open_Time_Comparison_df = color_profit_for_df(mt5_HK_CopyTrade_Open_Time_Comparison, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
-    #
-    # if "Merging Ticket" in mt4_HK_CopyTrade_Open_Time_Comparison_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_Comparison_df:
-    #     table_9_df = mt4_HK_CopyTrade_Open_Time_Comparison_df.merge(mt5_HK_CopyTrade_Open_Time_Comparison_df, how="outer", left_on="Merging Ticket", right_on = "Merging Ticket")
-    #     table_9_df.pop("Merging Ticket")
-    # else:
-    #     table_9_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
-    #
-    # if "Merging Ticket" in mt4_HK_CopyTrade_Open_Time_Comparison_df and "Merging Ticket" in mt5_HK_CopyTrade_Open_Time_Comparison_df:
-    #     table_9_df = mt4_HK_CopyTrade_Open_Time_Comparison_df.merge(mt5_HK_CopyTrade_Open_Time_Comparison_df,
-    #                                                                 how="left", left_on="Merging Ticket",
-    #                                                                 right_on="Merging Ticket")
-    #     table_9_df.pop("Merging Ticket")
-    #     table_9_col = ['Ticket', 'Symbol', 'Open Time', 'CFH Open Time', 'BIC Open Time',
-    #      'SQ Open Time','Philip Open Time', 'Close Time', 'CFH Close Time', 'BIC Close Time',
-    #      'SQ Close Time', 'Philip Close Time']
-    #
-    #     table_9_df = table_9_df[[c for c in table_9_col if c in table_9_df]]
-    #
-    #     table_9_df.fillna("---", inplace=True)
-    # else:
-    #     table_9_df = pd.DataFrame([{"Run Results": "No Open Trades"}])
-    #
-    # # print("table_9_df")
-    # # print(table_9_df.columns)
-    #
-    # # print({ "Hss1": table_1_concat_return_data,
-    # #                     "Vss1": [table_2_return_data],
-    # #                     "Vss2":table_3_return_data,
-    # #                     "H1": table_4_df.to_dict("record"),
-    # #                     "H2": table_5_df.to_dict("record"),
-    # #                     "H3" : all_lp_details,
-    # #                     "H4": table_7_df.to_dict("record"),
-    # #                     "H5": table_8_df.to_dict("record"),
-    # #                     "H6": table_9_df.to_dict("record"),
-    # #                     })
+    if "TotalNetVol" in mt5_Acc_trades_df:
+        mismatched_accounts = mt5_Acc_trades_df[mt5_Acc_trades_df["TotalNetVol"] != 0]
+
+    # Raise an alert if there's a mismatch.
+    if "TotalNetVol" in mt5_Acc_trades_df:
+        mt5_Acc_trades_df[mt5_Acc_trades_df["TotalNetVol"] != 0] 
+
+    # We want to clear the past mismatches.
+    if 'Past Discrepancy' in mt5_Acc_trades_df and 'TotalNetVol' in mt5_Acc_trades_df:
+        cleared_mismatch_df = mt5_Acc_trades_df[(mt5_Acc_trades_df['Past Discrepancy'] != 0) & (mt5_Acc_trades_df['TotalNetVol'] == 0) ]
+        if len(cleared_mismatch_df) != 0: # We want to clear the mismatch in the mismatch table on MT5 SQL
+            symbols_to_clear = cleared_mismatch_df["BaseSymbol"].tolist()
+            symbols_to_clear = ['"{c}"'.format(c=c) for c in symbols_to_clear]
+
+            clear_sql_statement = """UPDATE aaron.aif_position_mismatch_records SET Flag="N" WHERE Basesymbol in ({}) AND Flag="Y" """.format(" , ".join(symbols_to_clear))
+            #SQL_insert_MT5_statement(clear_sql_statement)
+            #print(clear_sql_statement)
+
+    # Want to pretty print. From NetVol to Net Vol
+    to_replace = {c:c.replace("NetVol", " Net Vol") for c in list(columns) if c.find("NetVol") >0}
+    mt5_Acc_trades_df.rename(columns=to_replace, inplace=True)
+    Acc_trades_return_data = mt5_Acc_trades_df.to_dict("records")
 
 
-    #print(table_4_df)
-
-    return json.dumps({ "H1": table_2_concat_return_data,
-                        "H2": table_1_concat_return_data,
-                        # "Vss1": [table_2_return_data],
-                        # "Vss2" : table_3_return_data,
-                        # "H1": table_4_df.to_dict("record"),
-
-                        # "H3": all_lp_details,
-                        # "H4": table_7_df.to_dict("record"),
-                        # "H5": table_8_df.to_dict("record"),
-                        # "H6": table_9_df.to_dict("record"),
+    return json.dumps({ "H1": table_1_concat_return_data,
+                        "H2": Acc_trades_return_data,
                         })
