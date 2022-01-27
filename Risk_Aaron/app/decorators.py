@@ -15,7 +15,7 @@ def async_fun(f):
 
 # Various different rights. With Admin and Risk being the highest.
 # The rest are for other teams, if they need access.
-def roles_required(roles=["Risk", "Admin", "Risk_TW"]):
+def  roles_required(roles=["Risk", "Admin", "Risk_TW"]):
     def wrapper(fn):
         @wraps(fn)
         def decorated_view(*args, **kwargs):

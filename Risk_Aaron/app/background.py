@@ -9,8 +9,10 @@ def background_pic(website):
 
     #NoTrade_Change_ReadOnly_Settings
 
+    #
 
-    default = "css/Mac_Coffee.jpg"
+    # default = "css/Mac_Coffee.jpg"
+    default = "css/gplaypattern.png"
     gb_return = {"save_BGI_float" :         "css/city_overview.jpg",
                  "BGI_Country_Float":       "css/World_Map.jpg",
                  "BGI_Symbol_Float" :       "css/leaves.png",
@@ -56,7 +58,8 @@ def background_pic(website):
 
                  "Swap_download_page":                      "css/pink dust.png",
                 "HK_Change_Spread" :                        "css/Hexagon_repeat.jpg",
-                 "AB_Hedge_Close":                     "css/leaves-pattern.png"
+                 "AB_Hedge_Close":                     "css/leaves-pattern.png",
+                 "UK_AB_Hedge"    :                      "css/strange_bullseyes.png"
 
         }
 
@@ -87,6 +90,7 @@ def icon_pic(website):
                  "ABook_Matching":                                   "css/icon/bank.png",
                  "Risk_auto_cut":                               "css/icon/cut.png",
                  "HK_Change_Spread" :                           "css/Lightning_bolt.png",
+                 "UK_AB_Hedge" :                            "css/balance.png",
 
                  }
 
