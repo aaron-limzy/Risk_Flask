@@ -729,16 +729,45 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
     # Want to sort to show the mismatches.
     mt5_Acc_trades_df.sort_values(["TotalNetVol", "BaseSymbol"], inplace=True)
 
-    # Fill na since if there isn't Past discrepancy time, it would be null
-    if "Past Discrepancy Time" in mt5_Acc_trades_df:
-        mt5_Acc_trades_df["Past Discrepancy Time"] = mt5_Acc_trades_df["Past Discrepancy Time"].fillna(value="-")
-
-    if "TotalNetVol" in mt5_Acc_trades_df:
-        mismatched_accounts = mt5_Acc_trades_df[mt5_Acc_trades_df["TotalNetVol"] != 0]
 
     # Raise an alert if there's a mismatch.
     if "TotalNetVol" in mt5_Acc_trades_df:
-        mt5_Acc_trades_df[mt5_Acc_trades_df["TotalNetVol"] != 0] 
+        mismatched_symbol = mt5_Acc_trades_df[mt5_Acc_trades_df["TotalNetVol"] != 0]
+        # print(mismatched_symbol["Past Discrepancy Time"])
+
+        # The symbols that has a mismatch for the first time.
+        mismatched_symbol_first = mismatched_symbol[mismatched_symbol["Past Discrepancy Time"].isna()]
+        if len(mismatched_symbol_first) >0: # Want to save to SQL the time.
+            # To add in the ""
+            mismatched_symbol_first["BaseSymbol"] = mismatched_symbol_first["BaseSymbol"].apply(lambda x: "'{}'".format(x))
+            mismatched_symbol_first["TotalNetVol"] = mismatched_symbol_first["TotalNetVol"].apply(lambda x: "{:.2f}".format(x))
+
+            # Preparing the SQL Values for insert
+            value_list = mismatched_symbol_first[["BaseSymbol", "TotalNetVol"]].to_records(index=False)
+            value_list = [list(c) + ["NOW()", "'Y'"] for c in value_list] ## Adding Default values.
+            value_list = ["({})".format(" , ".join(c)) for c in value_list]
+
+            SQL_insert = """INSERT INTO aaron.aif_position_mismatch_records (Basesymbol, Discrepancy, Datetime, Flag) VALUES {}""".format(", ".join(value_list))
+            # print(SQL_insert)
+            SQL_insert_MT5_statement(SQL_insert)
+
+        # Those symbols that has mismatched before in the past.
+        mismatched_symbol_past = mismatched_symbol[~mismatched_symbol["Past Discrepancy Time"].isna()]
+        if len(mismatched_symbol_past) > 0:  # Want to check the time.
+            mismatched_symbol_past['Past Discrepancy Time'] = pd.to_datetime(mismatched_symbol_past['Past Discrepancy Time'],
+                                                                        format='%Y-%m-%d %H:%M:%S').dt.time
+
+            #mismatched_symbol_past["Time_diff_m"] = datetime.datetime.now() - mismatched_symbol_past["Past Discrepancy Time"]
+            print(mismatched_symbol_past)
+
+
+    # Fill na since if there isn't Past discrepancy time, it would be null
+    if "Past Discrepancy Time" in mt5_Acc_trades_df:
+
+        mt5_Acc_trades_df["Past Discrepancy Time"] = mt5_Acc_trades_df["Past Discrepancy Time"].fillna(value="-")
+
+
+
 
     # We want to clear the past mismatches.
     if 'Past Discrepancy' in mt5_Acc_trades_df and 'TotalNetVol' in mt5_Acc_trades_df:
