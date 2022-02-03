@@ -548,7 +548,7 @@
         }else{
           var table = $( table_id).DataTable();
           var order = table.order();
-          //console.log( 'Column '+order+' is the ordering column' );
+          // console.log( 'Column '+order+' is the ordering column' );
         }
 
         $(div_id).html(data);
@@ -585,7 +585,7 @@
            var j = 1; // Want to ignore the first column.
 
           // The columns that would make sense to sum up.
-          var sum_col = ["lots", "volume", "revenue", "swaps", "profit", "rebate", "total"];
+          var sum_col = ["lots", "volume", "revenue", "swaps", "profit", "rebate", "total", "pnl", "vol"];
 
 
 
@@ -656,7 +656,7 @@
 
         if (e.data instanceof Object){  // If it is an object, we loop thru and add it to the correct container/Div
           ret_obj = e.data;
-          console.log(ret_obj);
+          // console.log(ret_obj);
           var consolidate = false;
           if ('consolidate' in ret_obj){  // If we want to consolidate all the errors.
             consolidate = true;

@@ -20,11 +20,15 @@ LP_MARGIN_ALERT_LEVEL = 20            # How much away from MC do we start making
 if get_machine_ip_address() == '192.168.64.73': #Only On Server computer
     EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com", "Risk@blackwellglobal.com"]
     EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com", "risk@blackwellglobal.com", "cs@bgifx.com"]
+    EXTERNAL_IP = "202.88.105.3"
     print("On Server 64.73")
 else:
     EMAIL_LIST_ALERT = ["aaron.lim@blackwellglobal.com"]
     EMAIL_LIST_BGI = ["aaron.lim@blackwellglobal.com"]
+    EXTERNAL_IP = "localhost"
     print("On Aaron's Computer")
+
+# EXTERNAL_IP = "202.88.105.3"
 
 EMAIL_AARON =  ["aaron.lim@blackwellglobal.com"]     # For test Groups.
 EMAIL_LIST_RISKTW = ["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com", "nicole.cheng@blackwellglobal.com", "joyce.liou@blackwellglobal.com"]
@@ -951,7 +955,7 @@ def live_login_analysis_url(Live, Login):
 def live_login_analysis_url_External(Live, Login):
 
     url = url_for("analysis.Client_trades_Analysis", Live=int(Live),  Login=int(Login), _external=True)
-    return '<a href="{url}">{Login}</a>'.format(url=url,  Login=Login).replace("localhost", "202.88.105.3")
+    return '<a href="{url}">{Login}</a>'.format(url=url,  Login=Login).replace("localhost", EXTERNAL_IP)
 
 
 # To get the URL for the Symbol Trades A/B Book

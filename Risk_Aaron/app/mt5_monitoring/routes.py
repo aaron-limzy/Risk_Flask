@@ -688,7 +688,7 @@ def UK_AB_Hedge():
                                        # "[CLOSED] OPEN/CLOSE PRICE COMPARISON": "H5",
                                        # "[CLOSED] OPEN/CLOSE TIME COMPARISON": "H6"
                                        },
-                           title=title, setinterval=120,
+                           title=title, setinterval=200,
                            ajax_url=url_for('mt5_monitoring.UK_AB_Hedge_ajax', _external=True),
                            header=header,
                            description=description, no_backgroud_Cover=True,
@@ -700,13 +700,20 @@ def UK_AB_Hedge():
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
 def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
 
+    # After how many mins will a mismatch be sent
+    alert_mismatch_timing = 10
+
+    testing = False
+
     # All the SQL that we need to call. CAll them first.
     mt5_Acc_trades_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.aif_netvolume()", unsync_app=current_app._get_current_object())
     mt5_Acc_details_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.aif_account_info()", unsync_app=current_app._get_current_object())
 
 
     mt5_Acc_details = mt5_Acc_details_unsync.result()
-    mt5_Acc_details_df = color_profit_for_df(mt5_Acc_details, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+    mt5_Acc_details_df = color_profit_for_df(mt5_Acc_details, default=[{"Run Results": "No Open Trades"}], words_to_find=["pnl"], return_df=True)
+
+
     #mt5_Acc_details_df.rename(columns={}, inplace=True)
     #print(mt5_Acc_details_df)
     table_1_concat_return_data = mt5_Acc_details_df.to_dict("records")
@@ -715,19 +722,21 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_Acc_trades = mt5_Acc_trades_unsync.result()
     mt5_Acc_trades_df = color_profit_for_df(mt5_Acc_trades, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
     columns = mt5_Acc_trades_df.columns
+
+    # Columns that we need to rename and also add together.
+    net_vol_columns = [c for c in list(columns) if c.find("NetVol") > 0]
+
     #print(list(columns))
 
     # ['BaseSymbol', '80001_NetVol', '80002_NetVol', '80003_NetVol', '80004_NetVol', 'TotalNetVol', 'Past Discrepancy', 'Past Discrepancy Time']
 
     # mt5_Acc_trades_df
 
-    #Artificially create a mismatch
-    mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD"]), "TotalNetVol"] = 1
+    if testing == True:
+        #Artificially create a mismatch
+        mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD", "USDJPY"]), "TotalNetVol"] = 1
+        mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin([".DE30", ".JP225"]), "Past Discrepancy"] = 0.15
 
-    mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin([".DE30", ".JP225"]), "Past Discrepancy"] = 0.15
-
-    # Want to sort to show the mismatches.
-    mt5_Acc_trades_df.sort_values(["TotalNetVol", "BaseSymbol"], inplace=True)
 
 
     # Raise an alert if there's a mismatch.
@@ -737,7 +746,8 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
         # The symbols that has a mismatch for the first time.
         mismatched_symbol_first = mismatched_symbol[mismatched_symbol["Past Discrepancy Time"].isna()]
-        if len(mismatched_symbol_first) >0: # Want to save to SQL the time.
+
+        if len(mismatched_symbol_first) >0 : # Want to save to SQL the time.
             # To add in the ""
             mismatched_symbol_first["BaseSymbol"] = mismatched_symbol_first["BaseSymbol"].apply(lambda x: "'{}'".format(x))
             mismatched_symbol_first["TotalNetVol"] = mismatched_symbol_first["TotalNetVol"].apply(lambda x: "{:.2f}".format(x))
@@ -751,21 +761,90 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
             # print(SQL_insert)
             SQL_insert_MT5_statement(SQL_insert)
 
+        # print(mismatched_symbol)
+        # print("\n\n")
+
         # Those symbols that has mismatched before in the past.
         mismatched_symbol_past = mismatched_symbol[~mismatched_symbol["Past Discrepancy Time"].isna()]
-        if len(mismatched_symbol_past) > 0:  # Want to check the time.
+
+        # Want those which alert we have not sent.
+        # if "Alert_Raised" != "1970-01-01 00:00:00"
+        mismatched_symbol_past = mismatched_symbol_past[mismatched_symbol["Alert_Raised"] == "1970-01-01 00:00:00"]
+        # print("\n\n")
+        # print(mismatched_symbol_past)
+
+
+        if len(mismatched_symbol_past) > 0:  # Want to check the time, if matches condition, send the alert
             mismatched_symbol_past['Past Discrepancy Time'] = pd.to_datetime(mismatched_symbol_past['Past Discrepancy Time'],
-                                                                        format='%Y-%m-%d %H:%M:%S').dt.time
+                                                                        format='%Y-%m-%d %H:%M:%S')
 
-            #mismatched_symbol_past["Time_diff_m"] = datetime.datetime.now() - mismatched_symbol_past["Past Discrepancy Time"]
-            print(mismatched_symbol_past)
+            mismatched_symbol_past["Time_diff"] = pd.datetime.now() - mismatched_symbol_past["Past Discrepancy Time"]
+            mismatched_symbol_past["Time_diff_m"] = mismatched_symbol_past["Time_diff"].dt.total_seconds() / 60 # Calculate the total mins
+
+            # Past a certain time, we want to send an alert.
+            To_Send_alert = mismatched_symbol_past[mismatched_symbol_past["Time_diff_m"] >= alert_mismatch_timing]
+
+            for c in ["Time_diff", "Time_diff_m" , "Alert_Raised"]:
+                if c in  To_Send_alert:
+                    To_Send_alert.drop(c, inplace=True, axis=1)
 
 
-    # Fill na since if there isn't Past discrepancy time, it would be null
-    if "Past Discrepancy Time" in mt5_Acc_trades_df:
+            # If it fufils the sending alert conditions.
+            if len(To_Send_alert) > 0:
+                mismatch_list = To_Send_alert["BaseSymbol"].to_list()
 
-        mt5_Acc_trades_df["Past Discrepancy Time"] = mt5_Acc_trades_df["Past Discrepancy Time"].fillna(value="-")
+                # Crafting message for telegram.
+                #print("BaseSymbol" + net_vol_columns)
+                To_Send_alert["tele_Message"] = To_Send_alert.apply(lambda x: "{:^6} | {} ".format( \
+                                                            x["BaseSymbol"], "| ".join(["{:^7.2f}".format(x[c]) for c in net_vol_columns])
+                ) , axis=1)
 
+                tele_table_header = ["Symbol"] + [c.replace("NetVol", "") for c in net_vol_columns]
+                tele_table_header = ["| ".join(tele_table_header)]
+
+                tele_table_data = To_Send_alert["tele_Message"].tolist()
+                tele_table = "\n".join(tele_table_header + tele_table_data)
+                # print(tele_table_header)
+                # print(To_Send_alert["tele_Message"].tolist())
+
+                if testing == False:
+                    # Want to send out an email/telegram alert for mismatch.
+                    async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, """<b>UK Mismatch.</b>\n\n{}\n\nLink: <a href='{}'>UK Hedge Page</a>""".format(tele_table,\
+                                            url_for('mt5_monitoring.UK_AB_Hedge', _external=True).replace("localhost", EXTERNAL_IP)), \
+                                           TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+
+                # Don't need this column anymore.
+                To_Send_alert.drop("tele_Message", inplace=True, axis=1)
+
+                # Crafting the Email.
+                email_html = "Hi,<br><br>There's a mismatch for the UK copy trades (UK Hedging A/B).<br>Kindly see details below.<br>"
+
+                email_html += Array_To_HTML_Table(
+                             list(To_Send_alert.columns), To_Send_alert.values, [])
+
+
+                email_html += "Ideally, the position should net off completely, resulting in 0 net volume.\n"
+                email_html += "This Email was generated at: SGT {}.<br><br>Thanks,<br>Aaron".format(\
+                    datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+                if testing == False:
+                    # Send off the email
+                    async_send_email(EMAIL_LIST_ALERT, [], "UK Hedging Mismatch. ({})".format(", ".join(mismatch_list) ),
+                           Email_Header + email_html + Email_Footer, [])
+
+
+
+                # Need to update SQL so that Alert dosn't send again.
+
+                mismatch_list = ["'{}'".format(m) for m in mismatch_list] # Add quotations
+                sql_update_statement = "UPDATE aaron.aif_position_mismatch_records SET Alert_Raised = NOW() WHERE Basesymbol in ({}) AND Flag = 'Y' ".format(", ".join(mismatch_list))
+
+                if testing == False:
+                    SQL_insert_MT5_statement(sql_update_statement)
+
+
+                    # print(sql_update_statement)
+                    # print(To_Send_alert)
 
 
 
@@ -776,15 +855,54 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
             symbols_to_clear = cleared_mismatch_df["BaseSymbol"].tolist()
             symbols_to_clear = ['"{c}"'.format(c=c) for c in symbols_to_clear]
 
+            # Want to set the Flag to N, meaning that the mismatch is no longer active.
             clear_sql_statement = """UPDATE aaron.aif_position_mismatch_records SET Flag="N" WHERE Basesymbol in ({}) AND Flag="Y" """.format(" , ".join(symbols_to_clear))
-            #SQL_insert_MT5_statement(clear_sql_statement)
+            if testing == False:
+                SQL_insert_MT5_statement(clear_sql_statement)
+
             #print(clear_sql_statement)
 
+    # -----------------------------Pretty Print. -------------------------------------------------------------------
+
+    # Fill na since if there isn't Past discrepancy time, it would be null
+    if "Past Discrepancy Time" in mt5_Acc_trades_df:
+        mt5_Acc_trades_df["Past Discrepancy Time"] = mt5_Acc_trades_df["Past Discrepancy Time"].fillna(value="-")
+
+    # Don't need to show this column.
+    if "Alert_Raised" in mt5_Acc_trades_df:
+        mt5_Acc_trades_df.drop("Alert_Raised", axis=1, inplace=True)
+
+    # Want to tabulate all the NetVol.
+    # First, get the sum of the abs volume.
+    mt5_Acc_trades_df["abs_volume"] = mt5_Acc_trades_df.apply(lambda x: sum([abs(x[c]) \
+                                                                             for c in net_vol_columns]), axis=1)
+    # Only want to show the position that has open trades.
+    open_trades_df = mt5_Acc_trades_df[mt5_Acc_trades_df["abs_volume"] != 0]
+
+    if len(open_trades_df) > 0:  # If there are open position
+        mt5_Acc_trades_df = open_trades_df
+    else:  # If not, we want to show the major few.
+        mt5_Acc_trades_df = mt5_Acc_trades_df[mt5_Acc_trades_df["BaseSymbol"].isin(["EURUSD", "USDCHF", "EURCAD"])]
+
+
+    # Want to sort to show the mismatches.
+    mt5_Acc_trades_df.sort_values(["abs_volume", "TotalNetVol", "Past Discrepancy", "BaseSymbol"],  ascending=[False, False, False, False], inplace=True)
+
+    # Don't need to show this column.
+    if "abs_volume" in mt5_Acc_trades_df:
+        mt5_Acc_trades_df.drop("abs_volume", axis=1, inplace=True)
+
+
     # Want to pretty print. From NetVol to Net Vol
-    to_replace = {c:c.replace("NetVol", " Net Vol") for c in list(columns) if c.find("NetVol") >0}
+    to_replace = {c:c.replace("NetVol", " Net Vol") for c in net_vol_columns }
     mt5_Acc_trades_df.rename(columns=to_replace, inplace=True)
+
+    #print(mt5_Acc_trades_df)
     Acc_trades_return_data = mt5_Acc_trades_df.to_dict("records")
 
+    # Want to update the runtime table to ensure that tool is running.
+    async_update_Runtime(app=current_app._get_current_object(),
+                         Tool='UK Hedge A/B Match')
 
     return json.dumps({ "H1": table_1_concat_return_data,
                         "H2": Acc_trades_return_data,
