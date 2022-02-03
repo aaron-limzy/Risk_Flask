@@ -673,7 +673,7 @@ def UK_AB_Hedge():
     header = Markup("<b><u>UK A/B Hedge</u></b>")
     title = "UK A/B Hedge"
 
-    description = Markup("""Checks for UK A/B Hedge""")
+    description = Markup("""Checks for UK A/B Hedge<br>All Time are in SGT (GMT + 8).<br>Refresh timing would be ~ 5 mins as per MT5 Refresh timings.""")
 
     return render_template("Wbwrk_Multitable_Borderless_redalert.html",
                            backgroud_Filename=background_pic("UK_AB_Hedge"), icon=icon_pic("UK_AB_Hedge"),
