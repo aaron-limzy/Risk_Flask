@@ -668,7 +668,7 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 # To Query for all open trades by a particular symbol
 # Shows the closed trades for the day as well.
 @mt5_monitoring.route('/UK_AB_Hedge', methods=['GET', 'POST'])
-@roles_required(["Risk", "Risk_TW", "Admin"])
+@roles_required(["Risk", "Risk_TW", "Admin", "Risk_UK"])
 def UK_AB_Hedge():
     header = Markup("<b><u>UK A/B Hedge</u></b>")
     title = "UK A/B Hedge"
@@ -697,7 +697,7 @@ def UK_AB_Hedge():
 
 
 @mt5_monitoring.route('/UK_AB_Hedge_ajax', methods=['GET', 'POST'])
-@roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
+@roles_required(["Risk", "Risk_TW", "Admin", "Dealing", "Risk_UK"])
 def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
 
     # After how many mins will a mismatch be sent
@@ -734,8 +734,8 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     if testing == True:
         #Artificially create a mismatch
-        mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD", "USDJPY"]), "TotalNetVol"] = 1
         mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin([".DE30", ".JP225"]), "Past Discrepancy"] = 0.15
+        mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD"]), "TotalNetVol"] = 1
 
 
 
@@ -823,13 +823,18 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
                              list(To_Send_alert.columns), To_Send_alert.values, [])
 
 
-                email_html += "Ideally, the position should net off completely, resulting in 0 net volume.\n"
+                email_html += "Ideally, the position should net off completely, resulting in 0 net volume.<br>"
+                email_html += """Link: <a href='{}'>UK Hedge Page</a><br><br>""".format( url_for( 'mt5_monitoring.UK_AB_Hedge',
+                                                                      _external=True).replace("localhost",EXTERNAL_IP))
+
+
                 email_html += "This Email was generated at: SGT {}.<br><br>Thanks,<br>Aaron".format(\
                     datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
                 if testing == False:
                     # Send off the email
-                    async_send_email(EMAIL_LIST_ALERT, [], "UK Hedging Mismatch. ({})".format(", ".join(mismatch_list) ),
+                    # + ["alvin.yudi@blackwellglobal.com"]
+                    async_send_email(EMAIL_LIST_ALERT , [], "UK Hedging Mismatch. ({})".format(", ".join(mismatch_list) ),
                            Email_Header + email_html + Email_Footer, [])
 
 
