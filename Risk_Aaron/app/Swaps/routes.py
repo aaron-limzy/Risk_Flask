@@ -71,7 +71,7 @@ def before_request():
 
 
 @swaps.route('/Swaps/BGI_Swaps')
-@roles_required()
+@roles_required(["Risk", "Admin", "Risk_TW", "Risk_UK"])
 def BGI_Swaps():
     description = Markup("Swap values uploaded onto MT4/MT5. <br>\
    Swaps would be charged on the roll over to the next day.<br> \
@@ -85,7 +85,7 @@ def BGI_Swaps():
 
 
 @swaps.route('/Swaps/BGI_Swaps_ajax', methods=['GET', 'POST'])
-@roles_required()
+@roles_required(["Risk", "Admin", "Risk_TW", "Risk_UK"])
 def BGI_Swaps_ajax():     # Return the Bloomberg dividend table in Json.
 
     start_date = get_working_day_date(datetime.date.today(), -5)
@@ -124,7 +124,7 @@ def BGI_Swaps_ajax():     # Return the Bloomberg dividend table in Json.
 
 
 @swaps.route('/Bloomberg_Dividend')
-@roles_required()
+@roles_required(["Risk", "Risk_TW","Risk_UK", "Admin"])
 def Bloomberg_Dividend():
     description = Markup("Dividend Values in the table above are 1-day early, when the values are uploaded as swaps onto MT4. <br>\
     Dividend would be given out/charged the next working day.")
@@ -135,7 +135,7 @@ def Bloomberg_Dividend():
 
 
 @swaps.route('/Bloomberg_Dividend_ajax', methods=['GET', 'POST'])
-@roles_required()
+@roles_required(["Risk", "Risk_TW","Risk_KH", "Admin", "Dealing"])
 def Bloomberg_Dividend_ajax():     # Return the Bloomberg dividend table in Json.
 
     start_date = get_working_day_date(datetime.date.today(), -3)
@@ -279,6 +279,7 @@ def upload_Swaps_csv():
 
 
 @swaps.route('/Swaps/Other_Brokers', methods=['GET', 'POST'])
+@roles_required(["Risk", "Risk_TW","Risk_UK", "Admin"])
 def Other_Brokers():
 
     title = "Swap Compare"
@@ -309,6 +310,7 @@ def Other_Brokers():
 
 
 @swaps.route('/Swaps/Other_Brokers_Ajax', methods=['GET', 'POST'])
+@roles_required(["Risk", "Risk_TW","Risk_KH", "Admin", "Dealing"])
 def Other_Brokers_Ajax():
 
 

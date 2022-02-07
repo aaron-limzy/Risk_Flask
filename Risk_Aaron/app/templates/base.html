@@ -149,7 +149,23 @@
 
           {% endif %}
 
-            {% if current_user.role not in ["Dealing"] %}
+          {% if current_user.role in ["Risk_UK"] %}
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+              Risk Tools 🛠
+            </a>
+
+            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+              <li><a class="dropdown-item" href="{{ url_for('mt5_monitoring.UK_AB_Hedge') }}">UK Hedge A/B ⭐</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('swaps.BGI_Swaps') }}">BGI Swaps</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('swaps.Other_Brokers') }}">Swaps Compare</a></li>
+              <li><a class="dropdown-item" href="{{ url_for('swaps.Bloomberg_Dividend') }}">Bloomberg Dividend</a></li>
+
+
+          {% endif %}
+
+
+            {% if current_user.role not in ["Dealing", "Risk_UK"] %}
           <!-- Level one dropdown -->
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
