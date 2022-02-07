@@ -30,6 +30,8 @@ else:
 
 # EXTERNAL_IP = "202.88.105.3"
 
+Risk_EU_EMAIL = "risk_eu@blackwellglobal.com"
+
 EMAIL_AARON =  ["aaron.lim@blackwellglobal.com"]     # For test Groups.
 EMAIL_LIST_RISKTW = ["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com", "nicole.cheng@blackwellglobal.com", "joyce.liou@blackwellglobal.com"]
 

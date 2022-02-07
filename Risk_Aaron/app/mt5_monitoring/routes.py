@@ -667,11 +667,11 @@ def HK_Copy_STP_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
 # To Query for all open trades by a particular symbol
 # Shows the closed trades for the day as well.
-@mt5_monitoring.route('/UK_AB_Hedge', methods=['GET', 'POST'])
+@mt5_monitoring.route('/AIF_AB_Hedge', methods=['GET', 'POST'])
 @roles_required(["Risk", "Risk_TW", "Admin", "Risk_UK"])
-def UK_AB_Hedge():
-    header = Markup("<b><u>UK A/B Hedge</u></b>")
-    title = "UK A/B Hedge"
+def AIF_AB_Hedge():
+    header = Markup("<b><u>AIF A/B Hedge</u></b>")
+    title = "AIF A/B Hedge"
 
     description = Markup("""Checks for UK A/B Hedge<br>All Time are in SGT (GMT + 8).<br>Refresh timing would be ~ 5 mins as per MT5 Refresh timings.""")
 
@@ -700,10 +700,12 @@ def UK_AB_Hedge():
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing", "Risk_UK"])
 def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
 
-    # After how many mins will a mismatch be sent
-    alert_mismatch_timing = 10
 
     testing = False
+
+    # After how many mins will a mismatch be sent
+    alert_mismatch_timing = 10 if testing == False else 5
+
 
     # All the SQL that we need to call. CAll them first.
     mt5_Acc_trades_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.aif_netvolume()", unsync_app=current_app._get_current_object())
@@ -732,10 +734,10 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     # mt5_Acc_trades_df
 
-    if testing == True:
+    #if testing == True:
         #Artificially create a mismatch
-        mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin([".DE30", ".JP225"]), "Past Discrepancy"] = 0.15
-        mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD"]), "TotalNetVol"] = 1
+    #mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin([".DE30", ".JP225"]), "Past Discrepancy"] = 0.15
+    mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD", "USDJPY"]), "TotalNetVol"] = 1
 
 
 
@@ -747,7 +749,7 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
         # The symbols that has a mismatch for the first time.
         mismatched_symbol_first = mismatched_symbol[mismatched_symbol["Past Discrepancy Time"].isna()]
 
-        if len(mismatched_symbol_first) >0 : # Want to save to SQL the time.
+        if len(mismatched_symbol_first) > 0 : # Want to save to SQL the time.
             # To add in the ""
             mismatched_symbol_first["BaseSymbol"] = mismatched_symbol_first["BaseSymbol"].apply(lambda x: "'{}'".format(x))
             mismatched_symbol_first["TotalNetVol"] = mismatched_symbol_first["TotalNetVol"].apply(lambda x: "{:.2f}".format(x))
@@ -758,7 +760,7 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
             value_list = ["({})".format(" , ".join(c)) for c in value_list]
 
             SQL_insert = """INSERT INTO aaron.aif_position_mismatch_records (Basesymbol, Discrepancy, Datetime, Flag) VALUES {}""".format(", ".join(value_list))
-            # print(SQL_insert)
+            print(SQL_insert)
             SQL_insert_MT5_statement(SQL_insert)
 
         # print(mismatched_symbol)
@@ -769,7 +771,7 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
         # Want those which alert we have not sent.
         # if "Alert_Raised" != "1970-01-01 00:00:00"
-        mismatched_symbol_past = mismatched_symbol_past[mismatched_symbol["Alert_Raised"] == "1970-01-01 00:00:00"]
+        mismatched_symbol_past = mismatched_symbol_past[mismatched_symbol_past["Alert_Raised"] == "1970-01-01 00:00:00"]
         # print("\n\n")
         # print(mismatched_symbol_past)
 
@@ -781,6 +783,7 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
             mismatched_symbol_past["Time_diff"] = pd.datetime.now() - mismatched_symbol_past["Past Discrepancy Time"]
             mismatched_symbol_past["Time_diff_m"] = mismatched_symbol_past["Time_diff"].dt.total_seconds() / 60 # Calculate the total mins
 
+            print(mismatched_symbol_past)
             # Past a certain time, we want to send an alert.
             To_Send_alert = mismatched_symbol_past[mismatched_symbol_past["Time_diff_m"] >= alert_mismatch_timing]
 
@@ -792,7 +795,7 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
             # If it fufils the sending alert conditions.
             if len(To_Send_alert) > 0:
                 mismatch_list = To_Send_alert["BaseSymbol"].to_list()
-
+                print(mismatch_list)
                 # Crafting message for telegram.
                 #print("BaseSymbol" + net_vol_columns)
                 To_Send_alert["tele_Message"] = To_Send_alert.apply(lambda x: "{:^6} | {} ".format( \
@@ -810,7 +813,7 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
                 if testing == False:
                     # Want to send out an email/telegram alert for mismatch.
                     async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, """<b>UK Mismatch.</b>\n\n{}\n\nLink: <a href='{}'>UK Hedge Page</a>""".format(tele_table,\
-                                            url_for('mt5_monitoring.UK_AB_Hedge', _external=True).replace("localhost", EXTERNAL_IP)), \
+                                            url_for('mt5_monitoring.AIF_AB_Hedge', _external=True).replace("localhost", EXTERNAL_IP)), \
                                            TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
 
                 # Don't need this column anymore.
@@ -824,7 +827,7 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
 
                 email_html += "Ideally, the position should net off completely, resulting in 0 net volume.<br>"
-                email_html += """Link: <a href='{}'>UK Hedge Page</a><br><br>""".format( url_for( 'mt5_monitoring.UK_AB_Hedge',
+                email_html += """Link: <a href='{}'>UK Hedge Page</a><br><br>""".format( url_for( 'mt5_monitoring.AIF_AB_Hedge',
                                                                       _external=True).replace("localhost",EXTERNAL_IP))
 
 
@@ -834,6 +837,8 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
                 if testing == False:
                     # Send off the email
                     # + ["alvin.yudi@blackwellglobal.com"]
+                    # + [Risk_EU_EMAIL] + ["risk@blackwellglobal.com"] + [Risk_EU_EMAIL]
+                    #+ [risk@blackwellglobal.bs]
                     async_send_email(EMAIL_LIST_ALERT , [], "UK Hedging Mismatch. ({})".format(", ".join(mismatch_list) ),
                            Email_Header + email_html + Email_Footer, [])
 
@@ -848,7 +853,7 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
                     SQL_insert_MT5_statement(sql_update_statement)
 
 
-                    # print(sql_update_statement)
+                    print(sql_update_statement)
                     # print(To_Send_alert)
 
 
@@ -859,13 +864,13 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
         if len(cleared_mismatch_df) != 0: # We want to clear the mismatch in the mismatch table on MT5 SQL
             symbols_to_clear = cleared_mismatch_df["BaseSymbol"].tolist()
             symbols_to_clear = ['"{c}"'.format(c=c) for c in symbols_to_clear]
-
+            print("\nWant to clear out the AIF A/B mismatches. \n")
             # Want to set the Flag to N, meaning that the mismatch is no longer active.
-            clear_sql_statement = """UPDATE aaron.aif_position_mismatch_records SET Flag="N" WHERE Basesymbol in ({}) AND Flag="Y" """.format(" , ".join(symbols_to_clear))
+            clear_sql_statement = """UPDATE aaron.aif_position_mismatch_records SET Flag = "N" WHERE Basesymbol in ({}) AND Flag="Y" """.format(" , ".join(symbols_to_clear))
+
             if testing == False:
                 SQL_insert_MT5_statement(clear_sql_statement)
-
-            #print(clear_sql_statement)
+                print(clear_sql_statement)
 
     # -----------------------------Pretty Print. -------------------------------------------------------------------
 
