@@ -135,7 +135,7 @@ def Bloomberg_Dividend():
 
 
 @swaps.route('/Bloomberg_Dividend_ajax', methods=['GET', 'POST'])
-@roles_required(["Risk", "Risk_TW","Risk_KH", "Admin", "Dealing"])
+@roles_required(["Risk", "Risk_TW","Risk_UK", "Admin"])
 def Bloomberg_Dividend_ajax():     # Return the Bloomberg dividend table in Json.
 
     start_date = get_working_day_date(datetime.date.today(), -3)
