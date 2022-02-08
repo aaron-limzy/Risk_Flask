@@ -839,7 +839,8 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
                     # + ["alvin.yudi@blackwellglobal.com"]
                     # + [Risk_EU_EMAIL] + ["risk@blackwellglobal.com"] + [Risk_EU_EMAIL]
                     #+ [risk@blackwellglobal.bs]
-                    async_send_email(EMAIL_LIST_ALERT , [], "UK Hedging Mismatch. ({})".format(", ".join(mismatch_list) ),
+                    # EMAIL_LIST_ALERT
+                    async_send_email(["aaron.lim@blackwellglobal.com"] ,[], "UK Hedging Mismatch. ({})".format(", ".join(mismatch_list) ),
                            Email_Header + email_html + Email_Footer, [])
 
 
