@@ -310,9 +310,8 @@ def Other_Brokers():
 
 
 @swaps.route('/Swaps/Other_Brokers_Ajax', methods=['GET', 'POST'])
-@roles_required(["Risk", "Risk_TW","Risk_KH", "Admin", "Dealing"])
+@roles_required(["Risk", "Risk_TW","Risk_UK", "Admin", "Dealing"])
 def Other_Brokers_Ajax():
-
 
     start = datetime.datetime.now()
     # Get swaps from other brokers

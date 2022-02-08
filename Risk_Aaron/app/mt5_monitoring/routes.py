@@ -734,10 +734,10 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     # mt5_Acc_trades_df
 
-    #if testing == True:
+    if testing == True:
         #Artificially create a mismatch
-    #mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin([".DE30", ".JP225"]), "Past Discrepancy"] = 0.15
-    #mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD", "USDJPY"]), "TotalNetVol"] = 1
+        #mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin([".DE30", ".JP225"]), "Past Discrepancy"] = 0.15
+        mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD", "USDJPY"]), "TotalNetVol"] = 1
 
 
 
