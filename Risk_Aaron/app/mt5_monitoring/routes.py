@@ -737,7 +737,7 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
     if testing == True:
         #Artificially create a mismatch
         mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin([".DE30", ".JP225"]), "Past Discrepancy"] = 0.15
-    mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD", "USDJPY"]), "TotalNetVol"] = 1
+        mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD", "USDJPY"]), "TotalNetVol"] = 1
 
 
 
@@ -838,9 +838,9 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
                     # Send off the email
                     # + ["alvin.yudi@blackwellglobal.com"]
                     # + [Risk_EU_EMAIL] + ["risk@blackwellglobal.com"] + [Risk_EU_EMAIL]
-                    #+ [risk@blackwellglobal.bs]
+                    #+ ["risk@blackwellglobal.bs"] # As requested by Uchenna
                     # EMAIL_LIST_ALERT
-                    async_send_email(["aaron.lim@blackwellglobal.com"] ,[], "UK Hedging Mismatch. ({})".format(", ".join(mismatch_list) ),
+                    async_send_email(EMAIL_LIST_ALERT + [Risk_EU_EMAIL, "risk@blackwellglobal.bs"]  ,[], "UK Hedging Mismatch. ({})".format(", ".join(mismatch_list) ),
                            Email_Header + email_html + Email_Footer, [])
 
 
@@ -913,7 +913,7 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
 
     # Want to update the runtime table to ensure that tool is running.
     async_update_Runtime(app=current_app._get_current_object(),
-                         Tool='UK Hedge A/B Match')
+                         Tool='AIF Hedge A/B Match')
 
     return json.dumps({ "H1": table_1_concat_return_data,
                         "H2": Acc_trades_return_data,
