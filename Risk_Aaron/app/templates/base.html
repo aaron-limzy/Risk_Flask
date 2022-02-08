@@ -230,8 +230,8 @@
 
 
                     <div class="dropdown-divider"></div>
-                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Monitor_Account_Trades_Settings') }}">Monitor Account Settings ➕</a></li>
-                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Monitor_Account_Trades') }}">Monitor Account ⭐</a></li>
+                    <!-- <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Monitor_Account_Trades_Settings') }}">Monitor Account Settings ➕</a></li>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Monitor_Account_Trades') }}">Monitor Account ⭐</a></li> -->
                     <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('analysis.Client_Comment_Scalp') }}">Client Comment Scalp ⭐</a></li>
                     <div class="dropdown-divider"></div>
                     <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('notifications_bp.Client_No_Trades') }}">Client no Open symbol position⭐</a></li>
@@ -266,6 +266,20 @@
 
                   </ul>
                 </li>
+
+                <li class="nav-item dropleft">
+                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown12" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Account Monitoring
+                  </a>
+                  <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown12">
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Monitor_Account_Trades_Settings') }}">Monitor Account Settings ➕</a></li>
+                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Monitor_Account_Trades') }}">Monitor Account ⭐</a></li>
+                  </ul>
+                </li>
+
+
+
 
             {% endif %}
 
@@ -340,10 +354,8 @@
                     BGI Data
                   </a>
                   <ul class="dropdown-menu" aria-labelledby="navbarDropdown4">
-                    <li><a class="dropdown-item" href="{{ url_for('swaps.BGI_Swaps') }}">BGI Swaps</a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('swaps.Other_Brokers') }}">Swaps Compare</a></li>
+
                     <li><a class="dropdown-item" href="{{ url_for('main_app.Changed_readonly') }}">Changed Read Only</a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('swaps.Bloomberg_Dividend') }}">Bloomberg Dividend</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('main_app.BGI_Convert_Rate') }}">BGI FX Convert Rates</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('swaps.cfh_oz_upload') }}">CFH OZ Upload</a></li>
                   </ul>
@@ -357,6 +369,12 @@
                   <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown1">
 
                     <li><a class="dropdown-item" href="{{ url_for('swaps.upload_Swaps_csv') }}">Swap Upload</a></li>
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item" href="{{ url_for('swaps.BGI_Swaps') }}">BGI Swaps</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('swaps.Other_Brokers') }}">Swaps Compare</a></li>
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item" href="{{ url_for('swaps.Bloomberg_Dividend') }}">Bloomberg Dividend</a></li>
+
                   </ul>
                 </li>
 
