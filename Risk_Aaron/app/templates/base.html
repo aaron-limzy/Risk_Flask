@@ -166,6 +166,72 @@
 
 
             {% if current_user.role not in ["Dealing", "Risk_UK"] %}
+
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Risk<br>Tools 🛠
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+
+
+                <li class="nav-item dropleft">
+                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown20" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    MT/LP Match 😆
+                  </a>
+                  <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown20">
+                    <li><a class="dropdown-item" href="{{ url_for('main_app.ABook_Matching') + "?send_email_flag=0" }}">⭐ MT4/LP</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('main_app.add_off_set') }}">➕ A Book Offset</a></li>
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Get_Margin_Trades%20-%20V1.6%20-%20Vantage/">REST Vantage Margin Trades ⭐</a></li>
+                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Get_Margin_Trades%20BGI%20-%20V1.3/">REST BGI Margin Trades ⭐</a></li>
+
+                  </ul>
+
+
+                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown21" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Risk Auto Cut 😆
+                  </a>
+                  <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown21">
+                    <li><a class="dropdown-item" href="{{ url_for('Risk_Client_Tools_bp.Risk_auto_cut') }}">⭐ Risk Auto Cut</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('Risk_Client_Tools_bp.Include_Risk_Autocut') }}">➕ Risk Auto Cut [Add Login]</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('Risk_Client_Tools_bp.Include_Risk_Autocut_Group') }}">➕ Risk Auto Cut [Add Group]</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('Risk_Client_Tools_bp.Exclude_Risk_Autocut') }}">➕ Risk Auto Cut Exclude</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('Risk_Client_Tools_bp.Risk_Autocut_Result') }}">📘 Risk Auto Cut Result</a></li>
+                  </ul>
+
+                  <li class="nav-item dropleft">
+                    <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown22" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      Equity Below Credit 😆
+                    </a>
+                    <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown22">
+                      <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/ReadOnly_Equity_Below_Credit_V1.2/">⭐ Equity below Credit</a></li>
+                      <li><a class="dropdown-item" href="{{ url_for('main_app.Exclude_Equity_Below_Credit') }}">➕ Equity below Credit Exclude</a></li>
+                    </ul>
+                  </li>
+
+                  <li class="nav-item dropleft">
+                    <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown12" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      Telegram Account Monitoring 😆
+                    </a>
+                    <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown12">
+                      <li><a class="dropdown-item" href="{{ url_for('main_app.Monitor_Account_Trades') }}">⭐ Monitor Account</a></li>
+                      <li><a class="dropdown-item" href="{{ url_for('main_app.Monitor_Account_Trades_Settings') }}">➕ Monitor Account Settings</a></li>
+                    </ul>
+                  </li>
+                  <div class="dropdown-divider"></div>
+                  <li><a class="dropdown-item" href="{{ url_for('Risk_Client_Tools_bp.noopentrades_changegroup') }}">⭐➕ Change Group </br>(No Open Trades) 😆</a></li>
+                  <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/Track_Account_Open_Trades_V1/">⭐ Open Trades [Sound alert] 😆</a></li>
+
+
+
+                </li>
+
+
+
+              </ul>
+
+            </li>
+
           <!-- Level one dropdown -->
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -175,38 +241,14 @@
             <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
 
 
-                <li><a class="dropdown-item" href="{{ url_for('main_app.ABook_Matching') + "?send_email_flag=0" }}">MT4/LP ⭐</a></li>
-                <li><a class="dropdown-item" href="{{ url_for('main_app.add_off_set') }}">A Book Offset ➕</a></li>
-                <div class="dropdown-divider"></div>
+
+
 
               {% endif %}
 
               {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
                 <li class="nav-item dropleft">
-                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown1" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    <b>Risk</b> Client tools
-                  </a>
-                  <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown1">
 
-                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Risk_Client_Tools_bp.Risk_auto_cut') }}">Risk Auto Cut ⭐</a></li>
-                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Risk_Client_Tools_bp.Include_Risk_Autocut') }}">Risk Auto Cut [Add Login] ➕</a></li>
-                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Risk_Client_Tools_bp.Include_Risk_Autocut_Group') }}">Risk Auto Cut [Add Group] ➕</a></li>
-                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Risk_Client_Tools_bp.Exclude_Risk_Autocut') }}">Risk Auto Cut Exclude ➕</a></li>
-                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Risk_Client_Tools_bp.Risk_Autocut_Result') }}">Risk Auto Cut Result 📘</a></li>
-
-
-
-                    <div class="dropdown-divider"></div>
-                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('Risk_Client_Tools_bp.noopentrades_changegroup') }}">Change Group ⭐</br>(No Open Trades)</a></li>
-
-                    <div class="dropdown-divider"></div>
-                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/Track_Account_Open_Trades_V1/">MonitorOpen Trades ⭐</a></li>
-                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Risk_AutoCut_V3.2//">Risk Auto Cut</a></li>
-
-                    <div class="dropdown-divider"></div>
-                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/ReadOnly_Equity_Below_Credit_V1.2/">Equity below Credit ⭐</a></li>
-                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Exclude_Equity_Below_Credit') }}">Equity below Credit Exclude ➕</a></li>
-                  </ul>
                 </li>
 
                 <li class="nav-item dropleft">
@@ -214,8 +256,7 @@
                     <b>Risk</b> running tools
                   </a>
                   <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown12">
-                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Get_Margin_Trades%20-%20V1.6%20-%20Vantage/">REST Vantage Margin Trades ⭐</a></li>
-                    <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Get_Margin_Trades%20BGI%20-%20V1.3/">REST BGI Margin Trades ⭐</a></li>
+
                     <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Computer_Usage') }}">Server Usage ⭐</a></a></a></li>
                     <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Monitor_Risk_Tools') }}">Monitor Risk Tools ⭐</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('Risk_Client_Tools_bp.HK_Change_Spread') }}">HK Change Spread ⚡</a></li>
@@ -238,7 +279,7 @@
                     <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('notifications_bp.Large_volume_Login') }}">Large Volume Traders ⭐</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('Risk_Client_Tools_bp.AB_Hedge_Close') }}">AB_Hedge_Close ⭐</a></li>
                     <div class="dropdown-divider"></div>
-                    <li><a class="dropdown-item" href="{{ url_for('mt5_monitoring.AIF_AB_Hedge') }}">UK Hedge A/B ⭐</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('mt5_monitoring.AIF_AB_Hedge') }}">AIF Hedge A/B ⭐</a></li>
 
                     <li class="nav-item dropleft">
                       <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown12" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -259,7 +300,7 @@
                         <div class="dropdown-divider"></div>
                         <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/NFP_Change_Spread_V1.4/">NFP Spread Change</a></li>
                         <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/ABook_Match_Trades%20-%20V2.7/?Send_Email_Toggle=0">LP/MT4 Position</a></li>
-
+                        <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.20.61/all/Risk_AutoCut_V3.2//">Risk Auto Cut</a></li>
 
                       </ul>
                     </li>
@@ -267,16 +308,7 @@
                   </ul>
                 </li>
 
-                <li class="nav-item dropleft">
-                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown12" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Account Monitoring
-                  </a>
-                  <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown12">
-                    <div class="dropdown-divider"></div>
-                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Monitor_Account_Trades_Settings') }}">Monitor Account Settings ➕</a></li>
-                    <li><a class="dropdown-item bg_a_light_green" href="{{ url_for('main_app.Monitor_Account_Trades') }}">Monitor Account ⭐</a></li>
-                  </ul>
-                </li>
+
 
 
 
