@@ -2302,7 +2302,8 @@ def Exclude_Equity_Below_Credit():
 def Scrape_futures():
     description = Markup("Scraping Futures.<br>" +
                          "Excel will be downloaded automatically.<br>"+
-                         "Excel Data will be the same as those on the tables. ")
+                         "Excel Data will be the same as those on the tables. <br>" + \
+                         "Data taken from SQL Table: <u>aaron.future_contract_sizes</u>")
 
     # Template will take in an json dict and display a few tables, depending on how many is needed.
     return render_template("Webworker_1_table_Boderless_excel.html",

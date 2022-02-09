@@ -1146,9 +1146,9 @@ def Delete_NoTrades_ReadOnly_Button_Endpoint(Live="", Login=""):
 
 
 # Want to check and close off account/trades.
-@Risk_Client_Tools_bp.route('/AB_Hedge_Close', methods=['GET', 'POST'])
+@Risk_Client_Tools_bp.route('/AB_Hedge_Client_Close', methods=['GET', 'POST'])
 @roles_required()
-def AB_Hedge_Close():
+def AB_Hedge_Client_Close():
 
     start = datetime.datetime.now()
     title = "AB Hedge Close"
@@ -1162,7 +1162,11 @@ def AB_Hedge_Close():
 
 
 
-    description = Markup("")
+    description = Markup("Tool that will refresh every 30 seconds.<br>Will check if Yudi's tool picked up any clients to be changed to Read Only.<br>" + \
+                         "SQL Table: <u>ab_hedged_readonly_login</u><br><br>" + \
+                         "Yudi's tool will flag out clients that needs to be changed to Read-only and put it into the table.<br>"+ \
+                         "This tool will then constantly read the table and change the client to Read-Only.<br>" + \
+                         "Email notification will be sent to Risk@blackwellglobal.com, risk_eu@blackwellglobal.com and chappie_bo@blackwelltrader.com ")
 
     #
     # client_include_tab = Delete_Risk_Autocut_Include_Table_fun()
@@ -1190,9 +1194,10 @@ def AB_Hedge_Close():
 
 
 
-@Risk_Client_Tools_bp.route('/AB_Hedge_Close_ajax', methods=['GET', 'POST'])
+@Risk_Client_Tools_bp.route('/AB_Hedge_Client_Close_ajax', methods=['GET', 'POST'])
 @roles_required()
-def AB_Hedge_Close_ajax(update_tool_time=1):
+def AB_Hedge_Client_Close_ajax(update_tool_time=1):
+#Closes Client when Yudi catches them for A/B Book Hedging
 
 
     # Get all the clients that needs to be changed.
@@ -1263,14 +1268,14 @@ def AB_Hedge_Close_ajax(update_tool_time=1):
         SET`Change` = "Y", ChangedDateTime=now()
         WHERE Login = '{login}' AND Live='{live}' """.format(login=login, live=live)
 
-        print(sql_statement)
+        #print(sql_statement)
 
         # Change on the SQL
         sql_result = Insert_into_sql(sql_statement)  # Query SQL
 
     # Need to call the update to refresh the timing as well as the equity
     sql_statement = """call `yudi`.ab_hedged_balance_update_all() """
-    print(sql_statement)
+    #print(sql_statement)
 
     sql_result = Insert_into_sql(sql_statement)  # Query SQL
 

@@ -40,14 +40,18 @@ notifications_bp = Blueprint('notifications_bp', __name__)
 
 # Want to check and close off account/trades.
 # Main page.
-@notifications_bp.route('/Client_No_Trades', methods=['GET', 'POST'])
+@notifications_bp.route('/Client_No_Symbol_Trades', methods=['GET', 'POST'])
 @roles_required()
-def Client_No_Trades():
+def Client_No_Symbol_Trades():
 
-    title = "Client Close Trades"
+    title = "Client Close Symbol"
     header = title
 
-    description = Markup('Check if client has closed off (to zero) any symbols.')
+    description = Markup('Check if client has closed off (to zero) any particular symbols.<br>' +\
+                         'Sql Table used: <u>aaron.client_zero_position</u><br><br>' +\
+                         'This tool will only check particular symbols that has been set up in the SQL table.<br>' +\
+                         'When the client closes all trades on that particular symbol, a telegram (only) message will be sent out.<br>'+\
+                         'Do note, this tool will only send a notification once.<br>If the client re-opens the same symbol, it will no longer be tracked.')
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/pattern8.png', Table_name="Client Net Volume.", \
@@ -79,6 +83,8 @@ def Client_No_Trades_ajax(update_tool_time=1):
     sql_statement = " UNION ".join([raw_sql_statement.format(live=l) for l in [1,2,3,5]])
 
     sql_statement = sql_statement.replace("\n", " ").replace("\t", " ")
+    #print(sql_statement)
+
     sql_query = text(sql_statement)
     return_val = Query_SQL_db_engine(sql_query)
 
@@ -107,14 +113,22 @@ def Client_No_Trades_ajax(update_tool_time=1):
 
             # For the non-empty Data
             df_lots =  df[df["LOTS"] != 0]
-            telegram_data_with_lots = df_lots[["LIVE", "LOGIN", "LOTS", "SYMBOL"]].values.tolist()
-            telegram_data_with_lots = [["{}".format(t) for t in td] for td in telegram_data_with_lots]
-            telegram_data_with_lots = "\n".join([" | ".join(t) for t in telegram_data_with_lots])
+            if len(df_lots)>0:
+                telegram_data_with_lots = df_lots[["LIVE", "LOGIN", "LOTS", "SYMBOL"]].values.tolist()
+                telegram_data_with_lots = [["{}".format(t) for t in td] for td in telegram_data_with_lots]
+                telegram_data_with_lots = "\n".join([" | ".join(t) for t in telegram_data_with_lots])
+
+                telegram_data_with_lots_text = "\n\n-----------------------------------------\nBelow are the currently monitored symbol.\n"
+                telegram_data_with_lots_text += "\n<pre>Live | Login | Lots | Symbol</pre>\n"
+                telegram_data_with_lots_text += telegram_data_with_lots + "\n"
+
+            else:
+                telegram_data_with_lots_text = "" # Nothing to show for it.
 
             async_Post_To_Telegram(TELE_ID_MONITOR,
-                    "<b>Client position closed.</b>\n Live | Login | Lots | Symbol\n{telegram_data} ".format(telegram_data=telegram_data) + \
-                    "\n-----------------------------------------\n Live | Login | Lots | Symbol" + \
-                    "\n{telegram_data_with_lots} \n".format(telegram_data_with_lots=telegram_data_with_lots),
+                    "<b>Client position closed.</b>\n\n<pre>Live | Login | Lots | Symbol</pre>\n{telegram_data} ".format(telegram_data=telegram_data) + \
+                       "\n\nThese Symbols no longer be tracked." + \
+                    "{telegram_data_with_lots_text} ".format(telegram_data_with_lots_text=telegram_data_with_lots_text),
                                    TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
 
             # Email # TODO
