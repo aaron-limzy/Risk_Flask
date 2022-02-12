@@ -1145,6 +1145,7 @@ def process_validated_swaps(all_data):
     for c in ["Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)",
               "Insti Short Points (BGI)", "Long_Hidden", "Short_Hidden"]:
         if c in df:
+            print(c)
             df[c] = df[c].astype(float)
 
     df.sort_values("Core Symbol (BGI)", inplace=True)
