@@ -178,7 +178,7 @@
 
                 <li class="nav-item dropleft">
 
-                  {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Dealing"] %}
+                  {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Dealing", "Risk_KH"] %}
 
                   <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown20" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     MT/LP Match 😆
@@ -261,7 +261,7 @@
                     Swaps
                   </a>
                   <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown1">
-                    {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+                    {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Risk_KH"] %}
                     <li><a class="dropdown-item" href="{{ url_for('swaps.upload_Swaps_csv') }}">⚡ Swap Upload</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('swaps.add_swap_markup_profile') }}">➕ Markup Profile</a></li>
                     <div class="dropdown-divider"></div>

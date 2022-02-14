@@ -60,8 +60,8 @@ def background_pic(website):
 
                  "Swap_download_page":                      "css/pink dust.png",
                 "HK_Change_Spread" :                        "css/Hexagon_repeat.jpg",
-                 "AB_Hedge_Close":                     "css/leaves-pattern.png",
-                 "UK_AB_Hedge"    :                      "css/strange_bullseyes.png"
+                 "AB_Hedge_Client_Close":                     "css/leaves-pattern.png",
+                 "AIF_AB_Hedge"    :                      "css/strange_bullseyes.png"
 
         }
 

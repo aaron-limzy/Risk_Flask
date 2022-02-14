@@ -680,7 +680,7 @@ def AIF_AB_Hedge():
     description = Markup("""Checks for UK A/B Hedge<br>All Time are in SGT (GMT + 8).<br>Refresh timing would be ~ 5 mins as per MT5 Refresh timings.""")
 
     return render_template("Wbwrk_Multitable_Borderless_redalert.html",
-                           backgroud_Filename=background_pic("UK_AB_Hedge"), icon=icon_pic("UK_AB_Hedge"),
+                           backgroud_Filename=background_pic("AIF_AB_Hedge"), icon=icon_pic("UK_AB_Hedge"),
                            Table_name={#"TOTAL CLOSED PNL": "Hss1",
                                        # "FLOATING LOTS": "Vss1",
                                        # "FLOATING PROFIT": "Vss2",

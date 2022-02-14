@@ -1183,8 +1183,8 @@ def AB_Hedge_Client_Close():
 
 
         # TODO: Add Form to add login/Live/limit into the exclude table.
-    return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("AB_Hedge_Close"), Table_name="AB Hedge Close", \
-                           title=title, ajax_url=url_for('Risk_Client_Tools_bp.AB_Hedge_Close_ajax', _external=True), no_backgroud_Cover=True, \
+    return render_template("Webworker_Single_Table.html", backgroud_Filename=background_pic("AB_Hedge_Client_Close"), Table_name="AB Hedge Close", \
+                           title=title, ajax_url=url_for('Risk_Client_Tools_bp.AB_Hedge_Client_Close_ajax', _external=True), no_backgroud_Cover=True, \
                            header=header, setinterval=30, icon=icon_pic("AB_Hedge_Close"),
                            description=description, replace_words=Markup(["Today"]),
                             # varibles = {"Client Include": client_include_tab,
