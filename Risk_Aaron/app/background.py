@@ -13,6 +13,8 @@ def background_pic(website):
 
     # default = "css/Mac_Coffee.jpg"
     default = "css/gplaypattern.png"
+
+    #add_swap_markup_profile
     gb_return = {"save_BGI_float" :         "css/city_overview.jpg",
                  "BGI_Country_Float":       "css/World_Map.jpg",
                  "BGI_Symbol_Float" :       "css/leaves.png",

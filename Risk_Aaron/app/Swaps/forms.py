@@ -7,6 +7,9 @@ from flask_wtf.file import FileField, FileAllowed, FileRequired
 from flask_uploads import UploadSet, IMAGES, configure_uploads
 from app.extensions import excel_format
 
+from flask_table import Table, Col, ButtonCol
+
+
 
 class UploadForm(FlaskForm):
     #recipe_title = StringField('Recipe Title', validators=[DataRequired()])
@@ -59,6 +62,28 @@ class Individual_symbol_Form(FlaskForm):
 class All_Swap_Form(FlaskForm):
     #title = StringField('title')
     core_symbols = FieldList(FormField(Individual_symbol_Form))
+
+
+class AddMarkupProfile(FlaskForm):
+    #title = StringField('title')
+    # core_symbols = FieldList(FormField(Individual_symbol_Form))
+
+    Markup_Profile = StringField('Markup Profile Name', validators=[DataRequired(message="Markup Profile Name Required")], description = "Name for the Markup Profile.")
+    Long_Markup = FloatField('Long Markup Percentage', description = "Example: <b>10</b> if a 10% markup is required. (110% of swap uploaded)")
+    Short_Markup = FloatField('Short Markup Percentage', description = "Example: <b>10</b> if a 10% markup is required. (110% of swap uploaded)")
+    submit = SubmitField('Submit', render_kw={"Class": "btn btn-primary btn-lg btn-block"})
+
+
+# Variable name has to be the Dict name.
+# Has to provide a list of Dicts.
+class Delete_Swap_Profile_Table(Table):
+    Swap_markup_profile = Col('Swap Markup Profile')
+    Long_Markup = Col('Long Markup')
+    Short_Markup = Col('Short Markup')
+    Delete_Button = ButtonCol('Delete Swap Profile', endpoint="swaps.Remove_Swap_Markup_Profile_Endpoint",
+                              url_kwargs=dict(Swap_Profile='Swap_markup_profile'),
+                              button_attrs={"Class": "btn btn-secondary"})
+
 
 
 # class Upload_File_Form(FlaskForm):

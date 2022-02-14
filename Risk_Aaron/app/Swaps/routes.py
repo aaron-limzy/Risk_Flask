@@ -615,6 +615,70 @@ def Swap_download_excel():
 
 
 
+@swaps.route('/add_swap_markup_profile', methods=['GET', 'POST'])      # Want to add an offset to the ABook page.
+@roles_required()
+def add_swap_markup_profile():
+
+    title = "Add Swap Markup Profile"
+    header = "Add Swap Markup Profile"
+    description = Markup("Adding Swap markup profile. <br>SQL Table: <b>aaron.swap_markup_profile</b>")
+
+    form = AddMarkupProfile()
+    if request.method == 'POST' and form.validate_on_submit():
+        #pass
+        Markup_Profile = form.Markup_Profile.data       # Get the Data.
+        Long_Markup = form.Long_Markup.data
+        Short_Markup = form.Short_Markup.data
+
+        sql_insert = "INSERT INTO  aaron.`Swap_markup_Profile` (`Swap_markup_profile`, `Long_Markup`, `Short_Markup`) VALUES" \
+            " ('{}','{}','{}' ) ON DUPLICATE KEY UPDATE `Long_Markup` = VALUES(`Long_Markup`), `Short_Markup` = VALUES(`Short_Markup`)".format(Markup_Profile, Long_Markup, Short_Markup)
+        #print(sql_insert)
+        db.engine.execute(sql_insert)   # Insert into DB
+        flash(Markup("<b>{Markup_Profile}</b> has been updated the database.".format(Markup_Profile=Markup_Profile)))
+
+
+    # For FLASK-TABLE to work. We need to get the names from SQL right.
+    # Also, we want to get the Symbols to upper for better display. That's all. ha ha
+
+
+    sql_query = "SELECT * FROM swap_markup_profile ORDER BY Swap_markup_profile DESC"
+    collate = query_SQL_return_record(text(sql_query))
+
+    if len(collate) == 0:   # There is no data.
+        empty_table = [{"Result": "There are currently no profile"}]
+        table = create_table_fun(empty_table, additional_class=["basic_table", "table", "table-striped",
+                                                                "table-bordered", "table-hover", "table-sm"])
+    else:
+        # Live Account and other information that would be going into the table.
+        df_data = pd.DataFrame(collate)
+        table = Delete_Swap_Profile_Table(df_data.to_dict("record"))
+        table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
+
+
+    return render_template("General_Form.html", form=form, table=table, title=title,
+                           header=header,description=description,
+                           backgroud_Filename=background_pic( "add_swap_markup_profile" ))
+
+
+# To remove the swap profile from our server.
+@swaps.route('/Remove_Swap_Markup_Profile/<Swap_Profile>', methods=['GET', 'POST'])
+@roles_required()
+def Remove_Swap_Markup_Profile_Endpoint(Swap_Profile=""):
+
+    # # # Write the SQL Statement to write the values into SQL to clear the offset, By Symbols.
+    # # # It will write -1 * consolidated value into SQL.
+    sql_insert_statement = """DELETE FROM aaron.swap_markup_profile WHERE swap_markup_profile = '{Swap_Profile}'""".format(Swap_Profile=Swap_Profile)
+
+    sql_update_statement = sql_insert_statement.replace("\n", "").replace("\t", "")
+    # # print(sql_update_statement)
+    sql_update_statement = text(sql_update_statement)
+    print(sql_insert_statement)
+    result = db.engine.execute(sql_update_statement)
+
+    flash(Markup("<b>{Swap_Profile}</b> Markup Profile has been deleted".format(Swap_Profile=Swap_Profile)))
+    return redirect(url_for('swaps.add_swap_markup_profile'))
+
+
 # # # NOT USING as this was the excel with no formatting.
 # #To Let the user download the Swap file, IF it's in the session's cookie.
 # # To view Client's trades as well as some simple details.

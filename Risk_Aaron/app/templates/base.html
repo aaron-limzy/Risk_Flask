@@ -263,7 +263,9 @@
                   <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown1">
                     {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
                     <li><a class="dropdown-item" href="{{ url_for('swaps.upload_Swaps_csv') }}">⚡ Swap Upload</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('swaps.add_swap_markup_profile') }}">➕ Markup Profile</a></li>
                     <div class="dropdown-divider"></div>
+
                     {% endif %}
                     <li><a class="dropdown-item" href="{{ url_for('swaps.BGI_Swaps') }}">📘 BGI Swaps</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('swaps.Other_Brokers') }}">📘 Swaps Compare</a></li>
