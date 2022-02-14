@@ -124,7 +124,7 @@ def save_BGI_MT5_float_Ajax(update_tool_time=1):
 
 
 @mt5_monitoring.route('/Futures_LP_Details', methods=['GET', 'POST'])
-@roles_required()
+@roles_required(["Dealing", "Risk", "Admin", "Risk_TW"])
 def Futures_LP_Details():
     title = "Futures_LP_Details"
     header = "Futures_LP_Details"
@@ -133,7 +133,11 @@ def Futures_LP_Details():
     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
     # For Login in aaron.Risk_autocut and Credit_limit != 0
 
-    description = Markup("Details are on BGI Side.<br>There are various accounts, each with a different wallet for each currency.")
+    description = Markup("Details are on BGI Side.<br>There are various accounts, each with a different wallet for each currency.<br>" + \
+                         "<br><b><u>SQL Details.</u></b><br>Uses SQL IP: 119.81.149.213. <br>Table: e800941.`esunny_account` , e91220008.`esunny_account`<br>" +\
+                         "SQL Procedure. call aaron.Futures_LP_Details()<br>" + \
+                         "<br><b>There are currently no alerts set on these details.</b><br>" +\
+                         "<br>SQ/Vic would be keeping this table updated. ")
 
 
 
@@ -149,7 +153,7 @@ def Futures_LP_Details():
 
 
 @mt5_monitoring.route('/mt5_futures_LP_data_Ajax', methods=['GET', 'POST'])
-@roles_required()
+@roles_required(["Dealing", "Risk", "Admin", "Risk_TW"])
 def Futures_LP_Details_Ajax(update_tool_time=1):
 
     data = mt5_futures_LP_data()

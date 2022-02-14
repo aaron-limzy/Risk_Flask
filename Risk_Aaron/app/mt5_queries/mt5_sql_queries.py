@@ -305,11 +305,16 @@ def mt5_symbol_yesterday_pnl_query():
 # Remove MARKET EQUITY as it is the same as EQUITY
 # Remoced CANDRAW as it's the same as EQUITY
 def mt5_futures_LP_details_query():
-    sql_query = r"""SELECT 'e800941' as ACCOUNT, CURRENCY, BALANCE, EQUITY, ACCTINITIALMARGIN, ACCTMAINTENANCEMARGIN, FROZENFEE, DATETIME  
-        FROM e800941.`esunny_account`
-        UNION
-        SELECT  'e91220008' as ACCOUNT, CURRENCY, BALANCE, EQUITY,  ACCTINITIALMARGIN, ACCTMAINTENANCEMARGIN, FROZENFEE, DATETIME  
-        FROM e91220008.`esunny_account`"""
+    # sql_query = r"""SELECT 'e800941' as ACCOUNT, CURRENCY, BALANCE, EQUITY, ACCTINITIALMARGIN, ACCTMAINTENANCEMARGIN, FROZENFEE, DATETIME
+    #     FROM e800941.`esunny_account`
+    #     UNION
+    #     SELECT  'e91220008' as ACCOUNT, CURRENCY, BALANCE, EQUITY,  ACCTINITIALMARGIN, ACCTMAINTENANCEMARGIN, FROZENFEE, DATETIME
+    #     FROM e91220008.`esunny_account`"""
+
+
+
+    sql_query = """call aaron.Futures_LP_Details()"""
+
     return sql_query
 
 # Using Procedure on MYSQL to save the code.
