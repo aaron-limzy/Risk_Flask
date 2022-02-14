@@ -148,7 +148,7 @@
 
 
 
-          {% if current_user.role in ["Risk_UK"] %}
+          <!-- {% if current_user.role in ["Risk_UK"] %}
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
               Risk Tools 🛠
@@ -161,7 +161,7 @@
               <li><a class="dropdown-item" href="{{ url_for('swaps.Bloomberg_Dividend') }}">Bloomberg Dividend</a></li>
 
 
-          {% endif %}
+          {% endif %} -->
 
 
 
@@ -269,6 +269,27 @@
                     <li><a class="dropdown-item" href="{{ url_for('swaps.Other_Brokers') }}">📘 Swaps Compare</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('swaps.Bloomberg_Dividend') }}">📘 Bloomberg Dividend</a></li>
 
+
+                    <div class="dropdown-divider"></div>
+                    <li class="nav-item dropleft">
+                      <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown11" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <b>Swaps</b> [External Broker]
+                      </a>
+                      <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown11">
+                        <li><a class="dropdown-item" href="https://www.fxdd.com/mt/en/trading/offering">Fxdd Swaps</a></li>
+                        <li><a class="dropdown-item" href="https://www.forex.com/en/trading/pricing-fees/rollover-rates/">FOREX.com Swaps</a></li>
+                        <li><a class="dropdown-item" href="https://www.fpmarkets.com/swap-point">FPmarkets Swaps</a></li>
+                        <li><a class="dropdown-item" href="https://www.tradeviewforex.com/room/forex-resources/rollover-rates">Tradeview forex Swaps</a></li>
+                        <li><a class="dropdown-item" href="https://ebhforex.com/faq/rollover-policy/">EBH Swaps</a></li>
+                        <li><a class="dropdown-item" href="https://www.home.saxo/en-sg/rates-and-conditions/forex/trading-conditions#historic-swap-points">Saxo Swaps</a></li>
+                        <li><a class="dropdown-item" href="https://www.globalprime.com/trading-conditions/swaps-financing/">Global PRIME</a></li>
+
+                      </ul>
+                    </li>
+
+
+
+
                   </ul>
                 </li>
                 {% endif %}
@@ -287,6 +308,13 @@
                     {% endif %}
 
                     <li><a class="dropdown-item" href="{{ url_for('mt5_monitoring.AIF_AB_Hedge') }}">⭐ AIF Hedge A/B </a></li>
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item" href="https://bridge.match-trade.com/login">Bridge Match Login</a></li>
+                    <li><a class="dropdown-item" href="https://pentaho.match-trade.com/pentaho/Home">Bridge Match Report</a></li>
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item" href="https://live4.fx-edge.com/web/login">FX Edge Login</a></li>
+
+
                   </ul>
                 </li>
                 {% endif %}
@@ -322,6 +350,8 @@
                     <li><a class="dropdown-item" href="{{ url_for('analysis.Client_Comment_Scalp') }}">⭐ Client Comment Scalp</a></li>
                     <div class="dropdown-divider"></div>
                     <li><a class="dropdown-item" href="http://192.168.64.73/All/Track_Account_Open_Trades_V1/">⭐ Open Trades [Sound alert]</a></li>
+                    <div class="dropdown-divider"></div>
+                    <a class="dropdown-item" href="{{ url_for('Risk_Client_Tools_bp.NoTrade_Change_ReadOnly_Settings') }}">No Trades Read Only Settings ✌</a>
 
                   </ul>
                 </li>
@@ -450,6 +480,8 @@
                     <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/12U-6eBDk3b_6VJnfAW6zP6rEKnJcKP_hRmcmoPKUtgA/edit?usp=sharing">Other Brokers Login</a></li>
                     <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/1h7YOJPwF2HUCXaHsY9Y0lBm6Yv7gMCKNBHmFoldhAx4/edit#gid=0">OZ Margin hub whitelist</a></li>
                     <li><a class="dropdown-item bg_a_lighter_green" href="http://192.168.64.73/All/Change_User_Group_V1%20.1/">Change No Trade User Group</a></li>
+                    <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/1U9qHiJyITUoXqsFDX9hL19i1zWQbTNedpb474X0n93U/edit#gid=0">MT5 Symbol Creation (BO and Risk)</a></li>
+
 
 
 
@@ -526,24 +558,19 @@
           </li>
         {% endif %}
 
-        {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+        <!-- {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             SQ ✌
           </a>
 
           <div class="dropdown-menu dropdown-menu-right">
-            <a class="dropdown-item" href="http://220.128.56.250:8080/live1/index.action">Live 1 setting</a>
-            <a class="dropdown-item" href="http://220.128.56.250:8080/live2/index.action">Live 2 Setting</a>
-            <a class="dropdown-item" href="http://220.128.56.250:8080/live3/symbol.action">Live 3 Setting</a>
-            <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="{{ url_for('Risk_Client_Tools_bp.NoTrade_Change_ReadOnly_Settings') }}">No Trades Read Only Settings</a>
 
 
 
           </div>
         </li>
-        {% endif %}
+        {% endif %} -->
 
         {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
 
@@ -717,6 +744,26 @@
                 </ul>
               </li>
 
+
+              <li class="nav-item dropleft">
+                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown10" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  <b>SQ</b> Bridge</b>
+                </a>
+                <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown10">
+                  <li><a class="dropdown-item" href="http://220.128.56.250:8080/live1/index.action">Live 1 Bridge ✌</a></li>
+                  <li><a class="dropdown-item" href="http://220.128.56.250:8080/live2/index.action">Live 2 Bridge ✌</a></li>
+                  <li><a class="dropdown-item" href="http://220.128.56.250:8080/live3/symbol.action">Live 3 Bridge ✌</a></li>
+                </ul>
+              </li>
+
+
+
+
+
+
+
+
+
               <li class="nav-item dropleft">
                 <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown10" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                   <b>LeanWork</b>
@@ -762,25 +809,6 @@
 
 
 
-              <li><a class="dropdown-item" href="https://docs.google.com/spreadsheets/d/1U9qHiJyITUoXqsFDX9hL19i1zWQbTNedpb474X0n93U/edit#gid=0">MT5 Symbol Creation (BO and Risk)</a></li>
-
-
-
-              <li class="nav-item dropleft">
-                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown11" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  <b>Swaps</b> [External Broker]
-                </a>
-                <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown11">
-                  <li><a class="dropdown-item" href="https://www.fxdd.com/mt/en/trading/offering">Fxdd Swaps</a></li>
-                  <li><a class="dropdown-item" href="https://www.forex.com/en/trading/pricing-fees/rollover-rates/">FOREX.com Swaps</a></li>
-                  <li><a class="dropdown-item" href="https://www.fpmarkets.com/swap-point">FPmarkets Swaps</a></li>
-                  <li><a class="dropdown-item" href="https://www.tradeviewforex.com/room/forex-resources/rollover-rates">Tradeview forex Swaps</a></li>
-                  <li><a class="dropdown-item" href="https://ebhforex.com/faq/rollover-policy/">EBH Swaps</a></li>
-                  <li><a class="dropdown-item" href="https://www.home.saxo/en-sg/rates-and-conditions/forex/trading-conditions#historic-swap-points">Saxo Swaps</a></li>
-                  <li><a class="dropdown-item" href="https://www.globalprime.com/trading-conditions/swaps-financing/">Global PRIME</a></li>
-
-                </ul>
-              </li>
 
               <li class="nav-item dropleft">
                 <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown11" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
