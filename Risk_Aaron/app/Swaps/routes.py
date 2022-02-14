@@ -503,6 +503,7 @@ def Swap_upload_form():
             return redirect(url_for('swaps.Swap_download_page'))
 
         else:
+            flash("Kindly Check values. Can't submit due to error in the swap numbers.", 'error')
             print("Can't validate Swap results.")
 
     return render_template("Swap_Calculate_results.html",

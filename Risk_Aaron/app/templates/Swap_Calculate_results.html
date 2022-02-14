@@ -49,6 +49,15 @@
 <div class="container general_form">
   {% if form %}
 
+  {% for core_symbol in form.core_symbols %}
+  {% if core_symbol.errors!={} %}
+  <div class="alert alert-error">
+    {{ core_symbol.symbol.data }}  | {{core_symbol.errors}} | {{core_symbol.errors=={}}}
+  </div>
+  {% endif %}
+  {% endfor %}
+
+
   <table class="table table-bordered table-sm table-hover">
       <tr class="table-info">
         <th style="background-color: #BCF90C;"> Difference in Sign </th>
@@ -90,9 +99,19 @@
 
                             <td>{{ core_symbol.bloomberg_dividend.data }}</td>
                             <td style="background-color: {{core_symbol.symbol_markup_style.data}};">{{ core_symbol.symbol_markup_type.data }}</td>
+
                           </tr>
                           {% endfor %}
                       </table>
+                      <!-- {% for field in form.errors %}
+                        {% for error in form.errors[field] %}
+                            <div class="alert alert-error">
+                                {{form.errors}} | {{field}} | <strong>Error!</strong> {{error}}
+                            </div>
+                        {% endfor %}
+                      {% endfor %} -->
+
+
                   </div>
                   <input class="btn btn-primary btn-block" type="submit" name="edit" value="Send">
               </form>

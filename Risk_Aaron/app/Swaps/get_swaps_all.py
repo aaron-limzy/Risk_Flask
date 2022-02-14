@@ -779,7 +779,8 @@ def swap_markup(swap_val, markup_percentage):
 
 def calculate_swaps_bgi(excel_data, db):
 
-    #pd.set_option('display.max_rows', 200)
+    pd.set_option('display.max_rows', 200)
+    pd.set_option('display.max_columns', 200)
 
     df_bgi_excel = pd.DataFrame(excel_data)
 
@@ -817,10 +818,15 @@ def calculate_swaps_bgi(excel_data, db):
     df = get_from_sql_or_file("call aaron.Swap_Symbol_Details()",
                               current_app.config["VANTAGE_UPLOAD_FOLDER"] + "Swap_Symbol_Details.xlsx", db)
 
+
+
     # Merge the Vantage swaps with the Symbol details.
     df = df.merge(df_bgi_excel, how="left", left_on="vantage_coresymbol", right_on="Core Symbol")
-
+    # print("\n\n")
+    # print(df)
+    # print("\n\n")
     # Merge in Bloomberg Dividend.
+
     # df["Symbol_without_dot"] = df["bgi_coresymbol"].apply(lambda x: x.replace(".", "")) # So that we can do the merge.
     # df = df.merge(df_dividend, how="left", left_on="Symbol_without_dot", right_on="mt4_symbol")
     # df.drop( columns="Symbol_without_dot", inplace = True)  # Drop the column that we just created.
@@ -830,6 +836,14 @@ def calculate_swaps_bgi(excel_data, db):
     # Merge in CFD Regression Swaps Value
     df = df.merge(df_swaps_predict, how="left", left_on="bgi_coresymbol", right_on="Symbol")
 
+    # Checking if there was any issues with the markup profile.
+    # If there were, the join would return a NAN on either the LONG/Short or both for markup.
+    df_markup_issues = df[(df["Long_Markup"].isna()) | (df["Short_Markup"].isna())]
+    print(df_markup_issues)
+    if len(df_markup_issues) > 0:
+        markup_error_list = df_markup_issues[["bgi_coresymbol", "swap_markup_profile"]].to_dict("r")
+        markup_error_tuples = ["{}".format(tuple(c.values())) for c in markup_error_list]
+        flash("Markup Profile for Symbols have issues: {}".format(", ".join(markup_error_tuples)))
 
 
     # Calculate the markup First.
@@ -885,8 +899,18 @@ def calculate_swaps_bgi(excel_data, db):
 
 
 
-    custom_dict = {"FX": 0, "FX_20%": 0, "FX_30%": 0, "Exotic Pairs": 1, "PM": 2, "CFD": 4, "CFD_20%": 4}
-    df.sort_values(by=["swap_markup_profile", "bgi_coresymbol"], key=lambda x: x.map(custom_dict), inplace=True)
+    # Create a specific column to be used only for sorting.
+    # Want to get the CORE type. Before the markup profile. ie: FX, CFD...
+    df["Sorting_markup_profile"] = df["swap_markup_profile"].apply(lambda x: x.split("_")[0])
+
+
+    #custom_dict = {"FX": 0, "FX_20%": 0, "FX_30%": 0, "Exotic Pairs": 1, "PM": 2, "CFD": 4, "CFD_20%": 4}
+    # Want to force it to show the FX first, then CFD...
+    custom_dict = {"FX": 0, "Exotic Pairs": 1, "PM": 2, "CFD": 4}
+
+    df.sort_values(by=["Sorting_markup_profile", "swap_markup_profile", "bgi_coresymbol"], key=lambda x: x.map(custom_dict), inplace=True)
+
+
 
     # df.sort_values(["swap_markup_profile", "bgi_coresymbol"],ascending=[False, True],  inplace=True)
 
@@ -1140,12 +1164,16 @@ def process_validated_swaps(all_data):
     df = pd.DataFrame(all_data, columns=["Core Symbol (BGI)", "Long Points (BGI)", "Short Points (BGI)",
                                          "Insti Long Points (BGI)", "Insti Short Points (BGI)",
                                          "Long_Hidden", "Short_Hidden" ])
+    print(df)
 
     # Trying to cast to float so that it will be saved as float.. hopefully?
     for c in ["Long Points (BGI)", "Short Points (BGI)", "Insti Long Points (BGI)",
               "Insti Short Points (BGI)", "Long_Hidden", "Short_Hidden"]:
         if c in df:
-            print(c)
+            # print(c)
+            # print(df[c])
+            # print(df[c].isin(["-"]))
+            df.loc[df[c].isin(["-"]), c] = -1 # If the values have issue, by default, it's set to "-"
             df[c] = df[c].astype(float)
 
     df.sort_values("Core Symbol (BGI)", inplace=True)
