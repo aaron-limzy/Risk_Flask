@@ -693,16 +693,16 @@ def AIF_AB_Hedge():
                                        # "[CLOSED] OPEN/CLOSE TIME COMPARISON": "H6"
                                        },
                            title=title, setinterval=200,
-                           ajax_url=url_for('mt5_monitoring.UK_AB_Hedge_ajax', _external=True),
+                           ajax_url=url_for('mt5_monitoring.AIF_AB_Hedge_ajax', _external=True),
                            header=header,
                            description=description, no_backgroud_Cover=True,
                            replace_words=Markup(["mismatch", "so alert:", "alert"]))  # setinterval=60,
 
 
 
-@mt5_monitoring.route('/UK_AB_Hedge_ajax', methods=['GET', 'POST'])
+@mt5_monitoring.route('/AIF_AB_Hedge_ajax', methods=['GET', 'POST'])
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing", "Risk_UK"])
-def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
+def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
 
 
     testing = False
@@ -728,6 +728,8 @@ def UK_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whic
     mt5_Acc_trades = mt5_Acc_trades_unsync.result()
     mt5_Acc_trades_df = color_profit_for_df(mt5_Acc_trades, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
     columns = mt5_Acc_trades_df.columns
+
+    # print(mt5_Acc_trades_df)
 
     # Columns that we need to rename and also add together.
     net_vol_columns = [c for c in list(columns) if c.find("NetVol") > 0]
