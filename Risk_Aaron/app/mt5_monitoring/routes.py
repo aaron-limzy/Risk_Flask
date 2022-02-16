@@ -746,7 +746,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
         mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD", "USDJPY"]), "TotalNetVol"] = 1
 
-    mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["AUDUSD"]), "TotalNetVol"] = 0.35
+        mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["AUDUSD"]), "TotalNetVol"] = 0.35
 
 
 
