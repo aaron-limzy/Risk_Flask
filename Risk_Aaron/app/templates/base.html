@@ -449,14 +449,6 @@
 
 
 
-
-
-
-            {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
-            {% endif %}
-
-
-
             {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
                 <li class="nav-item dropleft">
                   <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -482,8 +474,6 @@
                     Symbol Spread
                   </a>
                   <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
-
-                    <li><a class="dropdown-item" href="{{ url_for('analysis.Client_trades_form') }}">Individual Client Trades</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('Spread.symbolSpread_custom', aggregate='AVG', type='hourly') }}">Symbol Spread AVG [Hourly] 🤪 </a></li>
                     <li><a class="dropdown-item" href="{{ url_for('Spread.symbolSpread_custom', aggregate='MAX', type='hourly') }}">Symbol Spread MAX [Hourly] 🤪 </a></li>
 
@@ -526,6 +516,9 @@
 
                   </ul>
                 </li>
+
+                <li><a class="dropdown-item" href="{{ url_for('analysis.Client_trades_form') }}">Individual Client Trades</a></li>
+
             {% endif %}
 
 

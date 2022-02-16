@@ -1306,7 +1306,7 @@ def symbol_float_trades_ajax(symbol="", book="b", entity="none"):
 
         # Want to append so that we know it's from MT4
         for ar in [top_groups, bottom_groups, top_accounts, bottom_accounts, largest_login]:
-            if len(ar) > 0 and "Comment" not in ar:  # We don't want those that are empty.
+            if len(ar) > 0 and "Comment" not in ar and "Server" not in ar:  # We don't want those that are empty.
                 ar.insert(0, 'Server', 'MT4') # Want to add this column to the front of the df
 
 
