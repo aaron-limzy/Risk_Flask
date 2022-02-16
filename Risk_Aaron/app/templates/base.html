@@ -241,15 +241,32 @@
                 </li>
                   {% endif %}
 
+
+                  {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+                <li class="nav-item dropleft">
+                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown23" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    No Trades -> Read Only ✌
+                  </a>
+                  <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown23">
+                    <a class="dropdown-item bg_a_light_green" href="http://192.168.64.73/All/readonly_wo_opentrade/helloworld.php">⭐ No Trades -> Read Only</a>
+                    <a class="dropdown-item" href="{{ url_for('Risk_Client_Tools_bp.NoTrade_Change_ReadOnly_Settings') }}">➕ No Trades Read Only Settings</a>
+
+                  </ul>
+                </li>
+                  {% endif %}
+
+
                 {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Dealing", "CS"] %}
                 <li class="nav-item dropleft">
                   <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown23" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    HK Tools
+                    HK Tools 😆
                   </a>
                   <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown23">
                     <li><a class="dropdown-item" href="{{ url_for('Risk_Client_Tools_bp.HK_Change_Spread') }}">⚡ HK Change Spread</a></li>
                     <div class="dropdown-divider"></div>
                     <li><a class="dropdown-item" href="{{ url_for('mt5_monitoring.Futures_LP_Details') }}">📕 Futures LP Details</a></li>
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item" href="{{ url_for('main_app.Scrape_futures') }}">Futures Scrap</a></li>
 
                   </ul>
                 </li>
@@ -258,7 +275,7 @@
                   {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Risk_UK", "Risk_KH", "CS"] %}
                 <li class="nav-item dropleft">
                   <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown1" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Swaps
+                    Swaps 😆
                   </a>
                   <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown1">
                     {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Risk_KH"] %}
@@ -300,7 +317,7 @@
                 {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Risk_UK", "Risk_KH"] %}
                 <li class="nav-item dropleft">
                   <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown1" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    UK
+                    UK 😆
                   </a>
 
                   <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown1">
@@ -349,13 +366,15 @@
 
                     <li><a class="dropdown-item" href="{{ url_for('Risk_Client_Tools_bp.noopentrades_changegroup') }}">⭐➕ Change Group </br>(No Open Trades)</a></li>
                     <!-- bg_a_light_green -->
-                    <li><a class="dropdown-item " href="{{ url_for('notifications_bp.Client_No_Symbol_Trades') }}">⭐ Client No Open symbol Position</a></li>
+                    <li><a class="dropdown-item " href="{{ url_for('notifications_bp.Client_No_Symbol_Trades') }}">⭐ Client No Open symbol Position Alert</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('notifications_bp.Large_volume_Login') }}">⭐ Large Volume Traders</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('analysis.Client_Comment_Scalp') }}">⭐ Client Comment Scalp</a></li>
                     <div class="dropdown-divider"></div>
                     <li><a class="dropdown-item" href="http://192.168.64.73/All/Track_Account_Open_Trades_V1/">⭐ Open Trades [Sound alert]</a></li>
-                    <div class="dropdown-divider"></div>
-                    <a class="dropdown-item" href="{{ url_for('Risk_Client_Tools_bp.NoTrade_Change_ReadOnly_Settings') }}">No Trades Read Only Settings ✌</a>
+
+
+
+
 
                   </ul>
                 </li>
@@ -441,27 +460,43 @@
             {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
                 <li class="nav-item dropleft">
                   <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Analytics
+                    BGI Floating Position 😆
                   </a>
                   <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
                     <li><a class="dropdown-item" href="{{ url_for('mt4_mt5.BGI_All_Symbol_Float') }}">Symbol Floating 🎶 </a></li>
                     <li><a class="dropdown-item" href="{{ url_for('analysis.BGI_Country_Float') }}">Country Floating 🌎</a></li>
-
-                    <li><a class="dropdown-item" href="{{ url_for('analysis.Clear_session') }}">Clear Site Cookies</a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('analysis.Client_trades_form') }}">Individual Client Trades</a></li>
                     <div class="dropdown-divider"></div>
-                    <li><a class="dropdown-item" href="{{ url_for('mt5_monitoring.BGI_MT5_Symbol_Float') }}">MT5 Symbol Floating 🎶 </a></li>
                     <li><a class="dropdown-item" href="{{ url_for('analysis.BGI_Symbol_Float') }}">MT4 Symbol Floating 🎶 </a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('mt5_monitoring.BGI_MT5_Symbol_Float') }}">MT5 Symbol Floating 🎶 </a></li>
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item" href="{{ url_for('analysis.Clear_session') }}">Clear Site Cookies</a></li>
+
+                  </ul>
+                </li>
+            {% endif %}
+
+
+            {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+                <li class="nav-item dropleft">
+                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Symbol Spread
+                  </a>
+                  <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
+
+                    <li><a class="dropdown-item" href="{{ url_for('analysis.Client_trades_form') }}">Individual Client Trades</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('Spread.symbolSpread_custom', aggregate='AVG', type='hourly') }}">Symbol Spread AVG [Hourly] 🤪 </a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('Spread.symbolSpread_custom', aggregate='MAX', type='hourly') }}">Symbol Spread MAX [Hourly] 🤪 </a></li>
+
                     <div class="dropdown-divider"></div>
                     <!-- <li><a class="dropdown-item" href="{{ url_for('Spread.symbolSpread') }}">Symbol Spread [Daily] 🤪 </a></li> -->
-                    <li><a class="dropdown-item" href="{{ url_for('Spread.symbolSpread_custom', aggregate='AVG', type='hourly') }}">Symbol Spread AVG [Hourly] 🤪 </a></li>
+
                     <li><a class="dropdown-item" href="{{ url_for('Spread.symbolSpread_custom', aggregate='AVG', type='daily') }}">Symbol Spread AVG [Daily] 🤪 </a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('Spread.symbolSpread_custom', aggregate='MAX', type='hourly') }}">Symbol Spread MAX [Hourly] 🤪 </a></li>
                     <li><a class="dropdown-item" href="{{ url_for('Spread.symbolSpread_custom', aggregate='MAX', type='daily') }}">Symbol Spread MAX [Daily] 🤪 </a></li>
 
                   </ul>
                 </li>
             {% endif %}
+
 
 
             {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
@@ -494,16 +529,6 @@
             {% endif %}
 
 
-            {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
-                <li class="nav-item dropleft">
-                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Misc
-                  </a>
-                  <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
-                    <li><a class="dropdown-item" href="{{ url_for('main_app.Scrape_futures') }}">Futures Scrap</a></li>
-                  </ul>
-                </li>
-              {% endif %}
 
 
 

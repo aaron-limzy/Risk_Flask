@@ -2298,10 +2298,11 @@ def Exclude_Equity_Below_Credit():
 # Want to show which clients got recently changed to read only.
 # Due to Equity < Balance.
 @main_app.route('/Futures/Scrape')
-@roles_required()
+@roles_required(["Risk", "Risk_TW", "Dealing", "Admin"])
 def Scrape_futures():
-    description = Markup("Scraping Futures.<br>" +
-                         "Excel will be downloaded automatically.<br>"+
+    description = Markup("""Scraping Futures from: <a href="https://www.capitalfutures.com.tw/product/deposit-tw.asp?xy=2&xt=1" >https://www.capitalfutures.com.tw/product/deposit-tw.asp?xy=2&xt=1</a><br>""" +
+                          "<br>Would take approx 20 seconds to scrape and download.<br>" +\
+                         "<br>Excel will be downloaded automatically.<br>"+
                          "Excel Data will be the same as those on the tables. <br>" + \
                          "Data taken from SQL Table: <u>aaron.future_contract_sizes</u>")
 
@@ -2318,7 +2319,7 @@ def Scrape_futures():
 
 
 @main_app.route('/Futures/Scrape_ajax',methods=['GET', 'POST'])
-@roles_required()
+@roles_required(["Risk", "Risk_TW", "Dealing", "Admin"])
 def Scrape_futures_ajax():
 
     # Get all data from the web

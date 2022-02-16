@@ -621,7 +621,8 @@ def add_swap_markup_profile():
 
     title = "Add Swap Markup Profile"
     header = "Add Swap Markup Profile"
-    description = Markup("Adding Swap markup profile. <br>SQL Table: <b>aaron.swap_markup_profile</b>")
+    description = Markup("Adding Swap markup profile. <br>SQL Table: <b>aaron.swap_markup_profile</b><br>" +\
+                         "Updates will <b>cover/overwrite</b> the current settings, if markup names are duplicated.")
 
     form = AddMarkupProfile()
     if request.method == 'POST' and form.validate_on_submit():
