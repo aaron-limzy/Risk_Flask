@@ -743,7 +743,10 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     if testing == True:
         #Artificially create a mismatch
         mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin([".DE30", ".JP225"]), "Past Discrepancy"] = 0.15
+
         mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD", "USDJPY"]), "TotalNetVol"] = 1
+
+    mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["AUDUSD"]), "TotalNetVol"] = 0.35
 
 
 
@@ -766,7 +769,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
             value_list = ["({})".format(" , ".join(c)) for c in value_list]
 
             SQL_insert = """INSERT INTO aaron.aif_position_mismatch_records (Basesymbol, Discrepancy, Datetime, Flag) VALUES {}""".format(", ".join(value_list))
-            print(SQL_insert)
+            #print(SQL_insert)
             SQL_insert_MT5_statement(SQL_insert)
 
         # print(mismatched_symbol)
@@ -800,8 +803,9 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
             # If it fufils the sending alert conditions.
             if len(To_Send_alert) > 0:
+                print("AIF: Will need to send alert. ")
                 mismatch_list = To_Send_alert["BaseSymbol"].to_list()
-                print(mismatch_list)
+                #print(mismatch_list)
                 # Crafting message for telegram.
                 #print("BaseSymbol" + net_vol_columns)
                 To_Send_alert["tele_Message"] = To_Send_alert.apply(lambda x: "{:^6} | {} ".format( \
@@ -860,7 +864,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
                     SQL_insert_MT5_statement(sql_update_statement)
 
 
-                    print(sql_update_statement)
+                    #print(sql_update_statement)
                     # print(To_Send_alert)
 
 
@@ -877,7 +881,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
             if testing == False:
                 SQL_insert_MT5_statement(clear_sql_statement)
-                print(clear_sql_statement)
+                #print(clear_sql_statement)
 
     # -----------------------------Pretty Print. -------------------------------------------------------------------
 
