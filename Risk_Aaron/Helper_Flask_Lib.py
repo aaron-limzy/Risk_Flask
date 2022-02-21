@@ -431,7 +431,13 @@ def symbol_all_open_trades(app, ServerTimeDiff_Query, symbol="", book="B", entit
         #print("Will give unique country conditions.")
         book_condition = " "  # No need for this. We will write our own.
 
-        country_condition_raw = """ AND ((mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live{live}.a_group))
+        # country_condition_raw = """ AND ((mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live{live}.a_group))
+        #                          OR
+        #                          (LOGIN IN( SELECT LOGIN FROM live{live}.a_login))
+        #                          ) """
+
+        country_condition_raw = """ AND ((mt4_trades.`GROUP` IN(SELECT `GROUP` FROM live5.group_table WHERE BOOK = "A" 
+                                        and LIVE = 'live{live}'))
                                  OR
                                  (LOGIN IN( SELECT LOGIN FROM live{live}.a_login))
                                  ) """
@@ -587,7 +593,7 @@ def symbol_all_open_trades(app, ServerTimeDiff_Query, symbol="", book="B", entit
                        country_condition_Live3=country_condition_Live3,
                        country_condition_Live5=country_condition_Live5)
 
-    # print(sql_statement)
+    #print(sql_statement)
     sql_query = sql_statement.replace("\n", " ").replace("\t", " ")
     #raw_result = db.engine.execute(sql_query)  # Insert select..
     #result_data = raw_result.fetchall()  # Return Result
