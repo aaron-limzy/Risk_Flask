@@ -198,3 +198,7 @@ table.large_text_table {
   font-size: 120%;
   border-collapse: collapse;
 }
+
+.error {
+    background-color: #f8d7da;
+}

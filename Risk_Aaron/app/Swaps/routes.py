@@ -632,10 +632,11 @@ def add_swap_markup_profile():
         Long_Markup = form.Long_Markup.data
         Short_Markup = form.Short_Markup.data
 
+        print(Markup_Profile)
         sql_insert = "INSERT INTO  aaron.`Swap_markup_Profile` (`Swap_markup_profile`, `Long_Markup`, `Short_Markup`) VALUES" \
             " ('{}','{}','{}' ) ON DUPLICATE KEY UPDATE `Long_Markup` = VALUES(`Long_Markup`), `Short_Markup` = VALUES(`Short_Markup`)".format(Markup_Profile, Long_Markup, Short_Markup)
-        #print(sql_insert)
-        db.engine.execute(sql_insert)   # Insert into DB
+        print(sql_insert)
+        db.engine.execute(text(sql_insert))   # Insert into DB
         flash(Markup("<b>{Markup_Profile}</b> has been updated the database.".format(Markup_Profile=Markup_Profile)))
 
 
@@ -666,6 +667,26 @@ def add_swap_markup_profile():
 @swaps.route('/Remove_Swap_Markup_Profile/<Swap_Profile>', methods=['GET', 'POST'])
 @roles_required()
 def Remove_Swap_Markup_Profile_Endpoint(Swap_Profile=""):
+
+
+    # First we want to check if there are any symbols using the current swap profile that we want to delete.
+    # If there is, we will not allow it to be deleted.
+    sql_query = """select Core_Symbol 
+                From aaron.swap_bgicoresymbol 
+                    WHERE Swap_Markup_Profile = '{}'""".format(Swap_Profile)
+    raw_result = db.engine.execute(text(sql_query))
+    result_data = raw_result.fetchall()
+    # result_col = raw_result.keys()
+    # print(len(result_data))
+    # print(result_data)
+
+    if len(result_data) > 0:    # There are Symbols using this swap markup profile. Do not allow deletion.
+        symbols_using_profile = [r[0] for r in result_data]
+        symbol_string = ",".join(symbols_using_profile[:5]) # Take at most 5..
+        flash(Markup("<b>{Swap_Profile}</b> Markup Profile <b>Cannot be deleted.</b><br>There are symbols using that markup profile: <b>{symbol_string}</b>".format(Swap_Profile=Swap_Profile,
+                                                                                                                                                   symbol_string=symbol_string)), "error")
+        return redirect(url_for('swaps.add_swap_markup_profile'))
+
 
     # # # Write the SQL Statement to write the values into SQL to clear the offset, By Symbols.
     # # # It will write -1 * consolidated value into SQL.
