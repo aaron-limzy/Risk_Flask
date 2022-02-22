@@ -281,6 +281,7 @@
                     {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Risk_KH"] %}
                     <li><a class="dropdown-item" href="{{ url_for('swaps.upload_Swaps_csv') }}">⚡ Swap Upload</a></li>
                     <li><a class="dropdown-item" href="{{ url_for('swaps.add_swap_markup_profile') }}">➕ Markup Profile</a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('swaps.Symbol_Markup_Profile_Settings') }}">➕ Symbol Profile</a></li>
                     <div class="dropdown-divider"></div>
 
                     {% endif %}

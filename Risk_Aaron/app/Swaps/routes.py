@@ -31,6 +31,7 @@ from openpyxl.styles import Font, Color, Alignment, Border, Side
 from openpyxl.styles import Border, Side, PatternFill, Font, GradientFill, Alignment
 from openpyxl.utils import get_column_letter
 
+from app.Swaps.table import *
 #from formencode import variabledecode
 
 
@@ -678,6 +679,84 @@ def Remove_Swap_Markup_Profile_Endpoint(Swap_Profile=""):
 
     flash(Markup("<b>{Swap_Profile}</b> Markup Profile has been deleted".format(Swap_Profile=Swap_Profile)))
     return redirect(url_for('swaps.add_swap_markup_profile'))
+
+
+
+
+
+# Want to check and close off account/trades.
+@swaps.route('/Symbol_Markup_Profile/Settings', methods=['GET', 'POST'])
+@roles_required()
+def Symbol_Markup_Profile_Settings():
+
+
+
+    title = Markup("Symbol Markup Profile Settings")
+    header = "Symbol Markup Profile"
+    description = Markup("Symbol Markup Profile Settings.<br>The updated swap markup profile will overwrite the current markup profile.<br>" + \
+                         "BGI Core symbols SQL Table: aaron.swap_bgicoresymbol<br>" +\
+                         "Markup Profile SQL Table: aaron.swap_markup_profile<br>")
+
+    form = Symbol_Swap_Profile_Form()
+
+    if request.method == 'POST' and form.validate_on_submit():
+
+        Symbol = form.Symbol.data
+        Markup_Profile = form.Markup_Profile.data
+
+        sql_insert = """UPDATE aaron.swap_bgicoresymbol SET `swap_markup_profile` = '{Markup_Profile}' WHERE `Core_Symbol` = '{Symbol}' """.format(
+                Symbol=Symbol, Markup_Profile=Markup_Profile)
+
+        sql_insert = sql_insert.replace("\t", "").replace("\n", "")
+
+        print(sql_insert)
+        db.engine.execute(text(sql_insert))  # Insert into DB
+        flash("Symbol: {} | Markup Profile: {}".format(Symbol, Markup_Profile))
+
+
+    # Want to select all the Core Symbol
+    sql_query = """select Core_Symbol, Contract_Size, Digits, Currency, Swap_Markup_Profile From aaron.swap_bgicoresymbol"""
+    raw_result = db.engine.execute(sql_query)
+    result_data = raw_result.fetchall()
+    result_col = raw_result.keys()
+    #print(result_data)
+    Symbol_List = [(r[0], "{} | [{}]".format(r[0], r[4])) for r in result_data if len(r)>=5]
+
+    # Want to select all the markup profile
+    sql_query_mup = """select swap_markup_profile from aaron.swap_markup_profile"""
+    raw_result_mup = db.engine.execute(sql_query_mup)
+    result_data_mup = raw_result_mup.fetchall()
+    #print(result_data_mup)
+    markup_profile_list = [(r[0], r[0]) for r in result_data_mup if len(r)>0]
+
+
+    # passing Symbol_List and markup_profile_list to the form
+    form.Symbol.choices = Symbol_List
+    form.Markup_Profile.choices = markup_profile_list
+
+
+
+    # Want to create the table to output data with the data from the SQL query above.
+    if len(result_data) == 0:   # There is no data.
+        collate = [{"Result": "There are currently no Accounts being monitored"}]
+        table = create_table_fun(collate, additional_class=["basic_table", "table", "table-striped", "table-bordered", "table-hover", "table-sm"])
+    else:
+        # Output all of BGI Core symbol with their respective data.
+        bgi_core_symbol = [dict(zip(result_col, r)) for r in result_data]
+        #print(bgi_core_symbol)
+        table = Symbol_Swap_Profile_Table(bgi_core_symbol)
+        table.html_attrs = {"class": "basic_table table table-striped table-bordered table-hover table-sm"}
+
+    #return table
+
+
+    # flash("{symbol} {offset} updated in A Book offset.".format(symbol=symbol, offset=offset))
+    # backgroud_Filename='css/Equity_cut.jpg', Table_name="Equity Protect Cut",  replace_words=Markup(["Today"])
+    # TODO: Add Form to add login/Live/limit into the exclude table.
+    return render_template("General_Form.html",
+                           title=title, header=header,
+                           form=form, description=description, table=table,
+                           backgroud_Filename=background_pic("Symbol_Markup_Profile_Settings"))
 
 
 # # # NOT USING as this was the excel with no formatting.

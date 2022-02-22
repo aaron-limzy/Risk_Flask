@@ -2126,7 +2126,7 @@ def open_trades_analysis(df_open_trades, book, col, col_1, symbol="", entity="no
             open_by_country = df_open_trades.groupby(["COUNTRY"])[[ 'LOTS', 'NET_LOTS','PROFIT','CONVERTED_REVENUE',
                                                                     'REBATE', 'TOTAL_PROFIT']].sum().reset_index()
 
-        if book.lower() == "b":  # Need to flip if it's B book. 
+        if book.lower() == "b":  # Need to flip if it's B book.
             open_by_country["NET_LOTS"] = -1 * open_by_country["NET_LOTS"]
 
         open_by_country["REBATE"] = open_by_country.apply(lambda x: color_rebate(rebate=x['REBATE'],

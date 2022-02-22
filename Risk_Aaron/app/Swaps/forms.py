@@ -1,7 +1,8 @@
 
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField, FloatField, FormField, IntegerField, DecimalField, RadioField, FieldList
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField, HiddenField
+from wtforms import FloatField, FormField, IntegerField, DecimalField, RadioField, FieldList, SelectField
 from wtforms.validators import DataRequired, ValidationError, Email, EqualTo, Length, NumberRange, InputRequired, AnyOf
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 from flask_uploads import UploadSet, IMAGES, configure_uploads
@@ -84,6 +85,14 @@ class Delete_Swap_Profile_Table(Table):
                               url_kwargs=dict(Swap_Profile='Swap_markup_profile'),
                               button_attrs={"Class": "btn btn-secondary"})
 
+
+
+class Symbol_Swap_Profile_Form(FlaskForm):
+    # Live = IntegerField('Live', validators=[DataRequired(), AnyOf(values=[1,2,3,5], message="Only Live 1,2,3 and 5")], description = "1,2,3 or 5.")
+    # Account = IntegerField('Account', validators=[DataRequired(message="Only numbers are allowed")], description = "Client Login.")
+    Symbol  = SelectField("Symbol | [Current Markup Profile]", validate_choice=False)
+    Markup_Profile = SelectField("New Markup Profile", validate_choice=False)
+    submit = SubmitField('Update Swap Profile')
 
 
 # class Upload_File_Form(FlaskForm):
