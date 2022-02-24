@@ -457,7 +457,7 @@
             {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
                 <li class="nav-item dropleft">
                   <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    BGI Floating Position 😆
+                    BGI Positions/PnL
                   </a>
                   <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
                     <li><a class="dropdown-item" href="{{ url_for('mt4_mt5.BGI_All_Symbol_Float') }}">Symbol Floating 🎶 </a></li>
@@ -466,11 +466,39 @@
                     <li><a class="dropdown-item" href="{{ url_for('analysis.BGI_Symbol_Float') }}">MT4 Symbol Floating 🎶 </a></li>
                     <li><a class="dropdown-item" href="{{ url_for('mt5_monitoring.BGI_MT5_Symbol_Float') }}">MT5 Symbol Floating 🎶 </a></li>
                     <div class="dropdown-divider"></div>
+
+
+
+                    <li><a class="dropdown-item" href="http://192.168.64.73/www/PNL_FLOATshow_2/by_country/tableFLOATshowing2.html">Country Float [PHP] 🌹</a></li>
+                    <li><a class="dropdown-item" href="http://192.168.64.73/www/PNL_FLOATshow_2/by_symbol/tableFLOATsymbol0.html">Symbol Float [PHP] 🌹 </a></li>
+                    <div class="dropdown-divider"></div>
+                    <li><a class="dropdown-item" href="http://192.168.20.117:81/www/main.html">Main [PHP] 🌹</a></li>
+                    <li><a class="dropdown-item" href="http://192.168.64.73/www/PNL/index.php">Total PnL [PHP] 🌹</a></li>
+
+                    <div class="dropdown-divider"></div>
                     <li><a class="dropdown-item" href="{{ url_for('analysis.Clear_session') }}">Clear Site Cookies</a></li>
 
                   </ul>
                 </li>
             {% endif %}
+
+            {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+                <li class="nav-item dropleft">
+                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Signal [PHP] 🌹
+                  </a>
+                  <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
+                    <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index_signal_CN.php">Signal: CN Daily</a>
+                    <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index_signal.php">Signal: PNL Total Daily</a>
+                    <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index_weekly.php">Signal: PnL Week</a>
+
+                  </ul>
+                </li>
+            {% endif %}
+
+
+
+
 
 
             {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
@@ -531,59 +559,162 @@
 
 
 
-              {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
-                <li class="nav-item dropleft">
-                  <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown4" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    BGI Data
-                  </a>
-                  <ul class="dropdown-menu" aria-labelledby="navbarDropdown4">
+            {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+              <li class="nav-item dropleft">
+                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown4" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  BGI Data
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="navbarDropdown4">
 
-                    <li><a class="dropdown-item" href="{{ url_for('main_app.Changed_readonly') }}">Changed Read Only</a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('main_app.BGI_Convert_Rate') }}">BGI FX Convert Rates</a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('swaps.cfh_oz_upload') }}">CFH OZ Upload</a></li>
-                  </ul>
-                </li>
+                  <li><a class="dropdown-item" href="{{ url_for('main_app.Changed_readonly') }}">Changed Read Only</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('main_app.BGI_Convert_Rate') }}">BGI FX Convert Rates</a></li>
+                  <li><a class="dropdown-item" href="{{ url_for('swaps.cfh_oz_upload') }}">CFH OZ Upload</a></li>
+                </ul>
+              </li>
               {% endif %}
-          </ul>
-        </li> <!-- End of Analytics Tab -->
-        {% endif %}
+              </ul>
+              </li> <!-- End of Analytics Tab -->
+            {% endif %}
 
-        {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
-          <li class="nav-item   dropdown">
-            <a class="nav-link dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-              M.Y 🌹
-            </a>
-            <div class="dropdown-menu dropdown-menu-right">
-              <a class="dropdown-item" href="http://192.168.20.117:81/www/main.html">Main</a>
-              <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index.php">Total PnL</a>
-              <a class="dropdown-item" href="http://192.168.64.73/www/PNL_FLOATshow_2/by_country/tableFLOATshowing2.html">Country Float</a>
-              <a class="dropdown-item" href="http://192.168.64.73/www/PNL_FLOATshow_2/by_symbol/tableFLOATsymbol0.html">Symbol Float</a>
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index_signal_CN.php">Signal:CN
-                Daily</a>
-              <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index_signal.php">Signal: PNL Total
-                Daily</a>
-              <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index_weekly.php">Signal: PnL Week</a>
+            {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+              <li class="nav-item dropleft">
+                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown4" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  M.Y 🌹
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="navbarDropdown4">
 
-              <div class="dropdown-divider"></div>
-              <a class="dropdown-item" href="http://192.168.64.73/www/mt5_esunny/mt5_daily_pnl_floating.php">MT5
-                Crypto Save</a>
-              <a class="dropdown-item" href="http://202.88.105.3/www/PNL_FLOATshow/tableFLOATsymbol0_Tangsapwatthana_all.html">Tangsapwatthana
-                BY Symbol</a>
-              <a class="dropdown-item" href="http://192.168.64.73/www/Others/index_lw_comment_check.php">LW Comment Check</a>
-              <a class="dropdown-item" href="http://192.168.20.117:81/www/check/index_mt4_lp_check.php">Check
-                Mismatch</a>
+                  <a class="dropdown-item" href="http://192.168.64.73/www/mt5_esunny/mt5_daily_pnl_floating.php">MT5
+                    Crypto Save</a>
+                  <a class="dropdown-item" href="http://202.88.105.3/www/PNL_FLOATshow/tableFLOATsymbol0_Tangsapwatthana_all.html">Tangsapwatthana
+                    BY Symbol</a>
+                  <a class="dropdown-item" href="http://192.168.64.73/www/Others/index_lw_comment_check.php">LW Comment Check</a>
+                  <a class="dropdown-item" href="http://192.168.20.117:81/www/check/index_mt4_lp_check.php">Check
+                    Mismatch</a>
 
-              <a class="dropdown-item" href="http://192.168.64.73/www/pro_bal_20/index_reg.php">P/B (REGDATE) > 20%</a>
-              <a class="dropdown-item" href="http://192.168.64.73/www/30s%201m/live123%201m.html">Mt4 trades within 1 min</a>
-              <a class="dropdown-item" href="http://192.168.64.73/www/pro_bal_20/avg_open_close_time_B1.php">Avg_time 3600s</a>
-              <a class="dropdown-item" href="http://192.168.64.73/www/Others/index_lw_comment_check.php">leanwork comment check</a>
-              <a class="dropdown-item" href="http://192.168.64.73/www/Others/index_YJH_MARKDOWN.php">YJH markdown</a>
+                  <a class="dropdown-item" href="http://192.168.64.73/www/pro_bal_20/index_reg.php">P/B (REGDATE) > 20%</a>
+                  <a class="dropdown-item" href="http://192.168.64.73/www/30s%201m/live123%201m.html">Mt4 trades within 1 min</a>
+                  <a class="dropdown-item" href="http://192.168.64.73/www/pro_bal_20/avg_open_close_time_B1.php">Avg_time 3600s</a>
+                  <a class="dropdown-item" href="http://192.168.64.73/www/Others/index_lw_comment_check.php">leanwork comment check</a>
+                  <a class="dropdown-item" href="http://192.168.64.73/www/Others/index_YJH_MARKDOWN.php">YJH markdown</a>
+                </ul>
+              </li>
+              {% endif %}
+              </ul>
+              </li> <!-- End of Analytics Tab -->
+            {% endif %}
 
 
-            </div>
-          </li>
-        {% endif %}
+
+                  <!-- Level one dropdown -->
+                  {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
+                  <li class="nav-item   dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      LP, Bridge<br>and Vendors
+                    </a>
+
+                    <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+
+                      <li class="nav-item dropleft">
+                        <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          <b>SQ</b> Bridge</b>
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
+                          <li><a class="dropdown-item" href="http://220.128.56.250:8080/live1/index.action">Live 1 Bridge ✌</a></li>
+                          <li><a class="dropdown-item" href="http://220.128.56.250:8080/live2/index.action">Live 2 Bridge ✌</a></li>
+                          <li><a class="dropdown-item" href="http://220.128.56.250:8080/live3/symbol.action">Live 3 Bridge ✌</a></li>
+                        </ul>
+                      </li>
+
+                        <li class="nav-item dropleft">
+                          <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <b>OZ</b>
+                          </a>
+                          <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
+                            <li><a class="dropdown-item" href="https://blackwellglobal-ny-live.onezero.com:44300">BGI NY4 Margin Hub</a></li>
+
+                            <div class="dropdown-divider"></div>
+                            <li><a class="dropdown-item" href="https://169.45.220.20:44300">BGI Demo Margin Trading Hub</a></li>
+                            <div class="dropdown-divider"></div>
+                            <li><a class="dropdown-item" href="https://arms3.onezero.com/login">ARMS 💪</a></li>
+                            <div class="dropdown-divider"></div>
+                            <li><a class="dropdown-item" href="https://192.168.64.30:44300">Risk OZ Lab</a></li>
+                            <li><a class="dropdown-item" href="https://support.onezero.com/s/rest-api">OneZero REST Api Docs 📃</a></li>
+
+                          </ul>
+                        </li>
+
+
+                        <li class="nav-item dropleft">
+                          <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <b>OZ [UK]</b>
+                          </a>
+                          <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
+                            <li><a class="dropdown-item" href="https://147.160.249.167:44300/">UK LD4</a></li>
+                            <li><a class="dropdown-item" href="https://blackwellglobal-bhm-live.onezero.com:44300/Dashboard">UK Bahamas</a></li>
+
+                          </ul>
+                        </li>
+
+                        <div class="dropdown-divider"></div>
+
+                        <li><a class="dropdown-item" href="https://38.76.4.67:44300/Account/Login?ReturnUrl=%2F">Vantage BGI Trading Hub</a></li>
+
+
+                        <li class="nav-item dropleft">
+                          <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown3" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <b>CFH</b> Web
+                          </a>
+                          <ul class="dropdown-menu" aria-labelledby="navbarDropdown3">
+                            <li><a class="dropdown-item" href="http://www.cfhclearing.com/products/">CHF Product List</a></li>
+                            <li><a class="dropdown-item" href="https://trade.cfhclearing.com/Pages/Login.aspx?ReturnUrl=%2f">CFH Clear Pro Web</a></li>
+                            <li><a class="dropdown-item" href="https://backoffice.cfhclearing.com">CFH Back Office</a></li>
+
+                          </ul>
+                        </li>
+
+                        <li class="nav-item dropleft">
+                          <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <b>Global Prime</b> Web
+                          </a>
+                          <ul class="dropdown-menu" aria-labelledby="navbarDropdown2">
+                            <li><a class="dropdown-item" href="https://secure.globalprime.com/AccountGP">GP Client Portal</a></li>
+                            <li><a class="dropdown-item" href="https://www.globalprime.com/account/product-alerts/">GP Product Alert</a></li>
+                            <li><a class="dropdown-item" href="https://www.globalprime.com/trading-conditions/spreads/">GP Spread</a></li>
+                            <li><a class="dropdown-item" href="https://portal.primexm.com/Home/Login">GP Price Portal</a></li>
+
+                          </ul>
+                        </li>
+
+                        <div class="dropdown-divider"></div>
+
+                        <li class="nav-item dropleft">
+                          <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown10" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            <b>LeanWork</b>
+                          </a>
+                          <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown10">
+                            <li><a class="dropdown-item" href="https://support.lwork.com/">Lean Work</a></li>
+                            <li><a class="dropdown-item" href="https://broker.bgifx.co/">Broker Work</a></li>
+                            <li><a class="dropdown-item" href="https://trader.bgifx.co/">Trader Work</a></li>
+
+                          </ul>
+                        </li>
+
+                        <li><a class="dropdown-item" href="https://blackwellglobal.fynxt.com/Home/">PAMM</a></li>
+
+
+
+
+
+                  </ul>
+                </li> <!-- End of Analytics Tab -->
+                {% endif %}
+
+
+
+
+
+
+
 
         <!-- {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
         <li class="nav-item dropdown">
@@ -740,100 +871,6 @@
 
             <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown8">
 
-              <li class="nav-item dropleft">
-                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown10" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  <b>OZ</b> Web</b>
-                </a>
-                <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown10">
-                  <li><a class="dropdown-item" href="https://blackwellglobal-ny-live.onezero.com:44300">BGI NY4 Margin Hub</a></li>
-                  <li><a class="dropdown-item" href="https://blackwellglobal-ny-live.onezero.com:44301">BGI NY4 Retail Hub</a></li>
-                  <div class="dropdown-divider"></div>
-
-                  <li><a class="dropdown-item" href="https://38.76.4.67:44300/Account/Login?ReturnUrl=%2F">Vantage BGI Trading Hub</a></li>
-                  <div class="dropdown-divider"></div>
-                  <li><a class="dropdown-item" href="https://147.160.249.167:44300/">UK LD4</a></li>
-                  <li><a class="dropdown-item" href="https://blackwellglobal-bhm-live.onezero.com:44300/Dashboard">UK Bahamas</a></li>
-
-
-
-                  <div class="dropdown-divider"></div>
-
-
-
-                  <li><a class="dropdown-item" href="https://169.45.220.20:44300">BGI Demo Margin Trading Hub</a></li>
-                  <div class="dropdown-divider"></div>
-                  <li><a class="dropdown-item" href="https://arms3.onezero.com/login">ARMS 💪</a></li>
-                  <div class="dropdown-divider"></div>
-                  <li><a class="dropdown-item" href="https://192.168.64.30:44300">Risk OZ Lab</a></li>
-
-                  <li><a class="dropdown-item" href="https://support.onezero.com/s/rest-api">OneZero REST Api Docs 📃</a></li>
-
-                </ul>
-              </li>
-
-
-              <li class="nav-item dropleft">
-                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown10" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  <b>SQ</b> Bridge</b>
-                </a>
-                <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown10">
-                  <li><a class="dropdown-item" href="http://220.128.56.250:8080/live1/index.action">Live 1 Bridge ✌</a></li>
-                  <li><a class="dropdown-item" href="http://220.128.56.250:8080/live2/index.action">Live 2 Bridge ✌</a></li>
-                  <li><a class="dropdown-item" href="http://220.128.56.250:8080/live3/symbol.action">Live 3 Bridge ✌</a></li>
-                </ul>
-              </li>
-
-
-
-
-
-
-
-
-
-              <li class="nav-item dropleft">
-                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown10" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  <b>LeanWork</b>
-                </a>
-                <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown10">
-                  <li><a class="dropdown-item" href="https://support.lwork.com/">Lean Work</a></li>
-                  <li><a class="dropdown-item" href="https://broker.bgifx.co/">Broker Work</a></li>
-                  <li><a class="dropdown-item" href="https://trader.bgifx.co/">Trader Work</a></li>
-
-
-
-                </ul>
-              </li>
-
-
-              <li class="nav-item dropleft">
-                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  <b>CFH</b> Web
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdown2">
-                  <li><a class="dropdown-item" href="http://www.cfhclearing.com/products/">CHF Product List</a></li>
-                  <li><a class="dropdown-item" href="https://trade.cfhclearing.com/Pages/Login.aspx?ReturnUrl=%2f">CFH Clear Pro Web</a></li>
-                  <li><a class="dropdown-item" href="https://backoffice.cfhclearing.com">CFH Back Office</a></li>
-
-
-
-                </ul>
-              </li>
-
-
-              <li class="nav-item dropleft">
-                <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown2" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                  <b>Global Prime</b> Web
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="navbarDropdown2">
-                  <li><a class="dropdown-item" href="https://secure.globalprime.com/AccountGP">GP Client Portal</a></li>
-                  <li><a class="dropdown-item" href="https://www.globalprime.com/account/product-alerts/">GP Product Alert</a></li>
-                  <li><a class="dropdown-item" href="https://www.globalprime.com/trading-conditions/spreads/">GP Spread</a></li>
-                  <li><a class="dropdown-item" href="https://portal.primexm.com/Home/Login">GP Price Portal</a></li>
-
-                </ul>
-              </li>
-
 
 
 
@@ -867,7 +904,10 @@
 
               <div class="dropdown-divider"></div>
               <li><a class="dropdown-item" href="https://support.metaquotes.net/en/users/login?returnUrl=%2Fen">Meta Support</a></li>
-              <li><a class="dropdown-item" href="https://blackwellglobal.fynxt.com/Home/">PAMM</a></li>
+
+              <li><a class="dropdown-item" href="https://www.fxblue.com/appstore/u2/mt4-personal-trade-copier/user-guide">Bluefx Copier PDF</a></li>
+
+
 
 
               </ul>
