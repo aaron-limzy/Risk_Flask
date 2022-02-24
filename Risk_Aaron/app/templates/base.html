@@ -490,6 +490,8 @@
                   </ul>
                 </li>
             {% endif %}
+            
+            <li><a class="dropdown-item" href="{{ url_for('analysis.Client_trades_form') }}">Individual Client Trades</a></li>
 
             {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
                 <li class="nav-item dropleft">
@@ -876,7 +878,7 @@
                       </ul>
                     </li>
 
-                    <li><a class="dropdown-item" href="{{ url_for('analysis.Client_trades_form') }}">Individual Client Trades</a></li>
+
 
                 {% endif %}
 
