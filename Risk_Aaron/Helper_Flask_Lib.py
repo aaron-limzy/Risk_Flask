@@ -883,7 +883,7 @@ def Calculate_Net_position(df_data):
     ret_val["SWAPS"] = ret_val["SWAPS"].apply(profit_red_green) # Print in 2 D.P,with color (HTML)
 
     ret_val["AVG_PRICE"] = ret_val["LOT_PRICE"] /ret_val["LOTS"] # Calculate
-    ret_val["AVG_PRICE"]  = ret_val["AVG_PRICE"].apply(lambda x: "{:.2f}".format(x))    # Pretty Print
+    ret_val["AVG_PRICE"]  = ret_val["AVG_PRICE"].apply(lambda x: "{:.3f}".format(x))    # Pretty Print
 
     ret_val.drop(['LOT_PRICE'], axis=1, inplace=True)
     #
