@@ -890,7 +890,7 @@ def Calculate_Net_position(df_data):
 
     ret_val["LOTS"] = ret_val["LOTS"].apply(lambda x: "{:.2f}".format(x))  # Print in 2 D.P.
     ret_val = ret_val[["SYMBOL", "LOTS", "NET_LOTS", "AVG_PRICE", "PROFIT", "SWAPS"]] # Choose the column orientation
-    print(ret_val)
+    #print(ret_val)
     return ret_val
 
 
