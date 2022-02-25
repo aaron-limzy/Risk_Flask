@@ -3325,6 +3325,8 @@ def Client_trades_Analysis(Live="", Login=""):
 @roles_required()
 def Client_trades_Analysis_ajax(Live="", Login=""):
 
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
 
     if Live not in ["1","2","3","5"] or Login == "":   # There are no information.
         return json.dumps({"H1": [{'Results': 'Error in Live/Login'}]})
@@ -3362,14 +3364,14 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     # # Want the CLOSE TRADES limited to 100
     # # AND all the OPEN trades
     sql_statement = """(SELECT TICKET,  mt4_trades.SYMBOL, VOLUME * 0.01 AS LOTS, CMD, OPEN_TIME, 
-		CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`,COALESCE(REBATE* VOLUME * 0.01,0) as REBATE
+		CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`,COALESCE(REBATE* VOLUME * 0.01,0) as REBATE, OPEN_PRICE
         FROM live{Live}.mt4_trades  LEFT JOIN live{Live}.symbol_rebate ON mt4_trades.SYMBOL = symbol_rebate.SYMBOL
         WHERE `Login`='{Login}' AND CLOSE_TIME = "1970-01-01 00:00:00" AND CMD < 2)
         
         UNION
         
         (SELECT TICKET, mt4_trades.SYMBOL, VOLUME * 0.01 AS LOTS, CMD, OPEN_TIME, 
-                CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`, COALESCE(REBATE* VOLUME * 0.01,0)  as REBATE
+                CLOSE_TIME, SWAPS, PROFIT, `COMMENT`, `GROUP`, COALESCE(REBATE* VOLUME * 0.01,0)  as REBATE, OPEN_PRICE
 	FROM live{Live}.mt4_trades LEFT JOIN live{Live}.symbol_rebate ON mt4_trades.SYMBOL = symbol_rebate.SYMBOL
 	WHERE `Login`='{Login}' and CLOSE_TIME <> "1970-01-01 00:00:00"  AND CMD < 2
 	ORDER BY CLOSE_TIME DESC
@@ -3379,12 +3381,12 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     result = Query_SQL_db_engine(sql_statement)
     df_data = pd.DataFrame(result)
 
+    # print(df_data)
+
     #
     # # symbol_average_tradetime = Average_trade_time_per_symbol(df_data)
     #
     # # average_trade_duration_fig = plot_symbol_tradetime_duration(symbol_average_tradetime)
-
-
 
 
     # Want to get the live 1 to SGT time difference.

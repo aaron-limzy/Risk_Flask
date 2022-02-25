@@ -1,5 +1,4 @@
-
-
+import pandas as pd
 from flask import Blueprint, render_template, Markup, url_for, request, session, current_app, flash, redirect
 from flask_login import current_user, login_user, logout_user, login_required
 
@@ -686,7 +685,7 @@ def AIF_AB_Hedge():
                                        # "FLOATING PROFIT": "Vss2",
                                        "Account Details": "H1",
                                        "Open Position Tally": "H2",
-                                       # "LP Details": "H3",
+                                       "LP Details": "H3",
                                        # "Line1": "Hr1",
                                        # "[CLOSED] LOT/PROFIT COMPARISON": "H4",
                                        # "[CLOSED] OPEN/CLOSE PRICE COMPARISON": "H5",
@@ -714,6 +713,10 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     # All the SQL that we need to call. CAll them first.
     mt5_Acc_trades_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.aif_netvolume()", unsync_app=current_app._get_current_object())
     mt5_Acc_details_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.aif_account_info()", unsync_app=current_app._get_current_object())
+
+    mt5_LP_details_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.UK_LP_Details()", unsync_app=current_app._get_current_object())
+
+
 
 
     mt5_Acc_details = mt5_Acc_details_unsync.result()
@@ -883,6 +886,68 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
                 SQL_insert_MT5_statement(clear_sql_statement)
                 #print(clear_sql_statement)
 
+    # Get the LP details.
+    mt5_LP_details = mt5_LP_details_unsync.result()
+    print(mt5_LP_details)
+
+    df_mt5_LP_details = pd.DataFrame(mt5_LP_details)
+
+    # To ensure that it's printed to
+    to_round_columns = ['Deposit', 'Credit', 'PnL', 'Equity', 'Total_margin', 'Free_margin', 'EQUITY', 'Margin/Equity (%)',  'available']
+    for c in to_round_columns:
+        if c in df_mt5_LP_details:
+            df_mt5_LP_details[c] = df_mt5_LP_details[c].apply(lambda x: round(float(x), 2) if isfloat(x) else None )
+
+    if "LP" in df_mt5_LP_details:   # Don't want to see the underscore. Replace it with a space.
+        df_mt5_LP_details["LP"] = df_mt5_LP_details["LP"].apply(lambda x: str(x).replace("_", " "))
+
+    # df_mt5_LP_details["Balance"] = dict()
+    # df_mt5_LP_details["Balance"]["DEPOSIT"] = "123"
+    # df_mt5_LP_details["Balance"]["CREDIT"] = "123"
+    # df_mt5_LP_details["Balance"]["PnL"] = 123
+    # df_mt5_LP_details["Balance"]["Equity"] = 123
+
+    lp_details_data  = df_mt5_LP_details.to_dict("records") # Original data.
+    #lp_details_return_data = lp_details_data
+    lp_details_return_data = []  # We want to add and re-configure these data
+    #'Deposit', 'Credit', 'PnL', 'Equity', 'Total_margin', 'Free_margin', 'EQUITY', 'Margin/Equity (%)',  'available'
+
+    for d in lp_details_data:
+        loop_data = dict()
+        loop_data["LP"] = d["LP"] if "LP" in d else None
+
+        loop_data["BALANCE"] = dict()
+        loop_data["BALANCE"]["DEPOSIT"] = "$ {:,.2f}".format(float(d["Deposit"])) if "Deposit" in d else None
+
+
+
+        loop_data["BALANCE"]["CREDIT"] = "$ {:,.2f}".format(float(d["Credit"])) if "Credit" in d else None
+        loop_data["BALANCE"]["PNL"] = d["PnL"] if "PnL" in d else None
+        loop_data["BALANCE"]["EQUITY"] = d["Equity"] if "Equity" in d else None
+
+        loop_data["MARGIN"] = dict()
+        loop_data["MARGIN"]["TOTAL MARGIN"] = d["Total_margin"] if "Total_margin" in d else None
+        loop_data["MARGIN"]["FREE MARGIN"] = d["Free_margin"] if "Free_margin" in d else None
+
+        loop_data["MARGIN/EQUITY (%)"] = d["Margin/Equity (%)"] if "Margin/Equity (%)" in d else None
+
+
+        loop_data["MC/SO/AVAILABLE"] = dict()
+        loop_data["MC/SO/AVAILABLE"]["MARGIN CALL (M/E)"] = d['margin_call (M/E)'] if "margin_call (M/E)" in d else None
+        loop_data["MC/SO/AVAILABLE"]["STOP OUT (M/E)"] = d['stop_out (M/E)']  if "stop_out (M/E)" in d else None
+        loop_data["MC/SO/AVAILABLE"]["STOP OUT AMOUNT (M/E)"] =  "$ {:,.2f}".format(float(d["STOPOUT AMOUNT"])) if "STOPOUT AMOUNT" in d else None
+        loop_data["MC/SO/AVAILABLE"]["AVILABLE"] = "-"
+
+        loop_data["UPDATED TIME"] = d["Updated_time"] if "Updated_time" in d else None
+        lp_details_return_data.append(loop_data)
+
+
+    # loop_buffer["BALANCE"] = dict()
+    # loop_buffer["BALANCE"]["DEPOSIT"] = "$ {:,.2f}".format(float(lp["deposit"])) if "deposit" in lp else None
+    # loop_buffer["BALANCE"]["CREDIT"] = "$ {:,.2f}".format(float(lp["credit"])) if "credit" in lp else None
+    #
+    #
+
     # -----------------------------Pretty Print. -------------------------------------------------------------------
 
     # Fill na since if there isn't Past discrepancy time, it would be null
@@ -927,4 +992,5 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
     return json.dumps({ "H1": table_1_concat_return_data,
                         "H2": Acc_trades_return_data,
+                        "H3": lp_details_return_data,
                         })

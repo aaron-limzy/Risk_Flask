@@ -854,7 +854,7 @@ def Query_Symbol_Markup_db_engine(sql_query):
 def Calculate_Net_position(df_data):
 
     # Need to check that all the needed column is in there before we can start calculating.
-    if not all(i in df_data for i in ['CLOSE_TIME', 'CMD', 'LOTS', 'PROFIT', 'SWAPS', 'SYMBOL']):
+    if not all(i in df_data for i in ['CLOSE_TIME', 'CMD', 'LOTS', 'PROFIT', 'SWAPS', 'SYMBOL', 'OPEN_PRICE']):
         return (pd.DataFrame([{"Results": "No Open Trades"}]))  # Return empty dataframe
 
     df_data = df_data[df_data["CMD"] < 2]   # Only want Buy and Sell
@@ -867,18 +867,30 @@ def Calculate_Net_position(df_data):
 
     df_data["NET_LOTS"] = df_data.apply(lambda x: x["LOTS"] if x["CMD"] == 0 else -1*x["LOTS"], axis=1)   # -ve for sell
     #df_data["LOTS"] = round(df_data['LOTS'].sum(), 2)
+    df_data["LOT_PRICE"] = df_data["LOTS"] * df_data["OPEN_PRICE"]    # Want to calculate the average open price
 
+    # d = {'Missed': 'Sum1', 'Credit': 'Sum2', 'Grade': 'Average'}
+    # df = df_data.groupby([['SYMBOL']]).agg({'LOTS': 'sum', 'NET_LOTS': 'sum',
+    #                                         'NET_LOTS': 'sum', 'PROFIT': 'sum', 'Grade': 'mean'})
 
-    df_data = df_data[['SYMBOL', 'LOTS', 'NET_LOTS', 'PROFIT', 'SWAPS' ]]   # Only need these few.
+    # print(df_data)
+
+    df_data = df_data[['SYMBOL', 'LOTS', 'NET_LOTS', 'PROFIT', 'SWAPS', 'LOT_PRICE']]   # Only need these few.
     ret_val = df_data.groupby(['SYMBOL']).sum()     # Want to group by Symbol, and sum
     ret_val.reset_index(level=0, inplace=True)      # Want to reset the index so that "SYMBOL" becomes the column name
     ret_val["NET_LOTS"] = ret_val["NET_LOTS"].apply(round, 2)
     ret_val["PROFIT"] = ret_val["PROFIT"].apply(profit_red_green) # Print in 2 D.P,with color (HTML)
     ret_val["SWAPS"] = ret_val["SWAPS"].apply(profit_red_green) # Print in 2 D.P,with color (HTML)
 
+    ret_val["AVG_PRICE"] = ret_val["LOT_PRICE"] /ret_val["LOTS"] # Calculate
+    ret_val["AVG_PRICE"]  = ret_val["AVG_PRICE"].apply(lambda x: "{:.2f}".format(x))    # Pretty Print
 
-    ret_val["LOTS"] = ret_val["LOTS"].apply(lambda x: "{:.2f}".format(x))  # Print in 2 D.P.
+    ret_val.drop(['LOT_PRICE'], axis=1, inplace=True)
+    #
 
+    ret_val["LOTS"] = ret_val["LOTS"].apply(lambda x: "{:.3f}".format(x))  # Print in 2 D.P.
+    ret_val = ret_val[["SYMBOL", "LOTS", "NET_LOTS", "AVG_PRICE", "PROFIT", "SWAPS"]] # Choose the column orientation
+    print(ret_val)
     return ret_val
 
 
@@ -1297,7 +1309,7 @@ def ABook_LP_Details_function(update_tool_time=0, exclude_list=["demo"]):
 
     for i,lp in enumerate(return_result):    # Want to re-arrange.
         loop_buffer = dict()
-        loop_buffer["LP"] = lp["lp"] if "lp" in lp else None
+        loop_buffer["LP"] = str(lp["lp"]).replace("_", " ") if "lp" in lp else None
 
         Lp_MC_Level = lp["margin_call (M/E)"] if "margin_call (M/E)" in lp else None
         Lp_SO_Level = lp["stop_out (M/E)"] if "stop_out (M/E)" in lp else None
