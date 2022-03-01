@@ -1086,7 +1086,7 @@ def get_swap_history(db, backward_days=50):
     # INTERVAL {} DAY) ORDER BY date""".format(backward_days), SQL_IP, SQL_User, SQL_Password, SQL_Database)
 
     SQL_Query = """SELECT Core_Symbol as `Symbol`, BGI_Long, BGI_Short, Date 
-    FROM test.bgi_swaps WHERE CORE_SYMBOL LIKE '.%' AND 
+    FROM aaron.bgi_swaps WHERE CORE_SYMBOL LIKE '.%' AND 
     DATE > DATE_SUB(NOW(),INTERVAL {} DAY) ORDER BY date""".format(backward_days).replace("\n", " ")
 
     #print("\n\n{}\n\n".format(SQL_Query))
@@ -1118,6 +1118,9 @@ def merge_dividend_swaps(df, df_dividend):
 def predict_cfd_swaps(db, return_predict_only=True):
     df_dividend = get_dividend_history(db, 101)
     df_swapHistory = get_swap_history(db, 100)
+
+    print(df_swapHistory)
+
     df = merge_dividend_swaps(df_swapHistory, df_dividend)
     df.sort_values("Date", inplace=True)
 
@@ -1152,6 +1155,7 @@ def predict_cfd_swaps(db, return_predict_only=True):
     if return_predict_only:
         return df[df["Date_merge"] == datetime.datetime.now().strftime("%Y-%m-%d")]
 
+    print(df)
     return df
 
 
