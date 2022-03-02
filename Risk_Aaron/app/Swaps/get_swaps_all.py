@@ -779,8 +779,8 @@ def swap_markup(swap_val, markup_percentage):
 
 def calculate_swaps_bgi(excel_data, db):
 
-    pd.set_option('display.max_rows', 200)
-    pd.set_option('display.max_columns', 200)
+    # pd.set_option('display.max_rows', 200)
+    # pd.set_option('display.max_columns', 200)
 
     df_bgi_excel = pd.DataFrame(excel_data)
 
@@ -789,7 +789,7 @@ def calculate_swaps_bgi(excel_data, db):
     df_bgi_excel["Long Points"] = df_bgi_excel["Long Points"].astype(float)
     df_bgi_excel["Short Points"] = df_bgi_excel["Short Points"].astype(float)
 
-    #print(df_bgi_excel)
+    # print(df_bgi_excel)
 
     # Get the Bloomberg Dividend.
     #df_dividend = pd.DataFrame(Get_Dividend())
@@ -1119,7 +1119,7 @@ def predict_cfd_swaps(db, return_predict_only=True):
     df_dividend = get_dividend_history(db, 101)
     df_swapHistory = get_swap_history(db, 100)
 
-    print(df_swapHistory)
+    # print(df_swapHistory)
 
     df = merge_dividend_swaps(df_swapHistory, df_dividend)
     df.sort_values("Date", inplace=True)
@@ -1155,7 +1155,7 @@ def predict_cfd_swaps(db, return_predict_only=True):
     if return_predict_only:
         return df[df["Date_merge"] == datetime.datetime.now().strftime("%Y-%m-%d")]
 
-    print(df)
+    # print(df)
     return df
 
 
