@@ -84,10 +84,39 @@
     // Call in every second, will check and update button.
     function Refresh_Page_seconds_call(){
       if (tabIsActive){
+
+        var python_set_interval = {{ setinterval }};
+
+        // var currentdate = new Date();
+        // var datetime = "Last Sync: " + currentdate.getDate() + "/"
+        //                 + (currentdate.getMonth()+1)  + "/"
+        //                 + currentdate.getFullYear() + " @ "
+        //                 + currentdate.getHours() + ":"
+        //                 + currentdate.getMinutes() + ":"
+        //                 + currentdate.getSeconds();
+
+        //console.log(datetime);
+
+        var set_interval_length = {{ setinterval }};
+        const d = new Date();
+        let day = d.getDay(); // 1 for monday. 3 for weds. Sunday = 0
+
+        if ((day == 6) || (day == 0) || (day == 3) ) { // If sat or sunday, we want to make the refresh time longer.
+          set_interval_length = 600;
+          Refresh_Page_seconds = 600;
+          // console.log(day);
+        }else{
+          Refresh_Page_seconds = {{ setinterval }};;
+        }
+
+
         Refresh_Page_Counter = Refresh_Page_Counter + Increment_counter;
 
         // If the counter (1 second) has reached the set interval duration
-        if (Refresh_Page_Counter >=  {{ setinterval }}){
+        if (Refresh_Page_Counter >=  set_interval_length){
+
+          console.log("Refresh_Page_Counter: " + Refresh_Page_Counter);
+          console.log("set_interval_length: " + set_interval_length);
           Increment_counter = 0;          // Stop the increment for now.
           Refresh_Page_Counter = 0;
 

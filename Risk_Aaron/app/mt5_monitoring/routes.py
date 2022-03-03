@@ -676,7 +676,8 @@ def AIF_AB_Hedge():
     header = Markup("<b><u>AIF A/B Hedge</u></b>")
     title = "AIF A/B Hedge"
 
-    description = Markup("""Checks for UK A/B Hedge<br>All Time are in SGT (GMT + 8).<br>Refresh timing would be ~ 5 mins as per MT5 Refresh timings.""")
+    description = Markup("""Checks for UK A/B Hedge<br>All Time are in SGT (GMT + 8).<br>Refresh timing would be ~ 5 mins as per MT5 Refresh timings.
+                            <br>Scope LP : 80004""")
 
     return render_template("Wbwrk_Multitable_Borderless_redalert.html",
                            backgroud_Filename=background_pic("AIF_AB_Hedge"), icon=icon_pic("UK_AB_Hedge"),
@@ -716,9 +717,6 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
     mt5_LP_details_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.UK_LP_Details()", unsync_app=current_app._get_current_object())
 
-
-
-
     mt5_Acc_details = mt5_Acc_details_unsync.result()
     mt5_Acc_details_df = color_profit_for_df(mt5_Acc_details, default=[{"Run Results": "No Open Trades"}], words_to_find=["pnl"], return_df=True)
 
@@ -746,9 +744,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     if testing == True:
         #Artificially create a mismatch
         mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin([".DE30", ".JP225"]), "Past Discrepancy"] = 0.15
-
         mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD", "USDJPY"]), "TotalNetVol"] = 1
-
         mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["AUDUSD"]), "TotalNetVol"] = 0.35
 
 
@@ -886,11 +882,15 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
                 SQL_insert_MT5_statement(clear_sql_statement)
                 #print(clear_sql_statement)
 
-    # Get the LP details.
-    mt5_LP_details = mt5_LP_details_unsync.result()
-    print(mt5_LP_details)
 
-    df_mt5_LP_details = pd.DataFrame(mt5_LP_details)
+    # mt5_LP_details = mt5_LP_details_unsync.result()
+    # print(mt5_LP_details)
+
+
+    # Get the LP details.
+    df_mt5_LP_details = pd.DataFrame(mt5_LP_details_unsync.result())
+
+    print(df_mt5_LP_details)
 
     # To ensure that it's printed to
     to_round_columns = ['Deposit', 'Credit', 'PnL', 'Equity', 'Total_margin', 'Free_margin', 'EQUITY', 'Margin/Equity (%)',  'available']
@@ -901,11 +901,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     if "LP" in df_mt5_LP_details:   # Don't want to see the underscore. Replace it with a space.
         df_mt5_LP_details["LP"] = df_mt5_LP_details["LP"].apply(lambda x: str(x).replace("_", " "))
 
-    # df_mt5_LP_details["Balance"] = dict()
-    # df_mt5_LP_details["Balance"]["DEPOSIT"] = "123"
-    # df_mt5_LP_details["Balance"]["CREDIT"] = "123"
-    # df_mt5_LP_details["Balance"]["PnL"] = 123
-    # df_mt5_LP_details["Balance"]["Equity"] = 123
+
 
     lp_details_data  = df_mt5_LP_details.to_dict("records") # Original data.
     #lp_details_return_data = lp_details_data
@@ -923,11 +919,11 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
         loop_data["BALANCE"]["CREDIT"] = "$ {:,.2f}".format(float(d["Credit"])) if "Credit" in d else None
         loop_data["BALANCE"]["PNL"] = d["PnL"] if "PnL" in d else None
-        loop_data["BALANCE"]["EQUITY"] = d["Equity"] if "Equity" in d else None
+        loop_data["BALANCE"]["EQUITY"] = "$ {:,.2f}".format(float(d["EQUITY"]))  if "Equity" in d else None
 
         loop_data["MARGIN"] = dict()
         loop_data["MARGIN"]["TOTAL MARGIN"] = d["Total_margin"] if "Total_margin" in d else None
-        loop_data["MARGIN"]["FREE MARGIN"] = d["Free_margin"] if "Free_margin" in d else None
+        loop_data["MARGIN"]["FREE MARGIN"] = "$ {:,.2f}".format(float(d["Free_margin"])) if "Free_margin" in d else None
 
         loop_data["MARGIN/EQUITY (%)"] = d["Margin/Equity (%)"] if "Margin/Equity (%)" in d else None
 
