@@ -490,7 +490,7 @@
                   </ul>
                 </li>
             {% endif %}
-            
+
             <li><a class="dropdown-item" href="{{ url_for('analysis.Client_trades_form') }}">Individual Client Trades</a></li>
 
             {% if current_user.role in ["Admin", "Risk", "Risk_TW"] %}
@@ -585,6 +585,32 @@
                     <a class="dropdown-item" href="http://192.168.64.73/www/pro_bal_20/avg_open_close_time_B1.php">Avg_time 3600s</a>
                     <a class="dropdown-item" href="http://192.168.64.73/www/Others/index_lw_comment_check.php">leanwork comment check</a>
                     <a class="dropdown-item" href="http://192.168.64.73/www/Others/index_YJH_MARKDOWN.php">YJH markdown</a>
+                    <div class="dropdown-divider"></div>
+                    <div class="dropdown-header">New</div>
+                    <a class="dropdown-item" href="http://192.168.18.7:81/www/sendEmail/send_TICKS_TIME_LIMIT_NEW_crypto.php">Crypto ticks check</a>
+                    <a class="dropdown-item" href="http://192.168.18.7:81/www/mt5_esunny/index_mt4_crypto_rebate.php">Crypto rebate weekly</a>
+                    <a class="dropdown-item" href="http://192.168.64.73/www/sendEmail/sendemail30mins.html">PNL > 200 COUNT >5</a>
+                    <a class="dropdown-item" href="http://192.168.64.73/www/sendEmail/sendemail15mins.html">Margin / Equity > 50%</a>
+                    <a class="dropdown-item" href="http://192.168.64.73/www/sendEmail/cfd_4_trades.html">4 continous CFD, PNL > 0, open&close within 1 min</a>
+                    <a class="dropdown-item" href="http://192.168.64.73/www/sendEmail/alert_live.html">individual account ,when trade then alert</a>
+                    <a class="dropdown-item" href="http://192.168.64.73/www/sendEmail/send_SYMBOL_LIMIT.php/">Whole B book by symbol alert</a>
+                    <a class="dropdown-item" href="http://192.168.64.73/www/sendEmail/send_VOLUME_LIMIT_CN.php/">CN B book vol alert</a>
+                    <a class="dropdown-item" href="http://192.168.64.73/www/sendEmail/send_LAST_TRADE0.1.php/">when last trade 0.1 lot and next trade big lot. Maybe client use 0.1 to test our spread.</a>
+                    <a class="dropdown-item" href="http://192.168.64.73/www/sendEmail/send_CHANGE_GROUP.php/">CN change group</a>
+                    <a class="dropdown-item" href="http://192.168.64.73/www/mt5_sendEmail/mt5_future_expire_check.php/">MT5 futures symbols expire</a>
+                    <a class="dropdown-item" href="http://192.168.64.73/www/mt5_sendEmail/mt5_future_expire_position_check.php/">MT5 futures symbols expire but still has open position</a>
+                    <a class="dropdown-item" href="http://192.168.64.73/www/sendEmail/send_READONLY.php/">CN readonly</a>
+                    <a class="dropdown-item" href="http://192.168.64.73/www/PNL/index.php">daily PNL</a>
+
+
+
+
+
+
+
+
+
+
                   </ul>
                 </li>
               {% endif %}
