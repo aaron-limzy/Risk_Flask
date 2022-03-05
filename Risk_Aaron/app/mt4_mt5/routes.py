@@ -689,13 +689,12 @@ def BGI_All_Symbol_Float2():
 def BGI_All_Symbol_Float_ajax():
 
 
-
     # start_time = datetime.datetime.now()
     #start = datetime.datetime.now()
     # TODO: Only want to save during trading hours.
     # TODO: Want to write a custom function, and not rely on using CFH timing.
-    if not cfh_fix_timing():
-        return json.dumps([[{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}]])
+    # if not cfh_fix_timing():
+    #     return json.dumps([[{'Update time' : "Not updating, as Market isn't opened. {}".format(Get_time_String())}]])
 
     # Get all the data that is pertainint to MT4 Floating.
     df_mt4 = mt4_Symbol_Float_Data()
