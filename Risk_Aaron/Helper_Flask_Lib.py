@@ -1302,8 +1302,8 @@ def ABook_LP_Details_function(update_tool_time=0, exclude_list=["demo"]):
     # Need to do some changes if the acount was from MT4.
     # Will need to flip(reciprocal) the MC and SO
     df = pd.DataFrame(return_result_raw)    # We want to process the data.
-    pd.set_option('display.max_rows', 500)
-    pd.set_option('display.max_columns', 500)
+    # pd.set_option('display.max_rows', 500)
+    # pd.set_option('display.max_columns', 500)
 
     if 'stop_out (M/E)' in df:
         df['stop_out (M/E)'] = df['stop_out (M/E)'].apply(lambda x: float(x))
@@ -1319,7 +1319,7 @@ def ABook_LP_Details_function(update_tool_time=0, exclude_list=["demo"]):
 
         return_result = df.to_dict("records")   # Get the correct data out.
 
-    print(df)
+    #print(df)
 
 
 
