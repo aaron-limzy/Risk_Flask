@@ -11,6 +11,8 @@ from Aaron_Lib import *
 import pandas as pd
 from unsync import unsync
 
+import numpy as np
+
 import pytz
 
 TIME_UPDATE_SLOW_MIN = 10
@@ -1285,7 +1287,7 @@ def ABook_LP_Details_function(update_tool_time=0, exclude_list=["demo"]):
 		COALESCE(ROUND(100 * total_margin / (credit + deposit + pnl),2),0) as `Margin/Equity (%)` ,
 		margin_call as `margin_call (M/E)` , stop_out as `stop_out (M/E)`,
 			  COALESCE(`stop_out_amount`, ROUND(  100* (`total_margin`/`stop_out`) ,2)) as `STOPOUT AMOUNT`,
-		ROUND(`equity` -  COALESCE(`stop_out_amount`, 100* (`total_margin`/`stop_out`) ),2) as `available`,
+		ROUND(`equity` -  COALESCE(`stop_out_amount`, 100* (`total_margin`/`stop_out`) ),2) as `available`, Metatrader_account,
 		updated_time
 		FROM aaron.lp_summary {} ORDER BY LP DESC""".format(exclude_conditions))  # Need to convert to Python Friendly Text.
     raw_result = db.engine.execute(sql_query)
@@ -1295,7 +1297,31 @@ def ABook_LP_Details_function(update_tool_time=0, exclude_list=["demo"]):
                            result_data]  # correct The decimal.Decimal class to float.
 
     result_col = raw_result.keys()
-    return_result = [dict(zip(result_col,d)) for d in result_data_json_parse]
+    return_result_raw = [dict(zip(result_col,d)) for d in result_data_json_parse]
+
+    # Need to do some changes if the acount was from MT4.
+    # Will need to flip(reciprocal) the MC and SO
+    df = pd.DataFrame(return_result_raw)    # We want to process the data.
+    pd.set_option('display.max_rows', 500)
+    pd.set_option('display.max_columns', 500)
+
+    if 'stop_out (M/E)' in df:
+        df['stop_out (M/E)'] = df['stop_out (M/E)'].apply(lambda x: float(x))
+
+    if "Metatrader_account" in df:
+        df['stop_out (M/E)'] = np.where(df['Metatrader_account'].isin(["Y"]),
+                                                            round(100*100/df['stop_out (M/E)']),      # If true
+                                                            df['stop_out (M/E)'])       # If False
+
+        df['margin_call (M/E)'] = np.where(df['Metatrader_account'].isin(["Y"]),
+                                                            round(100 * 100 / df['margin_call (M/E)']),  # If true
+                                                            df['margin_call (M/E)'])
+
+        return_result = df.to_dict("records")   # Get the correct data out.
+
+    print(df)
+
+
 
 
     LP_Position_Show_Table = [] # to store the LP details in a more read-able sense

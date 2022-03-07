@@ -3325,8 +3325,8 @@ def Client_trades_Analysis(Live="", Login=""):
 @roles_required()
 def Client_trades_Analysis_ajax(Live="", Login=""):
 
-    pd.set_option('display.max_rows', 500)
-    pd.set_option('display.max_columns', 500)
+    # pd.set_option('display.max_rows', 500)
+    # pd.set_option('display.max_columns', 500)
 
     if Live not in ["1","2","3","5"] or Login == "":   # There are no information.
         return json.dumps({"H1": [{'Results': 'Error in Live/Login'}]})
