@@ -101,7 +101,7 @@
         const d = new Date();
         let day = d.getDay(); // 1 for monday. 3 for weds. Sunday = 0
 
-        if ((day == 6) || (day == 0) || (day == 3) ) { // If sat or sunday, we want to make the refresh time longer.
+        if ((day == 6) || (day == 0) ) { // If sat or sunday, we want to make the refresh time longer.
           set_interval_length = 600;
           Refresh_Page_seconds = 600;
           // console.log(day);
