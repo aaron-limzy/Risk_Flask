@@ -97,6 +97,11 @@ def get_HKG_spread(test=False):
     C_Return_Val, output, err = Run_C_Prog(
         "app" + url_for('static',
                         filename='Exec/HK_Change_Spread/{}'.format(hkg_prog_name)) + " Check")
+
+    print("C_Return_Val : {}".format(C_Return_Val))
+    print("output : {}".format(output))
+    print("err : {}".format(err))
+
     return C_Return_Val
 
 def combine_spread_sql_hkg(symbol_list, test, database):

@@ -854,12 +854,13 @@ def NoTrade_Change_ReadOnly_Settings():
 @Risk_Client_Tools_bp.route('/HK_Change_Spread', methods=['GET', 'POST'])
 @roles_required(["Dealing", "Risk", "Admin", "Risk_TW", "CS", "MIS"])
 def HK_Change_Spread():
-    test = True
+    test = False
+
     database_name = "risk" if test else "live1"
 
     #Force it to be live 1.
     # But we don't want to test it on HKG yet.
-    database_name = "live1"
+    #database_name = "live1"
 
 
     title = Markup("HK Change Spread")
@@ -960,7 +961,7 @@ def change_HK_spread_function(df, database):
     db.session.commit()  # Since we are using session, we need to commit.
 
     # Get all the values are not HKG
-    df_change_result = df[df["postfixsymb"] != "KHG"][["postfixsymb", "Spread_Dollar", "Spread_Points", "digits"]]
+    df_change_result = df[df["postfixsymb"] != "HKG"][["postfixsymb", "Spread_Dollar", "Spread_Points", "digits"]]
     df_change_result["Result"] = "" # Create the column
     #result_list = [df_db_change.values.tolist()]
 
