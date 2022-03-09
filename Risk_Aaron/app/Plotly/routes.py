@@ -3381,7 +3381,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     result = Query_SQL_db_engine(sql_statement)
     df_data = pd.DataFrame(result)
 
-    print(df_data)
+    # print(df_data)
 
     #
     # # symbol_average_tradetime = Average_trade_time_per_symbol(df_data)
