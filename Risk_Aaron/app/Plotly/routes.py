@@ -3348,7 +3348,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     ignore_col = ["LOGIN", "GROUP", "CURRENCY", "MARGIN_CALL", "MARGIN_STOPOUT", "ENABLE", "ENABLE_READONLY", "BALANCE"]
     login_details = [{k:"{:,.2f}".format(d) if k not in ignore_col and isfloat(d) else d for k,d in l.items()} for l in login_details]
 
-    print(login_details)
+    # print(login_details)
 
     if len(login_details) <= 0:   # There are no information.
         #print("No Login Details.")
@@ -3381,7 +3381,7 @@ def Client_trades_Analysis_ajax(Live="", Login=""):
     result = Query_SQL_db_engine(sql_statement)
     df_data = pd.DataFrame(result)
 
-    # print(df_data)
+    print(df_data)
 
     #
     # # symbol_average_tradetime = Average_trade_time_per_symbol(df_data)

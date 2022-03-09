@@ -875,12 +875,15 @@ def Calculate_Net_position(df_data):
     # df = df_data.groupby([['SYMBOL']]).agg({'LOTS': 'sum', 'NET_LOTS': 'sum',
     #                                         'NET_LOTS': 'sum', 'PROFIT': 'sum', 'Grade': 'mean'})
 
-    # print(df_data)
+    print(df_data)
 
     df_data = df_data[['SYMBOL', 'LOTS', 'NET_LOTS', 'PROFIT', 'SWAPS', 'LOT_PRICE']]   # Only need these few.
     ret_val = df_data.groupby(['SYMBOL']).sum()     # Want to group by Symbol, and sum
     ret_val.reset_index(level=0, inplace=True)      # Want to reset the index so that "SYMBOL" becomes the column name
-    ret_val["NET_LOTS"] = ret_val["NET_LOTS"].apply(round, 2)
+
+    ret_val["NET_LOTS"] = ret_val["NET_LOTS"].apply(lambda x: round(x, 2))
+
+
     ret_val["PROFIT"] = ret_val["PROFIT"].apply(profit_red_green) # Print in 2 D.P,with color (HTML)
     ret_val["SWAPS"] = ret_val["SWAPS"].apply(profit_red_green) # Print in 2 D.P,with color (HTML)
 
@@ -892,7 +895,8 @@ def Calculate_Net_position(df_data):
 
     ret_val["LOTS"] = ret_val["LOTS"].apply(lambda x: "{:.2f}".format(x))  # Print in 2 D.P.
     ret_val = ret_val[["SYMBOL", "LOTS", "NET_LOTS", "AVG_PRICE", "PROFIT", "SWAPS"]] # Choose the column orientation
-    #print(ret_val)
+    print("\n\n")
+    print(ret_val)
     return ret_val
 
 
