@@ -882,7 +882,7 @@ def HK_Change_Spread():
             all_data = [[s.Symbol.data, s.Spread_Dollar.data,
                          s.Spread_Points.data, s.digits.data]
                         for s in form.core_symbols]
-            print(all_data)
+            # print(all_data)
 
             col=["postfixsymb","Spread_Dollar", "Spread_Points", "digits"]
 

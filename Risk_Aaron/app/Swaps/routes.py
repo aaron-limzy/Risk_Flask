@@ -203,10 +203,10 @@ def upload_Swaps_csv():
         #print(record_dict)
 
         # We want to check the Valtage file to access if it's usable.
-        #pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_rows', None)
         # Get the dataframe of the records.
         df = pd.DataFrame(record_dict)
-        #print(df)
+        print(df)
         # Want to check how many "long" and "Short" Columns there are.
         error_found = 0    # Counter for any issues on the file.
 
@@ -217,13 +217,24 @@ def upload_Swaps_csv():
                 flash(Markup("More than 1 <b>'{}'</b> column found.".format(x)))
             elif sum([c.lower().find(x) == 0 for c in df.columns]) < 1:
                 error_found = error_found + 1
-                flash(Markup("No <b>'{}'</b> column found.".format(x)))
+                flash(Markup("No <b>'{}'</b> column found.".format(x)), "error")
+        #TODO: Could try and make the naming of the column into variables in case Vantage changes it.
 
         # Check for main columns to see if it's missing.
         if not all([c in df.columns for c in col_to_check]):
             error_found = error_found + 1
             missing_col = ["<b>{}</b>".format(c) for c in col_to_check if c not in df]
-            flash(Markup("Columns missing from excel: {}.".format(" & ".join(missing_col))))
+            flash(Markup("Columns missing from excel: {}.".format(" & ".join(missing_col))), "error")
+
+        # Check if there are columns with all missing.
+        df_empty_all = df[(df["Long Points"]=="") & (df["Short Points"]=="") & (df["Core Symbol"]=="")]
+        if len(df_empty_all) > 0:   # If there are empty strings, print it out, but as an info, not as an error.
+            flash("Lines {} on the CSV are totally empty. These lines would be omitted.".format(\
+                                    ", ".join([str(int(c) + 2) for c in df_empty_all.index.to_list()])))
+
+        # Will take those that are totally empty out.
+        df = df[~((df["Long Points"] == "") & (df["Short Points"] == "") & (df["Core Symbol"] == ""))]
+        print(df)
 
         # Check if the Symbol is empty.
         # Because it's taken from Flask, the NAN turns to ""
@@ -234,24 +245,40 @@ def upload_Swaps_csv():
             na_symbol_index = [c + 2 for c in df_na_symbol.index.to_list()]
             for n in na_symbol_index:
                 error_found = error_found + 1 # Increment Error Count
-                flash(Markup("Row {} in csv file is missing Core Symbol.".format(n)))
+                flash(Markup("Row {} in csv file is missing Core Symbol.".format(n)), "error")
 
         # Check if there are blanks in the LONG/SHORT Columns
         # Because it's taken from Flask, the NAN turns to ""
             df_na = df[(df['Long Points'].isna()) | (df['Long Points']=="") |
                         (df['Short Points'].isna()) | (df['Short Points']=="")] # Check for Blanks
 
+            if len(df_na) > 0:
+                # Get the index, and Symbol of the missing data on the CSV
+                na_swap_index = [c + 2 for c in df_na.index.to_list()]
+                na_swap_symbol = ["{}".format(c) for c in df_na["Core Symbol"].to_list()]
 
-            for s in df_na["Core Symbol"].to_list():
-                error_found = error_found + 1 # Increment Error Count
-                flash(Markup("<b>{}</b> in csv file is <u>missing Long/Short Points</u>".format(s)))
+                # print(na_swap_index)
+
+                for s in range(len(na_swap_index)):
+
+                    error_found = error_found + 1 # Increment Error Count
+
+                    # We want to flash out the Row number as well as the Symbol, if there is.
+                    flash(Markup("Row: {}, Symbol: '<b>{}</b>' in csv file is <u>missing Long/Short Points</u>".format(na_swap_index[s], na_swap_symbol[s])), "error")
 
             # Check if there the LONG/SHORT Columns are all just numbers
             df_not_float = df[ df["Long Points"].apply(lambda x: not isfloat(str(x))) |
                         df["Short Points"].apply(lambda x: not isfloat(str(x)))] # Check for non-float
-            for s in df_not_float["Core Symbol"].to_list():
-                error_found = error_found + 1 # Increment Error Count
-                flash(Markup("<b>{}</b> : Long/Short points <u>isn't a number.</u>".format(s)))
+            if len(df_not_float) > 0:
+                for s in range(len(df_not_float)):
+
+                # for s in df_not_float["Core Symbol"].to_list():
+                    na_swap_notfloat_index = [c + 2 for c in df_not_float.index.to_list()]
+                    na_swap_notfloat_symbol = ["{}".format(c) for c in df_not_float["Core Symbol"].to_list()]
+                    # print(s)
+                    error_found = error_found + 1 # Increment Error Count
+                    flash(Markup("Row : {}, Symbol: '<b>{}</b>' : Long/Short points <u>isn't a number.</u>".format(\
+                                                na_swap_notfloat_index[s], na_swap_notfloat_symbol[s])), "error")
 
         if error_found == 0 :   ## If Only there are no issues.
             start_time = datetime.datetime.now()
