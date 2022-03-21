@@ -234,7 +234,7 @@ def upload_Swaps_csv():
 
         # Will take those that are totally empty out.
         df = df[~((df["Long Points"] == "") & (df["Short Points"] == "") & (df["Core Symbol"] == ""))]
-        print(df)
+        # print(df)
 
         # Check if the Symbol is empty.
         # Because it's taken from Flask, the NAN turns to ""

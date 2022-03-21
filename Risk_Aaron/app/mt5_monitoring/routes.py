@@ -890,7 +890,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     # Get the LP details.
     df_mt5_LP_details = pd.DataFrame(mt5_LP_details_unsync.result())
 
-    print(df_mt5_LP_details)
+    # print(df_mt5_LP_details)
 
     # To ensure that it's printed to
     to_round_columns = ['Deposit', 'Credit', 'PnL', 'Equity', 'Total_margin', 'Free_margin', 'EQUITY', 'Margin/Equity (%)',  'available']
@@ -966,7 +966,6 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     else:  # If not, we want to show the major few.
         mt5_Acc_trades_df = mt5_Acc_trades_df[mt5_Acc_trades_df["BaseSymbol"].isin(["EURUSD", "USDCHF", "EURCAD"])]
 
-
     # Want to sort to show the mismatches.
     mt5_Acc_trades_df.sort_values(["abs_volume", "TotalNetVol", "Past Discrepancy", "BaseSymbol"],  ascending=[False, False, False, False], inplace=True)
 
@@ -985,8 +984,17 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     # Want to update the runtime table to ensure that tool is running.
     async_update_Runtime(app=current_app._get_current_object(),
                          Tool='AIF Hedge A/B Match')
+    print("4")
+    print(table_1_concat_return_data)
+    # print(Acc_trades_return_data)
+    # print(lp_details_return_data)
+
+    # return json.dumps({"H1": table_1_concat_return_data,
+    #                    "H2": Acc_trades_return_data,
+    #                    "H3": lp_details_return_data,
+    #                    })
 
     return json.dumps({ "H1": table_1_concat_return_data,
-                        "H2": Acc_trades_return_data,
-                        "H3": lp_details_return_data,
-                        })
+                            "H2": Acc_trades_return_data,
+                            "H3": lp_details_return_data,
+                            })
