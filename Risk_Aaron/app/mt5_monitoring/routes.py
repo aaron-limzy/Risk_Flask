@@ -700,12 +700,19 @@ def AIF_AB_Hedge():
 
 
 
-@mt5_monitoring.route('/AIF_AB_Hedge_ajax2', methods=['GET', 'POST'])
+@mt5_monitoring.route('/AIF_AB_Hedge_ajax', methods=['GET', 'POST'])
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing", "Risk_UK"])
 def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
 
 
     testing = False
+    # Crafting the Email.
+    email_tile = "UK AIF A/B Hedging Mismatch"
+    email_html = "Hi,<br><br>There's a mismatch for the UK copy trades (UK AIF Hedging A/B).<br>"
+
+    ## SQL update statement, to update after email has been sent
+    email_sent_Netvol_sql_update_statement = ""
+    email_sent_Scope_sql_update_statement = ""
 
     if testing:
         pd.set_option("display.max_rows", 101)
@@ -714,6 +721,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     # After how many mins will a mismatch be sent
     alert_mismatch_timing = 10 if testing == False else 5
 
+    Send_Email_Alert_Flag = False
 
     # All the SQL that we need to call. CAll them first.
     mt5_Acc_trades_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.aif_netvolume_2()", unsync_app=current_app._get_current_object())
@@ -735,7 +743,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
     mt5_Acc_trades_df = color_profit_for_df(mt5_Acc_trades, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
 
-    print(mt5_Acc_trades_df)
+    # print(mt5_Acc_trades_df)
 
     columns = mt5_Acc_trades_df.columns
 
@@ -815,6 +823,8 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
             # If it fufils the sending alert conditions.
             if len(To_Send_alert) > 0:
                 print("AIF: Will need to send alert. ")
+                Send_Email_Alert_Flag = True
+
                 mismatch_list = To_Send_alert["BaseSymbol"].to_list()
                 #print(mismatch_list)
                 # Crafting message for telegram.
@@ -840,44 +850,28 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
                 # Don't need this column anymore.
                 To_Send_alert.drop("tele_Message", inplace=True, axis=1)
 
-                # Crafting the Email.
-                email_html = "Hi,<br><br>There's a mismatch for the UK copy trades (UK Hedging A/B).<br>Kindly see details below.<br>"
-
-                email_html += Array_To_HTML_Table(
-                             list(To_Send_alert.columns), To_Send_alert.values, [])
+                # Don't want any of the scope LP details here
+                To_Send_alert = To_Send_alert[[c for c in To_Send_alert.columns if c.lower().find("scope") == -1]]
 
 
-                email_html += "Ideally, the position should net off completely, resulting in 0 net volume.<br>"
-                email_html += """Link: <a href='{}'>UK Hedge Page</a><br><br>""".format( url_for( 'mt5_monitoring.AIF_AB_Hedge',
-                                                                      _external=True).replace("localhost",EXTERNAL_IP))
-
-
-                email_html += "This Email was generated at: SGT {}.<br><br>Thanks,<br>Aaron".format(\
-                    datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-
-                #if testing == False:
-                # Send off the email
-                # + ["alvin.yudi@blackwellglobal.com"]
-                # + [Risk_EU_EMAIL] + ["risk@blackwellglobal.com"] + [Risk_EU_EMAIL]
-                #+ ["risk@blackwellglobal.bs"] # As requested by Uchenna
-                # EMAIL_LIST_ALERT
-                email_list = ["aaron.lim@blackwellglobal.com"] if testing == True else EMAIL_LIST_ALERT + [Risk_EU_EMAIL, "risk@blackwellglobal.bs"]
-                async_send_email(email_list  ,[], "UK Hedging Mismatch. ({})".format(", ".join(mismatch_list) ),
-                       Email_Header + email_html + Email_Footer, [])
-
+                email_html += """<br><b><u>Net Volume Mismatch</u></b><br>
+                The net volume of all the accounts is not zero.<br>
+                Accounts 80001 should hedge off Account 80002.<br>
+                Account 80003 should tally off with Account 80004<br>
+                The accounts are not fully hedged.<br>Kindly see details below.<br>"""
+                email_html += Array_To_HTML_Table([c.replace("_", " ") for c in To_Send_alert.columns], To_Send_alert.values, [])
+                email_html += "Ideally, the position should net off completely, resulting in 0 net volume.<br><br>"
 
 
                 # Need to update SQL so that Alert dosn't send again.
-
                 mismatch_list = ["'{}'".format(m) for m in mismatch_list] # Add quotations
-                sql_update_statement = "UPDATE aaron.aif_position_mismatch_records SET Alert_Raised = NOW() WHERE Basesymbol in ({}) AND Flag = 'Y' ".format(", ".join(mismatch_list))
+                email_sent_Netvol_sql_update_statement = """UPDATE aaron.aif_position_mismatch_records SET Alert_Raised = NOW() 
+                                       WHERE Basesymbol in ({}) AND Flag = 'Y' AND Alert_Type = "Net_Volume_Mismatch" """.format(", ".join(mismatch_list))
 
-                if testing == False:
-                    SQL_insert_MT5_statement(sql_update_statement)
+                # if testing == False:
 
-
-                    #print(sql_update_statement)
-                    # print(To_Send_alert)
+                #print(sql_update_statement)
+                # print(To_Send_alert)
 
 
 
@@ -906,43 +900,113 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
         if testing == True:
             # Artificially create a scope LP mismatch
-            mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD"]), "Scope_NetVol"] = 0.15
+            mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD"]), "Scope_NetVol"] = 0.15
+            mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["XAUUSD"]), "Scope_NetVol"] = 0.15
+
+
 
         # Next, we want to create a column that is the net of them both,
         # 80004 should have the same volume as Scope.
         mt5_Acc_trades_df["80004-scope"] = mt5_Acc_trades_df["80004_NetVol"] - mt5_Acc_trades_df["Scope_NetVol"]
         scope_mismatch_df = mt5_Acc_trades_df[mt5_Acc_trades_df["80004-scope"] != 0]
-        print(mt5_Acc_trades_df)
 
-        if len(scope_mismatch_df) > 0:  # If there are scope mismatches.
+        # print(scope_mismatch_df)
+
+        # The symbols that has a mismatch for the first time.
+        scope_mismatched_symbol_first = scope_mismatch_df[scope_mismatch_df["Past Scope Discrepancy Time"].isna()]
+
+        # print("First time Scope mismatch")
+        # print(scope_mismatched_symbol_first)
+
+        if len(scope_mismatched_symbol_first) > 0:  # If there are NEW scope mismatches.
 
             # For new mismatches, we want to add it into our database.
 
-            scope_mismatch_df["BaseSymbol"] = scope_mismatch_df["BaseSymbol"].apply(lambda x: "'{}'".format(x))    # To add in the ""
-            scope_mismatch_df["TotalNetVol"] = scope_mismatch_df["TotalNetVol"].apply(lambda x: "{:.2f}".format(x))
+            scope_mismatched_symbol_first["BaseSymbol"] = scope_mismatched_symbol_first["BaseSymbol"].apply(lambda x: "'{}'".format(x))    # To add in the ""
+            scope_mismatched_symbol_first["80004-scope"] = scope_mismatched_symbol_first["80004-scope"].apply(lambda x: "{:.2f}".format(x))
 
             # Preparing the SQL Values for insert
-            value_list = mismatched_symbol_first[["BaseSymbol", "TotalNetVol"]].to_records(index=False)
-            value_list = [list(c) + ["NOW()", "'Y'", "'Net_Volume_Mismatch'"] for c in
-                          value_list]  ## Adding Default values.
+
+            value_list = scope_mismatched_symbol_first[["BaseSymbol", "80004-scope"]].to_records(index=False)
+            value_list = [list(c) + ["NOW()", "'Y'", "'Scope_Mismatch'"] for c in value_list]  ## Adding Default values.
             value_list = ["({})".format(" , ".join(c)) for c in value_list]
 
             SQL_insert = """INSERT INTO aaron.aif_position_mismatch_records (Basesymbol, Discrepancy, Datetime, Flag, Alert_Type) 
                         VALUES {}""".format(", ".join(value_list))
+
             # print(SQL_insert)
             SQL_insert_MT5_statement(SQL_insert)
 
 
 
-            # Want to inform of mismatch.
-
-            # Want to clear the old mismatch, if it's been cleared.
+            # Want to inform of mismatch if it's past the threshold timings.
 
 
+        # Those symbols that has mismatched before in the past.
+        scope_mismatched_symbol_past = scope_mismatch_df[~scope_mismatch_df["Past Scope Discrepancy Time"].isna()]
+
+        # Want those which alert we have not sent.
+        # if "Alert_Raised" != "1970-01-01 00:00:00"
+        scope_mismatched_symbol_past = scope_mismatched_symbol_past[scope_mismatched_symbol_past["Scope Alert Raised"] == "1970-01-01 00:00:00"]
+
+        scope_mismatched_symbol_past['Past Scope Discrepancy Time'] = pd.to_datetime(scope_mismatched_symbol_past['Past Scope Discrepancy Time'],
+            format='%Y-%m-%d %H:%M:%S')
+
+        scope_mismatched_symbol_past["Time_diff"] = pd.datetime.now() - scope_mismatched_symbol_past["Past Scope Discrepancy Time"]
+        scope_mismatched_symbol_past["Time_diff_m"] = scope_mismatched_symbol_past["Time_diff"].dt.total_seconds() / 60  # Calculate the total mins
+
+
+        To_Send_alert = scope_mismatched_symbol_past[scope_mismatched_symbol_past["Time_diff_m"] >= alert_mismatch_timing]
+
+        if len(To_Send_alert) > 0:
+            Send_Email_Alert_Flag = True
+
+
+            # We only want the columns that are in the df
+            needed_columns = [c for c in ['BaseSymbol', '80004_NetVol', 'Scope_NetVol', 'Past Scope Discrepancy Time', '80004-scope'] if c in To_Send_alert]
+
+            # print("We need to raise an alert for scope mismatch: {} ".format(value_list))
+            email_html += "<b><u>80004 - Scope Mismatch</u></b><br>Scope(LP) Should directly reflect the position in Account 80004.<br>However, there's a mismatch.<br>Kindly see details below.<br>"
+            email_html += Array_To_HTML_Table([c.replace("_", " ") for c in needed_columns], To_Send_alert[needed_columns].values, [])
+
+            # Need to update SQL that the alert has been sent, so we don't need to send it again.
+            # Preparing the data to be sent.
+            mismatch_list = To_Send_alert["BaseSymbol"].to_list()
+            mismatch_list = ["'{}'".format(c) for c in mismatch_list]    # To make it SQL friendly.
+
+            email_sent_Scope_sql_update_statement = """UPDATE aaron.aif_position_mismatch_records SET Alert_Raised = NOW() 
+                WHERE Basesymbol in ({}) AND Flag = 'Y' AND Alert_Type = "Scope_Mismatch" """.format(
+                ", ".join(mismatch_list))
 
 
 
-        pass
+
+
+        # print(mt5_Acc_trades_df)
+
+
+        # Want to clear the old mismatch, if it's been cleared.
+        if 'Past Scope Discrepancy Time' in mt5_Acc_trades_df and \
+                '80004-scope' in mt5_Acc_trades_df:
+
+            print("Checking for Scope Finished Mismatch")
+
+            cleared_scope_mismatch_df = mt5_Acc_trades_df[
+                (~mt5_Acc_trades_df['Past Scope Discrepancy Time'].isna()) & (mt5_Acc_trades_df['80004-scope'] == 0)]
+
+
+            if len(cleared_scope_mismatch_df) != 0:  # We want to clear the mismatch in the mismatch table on MT5 SQL
+                symbols_to_clear = cleared_scope_mismatch_df["BaseSymbol"].tolist()
+                symbols_to_clear = ['"{c}"'.format(c=c) for c in symbols_to_clear]
+                print("\nWant to clear out the AIF Scope A/B mismatches. \n")
+                # Want to set the Flag to N, meaning that the mismatch is no longer active.
+                clear_sql_statement = """UPDATE aaron.aif_position_mismatch_records SET Flag = "N" WHERE Basesymbol in ({}) 
+                                        AND Flag="Y" and Alert_Type="Scope_Mismatch" """.format(" , ".join(symbols_to_clear))
+                print(clear_sql_statement)
+                SQL_insert_MT5_statement(clear_sql_statement)
+
+
+
 
 
 
@@ -1003,6 +1067,27 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     #
     #
 
+    if Send_Email_Alert_Flag == True:
+        email_list = ["aaron.lim@blackwellglobal.com"] if testing == True else EMAIL_LIST_ALERT + [Risk_EU_EMAIL,
+                                                                                                   "risk@blackwellglobal.bs"]
+
+        email_html += """Link: <a href='{}'>UK AIF Hedge Page</a><br><br>""".format(url_for('mt5_monitoring.AIF_AB_Hedge',
+                                                    _external=True).replace("localhost", EXTERNAL_IP))
+
+        email_html += "This Email was generated at: SGT {}.<br><br>Thanks,<br>Risk SG".format( \
+            datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+
+
+        async_send_email(email_list, [], email_tile, Email_Header + email_html + Email_Footer, [])
+
+        # Will update onto SQL that we've sent the email.
+        if email_sent_Scope_sql_update_statement != "":
+            SQL_insert_MT5_statement(email_sent_Scope_sql_update_statement)
+        if email_sent_Netvol_sql_update_statement != "":
+            SQL_insert_MT5_statement(email_sent_Netvol_sql_update_statement)
+
+
+
     # -----------------------------Pretty Print. -------------------------------------------------------------------
 
     # print(mt5_Acc_trades_df)
@@ -1059,9 +1144,9 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     async_update_Runtime(app=current_app._get_current_object(),
                          Tool='AIF Hedge A/B Match')
     # print("4")
-    print(table_1_concat_return_data)
-    print(Acc_trades_return_data)
-    print(lp_details_return_data)
+    # print(table_1_concat_return_data)
+    # print(Acc_trades_return_data)
+    # print(lp_details_return_data)
 
     return json.dumps({"H1": table_1_concat_return_data,
                        "H2": Acc_trades_return_data,
