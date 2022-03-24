@@ -700,19 +700,23 @@ def AIF_AB_Hedge():
 
 
 
-@mt5_monitoring.route('/AIF_AB_Hedge_ajax', methods=['GET', 'POST'])
+@mt5_monitoring.route('/AIF_AB_Hedge_ajax2', methods=['GET', 'POST'])
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing", "Risk_UK"])
 def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post which trades to delete on MT5
 
 
     testing = False
 
+    if testing:
+        pd.set_option("display.max_rows", 101)
+        pd.set_option("display.max_columns", 101)
+
     # After how many mins will a mismatch be sent
     alert_mismatch_timing = 10 if testing == False else 5
 
 
     # All the SQL that we need to call. CAll them first.
-    mt5_Acc_trades_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.aif_netvolume()", unsync_app=current_app._get_current_object())
+    mt5_Acc_trades_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.aif_netvolume_2()", unsync_app=current_app._get_current_object())
     mt5_Acc_details_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.aif_account_info()", unsync_app=current_app._get_current_object())
 
     mt5_LP_details_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.UK_LP_Details()", unsync_app=current_app._get_current_object())
@@ -727,7 +731,12 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
 
     mt5_Acc_trades = mt5_Acc_trades_unsync.result()
+    # print(mt5_Acc_trades)
+
     mt5_Acc_trades_df = color_profit_for_df(mt5_Acc_trades, default=[{"Run Results": "No Open Trades"}], words_to_find=["profit"], return_df=True)
+
+    print(mt5_Acc_trades_df)
+
     columns = mt5_Acc_trades_df.columns
 
     # print(mt5_Acc_trades_df)
@@ -737,13 +746,15 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
     #print(list(columns))
 
-    # ['BaseSymbol', '80001_NetVol', '80002_NetVol', '80003_NetVol', '80004_NetVol', 'TotalNetVol', 'Past Discrepancy', 'Past Discrepancy Time']
+    # ['BaseSymbol', '80001_NetVol', '80002_NetVol', '80003_NetVol', '80004_NetVol', 'TotalNetVol', 'Past Netvol Discrepancy', 'Past Netvol Discrepancy Time']
 
     # mt5_Acc_trades_df
 
     if testing == True:
         #Artificially create a mismatch
-        mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin([".DE30", ".JP225"]), "Past Discrepancy"] = 0.15
+        #pass
+
+        mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin([".DE30", ".JP225"]), "Past Netvol Discrepancy"] = 0.15
         mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD", "USDJPY"]), "TotalNetVol"] = 1
         mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["AUDUSD"]), "TotalNetVol"] = 0.35
 
@@ -752,10 +763,10 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     # Raise an alert if there's a mismatch.
     if "TotalNetVol" in mt5_Acc_trades_df:
         mismatched_symbol = mt5_Acc_trades_df[mt5_Acc_trades_df["TotalNetVol"] != 0]
-        # print(mismatched_symbol["Past Discrepancy Time"])
+        # print(mismatched_symbol["Past Netvol Discrepancy Time"])
 
         # The symbols that has a mismatch for the first time.
-        mismatched_symbol_first = mismatched_symbol[mismatched_symbol["Past Discrepancy Time"].isna()]
+        mismatched_symbol_first = mismatched_symbol[mismatched_symbol["Past Netvol Discrepancy Time"].isna()]
 
         if len(mismatched_symbol_first) > 0 : # Want to save to SQL the time.
             # To add in the ""
@@ -764,10 +775,11 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
             # Preparing the SQL Values for insert
             value_list = mismatched_symbol_first[["BaseSymbol", "TotalNetVol"]].to_records(index=False)
-            value_list = [list(c) + ["NOW()", "'Y'"] for c in value_list] ## Adding Default values.
+            value_list = [list(c) + ["NOW()", "'Y'", "'Net_Volume_Mismatch'"] for c in value_list] ## Adding Default values.
             value_list = ["({})".format(" , ".join(c)) for c in value_list]
 
-            SQL_insert = """INSERT INTO aaron.aif_position_mismatch_records (Basesymbol, Discrepancy, Datetime, Flag) VALUES {}""".format(", ".join(value_list))
+            SQL_insert = """INSERT INTO aaron.aif_position_mismatch_records (Basesymbol, Discrepancy, Datetime, Flag, Alert_Type) 
+                        VALUES {}""".format(", ".join(value_list))
             #print(SQL_insert)
             SQL_insert_MT5_statement(SQL_insert)
 
@@ -775,7 +787,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
         # print("\n\n")
 
         # Those symbols that has mismatched before in the past.
-        mismatched_symbol_past = mismatched_symbol[~mismatched_symbol["Past Discrepancy Time"].isna()]
+        mismatched_symbol_past = mismatched_symbol[~mismatched_symbol["Past Netvol Discrepancy Time"].isna()]
 
         # Want those which alert we have not sent.
         # if "Alert_Raised" != "1970-01-01 00:00:00"
@@ -785,10 +797,10 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
 
         if len(mismatched_symbol_past) > 0:  # Want to check the time, if matches condition, send the alert
-            mismatched_symbol_past['Past Discrepancy Time'] = pd.to_datetime(mismatched_symbol_past['Past Discrepancy Time'],
+            mismatched_symbol_past['Past Netvol Discrepancy Time'] = pd.to_datetime(mismatched_symbol_past['Past Netvol Discrepancy Time'],
                                                                         format='%Y-%m-%d %H:%M:%S')
 
-            mismatched_symbol_past["Time_diff"] = pd.datetime.now() - mismatched_symbol_past["Past Discrepancy Time"]
+            mismatched_symbol_past["Time_diff"] = pd.datetime.now() - mismatched_symbol_past["Past Netvol Discrepancy Time"]
             mismatched_symbol_past["Time_diff_m"] = mismatched_symbol_past["Time_diff"].dt.total_seconds() / 60 # Calculate the total mins
 
             print(mismatched_symbol_past)
@@ -808,7 +820,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
                 # Crafting message for telegram.
                 #print("BaseSymbol" + net_vol_columns)
                 To_Send_alert["tele_Message"] = To_Send_alert.apply(lambda x: "{:^6} | {} ".format( \
-                                                            x["BaseSymbol"], "| ".join(["{:^7.2f}".format(x[c]) for c in net_vol_columns])
+                                  x["BaseSymbol"], "| ".join(["{:^7.2f}".format(x[c]) for c in net_vol_columns])
                 ) , axis=1)
 
                 tele_table_header = ["Symbol"] + [c.replace("NetVol", "") for c in net_vol_columns]
@@ -843,14 +855,15 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
                 email_html += "This Email was generated at: SGT {}.<br><br>Thanks,<br>Aaron".format(\
                     datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-                if testing == False:
-                    # Send off the email
-                    # + ["alvin.yudi@blackwellglobal.com"]
-                    # + [Risk_EU_EMAIL] + ["risk@blackwellglobal.com"] + [Risk_EU_EMAIL]
-                    #+ ["risk@blackwellglobal.bs"] # As requested by Uchenna
-                    # EMAIL_LIST_ALERT
-                    async_send_email(EMAIL_LIST_ALERT + [Risk_EU_EMAIL, "risk@blackwellglobal.bs"]  ,[], "UK Hedging Mismatch. ({})".format(", ".join(mismatch_list) ),
-                           Email_Header + email_html + Email_Footer, [])
+                #if testing == False:
+                # Send off the email
+                # + ["alvin.yudi@blackwellglobal.com"]
+                # + [Risk_EU_EMAIL] + ["risk@blackwellglobal.com"] + [Risk_EU_EMAIL]
+                #+ ["risk@blackwellglobal.bs"] # As requested by Uchenna
+                # EMAIL_LIST_ALERT
+                email_list = ["aaron.lim@blackwellglobal.com"] if testing == True else EMAIL_LIST_ALERT + [Risk_EU_EMAIL, "risk@blackwellglobal.bs"]
+                async_send_email(email_list  ,[], "UK Hedging Mismatch. ({})".format(", ".join(mismatch_list) ),
+                       Email_Header + email_html + Email_Footer, [])
 
 
 
@@ -868,15 +881,16 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
 
 
-    # We want to clear the past mismatches.
-    if 'Past Discrepancy' in mt5_Acc_trades_df and 'TotalNetVol' in mt5_Acc_trades_df:
-        cleared_mismatch_df = mt5_Acc_trades_df[(mt5_Acc_trades_df['Past Discrepancy'] != 0) & (mt5_Acc_trades_df['TotalNetVol'] == 0) ]
+    # We want to clear the past netvolume mismatches.
+    if 'Past Netvol Discrepancy' in mt5_Acc_trades_df and 'TotalNetVol' in mt5_Acc_trades_df:
+        cleared_mismatch_df = mt5_Acc_trades_df[(mt5_Acc_trades_df['Past Netvol Discrepancy'] != 0) & (mt5_Acc_trades_df['TotalNetVol'] == 0) ]
         if len(cleared_mismatch_df) != 0: # We want to clear the mismatch in the mismatch table on MT5 SQL
             symbols_to_clear = cleared_mismatch_df["BaseSymbol"].tolist()
             symbols_to_clear = ['"{c}"'.format(c=c) for c in symbols_to_clear]
             print("\nWant to clear out the AIF A/B mismatches. \n")
             # Want to set the Flag to N, meaning that the mismatch is no longer active.
-            clear_sql_statement = """UPDATE aaron.aif_position_mismatch_records SET Flag = "N" WHERE Basesymbol in ({}) AND Flag="Y" """.format(" , ".join(symbols_to_clear))
+            clear_sql_statement = """UPDATE aaron.aif_position_mismatch_records SET Flag = "N" WHERE Basesymbol in ({}) 
+                                    AND Flag="Y" and Alert_Type="Net_Volume_Mismatch" """.format(" , ".join(symbols_to_clear))
 
             if testing == False:
                 SQL_insert_MT5_statement(clear_sql_statement)
@@ -885,6 +899,51 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
     # mt5_LP_details = mt5_LP_details_unsync.result()
     # print(mt5_LP_details)
+
+    # we want to check if there's any 80004 and Scope Mismatch.
+    # First, see if the columns are inside.
+    if all([c in mt5_Acc_trades_df for c in ["80004_NetVol", "Scope_NetVol"]]):
+
+        if testing == True:
+            # Artificially create a scope LP mismatch
+            mt5_Acc_trades_df.loc[mt5_Acc_trades_df.BaseSymbol.isin(["EURUSD", "XAUUSD"]), "Scope_NetVol"] = 0.15
+
+        # Next, we want to create a column that is the net of them both,
+        # 80004 should have the same volume as Scope.
+        mt5_Acc_trades_df["80004-scope"] = mt5_Acc_trades_df["80004_NetVol"] - mt5_Acc_trades_df["Scope_NetVol"]
+        scope_mismatch_df = mt5_Acc_trades_df[mt5_Acc_trades_df["80004-scope"] != 0]
+        print(mt5_Acc_trades_df)
+
+        if len(scope_mismatch_df) > 0:  # If there are scope mismatches.
+
+            # For new mismatches, we want to add it into our database.
+
+            scope_mismatch_df["BaseSymbol"] = scope_mismatch_df["BaseSymbol"].apply(lambda x: "'{}'".format(x))    # To add in the ""
+            scope_mismatch_df["TotalNetVol"] = scope_mismatch_df["TotalNetVol"].apply(lambda x: "{:.2f}".format(x))
+
+            # Preparing the SQL Values for insert
+            value_list = mismatched_symbol_first[["BaseSymbol", "TotalNetVol"]].to_records(index=False)
+            value_list = [list(c) + ["NOW()", "'Y'", "'Net_Volume_Mismatch'"] for c in
+                          value_list]  ## Adding Default values.
+            value_list = ["({})".format(" , ".join(c)) for c in value_list]
+
+            SQL_insert = """INSERT INTO aaron.aif_position_mismatch_records (Basesymbol, Discrepancy, Datetime, Flag, Alert_Type) 
+                        VALUES {}""".format(", ".join(value_list))
+            # print(SQL_insert)
+            SQL_insert_MT5_statement(SQL_insert)
+
+
+
+            # Want to inform of mismatch.
+
+            # Want to clear the old mismatch, if it's been cleared.
+
+
+
+
+
+        pass
+
 
 
     # Get the LP details.
@@ -946,13 +1005,28 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
     # -----------------------------Pretty Print. -------------------------------------------------------------------
 
-    # Fill na since if there isn't Past discrepancy time, it would be null
-    if "Past Discrepancy Time" in mt5_Acc_trades_df:
-        mt5_Acc_trades_df["Past Discrepancy Time"] = mt5_Acc_trades_df["Past Discrepancy Time"].fillna(value="-")
+    # print(mt5_Acc_trades_df)
+    # print(mt5_Acc_trades_df.columns)
+
+    # Fill na since if there isn't Past Netvol Discrepancy Time, it would be null
+    if "Past Netvol Discrepancy Time" in mt5_Acc_trades_df:
+        mt5_Acc_trades_df["Past Netvol Discrepancy Time"] = mt5_Acc_trades_df["Past Netvol Discrepancy Time"].fillna(value="-")
+
+    # Fill na since if there isn't Past Scope Discrepancy Time, it would be null
+    if "Past Scope Discrepancy Time" in mt5_Acc_trades_df:
+        mt5_Acc_trades_df["Past Scope Discrepancy Time"] = mt5_Acc_trades_df["Past Scope Discrepancy Time"].fillna(value="-")
+
+
 
     # Don't need to show this column.
     if "Alert_Raised" in mt5_Acc_trades_df:
         mt5_Acc_trades_df.drop("Alert_Raised", axis=1, inplace=True)
+
+
+    # Don't need to show this column.
+    if "Scope Alert Raised" in mt5_Acc_trades_df:
+        mt5_Acc_trades_df.drop("Scope Alert Raised", axis=1, inplace=True)
+
 
     # Want to tabulate all the NetVol.
     # First, get the sum of the abs volume.
@@ -967,7 +1041,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
         mt5_Acc_trades_df = mt5_Acc_trades_df[mt5_Acc_trades_df["BaseSymbol"].isin(["EURUSD", "USDCHF", "EURCAD"])]
 
     # Want to sort to show the mismatches.
-    mt5_Acc_trades_df.sort_values(["abs_volume", "TotalNetVol", "Past Discrepancy", "BaseSymbol"],  ascending=[False, False, False, False], inplace=True)
+    mt5_Acc_trades_df.sort_values(["abs_volume", "TotalNetVol", "Past Netvol Discrepancy", "BaseSymbol"],  ascending=[False, False, False, False], inplace=True)
 
     # Don't need to show this column.
     if "abs_volume" in mt5_Acc_trades_df:
@@ -984,17 +1058,13 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     # Want to update the runtime table to ensure that tool is running.
     async_update_Runtime(app=current_app._get_current_object(),
                          Tool='AIF Hedge A/B Match')
-    print("4")
+    # print("4")
     print(table_1_concat_return_data)
-    # print(Acc_trades_return_data)
-    # print(lp_details_return_data)
+    print(Acc_trades_return_data)
+    print(lp_details_return_data)
 
-    # return json.dumps({"H1": table_1_concat_return_data,
-    #                    "H2": Acc_trades_return_data,
-    #                    "H3": lp_details_return_data,
-    #                    })
+    return json.dumps({"H1": table_1_concat_return_data,
+                       "H2": Acc_trades_return_data,
+                       "H3": lp_details_return_data,
+                       })
 
-    return json.dumps({ "H1": table_1_concat_return_data,
-                            "H2": Acc_trades_return_data,
-                            "H3": lp_details_return_data,
-                            })
