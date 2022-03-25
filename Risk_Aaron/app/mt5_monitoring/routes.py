@@ -707,12 +707,15 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
     testing = False
     # Crafting the Email.
-    email_tile = "UK AIF A/B Hedging Mismatch"
-    email_html = "Hi,<br><br>There's a mismatch for the UK copy trades (UK AIF Hedging A/B).<br>"
+    Send_Email_Alert_Flag = False
+    email_tile = "UK AIF A/B Hedging Alert"
+    email_html = "Hi,<br><br>There's an alert for your action on 'AIF UK copy trades Hedging A/B'.<br><br>"
 
     ## SQL update statement, to update after email has been sent
     email_sent_Netvol_sql_update_statement = ""
     email_sent_Scope_sql_update_statement = ""
+
+
 
     if testing:
         pd.set_option("display.max_rows", 101)
@@ -721,13 +724,13 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     # After how many mins will a mismatch be sent
     alert_mismatch_timing = 10 if testing == False else 5
 
-    Send_Email_Alert_Flag = False
+
 
     # All the SQL that we need to call. CAll them first.
     mt5_Acc_trades_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.aif_netvolume_2()", unsync_app=current_app._get_current_object())
     mt5_Acc_details_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.aif_account_info()", unsync_app=current_app._get_current_object())
 
-    mt5_LP_details_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.UK_LP_Details()", unsync_app=current_app._get_current_object())
+    mt5_LP_details_unsync = mt5_Query_SQL_mt5_db_engine_query(SQL_Query="call aaron.UK_LP_Details_2()", unsync_app=current_app._get_current_object())
 
     mt5_Acc_details = mt5_Acc_details_unsync.result()
     mt5_Acc_details_df = color_profit_for_df(mt5_Acc_details, default=[{"Run Results": "No Open Trades"}], words_to_find=["pnl"], return_df=True)
@@ -989,7 +992,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
         if 'Past Scope Discrepancy Time' in mt5_Acc_trades_df and \
                 '80004-scope' in mt5_Acc_trades_df:
 
-            print("Checking for Scope Finished Mismatch")
+            # print("Checking for Scope Finished Mismatch")
 
             cleared_scope_mismatch_df = mt5_Acc_trades_df[
                 (~mt5_Acc_trades_df['Past Scope Discrepancy Time'].isna()) & (mt5_Acc_trades_df['80004-scope'] == 0)]
@@ -1002,7 +1005,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
                 # Want to set the Flag to N, meaning that the mismatch is no longer active.
                 clear_sql_statement = """UPDATE aaron.aif_position_mismatch_records SET Flag = "N" WHERE Basesymbol in ({}) 
                                         AND Flag="Y" and Alert_Type="Scope_Mismatch" """.format(" , ".join(symbols_to_clear))
-                print(clear_sql_statement)
+                # print(clear_sql_statement)
                 SQL_insert_MT5_statement(clear_sql_statement)
 
 
@@ -1016,15 +1019,98 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     # print(df_mt5_LP_details)
 
     # To ensure that it's printed to
-    to_round_columns = ['Deposit', 'Credit', 'PnL', 'Equity', 'Total_margin', 'Free_margin', 'EQUITY', 'Margin/Equity (%)',  'available']
+    to_round_columns = ['Deposit', 'Credit', 'PnL', 'Equity', 'Total_margin', 'Free_margin', 'EQUITY', 'Equity/Margin (%)',  'available']
     for c in to_round_columns:
         if c in df_mt5_LP_details:
             df_mt5_LP_details[c] = df_mt5_LP_details[c].apply(lambda x: round(float(x), 2) if isfloat(x) else None )
 
+
+
+    # We want to check if the margin levels are near the MC/SO levels.
+    # USing the Global Variable LP_MARGIN_ALERT_LEVEL ( which is set at 20 unless it's been changed)
+    # If margin is 0, there would be divide by 0 error. As such, we force it to be at least 2 times of the alert level above MC
+    # Note, this is the MT4 way of calculation. Equity/Margin
+    # We do a minus as we want to check if we are within limits,
+    df_mt5_LP_details["Calculated E/M - Alert Level"] = df_mt5_LP_details.apply(lambda x: (100 * (float(x["EQUITY"]) / float(x["Total_margin"])) - LP_MARGIN_ALERT_LEVEL) \
+                   if x["Total_margin"] != 0 else x["margin_call (E/M)"] + 2*LP_MARGIN_ALERT_LEVEL, axis=1)
+
+    # Check if we need to clear any alerts
+
+
+    # Check if we need to raise any alerts.
+    df_mt5_LP_alert = df_mt5_LP_details[((df_mt5_LP_details["Calculated E/M - Alert Level"] <= df_mt5_LP_details["margin_call (E/M)"]) & (df_mt5_LP_details["MC_ALERT_TIME"] == "-") )| \
+                                        ((df_mt5_LP_details["Calculated E/M - Alert Level"] <= df_mt5_LP_details["stop_out (E/M)"])  & (df_mt5_LP_details["SO_ALERT_TIME"] == "-"))]
+
+    print(df_mt5_LP_details)
+    # Check if we need to raise any alerts.
+    df_mt5_LP_SO_alert = df_mt5_LP_details[(df_mt5_LP_details["Calculated E/M - Alert Level"] <= df_mt5_LP_details["stop_out (E/M)"])  & (df_mt5_LP_details["SO_ALERT_TIME"] == "-")]
+    # print("len of df_mt5_LP_SO_alert: {}".format(len(df_mt5_LP_SO_alert)))
+    # print(df_mt5_LP_SO_alert.columns)
+
+    if len(df_mt5_LP_SO_alert) > 0: # If there are alerts to be sent.
+        SO_LP_name = df_mt5_LP_SO_alert["LP"].tolist()
+
+        # ['LP', 'Deposit', 'Credit', 'PnL', 'Total_margin', 'Free_margin',
+        #  'EQUITY', 'Equity/Margin (%)', 'margin_call (E/M)', 'stop_out (E/M)',
+        #  'STOPOUT AMOUNT', 'available', 'Updated_time', 'MC_ALERT_TIME',
+        #  'SO_ALERT_TIME', 'Calculated E/M - Alert Level']
+        cols_needed = ['LP', 'Deposit', 'Credit', 'EQUITY', 'Total_margin', 'Equity/Margin (%)', 'margin_call (E/M)', 'stop_out (E/M)', 'Updated_time']
+        so_email_data = df_mt5_LP_SO_alert[[c for c in cols_needed if c in df_mt5_LP_SO_alert]]
+        so_email_data["LP"] = so_email_data["LP"].apply(lambda x: x.replace("_", " ")) # To print out nicely.
+        for c in [ 'Deposit', 'Credit', 'EQUITY', 'Total_margin']: # Pretty Print. 
+            if c in so_email_data:
+                so_email_data[c] = "$ {:,.2f}".format(float(so_email_data[c]))
+
+
+
+        Send_Email_Alert_Flag = True
+
+
+        email_html += "<b><u>LP SO Alert</u></b><br>One or more of our LP is close to SO.<br>(The limit is set to {}% before SO levels)<br>".format(LP_MARGIN_ALERT_LEVEL)
+        email_html += Array_To_HTML_Table([c.upper() for c in cols_needed], df_mt5_LP_SO_alert[cols_needed].values, [])
+
+
+        LP_SO_Sql_Data = [ ", ".join(["'{}'".format(c), """'Pre_SO'""", "NOW()", "'Y'"]) for c in  SO_LP_name]
+        LP_SO_Sql_Data += [", ".join(["'{}'".format(c), """'Pre_MC'""", "NOW()", "'Y'"]) for c in SO_LP_name]
+        LP_SO_Sql_Data = ["({})".format(c) for c in LP_SO_Sql_Data]
+
+        Add_SO_Alert_SQL = """INSERT INTO aaron.`lp_alert_log` (`LP`, `Alert_Type`, `Alert_Time`, `Alert_Flag`) VALUES {}  """.format(",".join(LP_SO_Sql_Data))
+
+        print(Add_SO_Alert_SQL)
+        SQL_insert_MT5_statement(Add_SO_Alert_SQL)
+
+
+
+
+    # Want to clear Pre MC alert if it's been cleared.
+    Pre_MC_Alert_Clear_LP = df_mt5_LP_details[(df_mt5_LP_details["Calculated E/M - Alert Level"] > df_mt5_LP_details["margin_call (E/M)"]) & \
+                                              (df_mt5_LP_details["MC_ALERT_TIME"] != "-") ]["LP"].tolist()
+    if len(Pre_MC_Alert_Clear_LP) > 0:
+        Pre_MC_Alert_Clear_LP = ["'{}'".format(c) for c in Pre_MC_Alert_Clear_LP]   # To add the ""
+
+        clear_MC_Alert_SQL = """UPDATE aaron.`lp_alert_log` SET `Alert_Flag` = "N" WHERE LP IN ({}) AND Alert_Type = "Pre_MC" """.format(",".join(Pre_MC_Alert_Clear_LP))
+        print(clear_MC_Alert_SQL)
+        SQL_insert_MT5_statement(clear_MC_Alert_SQL)
+
+    # Want to clear Pre SO alert if it's been cleared.
+    Pre_SO_Alert_Clear_LP = df_mt5_LP_details[(df_mt5_LP_details["Calculated E/M - Alert Level"] > df_mt5_LP_details["stop_out (E/M)"]) & \
+                      (df_mt5_LP_details["SO_ALERT_TIME"] != "-")]["LP"].tolist()
+    if len(Pre_SO_Alert_Clear_LP) > 0:
+        Pre_SO_Alert_Clear_LP = ["'{}'".format(c) for c in Pre_SO_Alert_Clear_LP]  # To add the ""
+
+        clear_SO_Alert_SQL = """UPDATE aaron.`lp_alert_log` SET Alert_Flag = "N" WHERE LP IN ({}) AND Alert_Type = "Pre_SO" """.format(
+            ",".join(Pre_SO_Alert_Clear_LP))
+        SQL_insert_MT5_statement(clear_SO_Alert_SQL)
+
+
+    # print(clear_SO_Alert_SQL)
+    # print("df_mt5_LP_alert")
+    # print(df_mt5_LP_alert)
+    #
+
+
     if "LP" in df_mt5_LP_details:   # Don't want to see the underscore. Replace it with a space.
         df_mt5_LP_details["LP"] = df_mt5_LP_details["LP"].apply(lambda x: str(x).replace("_", " "))
-
-
 
     lp_details_data  = df_mt5_LP_details.to_dict("records") # Original data.
     #lp_details_return_data = lp_details_data
@@ -1042,18 +1128,18 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
         loop_data["BALANCE"]["CREDIT"] = "$ {:,.2f}".format(float(d["Credit"])) if "Credit" in d else None
         loop_data["BALANCE"]["PNL"] = d["PnL"] if "PnL" in d else None
-        loop_data["BALANCE"]["EQUITY"] = "$ {:,.2f}".format(float(d["EQUITY"]))  if "Equity" in d else None
+        loop_data["BALANCE"]["EQUITY"] = "$ {:,.2f}".format(float(d["EQUITY"]))  if "EQUITY" in d else None
 
         loop_data["MARGIN"] = dict()
-        loop_data["MARGIN"]["TOTAL MARGIN"] = d["Total_margin"] if "Total_margin" in d else None
+        loop_data["MARGIN"]["TOTAL MARGIN"] = "$ {:,.2f}".format(float(d["Total_margin"])) if "Total_margin" in d else None
         loop_data["MARGIN"]["FREE MARGIN"] = "$ {:,.2f}".format(float(d["Free_margin"])) if "Free_margin" in d else None
 
-        loop_data["MARGIN/EQUITY (%)"] = d["Margin/Equity (%)"] if "Margin/Equity (%)" in d else None
+        loop_data["Equity/Margin (%)"] = d["Equity/Margin (%)"] if "Equity/Margin (%)" in d else None
 
 
         loop_data["MC/SO/AVAILABLE"] = dict()
-        loop_data["MC/SO/AVAILABLE"]["MARGIN CALL (M/E)"] = d['margin_call (M/E)'] if "margin_call (M/E)" in d else None
-        loop_data["MC/SO/AVAILABLE"]["STOP OUT (M/E)"] = d['stop_out (M/E)']  if "stop_out (M/E)" in d else None
+        loop_data["MC/SO/AVAILABLE"]["MARGIN CALL (E/M)"] = d['margin_call (E/M)'] if "margin_call (E/M)" in d else None
+        loop_data["MC/SO/AVAILABLE"]["STOP OUT (E/M)"] = d['stop_out (E/M)']  if "stop_out (E/M)" in d else None
         loop_data["MC/SO/AVAILABLE"]["STOP OUT AMOUNT (M/E)"] =  "$ {:,.2f}".format(float(d["STOPOUT AMOUNT"])) if "STOPOUT AMOUNT" in d else None
         loop_data["MC/SO/AVAILABLE"]["AVILABLE"] = "-"
 
@@ -1071,7 +1157,8 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
         # email_list = ["aaron.lim@blackwellglobal.com"] if testing == True else EMAIL_LIST_ALERT + [Risk_EU_EMAIL,
         #                                                                                            "risk@blackwellglobal.bs"]
 
-        email_list = ["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com"]
+        # email_list = ["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com"]
+        email_list = ["aaron.lim@blackwellglobal.com"]
 
         email_html += """Link: <a href='{}'>UK AIF Hedge Page</a><br><br>""".format(url_for('mt5_monitoring.AIF_AB_Hedge',
                                                     _external=True).replace("localhost", EXTERNAL_IP))
