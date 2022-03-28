@@ -696,7 +696,7 @@ def AIF_AB_Hedge():
                            ajax_url=url_for('mt5_monitoring.AIF_AB_Hedge_ajax', _external=True),
                            header=header,
                            description=description, no_backgroud_Cover=True,
-                           replace_words=Markup(["mismatch", "so alert:", "alert"]))  # setinterval=60,
+                           replace_words=Markup(["mismatch", "so alert:", "alert", "pre-mc:", "pre-so"]))  # setinterval=60,
 
 
 
@@ -1037,16 +1037,18 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     # Check if we need to clear any alerts
 
 
-    # Check if we need to raise any alerts.
-    df_mt5_LP_alert = df_mt5_LP_details[((df_mt5_LP_details["Calculated E/M - Alert Level"] <= df_mt5_LP_details["margin_call (E/M)"]) & (df_mt5_LP_details["MC_ALERT_TIME"] == "-") )| \
-                                        ((df_mt5_LP_details["Calculated E/M - Alert Level"] <= df_mt5_LP_details["stop_out (E/M)"])  & (df_mt5_LP_details["SO_ALERT_TIME"] == "-"))]
-
-    print(df_mt5_LP_details)
+    # print(df_mt5_LP_details)
     # Check if we need to raise any alerts.
     df_mt5_LP_SO_alert = df_mt5_LP_details[(df_mt5_LP_details["Calculated E/M - Alert Level"] <= df_mt5_LP_details["stop_out (E/M)"])  & (df_mt5_LP_details["SO_ALERT_TIME"] == "-")]
+
+    # Want to know which LP is facing SO.
+    # So that we can exclude the MC text.
+    All_Pre_SO_LP = df_mt5_LP_details[df_mt5_LP_details["Calculated E/M - Alert Level"] <= df_mt5_LP_details["stop_out (E/M)"]]["LP"].tolist()
+
+
     # print("len of df_mt5_LP_SO_alert: {}".format(len(df_mt5_LP_SO_alert)))
     # print(df_mt5_LP_SO_alert.columns)
-
+    SO_LP_name = [] # In case there's nothing.
     if len(df_mt5_LP_SO_alert) > 0: # If there are alerts to be sent.
         SO_LP_name = df_mt5_LP_SO_alert["LP"].tolist()
 
@@ -1057,17 +1059,10 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
         cols_needed = ['LP', 'Deposit', 'Credit', 'EQUITY', 'Total_margin', 'Equity/Margin (%)', 'margin_call (E/M)', 'stop_out (E/M)', 'Updated_time']
         so_email_data = df_mt5_LP_SO_alert[[c for c in cols_needed if c in df_mt5_LP_SO_alert]]
         so_email_data["LP"] = so_email_data["LP"].apply(lambda x: x.replace("_", " ")) # To print out nicely.
-        for c in [ 'Deposit', 'Credit', 'EQUITY', 'Total_margin']: # Pretty Print. 
+        for c in [ 'Deposit', 'Credit', 'EQUITY', 'Total_margin']: # Pretty Print.
             if c in so_email_data:
                 so_email_data[c] = "$ {:,.2f}".format(float(so_email_data[c]))
 
-
-
-        Send_Email_Alert_Flag = True
-
-
-        email_html += "<b><u>LP SO Alert</u></b><br>One or more of our LP is close to SO.<br>(The limit is set to {}% before SO levels)<br>".format(LP_MARGIN_ALERT_LEVEL)
-        email_html += Array_To_HTML_Table([c.upper() for c in cols_needed], df_mt5_LP_SO_alert[cols_needed].values, [])
 
 
         LP_SO_Sql_Data = [ ", ".join(["'{}'".format(c), """'Pre_SO'""", "NOW()", "'Y'"]) for c in  SO_LP_name]
@@ -1076,25 +1071,84 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
         Add_SO_Alert_SQL = """INSERT INTO aaron.`lp_alert_log` (`LP`, `Alert_Type`, `Alert_Time`, `Alert_Flag`) VALUES {}  """.format(",".join(LP_SO_Sql_Data))
 
-        print(Add_SO_Alert_SQL)
+        # print(Add_SO_Alert_SQL)
         SQL_insert_MT5_statement(Add_SO_Alert_SQL)
 
+        # Want to raise the flag to send the email
+        Send_Email_Alert_Flag = True
+        df_mt5_LP_SO_alert["LP"] = df_mt5_LP_SO_alert["LP"].apply(
+            lambda x: x.replace("_", " "))  # Want to print the LP names properly.
+
+        email_html += "<b><u>LP SO Alert</u></b><br>One or more of our LP is close to Stop Out.<br>(The limit is set to {}% before SO levels)<br>".format(LP_MARGIN_ALERT_LEVEL)
+        email_html += Array_To_HTML_Table([c.upper() for c in cols_needed], df_mt5_LP_SO_alert[cols_needed].values, [])
 
 
+
+    df_mt5_LP_MC_alert = df_mt5_LP_details[(df_mt5_LP_details["Calculated E/M - Alert Level"] <= df_mt5_LP_details["margin_call (E/M)"])
+                                           & (df_mt5_LP_details["MC_ALERT_TIME"] == "-")]
+
+    if len(df_mt5_LP_MC_alert) > 0: # If there are alerts to be sent.
+        MC_LP_name = df_mt5_LP_MC_alert["LP"].tolist()
+
+
+        cols_needed = ['LP', 'Deposit', 'Credit', 'EQUITY', 'Total_margin', 'Equity/Margin (%)', 'margin_call (E/M)', 'stop_out (E/M)', 'Updated_time']
+        mc_email_data = df_mt5_LP_MC_alert[[c for c in cols_needed if c in df_mt5_LP_MC_alert]]
+        mc_email_data["LP"] = mc_email_data["LP"].apply(lambda x: x.replace("_", " ")) # To print out nicely.
+        for c in [ 'Deposit', 'Credit', 'EQUITY', 'Total_margin']: # Pretty Print.
+            if c in mc_email_data:
+                mc_email_data[c] = mc_email_data[c].apply(lambda x: "$ {:,.2f}".format(float(x)) if isfloat(x) else x)
+                    # "$ {:,.2f}".format(float(mc_email_data[c]))
+
+        # Don't need to input the LP which has SO in, as the SO would have added the MC as well
+        LP_MC_Sql_Data = [", ".join(["'{}'".format(c), """'Pre_MC'""", "NOW()", "'Y'"]) for c in MC_LP_name if c not in SO_LP_name]
+        LP_MC_Sql_Data = ["({})".format(c) for c in LP_MC_Sql_Data]
+
+        Add_MC_Alert_SQL = """INSERT INTO aaron.`lp_alert_log` (`LP`, `Alert_Type`, `Alert_Time`, `Alert_Flag`) VALUES {}  """.format(",".join(LP_MC_Sql_Data))
+
+        # print(Add_MC_Alert_SQL)
+        SQL_insert_MT5_statement(Add_MC_Alert_SQL)
+
+        Send_Email_Alert_Flag = True
+        df_mt5_LP_MC_alert["LP"] = df_mt5_LP_MC_alert["LP"].apply(lambda x: x.replace("_", " "))    # Want to print the LP names properly.
+        email_html += "<b><u>LP MC Alert</u></b><br>One or more of our LP is close to Margin Call.<br>(The limit is set to {}% before MC levels)<br>".format(LP_MARGIN_ALERT_LEVEL)
+        email_html += Array_To_HTML_Table([c.upper() for c in cols_needed], df_mt5_LP_MC_alert[cols_needed].values, [])
+
+
+    # Want to add in alert into the page.
+
+    # Want to write it to the page itself
+    # This list differs from the bottom, as we want ALL LP that is PRE-SO, not just the FIRST time LP
+    # adding in "pre-so" so that HTML will pick it up and change the cell to red
+    df_mt5_LP_details["Equity/Margin (%)"] = np.where(df_mt5_LP_details["Calculated E/M - Alert Level"] <= df_mt5_LP_details["stop_out (E/M)"], \
+                                  df_mt5_LP_details["Equity/Margin (%)"].apply(lambda x: "Pre-SO Alert: {}pre-so".format(x)),
+                                                      df_mt5_LP_details["Equity/Margin (%)"])
+
+    # Want those that are not in the SO list.
+    # adding in "pre-mc" so that HTML will pick it up and change the cell to red
+    df_mt5_LP_details["Equity/Margin (%)"] = np.where((df_mt5_LP_details["Calculated E/M - Alert Level"] <= df_mt5_LP_details["margin_call (E/M)"]) &
+                                                                                        (~df_mt5_LP_details["LP"].isin(All_Pre_SO_LP)), \
+                                  df_mt5_LP_details["Equity/Margin (%)"].apply(lambda x: "Pre-MC Alert: {}pre-so".format(x)),
+                                                      df_mt5_LP_details["Equity/Margin (%)"])
 
     # Want to clear Pre MC alert if it's been cleared.
     Pre_MC_Alert_Clear_LP = df_mt5_LP_details[(df_mt5_LP_details["Calculated E/M - Alert Level"] > df_mt5_LP_details["margin_call (E/M)"]) & \
                                               (df_mt5_LP_details["MC_ALERT_TIME"] != "-") ]["LP"].tolist()
+
+
     if len(Pre_MC_Alert_Clear_LP) > 0:
+
         Pre_MC_Alert_Clear_LP = ["'{}'".format(c) for c in Pre_MC_Alert_Clear_LP]   # To add the ""
 
         clear_MC_Alert_SQL = """UPDATE aaron.`lp_alert_log` SET `Alert_Flag` = "N" WHERE LP IN ({}) AND Alert_Type = "Pre_MC" """.format(",".join(Pre_MC_Alert_Clear_LP))
-        print(clear_MC_Alert_SQL)
+        # print(clear_MC_Alert_SQL)
         SQL_insert_MT5_statement(clear_MC_Alert_SQL)
 
     # Want to clear Pre SO alert if it's been cleared.
     Pre_SO_Alert_Clear_LP = df_mt5_LP_details[(df_mt5_LP_details["Calculated E/M - Alert Level"] > df_mt5_LP_details["stop_out (E/M)"]) & \
                       (df_mt5_LP_details["SO_ALERT_TIME"] != "-")]["LP"].tolist()
+
+
+
     if len(Pre_SO_Alert_Clear_LP) > 0:
         Pre_SO_Alert_Clear_LP = ["'{}'".format(c) for c in Pre_SO_Alert_Clear_LP]  # To add the ""
 
@@ -1111,6 +1165,11 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
     if "LP" in df_mt5_LP_details:   # Don't want to see the underscore. Replace it with a space.
         df_mt5_LP_details["LP"] = df_mt5_LP_details["LP"].apply(lambda x: str(x).replace("_", " "))
+
+
+
+    # Want to pretty print some stuff.
+    df_mt5_LP_details["PnL"] = df_mt5_LP_details["PnL"].apply(lambda x: profit_red_green(x))
 
     lp_details_data  = df_mt5_LP_details.to_dict("records") # Original data.
     #lp_details_return_data = lp_details_data

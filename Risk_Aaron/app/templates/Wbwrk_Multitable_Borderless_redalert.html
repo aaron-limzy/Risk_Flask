@@ -347,12 +347,14 @@
                 for (var xx in table_Data[x]) {
                     //For each data
                     var string_buffer = "";
-                    string_buffer += table_Data[x][xx];
 
+                    string_buffer += table_Data[x][xx];
+                    // console.log(string_buffer);
 
 
                     var Alert_Word_found = 0;
                     for (var aw in Alert_Words) {	// Loop thru the list of alert words
+                        // console.log(Alert_Words[aw]);
                         // Loop thru the array
                         if (string_buffer.search(Alert_Words[aw]) >= 0) {
                             Alert_Word_found = 1;
@@ -362,10 +364,12 @@
 
                     var Relace_Word_found = 0;
                     for (var rw in Replace_words) {	// Loop thru the list of Replace words
+                        // console.log(rw);
                         // Loop thru the array
-                        if (string_buffer.search(Replace_words[aw]) >= 0) {
+                        if (string_buffer.search(Replace_words[rw]) >= 0) {
                             Relace_Word_found = 1;
-                            string_buffer = table_Data[x][xx].replace(Replace_words[aw], "")
+                            console.log(table_Data[x][xx]);
+                            string_buffer = table_Data[x][xx].replace(Replace_words[rw], "")
                             break;
                         }
                     }
