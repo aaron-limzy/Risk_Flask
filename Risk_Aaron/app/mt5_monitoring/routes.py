@@ -1016,7 +1016,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     # Get the LP details.
     df_mt5_LP_details = pd.DataFrame(mt5_LP_details_unsync.result())
 
-    print(df_mt5_LP_details)
+    # print(df_mt5_LP_details)
 
     # To ensure that it's printed to
     to_round_columns = ['Deposit', 'Credit', 'PnL', 'Equity', 'Total_margin', 'Free_margin', 'EQUITY', 'Equity/Margin (%)',  'available']
