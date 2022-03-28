@@ -696,7 +696,7 @@ def AIF_AB_Hedge():
                            ajax_url=url_for('mt5_monitoring.AIF_AB_Hedge_ajax', _external=True),
                            header=header,
                            description=description, no_backgroud_Cover=True,
-                           replace_words=Markup(["mismatch", "so alert:", "alert", "pre-mc:", "pre-so"]))  # setinterval=60,
+                           replace_words=Markup(["mismatch", "so alert:", "alert", "pre-mc:", "pre-so", "lp-slow"]))  # setinterval=60,
 
 
 
@@ -1016,7 +1016,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     # Get the LP details.
     df_mt5_LP_details = pd.DataFrame(mt5_LP_details_unsync.result())
 
-    # print(df_mt5_LP_details)
+    print(df_mt5_LP_details)
 
     # To ensure that it's printed to
     to_round_columns = ['Deposit', 'Credit', 'PnL', 'Equity', 'Total_margin', 'Free_margin', 'EQUITY', 'Equity/Margin (%)',  'available']
@@ -1114,6 +1114,39 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
         email_html += Array_To_HTML_Table([c.upper() for c in cols_needed], df_mt5_LP_MC_alert[cols_needed].values, [])
 
 
+
+    # Want to check if LP Details are updating.
+    df_mt5_LP_details["Updated_time_converted"] = pd.to_datetime(df_mt5_LP_details["Updated_time"], format='%Y-%m-%d %H:%M:%S')
+    df_mt5_LP_details["Time_diff"] = pd.datetime.now() - df_mt5_LP_details["Updated_time_converted"]
+    df_mt5_LP_details["Time_diff_m"] = df_mt5_LP_details["Time_diff"].dt.total_seconds() / 60  # Calculate the total mins
+
+    # print(df_mt5_LP_details)
+
+    # Past a certain time, we want to send an alert.
+    To_Send_LP_Not_updatingalert = df_mt5_LP_details[(df_mt5_LP_details["Time_diff_m"] >= alert_mismatch_timing) & \
+                                            (df_mt5_LP_details["LP_Slow_Alert_Time"] == "-")]
+
+    if len(To_Send_LP_Not_updatingalert):   # If there are alerts to be sent for LP Slow
+        Slow_LP_name = To_Send_LP_Not_updatingalert["LP"].tolist()
+        # Slow_LP_name = ["'{}'".format(x) for x in Slow_LP_name]
+
+        # Don't need to input the LP which has SO in, as the SO would have added the MC as well
+        slow_LP_Sql_Data = [", ".join(["'{}'".format(c), """'LP_Not_Updating'""", "NOW()", "'Y'"]) for c in Slow_LP_name]
+        slow_LP_Sql_Data = ["({})".format(c) for c in slow_LP_Sql_Data]
+
+        slow_LP_Alert_SQL = """INSERT INTO aaron.`lp_alert_log` (`LP`, `Alert_Type`, `Alert_Time`, `Alert_Flag`) VALUES {}  """.format(",".join(slow_LP_Sql_Data))
+
+        # print(slow_LP_Alert_SQL)
+        SQL_insert_MT5_statement(slow_LP_Alert_SQL)
+
+        Send_Email_Alert_Flag = True
+        email_html += """<b><u>LP Update Slow Alert</u></b><br>One or more of our LP is Updating Slow.<br>
+        Kindly help to check if the terminal and EA are running.<br> Timing is in SGT (GMT + 8)
+        (The limit is set to {}mins )<br>""".format(alert_mismatch_timing)
+        email_html += Array_To_HTML_Table([c.upper() for c in ["LP", "Updated_time"]], To_Send_LP_Not_updatingalert[["LP", "Updated_time"]].values, [])
+
+
+
     # Want to add in alert into the page.
 
     # Want to write it to the page itself
@@ -1129,10 +1162,27 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
                                                                                         (~df_mt5_LP_details["LP"].isin(All_Pre_SO_LP)), \
                                   df_mt5_LP_details["Equity/Margin (%)"].apply(lambda x: "Pre-MC Alert: {}pre-so".format(x)),
                                                       df_mt5_LP_details["Equity/Margin (%)"])
+    # Those LP which are updating slowly
+    df_mt5_LP_details["Updated_time"] = np.where((df_mt5_LP_details["Time_diff_m"] >= alert_mismatch_timing), \
+        df_mt5_LP_details["Updated_time"].apply(lambda x: "LP Update Slow<br>{}lp-slow".format(x)),
+        df_mt5_LP_details["Updated_time"])
 
     # Want to clear Pre MC alert if it's been cleared.
     Pre_MC_Alert_Clear_LP = df_mt5_LP_details[(df_mt5_LP_details["Calculated E/M - Alert Level"] > df_mt5_LP_details["margin_call (E/M)"]) & \
                                               (df_mt5_LP_details["MC_ALERT_TIME"] != "-") ]["LP"].tolist()
+
+    To_Clear_LP_updatingalert = df_mt5_LP_details[(df_mt5_LP_details["Time_diff_m"] < alert_mismatch_timing) & \
+                                                     (df_mt5_LP_details["LP_Slow_Alert_Time"] != "-")]["LP"].tolist()
+
+
+    if len(To_Clear_LP_updatingalert) > 0:
+
+        Slow_LP_Clear_Alert = ["'{}'".format(c) for c in To_Clear_LP_updatingalert]   # To add the ""
+
+        clear_LP_Slow_Alert_SQL = """UPDATE aaron.`lp_alert_log` SET `Alert_Flag` = "N" WHERE LP IN ({}) AND Alert_Type = "LP_Not_Updating" """.format(",".join(Slow_LP_Clear_Alert))
+        # print(clear_LP_Slow_Alert_SQL)
+        SQL_insert_MT5_statement(clear_LP_Slow_Alert_SQL)
+
 
 
     if len(Pre_MC_Alert_Clear_LP) > 0:
