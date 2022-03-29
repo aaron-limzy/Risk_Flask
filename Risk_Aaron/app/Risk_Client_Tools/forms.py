@@ -56,6 +56,27 @@ class symbol_form(FlaskForm):
 
     Symbol = HiddenField("Symbol",render_kw={'readonly': True})
     Spread_Dollar = FloatField('Spread_Dollar', [InputRequired(), positive_only])
+
+     # See if we can do a custom validator for the fields.
+    def validate_Spread_Dollar(form, field):
+        print("{} Validating Spread Dollar. field.Spread_Dollar : {}".format(form.Symbol.data, (field.data)))
+        print("digits: {}".format(float(form.digits.data)))
+        print("Minimum: {}".format( 20 * 10 ** (-1 * float(form.digits.data))))
+
+        if float(form.digits.data) != 0:
+            min_spread = 20 * 10 ** (-1 * float(form.digits.data))
+            max_spread = 500 * 10 ** (-1 * float(form.digits.data))
+        else:
+            min_spread = 2
+            max_spread = 15
+
+        if float(field.data) < min_spread:
+            raise ValidationError('{} 點差太小。最低限度: {} '.format(form.Symbol.data, min_spread))
+
+        if float(field.data) > min_spread:
+            raise ValidationError('{} 點差太大。最高限度: {} '.format(form.Symbol.data, max_spread))
+
+
     Spread_Points = HiddenField('Spread_Points',render_kw={'readonly': True})
 
     # To keep track if the data has been changed.

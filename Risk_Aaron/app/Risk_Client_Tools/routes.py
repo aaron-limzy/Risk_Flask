@@ -905,7 +905,7 @@ def HK_Change_Spread():
 
                 flash("Changed live1 Database.")
         else:
-            flash("ERROR: 只能輸入數字, 只允许正数。")
+            flash("ERROR: 只能輸入數字, 只允许正数。 請檢查點差。", 'error')
 
     else:
 
@@ -943,7 +943,7 @@ def HK_Change_Spread():
 # Takes in a df that has col=["postfixsymb","Spread_Dollar", "Spread_Points", "Spread_Dollar_Hidden","Spread_Points_Hidden", "digits"]
 def change_HK_spread_function(df, database):
 
-    test = False     # Sets the Testing to True or False
+    test = True     # Sets the Testing to True or False
 
 
     df["digits"] = df["digits"].astype(int)
@@ -954,24 +954,26 @@ def change_HK_spread_function(df, database):
     # Gets the SQL Statement that will be used to change the SQL Spread
     sql_Statement = HK_Change_Spread_SQL(df, database=database)
 
-    #print(sql_Statement)
 
-    # Commit the changes to the SQL on MT5_futures DB
-    raw_insert_result = db.session.execute(sql_Statement, bind=db.get_engine(current_app, 'mt5_futures'))
-    db.session.commit()  # Since we are using session, we need to commit.
+
+    if test==False:
+        # Commit the changes to the SQL on MT5_futures DB
+        raw_insert_result = db.session.execute(sql_Statement, bind=db.get_engine(current_app, 'mt5_futures'))
+        db.session.commit()  # Since we are using session, we need to commit.
+    else:
+        print(sql_Statement)
+
 
     # Get all the values are not HKG
     df_change_result = df[df["postfixsymb"] != "HKG"][["postfixsymb", "Spread_Dollar", "Spread_Points", "digits"]]
     df_change_result["Result"] = "" # Create the column
     #result_list = [df_db_change.values.tolist()]
 
-    # ----- Change the parameter on Live 1 plugin
-    # if test == True:
-    #     C_Return_Val_plugin_Change = 0
-    # else:
-
-    C_Return_Val_plugin_Change, output, err = Run_C_Prog(
-        "app" + url_for('static', filename='Exec/changepluginparameter/Live1.exe'))
+    # Run SQ's Exe to change the plugin params.
+    if test==False:
+        C_Return_Val_plugin_Change, output, err = Run_C_Prog("app" + url_for('static', filename='Exec/changepluginparameter/Live1.exe'))
+    else:
+        C_Return_Val_plugin_Change, output, err = 0, "Testing", "No Error"
 
     # C_Return_Val_plugin_Change = 0
 
@@ -988,17 +990,26 @@ def change_HK_spread_function(df, database):
 
     # ----------------- Change the value of HKG -----------------
 
+    # print(df)
     HKG_dollar_value_df = df[df["postfixsymb"] == "HKG"]["Spread_Dollar"]
+
+
     if len(HKG_dollar_value_df) > 0:
+
         HKG_dollar_value = int(HKG_dollar_value_df.to_list()[0])
 
         # The prog name will change depending if we are running test or Live.
-        hkg_prog_name = "Lab_HKG_SpreadChange.exe" if test == True else "Live1_HKG_SpreadChange.exe"
+        # hkg_prog_name = "Lab_HKG_SpreadChange.exe" if test == True else "Live1_HKG_SpreadChange.exe"
+        hkg_prog_name = "Live1_HKG_SpreadChange.exe"
+        if test == False:
+        #     pass
+            print("Changing HKG Dollar spread: {}".format(HKG_dollar_value))
 
-
-        C_Return_Val_HKG, output_HKG, err_HKG = Run_C_Prog(
-            "app" + url_for('static',
-                            filename='Exec/HK_Change_Spread/{}'.format(hkg_prog_name)) + " {:.0f}".format(HKG_dollar_value) )
+            C_Return_Val_HKG, output_HKG, err_HKG = Run_C_Prog(
+                "app" + url_for('static',
+                                filename='Exec/HK_Change_Spread/{}'.format(hkg_prog_name)) + " {:.0f}".format(HKG_dollar_value) )
+        else:
+            C_Return_Val_HKG, output_HKG, err_HKG = 0, "Testing HKG", "No Error Here. Just Testing"
 
         # print(df_change_result)
         # print()
@@ -1006,14 +1017,23 @@ def change_HK_spread_function(df, database):
         if C_Return_Val_HKG == 0:
             flash("HKG Change Successfully.")
         else:
-            flash("HKG Change ERORR. Error Code: {}".format(C_Return_Val_HKG))
+            flash("HKG Change ERORR. Error Code: {}, err: {}".format(C_Return_Val_HKG, err_HKG), "error")
 
-        df_change_result[df_change_result["postfixsymb"] == "HKG"]["Spread_Dollar"] = HKG_dollar_value
-        df_change_result[df_change_result["postfixsymb"] == "HKG"]["Spread_Points"] = HKG_dollar_value
-        df_change_result[df_change_result["postfixsymb"] == "HKG"]["digits"] = 0
-        df_change_result[df_change_result["postfixsymb"] == "HKG"]["Results"] = "Successfully Changed"\
-            if C_Return_Val_HKG == 0\
-            else "Failed. Error Code: {}".format(C_Return_Val_HKG)
+
+        df_HKG = {'postfixsymb': 'HKG', 'Spread_Dollar': HKG_dollar_value,
+            "Spread_Points" : HKG_dollar_value, "digits": 0,
+            "Result": "Successfully Changed" if C_Return_Val_HKG == 0\
+                else """<p style="color:red;">Failed. Error Code: {}</p>""".format(C_Return_Val_HKG)}
+
+        df_change_result = df_change_result.append(df_HKG, ignore_index=True)
+
+
+        # df_change_result[df_change_result["postfixsymb"] == "HKG"]["Spread_Dollar"] = HKG_dollar_value
+        # df_change_result[df_change_result["postfixsymb"] == "HKG"]["Spread_Points"] = HKG_dollar_value
+        # df_change_result[df_change_result["postfixsymb"] == "HKG"]["digits"] = 0
+        # df_change_result[df_change_result["postfixsymb"] == "HKG"]["Results"] = "Successfully Changed"\
+        #     if C_Return_Val_HKG == 0\
+        #     else "Failed. Error Code: {}".format(C_Return_Val_HKG)
 
     # print(df_change_result)
 
@@ -1030,20 +1050,20 @@ def change_HK_spread_function(df, database):
                 inplace=True)
 
     html_code = "{}".format(Email_Header)
-    html_code += "Hi,<br><br>The change of spread for the following symbols has been done."
+    html_code += "Hi,<br><br><b><u>Manual Change of HK Spread.</u></b><br>The change of spread for the following symbols has been done."
     html_code += "<br>Kindly find the details of the change in the table below.<br><br>"
     html_code += List_of_Dict_To_Horizontal_HTML_Table(df_change_result.to_dict("records"))
-    html_code += "The change was done at SG/TW time: {}.<br><br>".format(Get_time_String())
-    html_code += "Thanks,<br>Aaron."
+    html_code += "The change was Requested by user: <u>{}</u> at SG/TW time: {}.<br><br>".format(current_user.id.title(), Get_time_String())
+    html_code += "Thanks,<br>BGI Risk"
     html_code += Email_Header
 
     # EMAIL_LIST_BGI
     email_recipients = ["risk@blackwellglobal.com", "mis@austeinweisz.com", "CustomerService@blackwellglobal.com", "Dealing @ blackwellglobal.com"]
 
-    # email_recipients = ["aaron.lim@blackwellglobal.com"]
+    email_recipients = ["aaron.lim@blackwellglobal.com"]
 
     async_send_email(To_recipients=email_recipients, cc_recipients=[],
-                     Subject="HK Change Spread",
+                     Subject="HK Change Spread [Manual]",
                      HTML_Text=html_code, Attachment_Name=[])
 
     return [C_Return_Val_HKG, C_Return_Val_plugin_Change]
