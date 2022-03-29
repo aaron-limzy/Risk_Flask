@@ -59,9 +59,9 @@ class symbol_form(FlaskForm):
 
      # See if we can do a custom validator for the fields.
     def validate_Spread_Dollar(form, field):
-        print("{} Validating Spread Dollar. field.Spread_Dollar : {}".format(form.Symbol.data, (field.data)))
-        print("digits: {}".format(float(form.digits.data)))
-        print("Minimum: {}".format( 20 * 10 ** (-1 * float(form.digits.data))))
+        # print("{} Validating Spread Dollar. field.Spread_Dollar : {}".format(form.Symbol.data, (field.data)))
+        # print("digits: {}".format(float(form.digits.data)))
+        # print("Minimum: {}".format( 20 * 10 ** (-1 * float(form.digits.data))))
 
         if float(form.digits.data) != 0:
             min_spread = 20 * 10 ** (-1 * float(form.digits.data))
@@ -70,11 +70,12 @@ class symbol_form(FlaskForm):
             min_spread = 2
             max_spread = 15
 
-        if float(field.data) < min_spread:
-            raise ValidationError('{} 點差太小。最低限度: {} '.format(form.Symbol.data, min_spread))
+        if float(field.data) <= min_spread:
+            raise ValidationError("{} 點差太小 , 無法上傳 (最低限度:{})".format(form.Symbol.data, min_spread))
 
-        if float(field.data) > min_spread:
-            raise ValidationError('{} 點差太大。最高限度: {} '.format(form.Symbol.data, max_spread))
+        if float(field.data) > max_spread:
+            raise ValidationError("{} 點差太大 , 無法上傳 (最高限度:{})".format(form.Symbol.data, max_spread))
+
 
 
     Spread_Points = HiddenField('Spread_Points',render_kw={'readonly': True})
