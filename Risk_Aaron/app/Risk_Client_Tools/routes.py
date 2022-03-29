@@ -1060,7 +1060,8 @@ def change_HK_spread_function(df, database):
     # EMAIL_LIST_BGI
     email_recipients = ["risk@blackwellglobal.com", "mis@austeinweisz.com", "CustomerService@blackwellglobal.com", "Dealing @ blackwellglobal.com"]
 
-    email_recipients = ["aaron.lim@blackwellglobal.com"]
+    if test==True:
+        email_recipients = ["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com"]
 
     async_send_email(To_recipients=email_recipients, cc_recipients=[],
                      Subject="HK Change Spread [Manual]",
