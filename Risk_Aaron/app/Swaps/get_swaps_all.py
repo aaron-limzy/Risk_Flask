@@ -873,8 +873,8 @@ def calculate_swaps_bgi(excel_data, db):
     # Want to note Symbols are on fixed swaps
     df['Markup_Style'] = np.where( (~df['BGI_fixed_long'].isna()) | (~df['BGI_fixed_short'].isna()), \
                                                   "#CCD1D1", "")
-
-    #print(df)
+    # print("######################################1")
+    # print(df)
     #--- Want to show which
 
     # Want to deal with all the fixed Insti Values.
@@ -896,7 +896,8 @@ def calculate_swaps_bgi(excel_data, db):
     df['avg_short'] = np.where(df['BGI_Predict_Short'].isna(), df['avg_short'],
                                         df['BGI_Predict_Short'])
 
-
+    # print("######################################2")
+    # print(df)
 
 
     # Create a specific column to be used only for sorting.
@@ -910,7 +911,8 @@ def calculate_swaps_bgi(excel_data, db):
 
     df.sort_values(by=["Sorting_markup_profile", "swap_markup_profile", "bgi_coresymbol"], key=lambda x: x.map(custom_dict), inplace=True)
 
-
+    # print("######################################3")
+    # print(df)
 
     # df.sort_values(["swap_markup_profile", "bgi_coresymbol"],ascending=[False, True],  inplace=True)
 
@@ -924,15 +926,30 @@ def calculate_swaps_bgi(excel_data, db):
 
     df_tradeview = pd.DataFrame(tradeview_unsync.result())
     df_tradeview = df_tradeview.rename(columns={"Long": "tv Long", "Short": "tv Short"})
+    df_tradeview = df_tradeview[~df_tradeview.duplicated(subset=["Symbol"])] # De-duplicate
+
     #print("df_tradeview")
 
     #print(df_tradeview)
+    # print("######################################4")
+    # print(df[df["bgi_coresymbol"].isin(["USDNOK"])])
 
     df_global_prime = pd.DataFrame(globalprime_unsync.result())
     df_global_prime = df_global_prime.rename(columns={"Long": "gp Long", "Short": "gp Short"})
+    df_global_prime = df_global_prime[~df_global_prime.duplicated(subset=["Symbol"])] # De-duplicate
+
+    # print(df_global_prime)
+
 
     df_Merge = df[bgi_Col_Needed].merge(df_tradeview, how="left", left_on="bgi_coresymbol", right_on="Symbol")
+    # print("######################################5")
+    # print(df_Merge[df_Merge["bgi_coresymbol"].isin(["USDNOK"])])
+
     df_Merge = df_Merge.merge(df_global_prime, how="left", left_on="bgi_coresymbol", right_on="Symbol")
+
+    # print("######################################6")
+    # print(df_Merge[df_Merge["bgi_coresymbol"].isin(["USDNOK"])])
+
     return df_Merge
 
 
@@ -1433,6 +1450,7 @@ def upload_swaps_mt_servers(df, oz_big_mapping, mt4_base_folder, mt5_L1_base_fol
 
     if upload_to_oz:
         print(c_run_results)
+
         # pd.set_option('display.max_rows', None)
 
         # print(oz_big_mapping)
@@ -1452,7 +1470,7 @@ def upload_swaps_mt_servers(df, oz_big_mapping, mt4_base_folder, mt5_L1_base_fol
 
         DF_M["symbolGroupPath"] = '*'
 
-        # print(DF_M)
+        print(DF_M)
 
         hub = OZ_Rest_Class("margin")
         swap_profiles = hub.get_swap_profiles()
