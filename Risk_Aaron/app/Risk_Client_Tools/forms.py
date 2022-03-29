@@ -73,7 +73,7 @@ class symbol_form(FlaskForm):
         if float(field.data) <= min_spread:
             raise ValidationError("{} 點差太小 , 無法上傳 (最低限度:{})".format(form.Symbol.data, min_spread))
 
-        if float(field.data) > max_spread:
+        if float(field.data) >= max_spread:
             raise ValidationError("{} 點差太大 , 無法上傳 (最高限度:{})".format(form.Symbol.data, max_spread))
 
 

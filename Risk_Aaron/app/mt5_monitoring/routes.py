@@ -1101,7 +1101,7 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
         # Don't need to input the LP which has SO in, as the SO would have added the MC as well
         LP_MC_Sql_Data = [", ".join(["'{}'".format(c), """'Pre_MC'""", "NOW()", "'Y'"]) for c in MC_LP_name if c not in SO_LP_name]
-        if len(LP_MC_Sql_Data) > 0: # Could be that there isn't anything since the LP SO immediately, without any MC flag raised. 
+        if len(LP_MC_Sql_Data) > 0: # Could be that there isn't anything since the LP SO immediately, without any MC flag raised.
             LP_MC_Sql_Data = ["({})".format(c) for c in LP_MC_Sql_Data]
             Add_MC_Alert_SQL = """INSERT INTO aaron.`lp_alert_log` (`LP`, `Alert_Type`, `Alert_Time`, `Alert_Flag`) VALUES {}  """.format(",".join(LP_MC_Sql_Data))
 
