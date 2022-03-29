@@ -1101,17 +1101,17 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
 
         # Don't need to input the LP which has SO in, as the SO would have added the MC as well
         LP_MC_Sql_Data = [", ".join(["'{}'".format(c), """'Pre_MC'""", "NOW()", "'Y'"]) for c in MC_LP_name if c not in SO_LP_name]
-        LP_MC_Sql_Data = ["({})".format(c) for c in LP_MC_Sql_Data]
+        if len(LP_MC_Sql_Data) > 0: # Could be that there isn't anything since the LP SO immediately, without any MC flag raised. 
+            LP_MC_Sql_Data = ["({})".format(c) for c in LP_MC_Sql_Data]
+            Add_MC_Alert_SQL = """INSERT INTO aaron.`lp_alert_log` (`LP`, `Alert_Type`, `Alert_Time`, `Alert_Flag`) VALUES {}  """.format(",".join(LP_MC_Sql_Data))
 
-        Add_MC_Alert_SQL = """INSERT INTO aaron.`lp_alert_log` (`LP`, `Alert_Type`, `Alert_Time`, `Alert_Flag`) VALUES {}  """.format(",".join(LP_MC_Sql_Data))
+            # print(Add_MC_Alert_SQL)
+            SQL_insert_MT5_statement(Add_MC_Alert_SQL)
 
-        # print(Add_MC_Alert_SQL)
-        SQL_insert_MT5_statement(Add_MC_Alert_SQL)
-
-        Send_Email_Alert_Flag = True
-        df_mt5_LP_MC_alert["LP"] = df_mt5_LP_MC_alert["LP"].apply(lambda x: x.replace("_", " "))    # Want to print the LP names properly.
-        email_html += "<b><u>LP MC Alert</u></b><br>One or more of our LP is close to Margin Call.<br>(The limit is set to {}% before MC levels)<br>".format(LP_MARGIN_ALERT_LEVEL)
-        email_html += Array_To_HTML_Table([c.upper() for c in cols_needed], df_mt5_LP_MC_alert[cols_needed].values, [])
+            Send_Email_Alert_Flag = True
+            df_mt5_LP_MC_alert["LP"] = df_mt5_LP_MC_alert["LP"].apply(lambda x: x.replace("_", " "))    # Want to print the LP names properly.
+            email_html += "<b><u>LP MC Alert</u></b><br>One or more of our LP is close to Margin Call.<br>(The limit is set to {}% before MC levels)<br>".format(LP_MARGIN_ALERT_LEVEL)
+            email_html += Array_To_HTML_Table([c.upper() for c in cols_needed], df_mt5_LP_MC_alert[cols_needed].values, [])
 
 
 
