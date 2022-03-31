@@ -1721,7 +1721,10 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
             Tele_Message += api_update_str
 
             # Send the Telegram message.
-            async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Message, TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+            # async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Message, TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+            async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, Tele_Message, [TELEGRAM_ALERT_GROUP_CHAT], Parse_mode=telegram.ParseMode.HTML)
+
+
 
         # '[{"Vantage_Update_Time": "2019-09-17 16:54:20", "BGI_Margin_Update_Time": "2019-09-17 16:54:23"}]'
 
