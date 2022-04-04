@@ -1091,7 +1091,11 @@ def change_HK_spread_function(df, database):
 
     async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, telegram_text, [telegram_group_chat_id], telegram.ParseMode.HTML)
 
+    if "telegram_text" in df_change_result:
+        df_change_result.drop("telegram_text", axis=1, inplace=True)
 
+    if "telegram_text_error" in df_change_result:
+        df_change_result.drop("telegram_text_error", axis=1, inplace=True)
 
     # ----------------------- Need to send email out.
     # Want to apply a red font.
