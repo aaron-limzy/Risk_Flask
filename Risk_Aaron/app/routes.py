@@ -1400,7 +1400,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 
 
     # The amount of time that a mismatch must happen before it emails
-    mismatch_count = [10,15]
+    mismatch_count = [10,15] if artificial_offset==False else [3,5]
 
     # cfh_soap_query_count = [5]   # Want to fully quiery and update from CFH when mismatches reaches this.
     sql_query = text("""call aaron.mt4_ABook_Position()""")

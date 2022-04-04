@@ -862,6 +862,15 @@ def HK_Change_Spread():
     # But we don't want to test it on HKG yet.
     #database_name = "live1"
 
+    # Monitor Bot Token
+    # BGI_MONITOR_TELEGRAM_TOKEN = "1055969880:AAHcXIDWlQqrFGU319wYoldv9FJuu4srx_E"
+    # TELEGRAM_ALERT_CHAT = "-618001802"
+    #
+    # TELEGRAM_SUCCESS_CHAT = "-692529305"
+    # TELEGRAM_ALERT_GROUP_CHAT = "-626296805"
+
+    # async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, "TELEGRAM_SUCCESS_CHAT", [TELEGRAM_SUCCESS_FREQUENT_CHAT], telegram.ParseMode.HTML)
+    # async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, "TELEGRAM_ALERT_GROUP_CHAT", [TELEGRAM_ALERT_GROUP_CHAT], telegram.ParseMode.HTML)
 
     title = Markup("HK Change Spread")
     header = "HK Change Spread"
@@ -947,6 +956,7 @@ def change_HK_spread_function(df, database):
 
     test = False     # Sets the Testing to True or False
 
+    #async_Post_To_Telegram(Bot_token, text_to_tele, Chat_IDs, Parse_mode="")
 
     df["digits"] = df["digits"].astype(int)
     df["fixed"] = df["Spread_Dollar"] * (10 ** df["digits"]) # Calculates the fixed spread
@@ -1025,7 +1035,7 @@ def change_HK_spread_function(df, database):
         df_HKG = {'postfixsymb': 'HKG', 'Spread_Dollar': HKG_dollar_value,
             "Spread_Points" : HKG_dollar_value, "digits": 0,
             "Result": "Successfully Changed" if C_Return_Val_HKG == 0\
-                else """<p style="color:red;">Failed. Error Code: {}</p>""".format(C_Return_Val_HKG)}
+                else """Failed. Error Code: {}""".format(C_Return_Val_HKG)}
 
         df_change_result = df_change_result.append(df_HKG, ignore_index=True)
 
@@ -1041,8 +1051,53 @@ def change_HK_spread_function(df, database):
 
     # Re-calculate the correct values. SS
     df_change_result["Spread_Points"] = df_change_result["Spread_Dollar"] * (10**df_change_result["digits"])
-    # ----------------------- Need to send email out.
+    # ----------------------------- Send out the telegram message first.
 
+    # print(df_change_result)
+
+    telegram_text = ""
+    telegram_text += "Change of spread was done on the Risk tools page by user: {}\n\n".format(current_user.id)
+    telegram_text += "  Symbol  -> Spread [USD Value]\n"
+
+    df_change_result["telegram_text"] = df_change_result.apply(lambda x: "{:^10} -> {} [${}]".format(x["postfixsymb"],
+                                            x["Spread_Points"], x["Spread_Dollar"]) , axis=1)
+
+    telegram_data_success = df_change_result[df_change_result["Result"] == "Successfully Changed"]["telegram_text"].tolist()
+    telegram_data = "\n".join(telegram_data_success)
+    telegram_text += telegram_data
+
+    # For the error Data
+    df_change_result["telegram_text_error"] = df_change_result.apply(lambda x: "{:^10} -> {}[${}] -> {}".format(x["postfixsymb"], \
+                                                                x["Spread_Points"], x["Spread_Dollar"],
+                                                                x["Result"]) , axis=1)
+
+    telegram_data_error = df_change_result[df_change_result["Result"] != "Successfully Changed"]["telegram_text_error"].tolist()
+
+    if len(telegram_data_error) > 0: # There are errors.
+        telegram_text = "<b>[Error]</b> -HK Manual Change Spread\n" + telegram_text + "\n\n"
+        telegram_text += "The following Spread changes <b>failed</b>. \n"
+        telegram_text += "  Symbol  -> Spread [USD Value] -> Reasons\n"
+
+        telegram_text += "\n".join(telegram_data_error)
+        telegram_group_chat_id = TELEGRAM_ALERT_GROUP_CHAT
+
+    else:
+        telegram_text = "<b>[Success]</b> - HK Manual Change Spread\n" + telegram_text
+        telegram_group_chat_id = TELEGRAM_SUCCESS_CHAT
+
+
+    # print(telegram_data)
+    # print(df_change_result)
+
+    async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, telegram_text, [telegram_group_chat_id], telegram.ParseMode.HTML)
+
+
+
+    # ----------------------- Need to send email out.
+    # Want to apply a red font.
+    # Cannot do this before the telegram message, as having a <p> tag would cause telegram HTML code to throw an error
+    df_change_result["Result"] = df_change_result["Result"].apply(lambda x: x if x == "Successfully Changed" else\
+                                                            """<p style="color:red;">{}</p>""".format(x))
 
     # rename so that it appears nicer on the Email.
     df_change_result.rename(columns={'postfixsymb': 'Symbol', \
@@ -1063,11 +1118,12 @@ def change_HK_spread_function(df, database):
     email_recipients = ["risk@blackwellglobal.com", "mis@austeinweisz.com", "CustomerService@blackwellglobal.com", "Dealing @ blackwellglobal.com"]
 
     if test==True:
-        email_recipients = ["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com"]
+        email_recipients = EMAIL_AARON # ["fei.shao@blackwellglobal.com"]
 
     async_send_email(To_recipients=email_recipients, cc_recipients=[],
                      Subject="HK Change Spread [Manual]",
                      HTML_Text=html_code, Attachment_Name=[])
+
 
     return [C_Return_Val_HKG, C_Return_Val_plugin_Change]
 

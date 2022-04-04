@@ -318,7 +318,7 @@
                 {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Risk_UK", "Risk_KH"] %}
                 <li class="nav-item dropleft">
                   <a class="dropdown-item dropdown-toggle" href="#" id="navbarDropdown1" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    UK 😆
+                    UK
                   </a>
 
                   <ul class="dropdown-menu pull-left" aria-labelledby="navbarDropdown1">
@@ -328,6 +328,8 @@
                     {% endif %}
 
                     <li><a class="dropdown-item" href="{{ url_for('mt5_monitoring.AIF_AB_Hedge') }}">⭐ AIF Hedge A/B </a></li>
+                    <li><a class="dropdown-item" href="http://202.88.105.3/yudi/RISK/Monitoring_tools/ab_hedged_Client/index.php">⭐ UK A/B Hedge Monitoring</a></li>
+
                     <div class="dropdown-divider"></div>
                     <li><a class="dropdown-item" href="https://bridge.match-trade.com/login">Bridge Match Login</a></li>
                     <li><a class="dropdown-item" href="https://pentaho.match-trade.com/pentaho/Home">Bridge Match Report</a></li>
@@ -782,7 +784,6 @@
                 <li><a class="dropdown-item" href="http://202.88.105.3/yudi/RISK/Monitoring_tools/MT5_Esunny_Check.php">MT5 Esunny Matching</a></li>
                 <li><a class="dropdown-item" href="http://202.88.105.3/yudi/RISK/Monitoring_tools/MT5_Monitoring_Float.php">MT5 Float Monitoring</a></li>
                 <li><a class="dropdown-item" href="{{ url_for('mt5_monitoring.HK_Copy_STP') }}">🐼 HK Copy Trade 👾</a></li>
-                <li><a class="dropdown-item" href="http://202.88.105.3/yudi/RISK/Monitoring_tools/ab_hedged_Client/index.php">UK A/B Hedge</a></li>
 
 
 
