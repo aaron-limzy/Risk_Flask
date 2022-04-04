@@ -1056,8 +1056,8 @@ def change_HK_spread_function(df, database):
     # print(df_change_result)
 
     telegram_text = ""
-    telegram_text += "Change of spread was done on the Risk tools page by user: {}\n\n".format(current_user.id)
-    telegram_text += "  Symbol  -> Spread [USD Value]\n"
+    telegram_text += "Change of spread was done on the Risk tools page by user: {}\n\n".format(str(current_user.id).title())
+    telegram_text += "  <pre>Symbol  -> Spread [USD Value]</pre>\n"
 
     df_change_result["telegram_text"] = df_change_result.apply(lambda x: "{:^10} -> {} [${}]".format(x["postfixsymb"],
                                             x["Spread_Points"], x["Spread_Dollar"]) , axis=1)
