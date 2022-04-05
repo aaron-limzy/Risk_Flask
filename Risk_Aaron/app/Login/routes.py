@@ -112,16 +112,21 @@ def logout():
 def Edit_Details():
 
     form = EditDetailsForm()
-    form.email.data = current_user.email
+
+
     if form.validate_on_submit():
         email = form.email.data
         password = form.password.data
 
         sql_insert = "UPDATE  aaron.`flask_login` SET `email` = '{email}', `password_hash` = '{password_hash}' WHERE `username` ='{username}' ".format(
-            email=email, password_hash=User.hash_password(password=password), username=current_user.username)
+            email=email, password_hash=User.hash_password(password=password), username=current_user.id)
         print(sql_insert)
         raw_insert_result = db.engine.execute(sql_insert)
-        flash("'{}' details has been Updated.".format(current_user.username))  # Put a message out that there is some error.
+        flash("'{}' details has been Updated.".format(current_user.id))  # Put a message out that there is some error.
+
+    else:
+        form.email.data = current_user.email
+        form.ID.data = current_user.id
 
     return render_template('General_Form.html', title='User Edit Details', header="Edit Details", form=form)
 

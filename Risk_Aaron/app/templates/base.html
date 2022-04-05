@@ -165,7 +165,7 @@
 
 
 
-            {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Dealing", "Risk_UK", "Risk_KH", "Finance", "CS"] %}
+            {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Dealing", "Risk_UK", "Risk_KH", "Finance", "CS", "Finance_KH"] %}
 
             <li class="nav-item  dropdown">
               <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -392,9 +392,15 @@
 
 
 
-                {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Finance"] %}
+                {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Finance", "Finance_KH"] %}
                 <li class="dropdown-divider"></li>
+
+                {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Finance"] %}
                 <li><a class="dropdown-item" href="{{ url_for('main_app.Risk_Download_Page') }}">Risk Download Page</a></li>
+                {% endif %}
+
+                <li><a class="dropdown-item" href="{{ url_for('main_app.Risk_Download_Page_KH') }}">Risk Download Page [KH]</a></li>
+
                 {% endif %}
 
 

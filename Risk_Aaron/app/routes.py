@@ -615,7 +615,7 @@ def Live2_MT4_Users():
     return Live_MT4_Users(2)
 
 @main_app.route('/Get_Live3_MT4User')
-@roles_required(["Risk", "Admin", "Finance", "Risk_TW"])
+@roles_required(["Risk", "Admin", "Finance", "Risk_TW", "Finance_KH"])
 def Live3_MT4_Users():
     return Live_MT4_Users(3)
 
@@ -629,6 +629,13 @@ def Live5_MT4_Users():
 @roles_required(["Risk", "Admin", "Finance", "Risk_TW"])
 def Risk_Download_Page():    # To upload the Files, or post which trades to delete on MT5
     return render_template("Risk_Download_Page.html",header=" ",title="Risk Download Page")
+
+
+@main_app.route('/sent_file/Risk_Download_KH')
+@roles_required(["Risk", "Admin", "Finance", "Risk_TW", "Finance_KH"])
+def Risk_Download_Page_KH():    # To upload the Files, or post which trades to delete on MT5
+    return render_template("Risk_Download_Page_KH.html",header=" ",title="Risk Download Page")
+
 
 
 @main_app.route('/ABook_Match_Trades')

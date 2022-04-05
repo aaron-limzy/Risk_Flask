@@ -24,7 +24,8 @@ class LoginForm(FlaskForm):
 
 # For Letting user change password
 class EditDetailsForm(FlaskForm):
-    email =  StringField('Email', validators=[DataRequired(), Email()])
+    ID = StringField('ID',  render_kw={'readonly': True})
+    email =  StringField('Email', validators=[DataRequired()])
     password = PasswordField('New Password', [InputRequired(), EqualTo('confirm', message='Passwords must match')])
     confirm  = PasswordField('Repeat Password')
     submit = SubmitField('Submit')
