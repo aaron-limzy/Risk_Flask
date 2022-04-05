@@ -22,7 +22,7 @@ def  roles_required(roles=["Risk", "Admin", "Risk_TW"]):
             if not current_user.is_authenticated:
               return login.unauthorized()
             if role_authentication(roles, current_user.role):
-                flash("Kindly Contact Risk Tesm for access rights.")
+                flash("Kindly Contact Risk Team for access rights.")
                 return login.unauthorized()
             return fn(*args, **kwargs)
         return decorated_view
