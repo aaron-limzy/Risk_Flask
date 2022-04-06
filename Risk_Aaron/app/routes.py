@@ -2170,13 +2170,15 @@ def Monitor_Risk_Tools_ajax():
 
         # Need to string it together to send a tele message.
         # Will need to remove special _ character.
-        text_to_tele = "\n".join(["- {}".format(d) for d in recent_slow_update]).replace("_"," ")
+        text_to_tele = "*[Alert]* - Risk Tool Slow Update\n"
+        text_to_tele = "Some Risk tools are not updating. Kindly check if the tools are running properly.\n\n"
+        text_to_tele += "\n".join(["- {}".format(d) for d in recent_slow_update]).replace("_"," ")
 
         # async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, "*Risk Tool Slow Update*:\n{}".format(text_to_tele), TELE_CLIENT_ID)
 
 
         # async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, "*Risk Tool Slow Update*:\n{}".format(text_to_tele), [TELEGRAM_ALERT_GROUP_CHAT])
-        async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, "*Risk Tool Slow Update*:\n{}".format(text_to_tele), [TELEGRAM_ALERT_GROUP_CHAT])
+        async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, text_to_tele, [TELEGRAM_ALERT_GROUP_CHAT])
 
 
 
