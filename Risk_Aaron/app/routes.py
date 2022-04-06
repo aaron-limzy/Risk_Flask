@@ -1788,7 +1788,7 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
 @main_app.route('/ABook_LP_Details', methods=['GET', 'POST'])
 @roles_required(["Risk", "Risk_TW", "Admin", "Dealing"])
 def ABook_LP_Details(update_tool_time=0, exclude_list=["demo", "GlobalPrime"]):
-    return json.dumps(ABook_LP_Details_function(update_tool_time=0, exclude_list=exclude_list))
+    return json.dumps(ABook_LP_Details_function(update_tool_time=1, exclude_list=exclude_list))
     #
     #                         # LP Details. Balance, Credit, Margin, MC/SO levels. Will alert if email is set to send.
     #                         # Checks Margin against MC/SO values, with some buffer as alert.

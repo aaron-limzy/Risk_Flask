@@ -1412,7 +1412,7 @@ def ABook_LP_Details_function(update_tool_time=0, exclude_list=["demo"]):
 
 
 
-        if Send_Email_Flag == 1:    # Want to update the runtime table to ensure that tool is running.
+        if Send_Email_Flag == 1 and update_tool_time==1:    # Want to update the runtime table to ensure that tool is running.
             async_update_Runtime(app=current_app._get_current_object(), Tool="LP_Details_Check")
 
 
