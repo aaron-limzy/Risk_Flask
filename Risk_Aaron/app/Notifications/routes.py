@@ -125,11 +125,11 @@ def Client_No_Trades_ajax(update_tool_time=1):
             else:
                 telegram_data_with_lots_text = "" # Nothing to show for it.
 
-            async_Post_To_Telegram(TELE_ID_MONITOR,
+            async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN,
                     "<b>Client position closed.</b>\n\n<pre>Live | Login | Lots | Symbol</pre>\n{telegram_data} ".format(telegram_data=telegram_data) + \
                        "\n\nThese Symbols no longer be tracked." + \
                     "{telegram_data_with_lots_text} ".format(telegram_data_with_lots_text=telegram_data_with_lots_text),
-                                   TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+                                   [TELEGRAM_ALERT_GROUP_CHAT], Parse_mode=telegram.ParseMode.HTML)
 
             # Email # TODO
 
@@ -273,7 +273,8 @@ def Large_volume_Login():
     # For other clients, where GROUP` IN  aaron.risk_autocut_group and EQUITY < CREDIT
     # For Login in aaron.Risk_autocut and Credit_limit != 0
 
-    description = Markup("<b>Large Volume Login</b>- Details are on Client side.<br>- Profits has been converted to USD<br><br>")
+    description = Markup("<b>Large Volume Login</b>- Details are on Client side.<br>- Profits has been converted to USD<br><br>" + \
+                         "SQL Table: aaron.`Large_Volume_Login`<br>")
 
     # TODO: Add Form to add login/Live/limit into the exclude table.
     return render_template("Webworker_Single_Table.html", backgroud_Filename='css/checked_1.png',
@@ -385,22 +386,22 @@ def Large_volume_Login_Ajax(update_tool_time=1):
         #print(sql_insert)
 
         #
-        db.engine.execute(text(sql_insert))  # Insert into DB
-
-
+        #db.engine.execute(text(sql_insert))  # Insert into DB
 
         to_alert["LOGIN"] = to_alert.apply(lambda x: live_login_analysis_url_External(Live=x["LIVE"], Login=x["LOGIN"]), axis=1)
 
-        telegram_string = "<b>Large Volume Client Alert</b>\n\n"
+        telegram_string = "<b>[Alert]</b> - Large Volume Client Alert\n\n"
+        telegram_string += "There are clients trading large volume in the past 24 hours.\n"
         telegram_string += "<b>Live | Login | Lots | C PnL | F.PnL | Rebate | Group</b>\n"
         telegram_string += "\n".join([" | ".join(["{}".format(x) for x in l]) for l in to_alert[["LIVE", "LOGIN", "TOTAL LOTS", "CLOSED PROFIT", "FLOATING PROFIT", "REBATE", "COUNTRY"]].values.tolist()])
         telegram_string += "\n\nDetails are on Client side."
-        #print(telegram_string)
+        print(telegram_string)
 
-        async_Post_To_Telegram(TELE_ID_MONITOR, telegram_string, TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
+        # async_Post_To_Telegram(TELE_ID_MONITOR, telegram_string, TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
 
+        async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, telegram_string, \
+                               [TELEGRAM_ALERT_GROUP_CHAT], Parse_mode=telegram.ParseMode.HTML)
 
-        #
 
         # If we wanna send out the alert as email as well.
         # email alert flag set in global file, in risk_tool_config
