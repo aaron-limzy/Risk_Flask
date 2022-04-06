@@ -1746,7 +1746,9 @@ def ABook_Matching_Position_Vol_2(update_tool_time=0):    # To upload the Files,
     df_postion["SYMBOL"] = df_postion.apply(lambda x: Symbol_Trades_url(symbol=x["SYMBOL"], book="a"), axis = 1)
 
 
-    col_needed = ["SYMBOL", "Vantage_lot", "CFH_lot", "GP_lot", "API_lot", "Offset_lot", "Lp_Net_lot", "MT4_Net_Lots", "MT5 Net Lots", "Total_Revenue", "Discrepancy", "Mismatch_count"]
+    col_needed = ["SYMBOL", "Vantage_lot", "Finalto_lot", \
+                  "GP_lot", "API_lot", "Offset_lot", "Lp_Net_lot", "MT4_Net_Lots", \
+                  "MT5 Net Lots", "Total_Revenue", "Discrepancy", "Mismatch_count"]
 
     # If there is no lots in these columns at all, we don't need to show the column
     # "CFH_lot"
@@ -2003,7 +2005,7 @@ def LP_Margin_UpdateTime():     # To query for LP/Margin Update time to check th
 
     sql_query = text("""select
     COALESCE(Vantage_Update_Time, 'No Open Trades') as Vantage_Update_Time,
-    COALESCE(CFH_Updated_Time, 'No Open Trades') as CFH_Updated_Time
+    COALESCE(CFH_Updated_Time, 'No Open Trades') as Finalto_Updated_Time
     from
     (select min(updated_time) as Vantage_Update_Time from test.vantage_live_trades where position != 0) as V,
     (select min(updated_time) as CFH_Updated_Time from aaron.cfh_live_position_fix) as CFH""")
@@ -2170,7 +2172,14 @@ def Monitor_Risk_Tools_ajax():
         # Will need to remove special _ character.
         text_to_tele = "\n".join(["- {}".format(d) for d in recent_slow_update]).replace("_"," ")
 
-        async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, "*Risk Tool Slow Update*:\n{}".format(text_to_tele), TELE_CLIENT_ID)
+        # async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, "*Risk Tool Slow Update*:\n{}".format(text_to_tele), TELE_CLIENT_ID)
+
+
+        # async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, "*Risk Tool Slow Update*:\n{}".format(text_to_tele), [TELEGRAM_ALERT_GROUP_CHAT])
+        async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, "*Risk Tool Slow Update*:\n{}".format(text_to_tele), [TELEGRAM_ALERT_GROUP_CHAT])
+
+
+
         #print(text_to_tele)
 
     # For those that have started being updated.

@@ -1416,7 +1416,7 @@ def ABook_LP_Details_function(update_tool_time=0, exclude_list=["demo"]):
             async_update_Runtime(app=current_app._get_current_object(), Tool="LP_Details_Check")
 
 
-        Tele_Message = "*LP Details* \n"  # To compose Telegram outgoing message
+        Tele_Message = "*[Alert]* - LP Details Update Slow\nLP details on A Book page reflects a slow update:\n\n"  # To compose Telegram outgoing message
 
         # Checking if there are any update time that are slow. Returns a Bool
         update_time_slow = any([[True for a in d if (isinstance(a, datetime.datetime) and abs((a-datetime.datetime.now()).total_seconds()) > TIME_UPDATE_SLOW_MIN*60)] for d in result_data])
@@ -1437,7 +1437,7 @@ def ABook_LP_Details_function(update_tool_time=0, exclude_list=["demo"]):
                         (d["updated_time"] - datetime.datetime.now()).total_seconds()) > (TIME_UPDATE_SLOW_MIN * 60)]
                     Tele_Message += "_Update Slow_: {}\n".format(", ".join(LP_Issue_Name))
 
-                    async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Message, TELE_CLIENT_ID)
+                    async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, Tele_Message, [TELEGRAM_ALERT_GROUP_CHAT])
 
                 Play_Sound+=1   # No matter sending emails or not, we will need to play sound.
                 lp_time_issue_count += 1
@@ -1454,7 +1454,7 @@ def ABook_LP_Details_function(update_tool_time=0, exclude_list=["demo"]):
         if Margin_SO_Flag > 0:   # If there are margin issues. Want to send Alert Out.
             if lp_so_email_count == 0:
                 if Send_Email_Flag == 1:
-                    async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
+                    async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, Tele_Margin_Text, [TELEGRAM_ALERT_GROUP_CHAT])
                     LP_position_Table = List_of_Dict_To_Horizontal_HTML_Table(LP_Position_Show_Table, ['Slow', 'Margin Call', 'Alert'])
 
 
@@ -1481,15 +1481,15 @@ def ABook_LP_Details_function(update_tool_time=0, exclude_list=["demo"]):
                                      format(Email_Header, LP_position_Table, datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),Email_Footer),
                                      Attachment_Name=[])
 
-
-                    async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
+                    async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, Tele_Margin_Text, [TELEGRAM_ALERT_GROUP_CHAT])
+                    # async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
                 Play_Sound += 1             # Play sound when MC. Once
             lp_mc_email_count += 1
             lp_so_email_count = 0
         elif margin_attention_flag > 0:  # If there are margin issues. Want to send Alert Out
             if lp_attention_email_count == 0:
                 if Send_Email_Flag == 1:
-                    async_Post_To_Telegram(TELE_ID_MTLP_MISMATCH, Tele_Margin_Text, TELE_CLIENT_ID)
+                    async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN, Tele_Margin_Text, [TELEGRAM_ALERT_GROUP_CHAT])
                     LP_position_Table = List_of_Dict_To_Horizontal_HTML_Table(LP_Position_Show_Table, ['Slow', 'Margin Call', 'Alert'])
 
                     async_send_email(To_recipients=EMAIL_LIST_ALERT, cc_recipients=[],
