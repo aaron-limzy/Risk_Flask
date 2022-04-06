@@ -386,16 +386,16 @@ def Large_volume_Login_Ajax(update_tool_time=1):
         #print(sql_insert)
 
         #
-        #db.engine.execute(text(sql_insert))  # Insert into DB
+        db.engine.execute(text(sql_insert))  # Insert into DB
 
         to_alert["LOGIN"] = to_alert.apply(lambda x: live_login_analysis_url_External(Live=x["LIVE"], Login=x["LOGIN"]), axis=1)
 
         telegram_string = "<b>[Alert]</b> - Large Volume Client Alert\n\n"
-        telegram_string += "There are clients trading large volume in the past 24 hours.\n"
+        telegram_string += "There are clients trading large volume in the past 24 hours.\n\n"
         telegram_string += "<b>Live | Login | Lots | C PnL | F.PnL | Rebate | Group</b>\n"
         telegram_string += "\n".join([" | ".join(["{}".format(x) for x in l]) for l in to_alert[["LIVE", "LOGIN", "TOTAL LOTS", "CLOSED PROFIT", "FLOATING PROFIT", "REBATE", "COUNTRY"]].values.tolist()])
         telegram_string += "\n\nDetails are on Client side."
-        print(telegram_string)
+        # print(telegram_string)
 
         # async_Post_To_Telegram(TELE_ID_MONITOR, telegram_string, TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
 
