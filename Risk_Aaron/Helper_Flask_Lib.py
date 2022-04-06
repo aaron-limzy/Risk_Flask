@@ -1419,7 +1419,9 @@ def ABook_LP_Details_function(update_tool_time=0, exclude_list=["demo"]):
         Tele_Message = "*[Alert]* - LP Details Update Slow\nLP details on A Book page reflects a slow update:\n\n"  # To compose Telegram outgoing message
 
         # Checking if there are any update time that are slow. Returns a Bool
-        update_time_slow = any([[True for a in d if (isinstance(a, datetime.datetime) and abs((a-datetime.datetime.now()).total_seconds()) > TIME_UPDATE_SLOW_MIN*60)] for d in result_data])
+        update_time_slow = any([[True for a in d if (isinstance(a, datetime.datetime) and \
+                                                     abs((a-datetime.datetime.now()).total_seconds()) > TIME_UPDATE_SLOW_MIN*60)] \
+                                for d in result_data])
 
 
         if update_time_slow: # Want to send an email out if time is slow.
