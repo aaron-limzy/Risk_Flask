@@ -1905,7 +1905,8 @@ def Monitor_Risk_Tools_ajax():
                         "bgi_float_mt4_history_save"         : save_BGI_MT4_float_Ajax,
                         "bgi_float_mt5_history_save": save_BGI_MT5_float_Ajax,
                         "MT4/LP A Book Check": ABook_Matching_Position_Vol_2,
-                        "LP_Details_Check": ABook_LP_Details
+                        "LP_Details_Check": ABook_LP_Details,
+                        "Large Lots Login": Large_volume_Login_Ajax
                         }
 
     #all_function_return = [d() for k,d in function_to_call.items()]

@@ -47,7 +47,8 @@ def Client_No_Symbol_Trades():
     title = "Client Close Symbol"
     header = title
 
-    description = Markup('Check if client has closed off (to zero) any particular symbols.<br>' +\
+    description = Markup('Check if client has closed off (to zero) any <b>particular symbols</b>.<br>' +\
+                          'This tool is <b>Post-Fix Specific.</b>' +\
                          'Sql Table used: <u>aaron.client_zero_position</u><br><br>' +\
                          'This tool will only check particular symbols that has been set up in the SQL table.<br>' +\
                          'When the client closes all trades on that particular symbol, a telegram (only) message will be sent out.<br>'+\
@@ -68,7 +69,7 @@ def Client_No_Trades_ajax(update_tool_time=1):
 
     raw_sql_statement = """SELECT
 	c.LIVE as LIVE, c.LOGIN as LOGIN, c.SYMBOL as SYMBOL, c.DATETIME as `DATETIME`, COALESCE(t.LOTS,0) as LOTS,
-	 t.REVENUE as REVENUE, COALESCE(t.`GROUP`,'-') as `GROUP`
+	 COALESCE(t.REVENUE,0) as REVENUE, COALESCE(t.`GROUP`,'-') as `GROUP`
     FROM
         ( SELECT LIVE, LOGIN, SYMBOL, DATETIME FROM aaron.client_zero_position WHERE live = '{live}' AND active='1')AS c
     LEFT JOIN(
@@ -101,12 +102,20 @@ def Client_No_Trades_ajax(update_tool_time=1):
         df["DATETIME"] = df["DATETIME"].apply(lambda x: "{}".format(x))
 
         df_no_lots = df[df["LOTS"] == 0]    # Want to get those that have no lots.
+
+        # print(df_no_lots)
+
         if len(df_no_lots) > 0: # If there is, we assume the client has closed the position.
+            # Want to embed the LOGIN link.
+
+            df_no_lots["LOGIN_URL"] = df_no_lots.apply(
+                lambda x: live_login_analysis_url_External(Live=x["LIVE"], Login=x["LOGIN"]), axis=1)
+
             # Telegram
-            sql_update_values = df_no_lots[["LIVE", "LOGIN", "SYMBOL", "DATETIME"]].values.tolist()
+            sql_update_values = df_no_lots[["LIVE", "LOGIN_URL", "SYMBOL", "DATETIME"]].values.tolist()
 
             # For the empty Data
-            telegram_data = df_no_lots[["LIVE", "LOGIN", "LOTS", "SYMBOL"]].values.tolist()
+            telegram_data = df_no_lots[["LIVE", "LOGIN_URL", "LOTS", "SYMBOL"]].values.tolist()
             telegram_data = [["{}".format(t) for t in td] for td in telegram_data]
             telegram_data = "\n".join([" | ".join(t) for t in telegram_data])
 
@@ -114,7 +123,7 @@ def Client_No_Trades_ajax(update_tool_time=1):
             # For the non-empty Data
             df_lots =  df[df["LOTS"] != 0]
             if len(df_lots)>0:
-                telegram_data_with_lots = df_lots[["LIVE", "LOGIN", "LOTS", "SYMBOL"]].values.tolist()
+                telegram_data_with_lots = df_lots[["LOGIN_URL", "LOGIN", "LOTS", "SYMBOL"]].values.tolist()
                 telegram_data_with_lots = [["{}".format(t) for t in td] for td in telegram_data_with_lots]
                 telegram_data_with_lots = "\n".join([" | ".join(t) for t in telegram_data_with_lots])
 
@@ -124,6 +133,8 @@ def Client_No_Trades_ajax(update_tool_time=1):
 
             else:
                 telegram_data_with_lots_text = "" # Nothing to show for it.
+
+            print(telegram_data)
 
             async_Post_To_Telegram(BGI_MONITOR_TELEGRAM_TOKEN,
                     "<b>Client position closed.</b>\n\n<pre>Live | Login | Lots | Symbol</pre>\n{telegram_data} ".format(telegram_data=telegram_data) + \
@@ -141,25 +152,24 @@ def Client_No_Trades_ajax(update_tool_time=1):
             #               Email_Header = Email_Header, USOil_Price_Alert = USOil_Price_Alert, usoil_mid_price = usoil_mid_price, c_output=output, datetime_now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             #               Email_Footer=Email_Footer), Attachment_Name=[])
 
-
-
+            sql_update_values_2 = df_no_lots[["LIVE", "LOGIN", "SYMBOL", "DATETIME"]].values.tolist()
             # Add in quotes to make it into a string
-            sql_update_values = [["'{}'".format(s) for s in s_list] for s_list in sql_update_values]
+            sql_update_values_2 = [["'{}'".format(s) for s in s_list] for s_list in sql_update_values_2]
 
-            for s in range(len(sql_update_values)):
-                sql_update_values[s].append("'0'")
+            for s in range(len(sql_update_values_2)):
+                sql_update_values_2[s].append("'0'")
                 #sql_update_values[s].append("NOW()")
 
             # Put values into brackets, to be ready for SQL insert.
-            sql_update_values = " , ".join([" ({}) ".format(" , ".join(s)) for s in sql_update_values])
+            sql_update_values_2 = " , ".join([" ({}) ".format(" , ".join(s)) for s in sql_update_values_2])
 
             sql_insert = """INSERT INTO aaron.client_zero_position (live, login, symbol, datetime, active) VALUES {values} 
-                ON DUPLICATE KEY UPDATE active = VALUES(active)""".format(values=sql_update_values)
+                ON DUPLICATE KEY UPDATE active = VALUES(active)""".format(values=sql_update_values_2)
             sql_insert = text(sql_insert)  # To make it to SQL friendly text.
 
             raw_insert_result = db.engine.execute(sql_insert)
 
-
+        print(df)
         df["REVENUE"] = df["REVENUE"].apply(profit_red_green)
         return_val = df[["LIVE", "LOGIN", "SYMBOL", "LOTS", "REVENUE", "GROUP"]].to_dict("record")
 
@@ -395,7 +405,7 @@ def Large_volume_Login_Ajax(update_tool_time=1):
         telegram_string += "<b>Live | Login | Lots | C PnL | F.PnL | Rebate | Group</b>\n"
         telegram_string += "\n".join([" | ".join(["{}".format(x) for x in l]) for l in to_alert[["LIVE", "LOGIN", "TOTAL LOTS", "CLOSED PROFIT", "FLOATING PROFIT", "REBATE", "COUNTRY"]].values.tolist()])
         telegram_string += "\n\nDetails are on Client side."
-        # print(telegram_string)
+        print(telegram_string)
 
         # async_Post_To_Telegram(TELE_ID_MONITOR, telegram_string, TELE_CLIENT_ID, Parse_mode=telegram.ParseMode.HTML)
 
@@ -432,6 +442,8 @@ def Large_volume_Login_Ajax(update_tool_time=1):
     df = df[["LOGIN", "LIVE", "TOTAL LOTS", "OPENED LOTS", "CLOSED LOTS",
          "FLOATING LOTS", "FLOATING PROFIT", "CLOSED PROFIT", "REBATE", "GROUP", "NEXT LEVEL"]]
 
+    if update_tool_time == 1:
+        async_update_Runtime(app=current_app._get_current_object(), Tool="Large Lots Login")
 
     return json.dumps(df.to_dict("r"))
 
