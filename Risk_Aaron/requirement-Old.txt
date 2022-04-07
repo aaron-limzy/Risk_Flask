@@ -1,5 +1,0 @@
-backcall==0.2.0
-gurobipy==9.0.2
-jedi==0.17.2
-parso==0.7.1
-Pygments==2.6.1

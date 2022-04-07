@@ -416,6 +416,7 @@ def Large_volume_Login_Ajax(update_tool_time=1):
         # If we wanna send out the alert as email as well.
         # email alert flag set in global file, in risk_tool_config
         email_flag, email_recipients = email_flag_fun("large_volume_alert")
+
         if email_flag_fun("large_volume_alert"):
             to_alert["CLOSED PROFIT"] =  to_alert["CLOSED PROFIT"].apply(profit_red_green)
             to_alert["FLOATING PROFIT"] = to_alert["FLOATING PROFIT"].apply(profit_red_green)
@@ -423,7 +424,7 @@ def Large_volume_Login_Ajax(update_tool_time=1):
             html_table = Array_To_HTML_Table( list(data[0].keys()), [list(data[i].values()) for i in range(len(data))], [])
             email_str = "Hi,<br><br>Kindly find clients that has large volume trades in the table below.<br>Details are on client side.<br><br>"
             email_str += html_table
-            email_str += "This Email was generated at: SGT {}.<br><br>Thanks,<br>Aaron".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            email_str += "This Email was generated at: SGT {}.<br><br>Thanks,<br>BGI Risk Team".format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
             async_send_email(To_recipients=email_recipients, cc_recipients=[], Subject="Large Volume Traders",
                              HTML_Text=Email_Header + email_str + Email_Footer, Attachment_Name=[])
 

@@ -77,7 +77,7 @@ def BGI_Swaps():
     description = Markup("Swap values uploaded onto MT4/MT5. <br>\
    Swaps would be charged on the roll over to the next day.<br> \
     Three day swaps would be charged for FX on weds and CFDs on fri.<br>" +
-                         "Swaps are saved on 64.73 test.bgi_swaps table")
+                         "Swaps are saved on 64.73 aaron.bgi_swaps table")
 
     return render_template("Standard_Single_Table.html", backgroud_Filename='css/Faded_car.jpg', Table_name="BGI_Swaps", \
                            title="BGISwaps", ajax_url=url_for("swaps.BGI_Swaps_ajax"),
