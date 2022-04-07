@@ -59,7 +59,7 @@ def Client_No_Symbol_Trades():
                            title=title, ajax_url=url_for('notifications_bp.Client_No_Trades_ajax', _external=True), header=header, setinterval=60,
                            no_backgroud_Cover=True,
                            description=description, replace_words=Markup(["Today"]))
-
+#"Client Symbol No Open Trades" : Client_No_Trades_ajax
 # To notify if client has any open trades on a particular symbol.
 # This is the ajax.
 @notifications_bp.route('/Client_No_Trades_ajax', methods=['GET', 'POST'])
@@ -174,8 +174,8 @@ def Client_No_Trades_ajax(update_tool_time=1):
         return_val = df[["LIVE", "LOGIN", "SYMBOL", "LOTS", "REVENUE", "GROUP"]].to_dict("record")
 
     # # # Need to update Run time on SQL Update table.
-    # if update_tool_time ==1:
-    #     async_update_Runtime(app=current_app._get_current_object(), Tool="USOil_Price_alert")
+    if update_tool_time == 1:
+        async_update_Runtime(app=current_app._get_current_object(), Tool="Client Symbol No Open Trades")
 
     return json.dumps(return_val)
 

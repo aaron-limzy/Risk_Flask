@@ -22,6 +22,9 @@ from app.background import *
 
 from app.mt5_queries.mt5_helper_functions import *
 
+from app.Notifications.routes import Large_volume_Login_Ajax, Client_No_Trades_ajax
+
+
 from flask_table import create_table, Col
 
 import urllib3
@@ -1906,7 +1909,8 @@ def Monitor_Risk_Tools_ajax():
                         "bgi_float_mt5_history_save": save_BGI_MT5_float_Ajax,
                         "MT4/LP A Book Check": ABook_Matching_Position_Vol_2,
                         "LP_Details_Check": ABook_LP_Details,
-                        "Large Lots Login": Large_volume_Login_Ajax
+                        "Large Lots Login": Large_volume_Login_Ajax,
+                        "Client Symbol No Open Trades": Client_No_Trades_ajax
                         }
 
     #all_function_return = [d() for k,d in function_to_call.items()]
