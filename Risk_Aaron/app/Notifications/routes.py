@@ -306,7 +306,7 @@ def Large_volume_Login_Ajax(update_tool_time=1):
     if not cfh_fix_timing():
         return json.dumps([{'Update time': "Not updating, as Market isn't opened. {}".format(Get_time_String())}])
 
-    alert_levels = [10, 20, 30, 50, 100, 200, 300, 400, 500,1000,10000, 50000,100000,1000000]
+    alert_levels = [50, 100, 200, 300, 400, 500,1000,10000, 50000,100000,1000000]
 
     # Want to reduce the query overheads. So try to use the saved value as much as possible.
     # server_time_diff_str = session["live1_sgt_time_diff"] if "live1_sgt_time_diff" in session \

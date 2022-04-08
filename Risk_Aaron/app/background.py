@@ -9,8 +9,6 @@ def background_pic(website):
 
     #NoTrade_Change_ReadOnly_Settings
 
-    #
-
     # default = "css/Mac_Coffee.jpg"
     default = "css/gplaypattern.png"
 
