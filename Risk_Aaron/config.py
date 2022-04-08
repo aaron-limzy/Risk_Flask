@@ -74,7 +74,7 @@ class Config(object):
     MAIL_USE_TLS = 1
     MAIL_USERNAME = "aaron.riskbgi@gmail.com"
     MAIL_PASSWORD = "ReportReport"
-    ADMINS = ['aaron.lim@blackwellglobal.com']
+    ADMINS = ['risk@blackwellglobal.com']
 
     # Set so that each time flask is ended and ran (in cmd)
     # Can be used to refresh the cookies.
