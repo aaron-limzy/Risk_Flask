@@ -359,17 +359,21 @@ def Large_volume_Login_Ajax(update_tool_time=1):
                 GROUP BY LOGIN ) X LEFT JOIN 
                 (Select live, login, max(lots) as lots, datetime from aaron.large_volume_login WHERE live = {Live} and datetime >= NOW() - INTERVAL 1 DAY GROUP BY LIVE, LOGIN) as L 
                 ON X.login = L.login  
-                WHERE `TOTAL LOTS` >= 50 """
+                WHERE `TOTAL LOTS` >= {min_lot_size} """
 
     raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", "")
     # The string name of the live server.
     live_str = ["1", "2", "5"]
-    sql_statement = " UNION ".join([raw_sql_statement.format(Live=l, Added_condition=" ") for l in live_str])
-    sql_statement += " UNION " + raw_sql_statement.format(Live=3, Added_condition=" AND u.LOGIN NOT IN (SELECT LOGIN FROM live3.`cambodia_exclude` )")
+    sql_statement = " UNION ".join([raw_sql_statement.format(Live=l, Added_condition=" ",
+                                                             min_lot_size=min(alert_levels)) for l in live_str])
+
+    sql_statement += " UNION " + raw_sql_statement.format(Live=3,
+                                                          Added_condition=" AND u.LOGIN NOT IN (SELECT LOGIN FROM live3.`cambodia_exclude` )",
+                                                          min_lot_size=min(alert_levels))
 
 
     sql_statement += " ORDER BY `TOTAL LOTS` DESC "
-    #print(sql_statement)
+    # print(sql_statement)
 
     res = Query_SQL_db_engine(text(sql_statement))
     df = pd.DataFrame(res)
