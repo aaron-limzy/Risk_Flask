@@ -380,6 +380,10 @@ def Large_volume_Login_Ajax(update_tool_time=1):
 
     # Just in case there are no open trades. 
     if len(df) <= 0:
+
+        if update_tool_time == 1:
+            async_update_Runtime(app=current_app._get_current_object(), Tool="Large Lots Login")
+
         return  json.dumps([{"Comment":"No trades."}])
 
 
