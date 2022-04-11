@@ -359,7 +359,7 @@ def Large_volume_Login_Ajax(update_tool_time=1):
                 GROUP BY LOGIN ) X LEFT JOIN 
                 (Select live, login, max(lots) as lots, datetime from aaron.large_volume_login WHERE live = {Live} and datetime >= NOW() - INTERVAL 1 DAY GROUP BY LIVE, LOGIN) as L 
                 ON X.login = L.login  
-                WHERE `TOTAL LOTS` >= 10 """
+                WHERE `TOTAL LOTS` >= 50 """
 
     raw_sql_statement = raw_sql_statement.replace("\t", " ").replace("\n", "")
     # The string name of the live server.
