@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 {% import 'bootstrap/wtf.html' as wtf %}
 
+
+
 {% block app_content %}
 
 {% if form %}
@@ -60,4 +62,3 @@
 </script>
 <script src="{{ url_for('static', filename='js/inputFileButton.js') }}?v=10"></script>
 {% endblock %}
-

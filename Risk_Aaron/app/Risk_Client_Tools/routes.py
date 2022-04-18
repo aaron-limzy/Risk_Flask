@@ -378,6 +378,91 @@ def Delete_Risk_Autocut_Group_Table_fun():
     return table
 
 
+# Want to change user group should they have no trades.
+# ie: From B to A or A to B.
+@Risk_Client_Tools_bp.route('/Finance_Delete_Trade', methods=['GET', 'POST'])
+@roles_required(["Risk", "Admin", "Finance", "Risk_TW"])
+def Finance_Delete_Trade():
+
+    form = Finance_Delete_Trade_Form()
+
+    title = "Finance Delete Trade"
+    header = "Finance Delete Trade"
+    description = Markup("Only allowed to delete Credit and Deposit trades made within the last 24 hours.")
+
+    if request.method == 'POST' and form.validate_on_submit():
+        live = form.Live.data       # Get the Data.
+        login = form.Login.data
+        Ticket = form.Ticket.data
+
+        sql_query = text("""SELECT TICKET, LOGIN, CMD, OPEN_TIME, m.result, DATE_ADD(OPEN_TIME,INTERVAL m.result HOUR) as SG_TIME,
+            `GROUP`
+            FROM Live{live}.mt4_trades as t, aaron.aaron_misc_data as m
+            WHERE t.TICKET = {Ticket} AND m.item="live1_time_diff" """.format(live=live, Ticket=Ticket))
+
+
+        sql_result = Query_SQL_db_engine(sql_query)  # Query SQL
+
+
+        error_found = 0
+
+        if len(sql_result) == 0:
+            flash("No such ticket [{}] exist in live {}".format(Ticket, live), 'error')
+            error_found = 1
+
+
+        # If the login from the ticket and the login from the form do not match
+        if error_found == 0 and sql_result[0]["LOGIN"] != login:
+            flash("Ticket {} Exists. Error: Login do not match.".format(Ticket), 'error')
+            error_found = 1
+
+        if error_found == 0 and sql_result[0]["CMD"] not in [6, 7]:
+            flash("Ticket {} isn't a credit or deposit.".format(Ticket), 'error')
+            error_found = 1
+
+
+        # Want to check if the ticket was created within the last 24 hours.
+        time_24_Hours_ago = (datetime.datetime.now() - datetime.timedelta(hours=24))
+        if error_found == 0 and sql_result[0]["SG_TIME"] < time_24_Hours_ago:
+            flash("Ticket was created more than 24 hours ago. Kindly contact Risk.", "error")
+            error_found = 1
+            print("SG Time Minus 1 day: {}".format(sql_result[0]["SG_TIME"] - datetime.timedelta(hours=24)))
+
+
+
+
+        if error_found == 0 and sql_result[0]["GROUP"].lower().find("mam") >= 0:
+            flash("Client is in a MAM group: {}".format(sql_result[0]["GROUP"]), "error")
+            error_found = 1
+
+
+        # Run the delete exe
+        if error_found == 0:
+            # print("Deleting the trade...")
+            C_Return_Val, output, err = Run_C_Prog(
+                "app" + url_for('static', filename='Exec/Delete_Single_Trade/Delete_Single_Trade_api.exe') + \
+                " {live} {login} {Ticket}".format(live=live, login=login, Ticket=Ticket ))
+
+            # C_Return_Val = 0
+            # output = "Testing"
+
+            if C_Return_Val==0:
+                flash("Live: {}, Ticket: {} Deleted!".format(live, Ticket))
+
+                sql_insert = """INSERT INTO  aaron.`minion_changetrade_info` (`LOGIN`, `DATETIME`, `TYPE`, `LIVE`, `MODIFIED_USER`, `MODIFIED_ORDER`, `DESCRIPTION`) VALUES
+                              ('{ID}', NOW(),'Delete','{live}','{login}', '{Ticket}', ""  )""".format(ID=current_user.id ,live=live, login=login, Ticket=Ticket)
+                db.engine.execute(text(sql_insert))
+
+            else:
+                flash("Error: {}".format(output), "error")
+
+
+
+    return render_template("standard_form.html", backgroud_Filename=background_pic("Finance_Delete_Trade"), \
+                           title=title, no_backgroud_Cover=True, \
+                           header=header, form=form, \
+                           description=description,
+                           )
 
 
 

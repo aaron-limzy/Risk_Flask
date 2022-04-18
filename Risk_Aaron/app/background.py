@@ -59,7 +59,8 @@ def background_pic(website):
                  "Swap_download_page":                      "css/pink dust.png",
                 "HK_Change_Spread" :                        "css/Hexagon_repeat.jpg",
                  "AB_Hedge_Client_Close":                     "css/leaves-pattern.png",
-                 "AIF_AB_Hedge"    :                      "css/strange_bullseyes.png"
+                 "AIF_AB_Hedge"    :                      "css/strange_bullseyes.png",
+                 "Finance_Delete_Trade" :                   "css/giftly.png",
 
         }
 

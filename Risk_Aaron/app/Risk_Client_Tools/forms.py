@@ -45,6 +45,12 @@ class noTrade_ChangeGroup_Form(FlaskForm):
     New_Group = StringField('New Group', validators=[DataRequired()])
     submit = SubmitField('Submit')
 
+# Want to add into SQL for change group, when there are no open trades.
+class Finance_Delete_Trade_Form(FlaskForm):
+    Live = IntegerField('Live', validators=[DataRequired(), AnyOf(values=[1,2,3,5], message="Only Live 1,2,3 and 5")])
+    Login = IntegerField('Login', validators=[DataRequired()])
+    Ticket = IntegerField('Ticket', validators=[DataRequired()])
+    submit = SubmitField('Submit')
 
 def positive_only(form, field):
     if field.data <= 0 :

@@ -1,6 +1,19 @@
 {% extends "base.html" %}
 {% import 'bootstrap/wtf.html' as wtf %}
 
+{% block styles %}
+{{ super() }}
+<style>
+  body { background: #eee url({{ url_for('static', filename=backgroud_Filename) }});
+  {% if not no_backgroud_Cover %}
+  background-repeat: no-repeat;
+  background-size: cover;
+  {% endif %}
+}
+</style>
+{% endblock %}
+
+
 {% block app_content %}
 
 
@@ -24,14 +37,18 @@
       <hr class="my-4">
   </div>
 
-  <div class="row">
-    <div class="col">
-      {% if form %}
-        <hr class="col-xs-12">
-      {{ wtf.quick_form(form, button_map={'submit': 'outline-secondary btn-lg btn-success'}) }}
-      {% endif %}
+  <div class="container bg-light">
+    <div class="row">
+      <div class="col">
+        {% if form %}
+          <hr class="col-xs-12">
+        {{ wtf.quick_form(form, button_map={'submit': 'outline-secondary btn-lg btn-success'}) }}
+        {% endif %}
+      </div>
     </div>
   </div>
+
+
 </div>
 <br>
 <hr>
