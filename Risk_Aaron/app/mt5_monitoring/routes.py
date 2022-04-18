@@ -1263,10 +1263,10 @@ def AIF_AB_Hedge_ajax(update_tool_time=0):    # To upload the Files, or post whi
     #
 
     if Send_Email_Alert_Flag == True:
-        # email_list = ["aaron.lim@blackwellglobal.com"] if testing == True else EMAIL_LIST_ALERT + [Risk_EU_EMAIL,
-        #                                                                                            "risk@blackwellglobal.bs"]
+        email_list = ["fei.shao@blackwellglobal.com"] if testing == True else EMAIL_LIST_ALERT + [Risk_EU_EMAIL,
+                                                                                                    "risk@blackwellglobal.bs"]
 
-        email_list = ["aaron.lim@blackwellglobal.com", "fei.shao@blackwellglobal.com"]
+        #email_list = ["risk@blackwellglobal.com", "fei.shao@blackwellglobal.com"]
         # email_list = ["aaron.lim@blackwellglobal.com"]
 
         email_html += """Link: <a href='{}'>UK AIF Hedge Page</a><br><br>""".format(url_for('mt5_monitoring.AIF_AB_Hedge',
