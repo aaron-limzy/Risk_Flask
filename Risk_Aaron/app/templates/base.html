@@ -155,20 +155,16 @@
             </a>
 
             <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-<<<<<<< Updated upstream
-=======
-<<<<<<< Updated upstream
+
               <li><a class="dropdown-item" href="{{ url_for('ABook_Matching') + "?send_email_flag=0" }}">MT4/LP ⭐</a></li>
               <li><a class="dropdown-item" href="{{ url_for('add_off_set') }}">A Book Offset ➕</a></li>
               <div class="dropdown-divider"></div>
-=======
->>>>>>> Stashed changes
+
               <li><a class="dropdown-item" href="{{ url_for('mt5_monitoring.AIF_AB_Hedge') }}">UK Hedge A/B ⭐</a></li>
               <li><a class="dropdown-item" href="{{ url_for('swaps.BGI_Swaps') }}">BGI Swaps</a></li>
               <li><a class="dropdown-item" href="{{ url_for('swaps.Other_Brokers') }}">Swaps Compare</a></li>
               <li><a class="dropdown-item" href="{{ url_for('swaps.Bloomberg_Dividend') }}">Bloomberg Dividend</a></li>
-<<<<<<< Updated upstream
-=======
+
 
 
           {% endif %} -->
@@ -657,11 +653,9 @@
                     </a>
 
                     <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
->>>>>>> Stashed changes
->>>>>>> Stashed changes
 
 
-          {% endif %} -->
+          {% endif %} 
 
 
             {% if current_user.role in ["Admin", "Risk", "Risk_TW", "Dealing", "Risk_UK", "Risk_KH", "Finance", "CS", "Finance_KH"] %}
